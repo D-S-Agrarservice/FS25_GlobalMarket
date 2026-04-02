@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <GUI name="SelectLevel" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+
     <GuiElement type="empty" profile="newLayer" />
-    <GuiElement type="bitmap" profile="dialogFullscreenBg" />
-    <GuiElement type="bitmap" profile="bgVignette"/>
-    <GuiElement type="bitmap" profile="bgGlowDialog" />
+    <GuiElement type="bitmap" profile="fs25_menuBackground" />
 
     <GuiElement type="bitmap" profile="selectLevelFrame" id="dialogElement">
-        <GuiElement type="text" profile="dialogTitle" id="dialogTitle" position="0px -30px" />
+        <GuiElement type="text" profile="fs25_dialogTitle" id="dialogTitle" position="0px -30px" />
 
         <GuiElement type="bitmap" profile="selectLevelHeaderBox">
             <GuiElement type="text" profile="selectLevelHeaderCell" position="0px 0px" size="250px 40px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
@@ -28,34 +27,35 @@
         <GuiElement type="text" profile="selectLevelHeaderCell" position="370px -160px" size="100px 40px" id="levelDeliveryPrice" />
         <GuiElement type="text" profile="selectLevelHeaderCellR" position="20px -200px" size="250px 40px" id="levelPriceNotEnoughMoney" text="$l10n_ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" />
 
-        <GuiElement type="flowLayout" profile="buttonBoxDialog">
-            <GuiElement type="button" profile="buttonBack" text="$l10n_ui_ingameMenuGlobalMarketSelectBtnCancel" id="btnBack" onClick="onClickBack" />
-            <GuiElement type="button" profile="buttonOK" id="btnSellBuy" onClick="onClickSellBuy" />
+        <GuiElement type="boxLayout" profile="fs25_dialogButtonBox">
+            <GuiElement type="button" profile="fs25_buttonBack" text="$l10n_ui_ingameMenuGlobalMarketSelectBtnCancel" id="btnBack" onClick="onClickBack" />
+            <GuiElement type="button" profile="fs25_buttonOk" id="btnSellBuy" text="OK" onClick="onClickSellBuy" />
         </GuiElement>
     </GuiElement>
 
     <GuiElement type="bitmap" profile="selectLevelFrameRight" id="dialogElementStorage">
-        <GuiElement type="text" profile="dialogTitle" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageTitle" position="0px -30px" />
+        <GuiElement type="text" profile="fs25_dialogTitle" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageTitle" position="0px -30px" />
 
-        <GuiElement type="boxLayout" profile="ingameCalendarHeaderBox" id="tableHeaderBox" size="700px 40.77px" position="20px -100px">
-            <GuiElement type="text" profile="ingameMenuGmHeader" size="200px 40.77px" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageName" />
-            <GuiElement type="text" profile="ingameMenuGmHeader" size="150px 40.77px"  text="$l10n_ui_ingameMenuGlobalMarketSelectStorageFree" />
+        <GuiElement type="empty" profile="fs25_statisticsHeaderBox" id="tableHeaderBox" size="360px 32px" position="20px -80px">
+            <GuiElement type="text" profile="fs25_statisticsHeaderText" size="200px 32px" position="0px 0px" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageName" />
+            <GuiElement type="text" profile="fs25_statisticsHeaderText" size="150px 32px" position="210px 0px" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageFree" />
+            <GuiElement type="threePartBitmap" profile="fs25_lineSeparatorBottom" position="0px -2px" />
         </GuiElement>
 
-        <GuiElement type="smoothList" profile="ingameMenuGlobalMarketSelectListLeft" id="gmTableSelectStorage" focusInit="onOpen">
-            <GuiElement type="listItem" profile="ingameMenuGlobalMarketSelectListLeftItem" name="gmTableSelectStorageRowTemplate" >
-                <GuiElement type="bitmap" profile="ingameMenuGlobalMarketRowBackground">
-                    <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="0px 0px" size="180px 40.77px" name="name" />
-                    <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="200px 0px" size="150px 40.77px" name="free" />
-                </GuiElement>
+        <GuiElement type="smoothList" profile="fs25_statisticsList" id="gmTableSelectStorage" focusInit="onOpen" position="20px -115px" size="340px 350px">
+            <GuiElement type="listItem" profile="fs25_statisticsListItem" name="gmTableSelectStorageRowTemplate" >
+                <GuiElement type="bitmap" profile="fs25_statisticsListItemBg" name="alternating" />
+                <GuiElement type="text" profile="fs25_statisticsListItemName" position="10px 0px" size="180px 45px" name="name" />
+                <GuiElement type="text" profile="fs25_statisticsListItemValue" position="190px 0px" size="150px 45px" textAlignment="right" name="free" />
             </GuiElement>
         </GuiElement>
-        <GuiElement type="threePartBitmap" profile="verticalListSliderRightDocked" size="12px 350px" position="20px -140.77px">
-            <GuiElement type="slider" profile="verticalListSliderBar" size="6px 345px" dataElementId="gmTableSelectStorage" id="tableSliderStorage" handleFocus="false" focusInit="onOpen"/>
+
+        <GuiElement type="threePartBitmap" profile="fs25_sliderDockedBg" size="12px 350px" position="365px -115px">
+            <GuiElement type="slider" profile="fs25_listSlider" size="6px 342px" dataElementId="gmTableSelectStorage" id="tableSliderStorage" handleFocus="false" focusInit="onOpen"/>
         </GuiElement>
     </GuiElement>
 
-    <GuiElement type="bitmap" profile="selectLevelFrameLoading" id="dialogElementLoading">
+    <GuiElement type="bitmap" profile="selectLevelFrameLoading" id="dialogElementLoading" visible="false">
         <GuiElement type="text" profile="selectLevelHeaderCell2" position="0px -60px" size="500px 40px" text="$l10n_ui_ingameMenuGlobalMarketSelectLoading" />
         <GuiElement type="animation" profile="ingameMenuGlobalMarketSelectLoadingAnimation"/>
     </GuiElement>

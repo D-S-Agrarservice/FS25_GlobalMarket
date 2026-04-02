@@ -2,7 +2,6 @@
 -- FS25 - GlobalMarket (Economy Module)
 --
 
--- Constants for offline economy calculation
 GlobalMarket.PRICE_MIN = 0.8
 GlobalMarket.PRICE_MAX = 1.2
 GlobalMarket.PRICE_LEVEL_MAX = 10000000
@@ -10,7 +9,8 @@ GlobalMarket.DELIVER_COST = 200
 GlobalMarket.DELIVER_COST_PERLITER = 0.01
 
 function GlobalMarket:initEconomy()
-    self:debugLog("Initializing Economy Module...")
+    -- FIXED: Changed self:debugLog to GlobalMarket.debugLog
+    GlobalMarket.debugLog("Initializing Economy Module...")
     self.offlineMarketFillTypes = {}
     self:loadOfflineMarket()
 
@@ -19,16 +19,16 @@ end
 
 function GlobalMarket:loadOfflineMarket()
     local path = GlobalMarket.dir .. "offlineMarket.xml"
-    self:debugLog("Loading offline market from: %s", path)
+    GlobalMarket.debugLog("Loading offline market from: %s", path)
 
     if not fileExists(path) then
-        self:debugLog("Error: offlineMarket.xml not found at %s", path)
+        GlobalMarket.debugLog("Error: offlineMarket.xml not found at %s", path)
         return
     end
 
     local xmlFile = XMLFile.load("globalMarket_offline", path)
     if xmlFile == nil then
-        self:debugLog("Error: Could not parse globalMarket_offline XML!")
+        GlobalMarket.debugLog("Error: Could not parse globalMarket_offline XML!")
         return
     end
 
@@ -36,15 +36,16 @@ function GlobalMarket:loadOfflineMarket()
         local name = xmlFile:getString(baseKey .. "#name")
         local price = xmlFile:getFloat(baseKey .. "#price")
 
-        local level = math.random(0, 50) * 10000
         if name ~= nil and price ~= nil then
-            self:debugLog("  -> Registered FillType: %s (Base Price: %f, Start Level: %d)", name, price, level)
+            local level = math.random(0, 50) * 10000
+
             table.insert(self.offlineMarketFillTypes, {
                 fillType = name,
                 fillLevel = level,
                 normalPrice = price,
                 price = GlobalMarket.calcOfflinePrice(price, level)
             })
+            GlobalMarket.debugLog("  -> Registered FillType: %s (Base: %f, Start Level: %d)", name, price, level)
         end
     end)
 
@@ -59,39 +60,30 @@ function GlobalMarket.calcOfflinePrice(price, currentLevel)
 end
 
 function GlobalMarket:getPriceByFillType(fillType)
-    if self:getIsMarketOnline() then
-        for _, e in pairs(self.fillTypes) do
-            if e.fillType == fillType then return e.price end
-        end
-    else
-        for _, e in pairs(self.offlineMarketFillTypes) do
-            if e.fillType == fillType then return e.price end
-        end
+    for _, e in pairs(self.offlineMarketFillTypes) do
+        if e.fillType == fillType then return e.price end
     end
     return 0
 end
 
 function GlobalMarket:getMarketSiloLevelByFillType(fillType)
-    if self:getIsMarketOnline() then
-        return self.siloLevels[fillType] or 0
-    else
-        for _, e in pairs(self.offlineMarketFillTypes) do
-            if e.fillType == fillType then return e.fillLevel end
-        end
+    for _, e in pairs(self.offlineMarketFillTypes) do
+        if e.fillType == fillType then return e.fillLevel end
     end
     return 0
 end
 
 function GlobalMarket:onHourChanged(currentHour)
     if g_server ~= nil then
-        self:debugLog("Economy: Hour changed (%d), updating prices.", currentHour)
+        GlobalMarket.debugLog("Economy: Hour changed (%d), updating prices.", currentHour)
+
         for _, ft in pairs(self.offlineMarketFillTypes) do
             ft.fillLevel = math.max(ft.fillLevel + math.random(-4000, 5000), 0)
             ft.price = GlobalMarket.calcOfflinePrice(ft.normalPrice, ft.fillLevel)
         end
 
         if g_client ~= nil then
-            g_client:getServerConnection():sendEvent(SynchOfflineMarketEvent.new())
+            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
     end
 end

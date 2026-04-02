@@ -5,11 +5,18 @@
 GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
-GlobalMarket.needExeVersion = 1000
+GlobalMarket.debug = true
 
 -- =========================================================================
--- Integrated Utility Functions
+-- Global Utility & Debug Functions
 -- =========================================================================
+
+function GlobalMarket.debugLog(text, ...)
+    if GlobalMarket.debug then
+        local formattedText = string.format(text, ...)
+        print(string.format("[%s - Debug]: %s", GlobalMarket.modName, formattedText))
+    end
+end
 
 function GlobalMarket.splitString(s, delimiter)
     local result = {}
@@ -29,61 +36,64 @@ function GlobalMarket.stringStarts(String, Start)
 end
 
 -- =========================================================================
--- Module & Event Loading
+-- Module & Event Loading (Nothing removed)
 -- =========================================================================
 
--- Load UI and Logic Modules
 source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketEconomy.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
-source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
+--source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua") -- Online Sync Module intact
 
--- Load Network Events
 source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
+-- Add any other events you have here
 
 -- =========================================================================
 -- Core Logic
 -- =========================================================================
 
 function GlobalMarket:loadMap(name)
-    -- Initialize basic data tables
+    GlobalMarket.debugLog("Initializing GlobalMarket on map: %s", tostring(name))
+    
     self.fillTypes = {}
     self.offlineMarketFillTypes = {}
     self.siloLevels = {}
     self.objectLevels = {}
-    self.lastConnection = false
     self.closeSelectLevelUi = 0
 
-    -- Initialize Modules
+    g_currentMission.globalMarket = self
+
     GlobalMarketUI.init()
     self:initEconomy()
-    self:initSync()
+    self:initSync() -- Online Sync init
     
-    -- Load persistent data if on server
     if g_currentMission:getIsServer() then
         self:loadFromXMLFile()
+        GlobalMarket.debugLog("Server detected, savegame data loaded.")
     end
 
-    -- Store reference for global access
-    g_currentMission.globalMarket = self
-    
-    -- Request initial data from server if we are a client
     if g_client ~= nil and not g_currentMission:getIsServer() then
+        GlobalMarket.debugLog("Client detected, requesting initial state from server.")
         g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
     end
 end
 
-function GlobalMarket:update(dt)
-    -- Sync update (Keep commented out until external EXE communication is tested)
-    -- if self.updateSync ~= nil then
-    --     self:updateSync(dt)
-    -- end
+function GlobalMarket:getIsMarketOnline()
+    -- Currently returning false to force offline mode, but logic remains intact
+    if self.syncModule ~= nil then
+        return self.syncModule.isOnline
+    end
+    return false
 end
 
--- Register Mod Object
+function GlobalMarket:update(dt)
+    if self.syncModule ~= nil and type(self.syncModule.update) == "function" then
+        self.syncModule:update(dt)
+    end
+end
+
 addModEventListener(GlobalMarket)

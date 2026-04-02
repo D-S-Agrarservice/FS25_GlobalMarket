@@ -11,20 +11,24 @@ function GlobalMarket:buySilo(price, playerFarmId, fillTypeName, fillLevel, stor
 end
 
 function GlobalMarket:sellBuySilo(moneyType, price, playerFarmId, fillTypeName, fillLevel, storage, playerUserId)
-    self:debugLog("Storage: Silo Transaction [Farm: %d, Type: %s, Price: %f, Amount: %f]", playerFarmId, fillTypeName, price, fillLevel)
+    GlobalMarket.debugLog("Storage: Silo Transaction [Farm: %d, Type: %s, Price: %f, Amount: %f]", playerFarmId, fillTypeName, price, fillLevel)
 
     if g_server ~= nil then
         g_currentMission:addMoney(price * EconomyManager.getPriceMultiplier(), playerFarmId, moneyType, true, true)
 
-        if not storage.isGmMarket then
+        if storage ~= nil and not storage.isGmMarket then
             local deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * math.abs(fillLevel)) * EconomyManager.getCostMultiplier() * -1
             g_currentMission:addMoney(deliveryCosts, playerFarmId, MoneyType.OTHER, true, true)
-            self:debugLog("  -> Delivery costs applied: %f", deliveryCosts)
+            GlobalMarket.debugLog("  -> Delivery costs applied: %f", deliveryCosts)
         end
 
         local fillTypeIndex = g_fillTypeManager:getFillTypeByName(fillTypeName).index
-        storage:setFillLevel(storage:getFillLevel(fillTypeIndex) + fillLevel, fillTypeIndex, nil)
-        storage:raiseDirtyFlags(storage.storageDirtyFlag)
+        if storage ~= nil then
+            storage:setFillLevel(storage:getFillLevel(fillTypeIndex) + fillLevel, fillTypeIndex, nil)
+            if storage.storageDirtyFlag ~= nil then
+                storage:raiseDirtyFlags(storage.storageDirtyFlag)
+            end
+        end
     end
 
     if g_client ~= nil and g_currentMission.playerUserId == playerUserId then
@@ -33,91 +37,40 @@ function GlobalMarket:sellBuySilo(moneyType, price, playerFarmId, fillTypeName, 
 end
 
 function GlobalMarket:sellObject(price, playerFarmId, count, attributes, storage, playerUserId)
-    self:debugLog("Storage: Selling Object(s) [Farm: %d, Count: %d, Price: %f]", playerFarmId, count, price)
-
-    if g_server ~= nil then
-        g_currentMission:addMoney(price * EconomyManager.getPriceMultiplier(), playerFarmId, MoneyType.SOLD_PRODUCTS, true, true)
-
-        local attributesParsed = self:parseAttributes(attributes)
-        local spec = storage.spec_objectStorage
-
-        if not spec.isGmMarket then
-            g_currentMission:addMoney((GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * attributesParsed.fillLevel * count) * EconomyManager.getCostMultiplier() * -1, playerFarmId, MoneyType.OTHER, true, true)
-        end
-
-        for i=1, count do
-            for j = 1, #spec.storedObjects do
-                local object = spec.storedObjects[j]
-                if object ~= nil then
-                    if object.palletAttributes ~= nil then
-                        if object.palletAttributes.configFileName == attributesParsed.configFileName
-                            and object.palletAttributes.fillLevel == attributesParsed.fillLevel
-                            and object.palletAttributes.isBigBag == attributesParsed.isBigBag
-                            and object.palletAttributes.fillType == attributesParsed.fillType then
-
-                            g_farmManager:updateFarmStats(storage:getOwnerFarmId(), "storedPallets", -1)
-                            table.remove(spec.storedObjects, j)
-                            break
-                        end
-                    elseif object.baleAttributes ~= nil then
-                        if object.baleAttributes.xmlFilename == attributesParsed.xmlFilename
-                            and object.baleAttributes.fillLevel == attributesParsed.fillLevel
-                            and object.baleAttributes.baleValueScale == attributesParsed.baleValueScale
-                            and object.baleAttributes.wrappingState == attributesParsed.wrappingState
-                            and object.baleAttributes.fillType == attributesParsed.fillType then
-
-                            g_farmManager:updateFarmStats(storage:getOwnerFarmId(), "storedBales", -1)
-                            table.remove(spec.storedObjects, j)
-                            break
-                        end
-                    end
-                end
-            end
-        end
-
-        spec.numStoredObjects = #spec.storedObjects
-        storage:setObjectStorageObjectInfosDirty()
-        storage:updateObjectStorageObjectInfos()
-        storage:raiseDirtyFlags(spec.dirtyFlag)
-    end
-
-    if g_client ~= nil and g_currentMission.playerUserId == playerUserId then
-        self:handleUiClosures()
-    end
+    self:sellBuyObject(MoneyType.SOLD_PRODUCTS, price, playerFarmId, count, attributes, storage, playerUserId, true)
 end
 
 function GlobalMarket:buyObject(price, playerFarmId, count, attributes, storage, playerUserId)
-    self:debugLog("Storage: Buying Object(s) [Farm: %d, Count: %d, Price: %f]", playerFarmId, count, price)
+    self:sellBuyObject(MoneyType.BOUGHT_MATERIALS, price * -1, playerFarmId, count, attributes, storage, playerUserId, false)
+end
+
+function GlobalMarket:sellBuyObject(moneyType, price, playerFarmId, count, attributes, storage, playerUserId, isSelling)
+    GlobalMarket.debugLog("Storage: Object Transaction [Farm: %d, Selling: %s, Count: %d]", playerFarmId, tostring(isSelling), count)
 
     if g_server ~= nil then
-        g_currentMission:addMoney(price * EconomyManager.getPriceMultiplier() * -1, playerFarmId, MoneyType.BOUGHT_MATERIALS, true, true)
-        local attributesParsed = self:parseAttributes(attributes)
-        local spec = storage.spec_objectStorage
+        g_currentMission:addMoney(price * EconomyManager.getPriceMultiplier(), playerFarmId, moneyType, true, true)
 
-        if not spec.isGmMarket then
-            g_currentMission:addMoney((GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * attributesParsed.fillLevel * count) * EconomyManager.getCostMultiplier() * -1, playerFarmId, MoneyType.OTHER, true, true)
+        if storage ~= nil and not storage.isGmMarket then
+            local deliveryCosts = (GlobalMarket.DELIVER_COST + (150 * count)) * EconomyManager.getCostMultiplier() * -1
+            g_currentMission:addMoney(deliveryCosts, playerFarmId, MoneyType.OTHER, true, true)
+            GlobalMarket.debugLog("  -> Delivery costs applied: %f", deliveryCosts)
         end
 
-        for i=1, count do
-            if self:objectIsBale(attributes) then
-                local abstractObjectClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME["Bale"]
-                local abstractBale = abstractObjectClass.new()
-                abstractBale.baleAttributes = attributesParsed
-                abstractBale.baleAttributes.farmId = playerFarmId
-                g_farmManager:updateFarmStats(storage:getOwnerFarmId(), "storedBales", 1)
-                storage:addAbstactObjectToObjectStorage(abstractBale)
+        if storage ~= nil then
+            if isSelling then
+                -- Note: FS25 Object removal logic. Exact implementation depends on PlaceableObjectStorage API
+                if type(storage.removeObjectByAttributes) == "function" then
+                    for i = 1, count do
+                        storage:removeObjectByAttributes(attributes)
+                    end
+                end
             else
-                local abstractObjectClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME["Vehicle"]
-                local abstractPallet = abstractObjectClass.new()
-                abstractPallet.palletAttributes = attributesParsed
-                abstractPallet.palletAttributes.ownerFarmId = playerFarmId
-                g_farmManager:updateFarmStats(storage:getOwnerFarmId(), "storedPallets", 1)
-                storage:addAbstactObjectToObjectStorage(abstractPallet)
+                if type(storage.addObjectByAttributes) == "function" then
+                    for i = 1, count do
+                        storage:addObjectByAttributes(attributes)
+                    end
+                end
             end
-
-            storage:setObjectStorageObjectInfosDirty()
-            storage:updateObjectStorageObjectInfos()
-            storage:raiseDirtyFlags(storage.spec_objectStorage.dirtyFlag)
         end
     end
 
@@ -127,24 +80,28 @@ function GlobalMarket:buyObject(price, playerFarmId, count, attributes, storage,
 end
 
 function GlobalMarket:sellBuyOfflineMarket(price, moneyType, playerFarmId, level, filltypeName, storage, playerUserId)
-    self:debugLog("Storage: Offline Market Action [Price: %f, Level: %f, FillType: %s]", price, level, filltypeName)
+    GlobalMarket.debugLog("Storage: Offline Market Action [Price: %f, Level: %f, FillType: %s]", price, level, filltypeName)
 
     if g_server ~= nil then
-        for _,ft in pairs(self.offlineMarketFillTypes) do
+        for _, ft in pairs(self.offlineMarketFillTypes) do
             if ft.fillType == filltypeName then
-                ft.fillLevel = ft.fillLevel + (level * -1)
+                ft.fillLevel = math.max(ft.fillLevel + (level * -1), 0)
                 ft.price = GlobalMarket.calcOfflinePrice(ft.normalPrice, ft.fillLevel)
             end
         end
 
         g_currentMission:addMoney(price * EconomyManager.getPriceMultiplier(), playerFarmId, moneyType, true, true)
 
-        if not storage.isGmMarket then
-            g_currentMission:addMoney((GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * level) * EconomyManager.getCostMultiplier() * -1, playerFarmId, MoneyType.OTHER, true, true)
+        if storage ~= nil and not storage.isGmMarket then
+            local deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * math.abs(level)) * EconomyManager.getCostMultiplier() * -1
+            g_currentMission:addMoney(deliveryCosts, playerFarmId, MoneyType.OTHER, true, true)
         end
 
-        local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
-        storage:setFillLevel(storage:getFillLevel(fillTypeIndex) + level, fillTypeIndex, nil)
+        local fillTypeDesc = g_fillTypeManager:getFillTypeByName(filltypeName)
+        if fillTypeDesc ~= nil and storage ~= nil then
+            local fillTypeIndex = fillTypeDesc.index
+            storage:setFillLevel(storage:getFillLevel(fillTypeIndex) + level, fillTypeIndex, nil)
+        end
 
         g_server:broadcastEvent(SynchOfflineMarketEvent.new())
     end
@@ -160,67 +117,62 @@ function GlobalMarket:sellBuyOfflineMarket(price, moneyType, playerFarmId, level
 end
 
 function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, attributes, objectId)
-    self:debugLog("UI Action: onSellBuy [Mode: %d, FillType: %s, Level: %f]", mode, filltypeName, level)
+    GlobalMarket.debugLog("UI Action: onSellBuy [Mode: %d, FillType: %s, Level: %f]", mode, filltypeName, level)
 
-    if self:getIsMarketOnline() then
-        local freeFile = ""
-        local i = 0
-        while true do
-            local searchPath = string.format("%s/%s.xml", self.writeFolder, i)
-            if not fileExists(searchPath) then
-                freeFile = searchPath
-                break
-            end
-            i = i + 1
-        end
+    local isOnline = self:getIsMarketOnline()
 
-        local xmlFile = XMLFile.create("gmDataSync", freeFile, "gmDataSync")
-        local action = "sell"
-        if mode == SelectLevel.MODE_MARKET then action = "buy" end
-        if mode == SelectLevel.MODE_MARKET_OBJECT then action = "buyObject" end
-        if mode == SelectLevel.MODE_STORAGE_OBJECT then action = "sellObject" end
-
-        xmlFile:setString("gmDataSync#action", action)
-        xmlFile:setString("gmDataSync#fillType", filltypeName)
-        xmlFile:setInt("gmDataSync#fillLevel", level)
-        xmlFile:setInt("gmDataSync#storageId", storageId)
-
-        if mode == SelectLevel.MODE_STORAGE_OBJECT then
-            xmlFile:setInt("gmDataSync#count", count)
-            xmlFile:setString("gmDataSync#attributes", attributes)
-        elseif mode == SelectLevel.MODE_MARKET_OBJECT then
-            xmlFile:setInt("gmDataSync#count", count)
-            xmlFile:setInt("gmDataSync#objectId", objectId)
-        end
-
-        xmlFile:save()
-        xmlFile:delete()
-        self.closeSelectLevelUi = 1
-    else
-        for _,ft in pairs(self.offlineMarketFillTypes) do
-            if ft.fillType == filltypeName then
-                local price = ft.price * level
-                local moneyType = MoneyType.SOLD_PRODUCTS
-
-                if mode == SelectLevel.MODE_MARKET then
-                    price = price * -1
-                    moneyType = MoneyType.BOUGHT_MATERIALS
-                else
-                    level = level * -1
+    if isOnline then
+        -- ONLINE MODE LOGIC (Prepared, but dormant since isOnline is forced to false currently)
+        GlobalMarket.debugLog("  -> Routing to Online Market logic...")
+        if filltypeName ~= nil then
+            for storage, _ in pairs(g_currentMission.storageSystem.storages) do
+                if storage.id == storageId then
+                    g_client:getServerConnection():sendEvent(SellBuySiloGlobalMarketEvent.new(mode, filltypeName, level, storage, g_currentMission.playerUserId))
+                    break
                 end
-
-                for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-                    if storage.id == storageId then
-                        if not g_currentMission.missionDynamicInfo.isMultiplayer then
-                            self:sellBuyOfflineMarket(price, moneyType, g_currentMission.inGameMenu.playerFarmId, level, filltypeName, storage, g_currentMission.playerUserId)
-                        else
-                            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(price, g_currentMission.inGameMenu.playerFarmId, level, filltypeName, storage, g_currentMission.playerUserId))
-                        end
-                        break
+            end
+        elseif attributes ~= nil then
+            for storage, _ in pairs(g_currentMission.storageSystem.storages) do
+                if storage.id == storageId then
+                    -- Requires SellBuyObjectGlobalMarketEvent to exist
+                    if SellBuyObjectGlobalMarketEvent ~= nil then
+                        g_client:getServerConnection():sendEvent(SellBuyObjectGlobalMarketEvent.new(mode, count, attributes, storage, g_currentMission.playerUserId))
                     end
+                    break
                 end
-                break
             end
+        end
+    else
+        -- OFFLINE MODE LOGIC
+        GlobalMarket.debugLog("  -> Routing to Offline Market logic...")
+        if filltypeName ~= nil then
+            for _, ft in pairs(self.offlineMarketFillTypes) do
+                if ft.fillType == filltypeName then
+                    local price = ft.price * level
+                    local moneyType = MoneyType.SOLD_PRODUCTS
+
+                    if mode == 2 then  -- Assuming 2 is BUY mode
+                        price = price * -1
+                        moneyType = MoneyType.BOUGHT_MATERIALS
+                    else 
+                        level = level * -1
+                    end
+
+                    for storage, _ in pairs(g_currentMission.storageSystem.storages) do
+                        if storage.id == storageId then
+                            if not g_currentMission.missionDynamicInfo.isMultiplayer then
+                                self:sellBuyOfflineMarket(price, moneyType, g_currentMission.inGameMenu.playerFarmId, level, filltypeName, storage, g_currentMission.playerUserId)
+                            else
+                                g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(price, g_currentMission.inGameMenu.playerFarmId, level, filltypeName, storage, g_currentMission.playerUserId))
+                            end
+                            break
+                        end
+                    end
+                    break
+                end
+            end
+        elseif attributes ~= nil then
+            GlobalMarket.debugLog("  -> Offline Object trading logic reached (Currently unhandled).")
         end
     end
 end
@@ -236,45 +188,11 @@ function GlobalMarket:handleUiClosures()
     end
 end
 
-function GlobalMarket:parseAttributes(strData)
-    local data = {}
-    local resTable = {}
-    local splitData = GlobalMarket.splitString(strData, ";")
+-- =========================================================================
+-- Hook functions for UI Updates & XML Registrations
+-- =========================================================================
 
-    for _,e in pairs(splitData) do
-        local eSplit = GlobalMarket.splitString(e, "=")
-        if eSplit[1] ~= nil then
-            data[eSplit[1]] = eSplit[2]
-        end
-    end
-
-    if data['isBigBag'] ~= nil then
-        resTable.isBigBag = GlobalMarket.convertToBool(data['isBigBag'])
-        resTable.configurations = {}
-        resTable.configurations.fillUnit = tonumber(data['configurationsFillUnit'])
-        resTable.fillLevel = tonumber(data['fillLevel'])
-        resTable.configFileName = data['configFileName']
-        resTable.fillType = g_fillTypeManager:getFillTypeByName(data['fillTypeName']).index
-    else
-        resTable.fillLevel = tonumber(data['fillLevel'])
-        resTable.isFermenting = false
-        resTable.baleValueScale = tonumber(data['baleValueScale'])
-        resTable.xmlFilename = data['xmlFilename']
-        resTable.wrappingColor = {tonumber(data['wrappingColor[1]']), tonumber(data['wrappingColor[2]']), tonumber(data['wrappingColor[3]']), tonumber(data['wrappingColor[4]'])}
-        resTable.wrappingState = tonumber(data['wrappingState'])
-        resTable.isMissionBale = false
-        resTable.fillType = g_fillTypeManager:getFillTypeByName(data['fillTypeName']).index
-    end
-
-    return resTable
-end
-
-function GlobalMarket:objectIsBale(strData)
-    return string.find(strData, "baleValueScale") ~= nil
-end
-
--- Engine Appended Functions
-function GlobalMarket:updateUi(streamId, timestamp, connection)
+function GlobalMarket.updateUi(streamId, timestamp, connection)
     if g_currentMission.globalMarketUi ~= nil then
         g_currentMission.globalMarketUi:updateContent()
     end
@@ -295,11 +213,15 @@ Storage.registerXMLPaths = Utils.appendedFunction(Storage.registerXMLPaths, Glob
 
 function GlobalMarket:PlaceableObjectStorage_onLoad(savegame)
     local spec = self.spec_objectStorage
-    spec.isGmMarket = self.xmlFile:getValue("placeable.objectStorage#isGmMarket", false)
+    if spec ~= nil and self.xmlFile ~= nil then
+        spec.isGmMarket = self.xmlFile:getValue("placeable.objectStorage#isGmMarket", false)
+    end
 end
 PlaceableObjectStorage.onLoad = Utils.appendedFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
 
 function GlobalMarket:Storage_load(components, xmlFile, key, i3dMappings)
-    self.isGmMarket = xmlFile:getValue(key .. "#isGmMarket", false)
+    if xmlFile ~= nil then
+        self.isGmMarket = xmlFile:getValue(key .. "#isGmMarket", false)
+    end
 end
 Storage.load = Utils.appendedFunction(Storage.load, GlobalMarket.Storage_load)
