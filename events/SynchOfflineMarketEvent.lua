@@ -17,12 +17,16 @@ end
 
 function SynchOfflineMarketEvent:writeStream(streamId, connection)
     local market = g_currentMission.globalMarket
-    local numEntries = #market.offlineMarketFillTypes
+    local entries = market.offlineMarketFillTypes
+    local numEntries = #entries
 
     streamWriteInt16(streamId, numEntries)
-    for _, ft in pairs(market.offlineMarketFillTypes) do
+
+    for i = 1, numEntries do
+        local ft = entries[i]
         streamWriteString(streamId, ft.fillType)
-        streamWriteInt32(streamId, ft.fillLevel)
+        -- Ensure fillLevel is sent as a clean integer to prevent stream corruption
+        streamWriteInt32(streamId, math.floor(ft.fillLevel))
         streamWriteFloat32(streamId, ft.normalPrice)
         streamWriteFloat32(streamId, ft.price)
     end
@@ -31,27 +35,39 @@ end
 function SynchOfflineMarketEvent:readStream(streamId, connection)
     local n = streamReadInt16(streamId)
 
-    -- Ensure globalMarket object is initialized on client before writing data
-    if g_currentMission.globalMarket ~= nil then
-        g_currentMission.globalMarket.offlineMarketFillTypes = {}
-        for i = 1, n do
-            table.insert(g_currentMission.globalMarket.offlineMarketFillTypes, {
-                fillType = streamReadString(streamId),
-                fillLevel = streamReadInt32(streamId),
-                normalPrice = streamReadFloat32(streamId),
-                price = streamReadFloat32(streamId)
-            })
-        end
+    self.offlineMarketFillTypes = {}
+
+    -- CRITICAL: Always read from the stream to prevent network desync!
+    for i = 1, n do
+        local fillType = streamReadString(streamId)
+        local fillLevel = streamReadInt32(streamId)
+        local normalPrice = streamReadFloat32(streamId)
+        local price = streamReadFloat32(streamId)
+
+        table.insert(self.offlineMarketFillTypes, {
+            fillType = fillType,
+            fillLevel = fillLevel,
+            normalPrice = normalPrice,
+            price = price
+        })
     end
 
+    -- Proceed to execute the logic
     self:run(connection)
 end
 
 function SynchOfflineMarketEvent:run(connection)
-    -- If we are on the client, refresh the UI if it's currently open
+    -- If we are on the client, apply the read data and refresh the UI
     if not connection:getIsServer() then
-        if g_currentMission.globalMarketUi ~= nil then
-            g_currentMission.globalMarketUi:updateContent()
+        if g_currentMission.globalMarket ~= nil then
+            GlobalMarket.debugLog("Client: Received offline market sync. Updating local data.")
+            g_currentMission.globalMarket.offlineMarketFillTypes = self.offlineMarketFillTypes
+
+            if g_currentMission.globalMarketUi ~= nil then
+                g_currentMission.globalMarketUi:updateContent()
+            end
+        else
+            GlobalMarket.debugLog("Client: Received sync, but GlobalMarket is not initialized yet. Data discarded to prevent crash.")
         end
     end
 end

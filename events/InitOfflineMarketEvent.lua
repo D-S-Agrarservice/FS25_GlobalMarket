@@ -1,5 +1,6 @@
 --
 -- FS25 - GlobalMarket - InitOfflineMarketEvent
+-- Note: All comments and documentation are in English.
 --
 
 InitOfflineMarketEvent = {}
@@ -24,10 +25,11 @@ function InitOfflineMarketEvent:readStream(streamId, connection)
 end
 
 function InitOfflineMarketEvent:run(connection)
-    -- If the server receives this request, broadcast the current market state
+    -- If the server receives this request, send the current market state back to the requesting client
     if not connection:getIsServer() then
         if g_currentMission.globalMarket ~= nil then
-            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+            GlobalMarket.debugLog("Server received InitOfflineMarketEvent. Sending Sync to requesting client.")
+            connection:sendEvent(SynchOfflineMarketEvent.new())
         end
     end
 end

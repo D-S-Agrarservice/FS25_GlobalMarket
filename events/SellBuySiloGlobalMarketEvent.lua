@@ -21,7 +21,8 @@ function SellBuySiloGlobalMarketEvent.new(action, price, playerFarmId, fillType,
     self.price = math.floor(price)
     self.playerFarmId = playerFarmId
     self.fillType = fillType
-    self.fillLevel = fillLevel
+    -- Safety fix: Ensure fillLevel is an integer before sending via streamWriteInt32
+    self.fillLevel = math.floor(fillLevel)
     self.storage = storage
     self.playerUserId = playerUserId
 
@@ -53,6 +54,8 @@ end
 function SellBuySiloGlobalMarketEvent:run(connection)
     if not connection:getIsServer() then
         -- Logic on the Server side
+        GlobalMarket.debugLog("Server: Received SellBuySiloGlobalMarketEvent (Action: %d, FillType: %s, Level: %d)", self.action, self.fillType, self.fillLevel)
+
         if g_currentMission.globalMarket ~= nil then
             if self.action == SellBuySiloGlobalMarketEvent.ACTION_SELL then
                 g_currentMission.globalMarket:sellSilo(self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId)
@@ -65,15 +68,19 @@ function SellBuySiloGlobalMarketEvent:run(connection)
         end
     else
         -- Logic on the Client side (Feedback for the UI)
+        GlobalMarket.debugLog("Client: Received SellBuySiloGlobalMarketEvent broadcast.")
+
         if g_currentMission.playerUserId == self.playerUserId then
             local gm = g_currentMission.globalMarket
-            if gm.closeSelectLevelUi == 1 then
-                gm.closeSelectLevelUi = 2
-            elseif gm.closeSelectLevelUi == 3 then
-                if g_currentMission.globalMarketSelectLevelUi ~= nil then
-                    g_currentMission.globalMarketSelectLevelUi:close()
+            if gm ~= nil then
+                if gm.closeSelectLevelUi == 1 then
+                    gm.closeSelectLevelUi = 2
+                elseif gm.closeSelectLevelUi == 3 then
+                    if g_currentMission.globalMarketSelectLevelUi ~= nil then
+                        g_currentMission.globalMarketSelectLevelUi:close()
+                    end
+                    gm.closeSelectLevelUi = 0
                 end
-                gm.closeSelectLevelUi = 0
             end
         end
 

@@ -16,7 +16,8 @@ function SellBuyOfflineMarketEvent.new(price, playerFarmId, level, filltypeName,
 
     self.price = math.floor(price)
     self.playerFarmId = playerFarmId
-    self.level = level
+    -- Safety fix: Ensure level is an integer before sending via streamWriteInt32
+    self.level = math.floor(level)
     self.filltypeName = filltypeName
     self.storage = storage
     self.playerUserId = playerUserId
@@ -48,6 +49,12 @@ function SellBuyOfflineMarketEvent:run(connection)
     local moneyType = MoneyType.SOLD_PRODUCTS
     if self.price < 0 then
         moneyType = MoneyType.BOUGHT_MATERIALS
+    end
+
+    if not connection:getIsServer() then
+        GlobalMarket.debugLog("Server: Received SellBuyOfflineMarketEvent (FillType: %s, Level: %d, Price: %d)", self.filltypeName, self.level, self.price)
+    else
+        GlobalMarket.debugLog("Client: Received SellBuyOfflineMarketEvent broadcast.")
     end
 
     if g_currentMission.globalMarket ~= nil then

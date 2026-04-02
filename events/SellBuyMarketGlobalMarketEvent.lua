@@ -53,6 +53,8 @@ end
 function SellBuyMarketGlobalMarketEvent:run(connection)
     if not connection:getIsServer() then
         -- Logic on the Server side
+        GlobalMarket.debugLog("Server: Received SellBuyMarketGlobalMarketEvent (Action: %d, Count: %d)", self.action, self.count)
+
         if g_currentMission.globalMarket ~= nil then
             if self.action == SellBuyMarketGlobalMarketEvent.ACTION_SELL then
                 g_currentMission.globalMarket:sellObject(self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId)
@@ -65,15 +67,19 @@ function SellBuyMarketGlobalMarketEvent:run(connection)
         end
     else
         -- Logic on the Client side
+        GlobalMarket.debugLog("Client: Received SellBuyMarketGlobalMarketEvent update.")
+
         if g_currentMission.playerUserId == self.playerUserId then
             local gm = g_currentMission.globalMarket
-            if gm.closeSelectLevelUi == 1 then
-                gm.closeSelectLevelUi = 2
-            elseif gm.closeSelectLevelUi == 3 then
-                if g_currentMission.globalMarketSelectLevelUi ~= nil then
-                    g_currentMission.globalMarketSelectLevelUi:close()
+            if gm ~= nil then
+                if gm.closeSelectLevelUi == 1 then
+                    gm.closeSelectLevelUi = 2
+                elseif gm.closeSelectLevelUi == 3 then
+                    if g_currentMission.globalMarketSelectLevelUi ~= nil then
+                        g_currentMission.globalMarketSelectLevelUi:close()
+                    end
+                    gm.closeSelectLevelUi = 0
                 end
-                gm.closeSelectLevelUi = 0
             end
         end
 
