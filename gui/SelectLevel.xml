@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<GUI onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+<GUI name="SelectLevel" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement type="empty" profile="newLayer" />
     <GuiElement type="bitmap" profile="dialogFullscreenBg" />
     <GuiElement type="bitmap" profile="bgVignette"/>
     <GuiElement type="bitmap" profile="bgGlowDialog" />
-    <GuiElement type="bitmap" profile="selectLevelFrame" id="dialogElement">        
+
+    <GuiElement type="bitmap" profile="selectLevelFrame" id="dialogElement">
         <GuiElement type="text" profile="dialogTitle" id="dialogTitle" position="0px -30px" />
+
         <GuiElement type="bitmap" profile="selectLevelHeaderBox">
             <GuiElement type="text" profile="selectLevelHeaderCell" position="0px 0px" size="250px 40px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
             <GuiElement type="text" profile="selectLevelHeaderCell" position="0px -40px" size="250px 40px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
@@ -14,7 +16,7 @@
             <GuiElement type="text" profile="selectLevelHeaderCell" position="250px -40px" size="300px 40px" id="cellTextFillLevel" />
             <GuiElement type="text" profile="selectLevelHeaderCell" position="250px -80px" size="300px 40px" id="cellTextPrice" />
         </GuiElement>
-        
+
         <GuiElement type="text" profile="selectLevelHeaderCell" position="20px 0px" size="250px 40px" text="$l10n_ui_ingameMenuGlobalMarketSelectHeaderLevel" />
 
         <GuiElement type="textInput" profile="selectLevelTextInput" position="20px -60px" id="textLevel" onEnterPressed="onEnterPressedNumber" />
@@ -25,15 +27,15 @@
         <GuiElement type="text" profile="selectLevelHeaderCell" position="20px -160px" size="350px 40px" text="$l10n_ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice" />
         <GuiElement type="text" profile="selectLevelHeaderCell" position="370px -160px" size="100px 40px" id="levelDeliveryPrice" />
         <GuiElement type="text" profile="selectLevelHeaderCellR" position="20px -200px" size="250px 40px" id="levelPriceNotEnoughMoney" text="$l10n_ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" />
-            
+
         <GuiElement type="flowLayout" profile="buttonBoxDialog">
             <GuiElement type="button" profile="buttonBack" text="$l10n_ui_ingameMenuGlobalMarketSelectBtnCancel" id="btnBack" onClick="onClickBack" />
             <GuiElement type="button" profile="buttonOK" id="btnSellBuy" onClick="onClickSellBuy" />
         </GuiElement>
     </GuiElement>
-    
-    <GuiElement type="bitmap" profile="selectLevelFrameRight" id="dialogElementStorage">  
-        <GuiElement type="text" profile="dialogTitle" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageTitle" position="0px -30px" />  
+
+    <GuiElement type="bitmap" profile="selectLevelFrameRight" id="dialogElementStorage">
+        <GuiElement type="text" profile="dialogTitle" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageTitle" position="0px -30px" />
 
         <GuiElement type="boxLayout" profile="ingameCalendarHeaderBox" id="tableHeaderBox" size="700px 40.77px" position="20px -100px">
             <GuiElement type="text" profile="ingameMenuGmHeader" size="200px 40.77px" text="$l10n_ui_ingameMenuGlobalMarketSelectStorageName" />
@@ -50,12 +52,12 @@
         </GuiElement>
         <GuiElement type="threePartBitmap" profile="verticalListSliderRightDocked" size="12px 350px" position="20px -140.77px">
             <GuiElement type="slider" profile="verticalListSliderBar" size="6px 345px" dataElementId="gmTableSelectStorage" id="tableSliderStorage" handleFocus="false" focusInit="onOpen"/>
-        </GuiElement>  
+        </GuiElement>
     </GuiElement>
-    
-    <GuiElement type="bitmap" profile="selectLevelFrameLoading" id="dialogElementLoading">  
+
+    <GuiElement type="bitmap" profile="selectLevelFrameLoading" id="dialogElementLoading">
         <GuiElement type="text" profile="selectLevelHeaderCell2" position="0px -60px" size="500px 40px" text="$l10n_ui_ingameMenuGlobalMarketSelectLoading" />
         <GuiElement type="animation" profile="ingameMenuGlobalMarketSelectLoadingAnimation"/>
-    </GuiElement>  
+    </GuiElement>
 
 </GUI>
