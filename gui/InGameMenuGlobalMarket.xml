@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUI name="GlobalMarket">
+   <GuiElement type="empty" profile="uiInGameMenuFrame">
+        <GuiElement type="empty" profile="ingameMenuFrameHeaderPanel">
+            <GuiElement type="bitmap" profile="ingameMenuWeatherHeaderIcon" />
+            <GuiElement type="text" profile="ingameMenuGlobalMarketHeaderText" id="textHeader"/>
+            <GuiElement type="text" profile="ingameMenuGlobalMarketHeaderTextDesc" id="textHeaderDesc"/>
+        </GuiElement>
+
+        <GuiElement type="empty" profile="ingameMenuSettingsBox" id="mainBox">
+            <GuiElement type="empty" profile="ingameMenuSettingsBoxLeft">
+                <GuiElement type="text" profile="ingameMenuFrameHeaderTextLeft" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage"/>
+                
+                <GuiElement type="button" profile="ingameMenuGmHeaderBtnToggle" position="250px -15px" id="btnToggleStorageSiloObject" onClick="onClickToggleStorageSiloObject">
+                    <GuiElement type="text" profile="ingameMenuGmHeaderBtnToggleText" id="btnToggleStorageSiloObjectText"/>
+                </GuiElement>
+
+                <GuiElement type="empty" id="sectionStorageSilo">
+                    <GuiElement type="smoothList" profile="ingameMenuGlobalMarketListLeft" id="gmTableStorage" focusInit="onOpen" listSectionHeader="sectionStorage">
+                        <GuiElement type="listItem" profile="ingameMenuGlobalMarketListLeftItem" name="gmTableStorageRowTemplate" >
+                            <GuiElement type="bitmap" profile="ingameMenuGlobalMarketRowBackground">
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="0px 0px" size="250px 40.77px" name="filltype" />
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="250px 0px" size="250px 40.77px" name="level" />
+                            </GuiElement>
+                        </GuiElement>
+                        <GuiElement type="listItem" profile="ingameMenuContractsListCategory" name="sectionStorage">
+                            <GuiElement type="text" profile="ingameMenuContractsListCategoryTitle" text="Contracts Title" name="title"/>
+                        </GuiElement>
+                    </GuiElement>
+                    <GuiElement type="threePartBitmap" profile="verticalListSliderRightDocked" size="12px 693.09px" position="20px -100px">
+                        <GuiElement type="slider" profile="verticalListSliderBar" size="6px 685px" dataElementId="gmTableStorage" id="tableSliderStorage" handleFocus="false" focusInit="onOpen"/>
+                    </GuiElement> 
+                </GuiElement>
+                
+                <GuiElement type="empty" id="sectionStorageObject">
+                    <GuiElement type="smoothList" profile="ingameMenuGlobalMarketListLeft" id="gmTableStorageObject" focusInit="onOpen" listSectionHeader="sectionHeaderStorageObject">
+                        <GuiElement type="listItem" profile="ingameMenuGlobalMarketListLeftItem" name="gmTableStorageObjectRowTemplate" >
+                            <GuiElement type="bitmap" profile="ingameMenuGlobalMarketRowBackground">
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="0px 0px" size="250px 40.77px" name="filltype" />
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="250px 0px" size="250px 40.77px" name="count" />
+                            </GuiElement>
+                        </GuiElement>
+                        <GuiElement type="listItem" profile="ingameMenuContractsListCategory" name="sectionHeaderStorageObject">
+                            <GuiElement type="text" profile="ingameMenuContractsListCategoryTitle" text="Contracts Title" name="title"/>
+                        </GuiElement>
+                    </GuiElement>
+                    <GuiElement type="threePartBitmap" profile="verticalListSliderRightDocked" size="12px 693.09px" position="20px -100px">
+                        <GuiElement type="slider" profile="verticalListSliderBar" size="6px 685px" dataElementId="gmTableStorageObject" id="tableSliderStorageObject" handleFocus="false" focusInit="onOpen"/>
+                    </GuiElement> 
+                </GuiElement>
+
+            </GuiElement> 
+            <GuiElement type="empty" profile="ingameMenuSettingsBoxRight">
+                <GuiElement type="text" profile="ingameMenuFrameHeaderTextRight" text="$l10n_ui_ingameMenuGlobalMarketHeaderMarket"/>
+                      
+                <GuiElement type="button" profile="ingameMenuGmHeaderBtnToggle" position="550px -15px" id="btnToggleStorageSiloObject" onClick="onClickToggleMarketSiloObject">
+                    <GuiElement type="text" profile="ingameMenuGmHeaderBtnToggleText" id="btnToggleMarketSiloObjectText"/>
+                </GuiElement>
+
+                <GuiElement type="empty" id="sectionMarketSilo">
+                    <GuiElement type="button" profile="ingameMenuGmHeaderBtnToggle" position="250px -15px" id="btnToggleMarket" onClick="onClickToggleMarket">
+                        <GuiElement type="text" profile="ingameMenuGmHeaderBtnToggleText" id="btnToggleMarketText" text="Crop Description"/>
+                    </GuiElement>
+
+                    <GuiElement type="boxLayout" profile="ingameCalendarHeaderBox" id="tableHeaderBox" size="800px 40.77px" position="0px -100px">
+                        <GuiElement type="text" profile="ingameMenuGmHeader" size="300px 40.77px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                        <GuiElement type="text" profile="ingameMenuGmHeader" size="250px 40.77px"  text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
+                        <GuiElement type="text" profile="ingameMenuGmHeader" size="250px 40.77px"  text="$l10n_ui_ingameMenuGlobalMarketPrice" />
+                    </GuiElement>
+
+                    <GuiElement type="smoothList" profile="ingameMenuGlobalMarketListRight" id="gmTableMarket" focusInit="onOpen">
+                        <GuiElement type="listItem" profile="ingameMenuGlobalMarketListRightItem" name="gmTableMarketRowTemplate" >
+                            <GuiElement type="bitmap" profile="ingameMenuGlobalMarketRowBackground">
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="0px 0px" size="300px 40.77px" name="filltype" />
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="300px 0px" size="250px 40.77px" name="level" />
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="550px 0px" size="250px 40.77px" name="price" />
+                            </GuiElement>
+                        </GuiElement>
+                    </GuiElement>
+                    <GuiElement type="threePartBitmap" profile="verticalListSliderRightDocked" size="12px 693.09px" position="20px -140.77px">
+                        <GuiElement type="slider" profile="verticalListSliderBar" size="6px 685px" dataElementId="gmTableMarket" id="tableSliderMarket" handleFocus="false" focusInit="onOpen"/>
+                    </GuiElement>  
+                </GuiElement>
+
+                <GuiElement type="empty" id="sectionMarketObject">
+
+                    <GuiElement type="boxLayout" profile="ingameCalendarHeaderBox" id="tableHeaderBox2" size="800px 40.77px" position="0px -100px">
+                        <GuiElement type="text" profile="ingameMenuGmHeader" size="300px 40.77px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
+                        <GuiElement type="text" profile="ingameMenuGmHeader" size="250px 40.77px"  text="$l10n_ui_ingameMenuGlobalMarketCount" />
+                        <GuiElement type="text" profile="ingameMenuGmHeader" size="250px 40.77px"  text="$l10n_ui_ingameMenuGlobalMarketPrice" />
+                    </GuiElement>
+
+                    <GuiElement type="smoothList" profile="ingameMenuGlobalMarketListRight" id="gmTableMarketObject" focusInit="onOpen" listSectionHeader="marketObjectCategorie">
+                        <GuiElement type="listItem" profile="ingameMenuGlobalMarketListRightItem" name="gmTableMarketObjectRowTemplate">
+                            <GuiElement type="bitmap" profile="ingameMenuGlobalMarketRowBackground">
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="0px 0px" size="300px 40.77px" name="level" />
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="300px 0px" size="250px 40.77px" name="count" />
+                                <GuiElement type="text" profile="ingameMenuGlobalMarketRowCell2" position="550px 0px" size="250px 40.77px" name="price" />
+                            </GuiElement>
+                        </GuiElement>
+                        <GuiElement type="listItem" profile="ingameMenuContractsListCategory" name="marketObjectCategorie">
+                            <GuiElement type="text" profile="ingameMenuContractsListCategoryTitle" text="Contracts Title" name="title"/>
+                        </GuiElement>
+                    </GuiElement>
+                    <GuiElement type="threePartBitmap" profile="verticalListSliderRightDocked" size="12px 693.09px" position="20px -140.77px">
+                        <GuiElement type="slider" profile="verticalListSliderBar" size="6px 685px" dataElementId="gmTableMarketObject" id="tableSliderMarketObject" handleFocus="false" focusInit="onOpen"/>
+                    </GuiElement> 
+
+                </GuiElement>
+
+            </GuiElement> 
+        </GuiElement>
+    </GuiElement>
+</GUI>

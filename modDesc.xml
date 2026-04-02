@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="76">
+	<author>D-S-Agrarservice[kevink98]</author>	
+    <version>1.0.0.0</version>    
+	<title>
+        <en>GlobalMarket</en>
+        <de>Globaler Markt</de>
+    </title>    
+	<description>
+        <en><![CDATA[Trade goods with all other players!
+
+With GlobalMarket you can trade goods with other players, regardless of single or multiplayer mode.
+
+You will find a new page for this in the ESC menu. It recognizes all silos and pallet/bale warehouses that are based on the Giants scripts.
+
+While GlobalMarket is available as an simulated offline experience, you can get the optional executable which allows for a direct connection to the online market.
+The optional exe-file can be downloaded on Discord from the mod creator (D-S-Agrarservice).
+
+The prices in the global market are calculated dynamically based on the fill level. If there is a lot of goods, the price is low. On the other hand, if nothing is available, the price is high.
+
+Important notes:
+- There are currently no pallets and bales in the offline market
+- It is not possible to buy/sell bales that are ensiled at the moment]]></en>		
+		<de><![CDATA[Handel Waren mit alle anderen Spielern!
+
+Mit dem GlobalMarket kannst Waren mit anderen Spielern tauschen, unabhängig vom Einzel- oder Mehrspielermodus.
+
+Im ESC-Menü findest du dafür eine neue Seite. Es werden alle Silos und Paletten-/Ballenlager erkannt, die auf den Giants-Scripten aufbauen.
+
+Der GlobalMarket kann sowohl online wie auch offline verwendet werden. 
+Für den Zugriff auf den Online-GlobalMarket benötigst du eine optionale extere EXE-Datei, die ausgeführt werden muss. 
+Die optionale Exe-Datei kann auf dem Discord vom Modersteller (D-S-Agrarservice) heruntergeladen werden.
+Wird die EXE-Datei nicht ausgeführt, wirt der (Offline-)GlobalMarket simuliert.
+
+Die Preise im globalen Markt werden anhand des Füllstandes dynamisch berechnet. Ist viel Ware vorhanden, ist der Preis gering. Ist dagegen nichts vorhanden, ist der Preis hoch.
+
+Wichtige Hinweise:
+- Im offline Markt gibt es aktuell keine Paletten und Ballen
+- Es können keine Ballen gekauft/verkauft werden, die im Moment siliert werden]]></de>	
+		<es><![CDATA[¡Comercia con otros jugadores!
+
+Con el GlobalMarket puedes comerciar con bienes con otros jugadores, independientemente del modo individual o multijugador.
+
+Encontrarás una nueva página para ello en el menú ESC. Se reconocen todos los silos y almacenes de palés/bultos basados en los scripts de los Gigantes.
+
+Aunque GlobalMarket está disponible como experiencia offline simulada, puedes conseguir el ejecutable opcional que permite una conexión directa con el mercado online.
+El archivo exe se puede descargar en Discord desde el creador del mod (D-S-Agrarservice).
+
+Los precios en el mercado global se calculan dinámicamente en función del nivel de llenado. Si hay mucha mercancía, el precio es bajo. Si, por el contrario, no hay nada disponible, el precio es alto.
+
+Notas importantes:
+- Actualmente no hay palés ni balas en el mercado offline.
+- No se pueden comprar/vender balas que se estén ensilando en este momento]]></es>	
+		<fr><![CDATA[Echange des marchandises avec tous les autres joueurs !
+
+Avec le GlobalMarket, tu peux échanger des marchandises avec d'autres joueurs, indépendamment du mode solo ou multijoueur.
+
+Tu trouveras une nouvelle page à cet effet dans le menu ESC. Tous les silos et entrepôts de palettes/balles basés sur les scripts Giants sont reconnus.
+
+Bien que GlobalMarket soit disponible en tant qu'expérience hors ligne simulée, vous pouvez obtenir l'exécutable optionnel qui permet une connexion directe au marché en ligne.
+Le fichier exe peut être téléchargé sur le Discord du créateur du mod (D-S-Agrarservice).
+
+Les prix dans le marché global sont calculés dynamiquement en fonction du niveau de remplissage. S'il y a beaucoup de marchandises, le prix est faible. En revanche, s'il n'y a rien, le prix est élevé.
+
+Remarques importantes :
+- Il n'y a actuellement pas de palettes ni de balles sur le marché hors ligne.
+- Il n'est pas possible d'acheter/vendre des balles qui sont en cours d'ensilage.]]></fr>	
+		<it><![CDATA[Scambiate merci con tutti gli altri giocatori!
+
+Con il GlobalMarket è possibile scambiare merci con altri giocatori, indipendentemente dalla modalità singola o multigiocatore.
+
+Troverete una nuova pagina dedicata nel menu ESC. Vengono riconosciuti tutti i silos e i magazzini di pallet/balle basati sugli script Giants.
+
+Mentre GlobalMarket è disponibile come esperienza simulata offline, è possibile ottenere l'eseguibile opzionale che consente una connessione diretta al mercato online.
+Il file exe può essere scaricato su Discord dal creatore della mod (D-S-Agrarservice).
+
+I prezzi del mercato globale sono calcolati dinamicamente in base al livello di riempimento. Se c'è molta merce, il prezzo è basso. Se invece non è disponibile nulla, il prezzo è alto.
+
+Note importanti:
+- Attualmente non ci sono pallet e balle nel mercato offline.
+- Non è possibile acquistare/vendere balle in fase di insilamento al momento.]]></it>
+    </description>    
+	<iconFilename>icon_GlobalMarket.dds</iconFilename>
+    <multiplayer supported="true"/>	
+	<extraSourceFiles>	
+		<sourceFile filename="GlobalMarket.lua" /> 
+	</extraSourceFiles>
+</modDesc>

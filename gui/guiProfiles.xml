@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUIProfiles>
+    <Presets>
+        <Preset name="colorWhite" value="1 1 1 1"/>
+        <Preset name="colorRed" value="1 0 0 1"/>
+        <Preset name="colorGrayHeader" value="0.4 0.4 0.4 1"/>
+        <Preset name="colorListHeaderBackground" value="0 0 0 0.35" />
+        <Preset name="colorGlassLight" value="0.715 0.715 0.718 0.25"/>
+        <Preset name="colorMainUI"    value="0.0227 0.5346 0.8519 1.0"/>
+        <Preset name="colorMainUI_80" value="0.0227 0.5346 0.8519 0.8"/>
+        <Preset name="colorUVs" value="10px 1010px 4px 4px"/>
+    </Presets>
+    <Profile name="ingameMenuGlobalMarketHeaderText" extends="ingameMenuFrameHeaderText" with="anchorMiddleLeft">
+        <Value name="size" value="500px 64px" />
+        <Value name="position" value="0px 0" />
+        <Value name="textSize" value="31px"/>
+        <Value name="textBold" value="false"/>
+        <Value name="textUpperCase" value="true"/>
+        <Value name="textDisabledColor" value="$preset_colorDisabled"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketHeaderTextDesc" extends="ingameMenuGlobalMarketHeaderText" with="anchorMiddleLeft">
+        <Value name="size" value="900px 64px" />
+        <Value name="position" value="500px 0" />
+        <Value name="textSize" value="20px"/>
+        <Value name="textBold" value="false"/>
+        <Value name="textUpperCase" value="true"/>
+        <Value name="textDisabledColor" value="$preset_colorDisabled"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketRowCell" extends="baseReference">
+        <Value name="textSize" value="18px"/>
+        <Value name="textBold" value="false"/>
+        <Value name="textUpperCase" value="false"/>
+        <Value name="textColor" value="$preset_colorWhite"/>
+        <Value name="textAlignment" value="center"/>
+        <Value name="textVerticalAlignment" value="middle"/>
+        <Value name="size" value="162px 40.77px"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketRowCell2" extends="ingameMenuGlobalMarketRowCell">
+        <Value name="textAlignment" value="left"/>
+        <Value name="textOffset" value="30px 0px"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketHeaderCell" extends="ingameMenuFrameHeaderText" with="anchorMiddleLeft">
+        <Value name="textSize" value="20px"/>
+        <Value name="textBold" value="false"/>
+        <Value name="textUpperCase" value="false"/>
+        <Value name="textColor" value="$preset_colorGrayHeader"/>
+        <Value name="textAlignment" value="center"/>
+        <Value name="textVerticalAlignment" value="middle"/>
+        <Value name="size" value="162px 40.77px"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketRowBackground" extends="emptyPanel" with="anchorBottomLeft">       
+    
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketHeaderBox" extends="emptyPanel" with="anchorTopLeft">
+        <Value name="size" value="650px 50px"/>
+        <Value name="position" value="0px -70px"/>
+        <Value name="alignmentX" value="left"/>
+        <Value name="alignmentY" value="middle"/>
+        <Value name="imageColor" value="$preset_colorListHeaderBackground"/>
+        <Value name="flowDirection" value="horizontal"/>
+        <Value name="wrapAround" value="true"/>
+        <Value name="lateralFlowSize" value="200px"/>
+        <Value name="fitToElements" value="false"/>
+        <Value name="autoValidateLayout" value="true"/>
+        <Value name="hasFrame" value="false"/>    
+    </Profile>    
+    <Profile name="ingameMenuGlobalMarketListLeft" extends="ingameMenuContractsList" with="anchorTopLeft">
+        <Value name="size" value="500px 693.09px"/>
+        <Value name="position" value="0px -100px"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketListLeftItem" extends="ingameMenuContractsListItem" with="anchorTopLeft">
+        <Value name="size" value="500px 40.77px"/>
+    </Profile>  
+    <Profile name="ingameMenuGlobalMarketListRight" extends="ingameMenuContractsList" with="anchorTopLeft">
+        <Value name="size" value="800px 693.09px"/>
+        <Value name="position" value="0px -140.77px"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketListRightItem" extends="ingameMenuContractsListItem" with="anchorTopLeft">
+        <Value name="size" value="800px 40.77px"/>
+    </Profile> 
+
+    <Profile name="ingameMenuFrameHeaderTextLeft" extends="ingameMenuFrameHeaderText" with="anchorTopLeft">
+        <Value name="textSize" value="26px"/>
+        <Value name="size" value="700px 64px"/>
+    </Profile> 
+    <Profile name="ingameMenuFrameHeaderTextRight" extends="ingameMenuFrameHeaderText" with="anchorTopLeft">
+        <Value name="textSize" value="26px"/>
+        <Value name="size" value="700px 64px"/>
+    </Profile> 
+    <Profile name="ingameMenuSettingsBoxLeft" extends="ingameMenuSettingsBox" with="anchorTopLeft">
+        <Value name="size" value="500px 756px"/>
+        <Value name="position" value="0px 0px"/>
+    </Profile> 
+    <Profile name="ingameMenuSettingsBoxRight" extends="ingameMenuSettingsBox" with="anchorTopLeft">
+        <Value name="size" value="800px 756px"/>
+        <Value name="position" value="700px 0px"/>
+    </Profile> 
+    <Profile name="ingameMenuGmHeader" extends="ingameMenuPriceHeader">
+        <Value name="textVerticalAlignment" value="left"/>
+        <Value name="textOffset" value="20px 0px"/>
+    </Profile>
+    <Profile name="ingameMenuGmHeaderBtnToggle" extends="buttonBase" with="anchorTopLeft">
+        <Value name="size" value="250px 45px"/>
+        <Value name="position" value="450px 0px"/>
+        <Value name="imageColor" value="$preset_colorGlassLight" />
+        <Value name="imageUVs" value="$preset_colorUVs"/>
+        <Value name="imageFocusedColor" value="$colorMainUI"/>
+        <Value name="imageHighlightedColor" value="$colorMainUI_80"/>
+        <Value name="imageSelectedColor" value="$colorMainUI_80"/>
+    </Profile>
+    <Profile name="ingameMenuGmHeaderBtnToggleText" extends="baseReference" with="anchorMiddleCenter">
+        <Value name="position" value="0px 0px"/>
+        <Value name="size" value="250px 45px"/>
+        <Value name="textColor" value="$preset_colorWhite"/>
+        <Value name="textHighlightedColor" value="$preset_colorWhite"/>
+        <Value name="textFocusedColor" value="$preset_colorWhite"/>
+        <Value name="textSize" value="18px"/>
+        <Value name="textAlignment" value="center"/>
+    </Profile>
+    <Profile name="selectLevelHeaderBox" extends="emptyPanel" with="anchorTopCenter">
+        <Value name="size" value="500px 50px"/>
+        <Value name="position" value="0px -70px"/>
+        <Value name="alignmentX" value="left"/>
+        <Value name="alignmentY" value="middle"/>
+        <Value name="imageColor" value="$preset_colorListHeaderBackground"/>
+        <Value name="flowDirection" value="horizontal"/>
+        <Value name="wrapAround" value="true"/>
+        <Value name="lateralFlowSize" value="250px"/>
+        <Value name="fitToElements" value="false"/>
+        <Value name="autoValidateLayout" value="true"/>
+        <Value name="hasFrame" value="false"/>    
+    </Profile>  
+    <Profile name="selectLevelHeaderCell" extends="ingameMenuFrameHeaderText" with="anchorMiddleLeft">
+        <Value name="textSize" value="20px"/>
+        <Value name="textBold" value="false"/>
+        <Value name="textUpperCase" value="false"/>
+        <Value name="textColor" value="$preset_colorGrayHeader"/>
+        <Value name="textAlignment" value="left"/>
+        <Value name="textVerticalAlignment" value="middle"/>
+    </Profile>
+    <Profile name="selectLevelHeaderCellR" extends="selectLevelHeaderCell" >
+        <Value name="textColor" value="$preset_colorRed"/>
+    </Profile>
+    <Profile name="selectLevelHeaderCell2" extends="selectLevelHeaderCell" >
+        <Value name="textAlignment" value="center"/>
+    </Profile>
+    <Profile name="selectLevelFrame" extends="dialogBg">
+        <Value name="size" value="600px 500px"/>
+        <Value name="position" value="0px 0px"/>
+    </Profile>
+    <Profile name="selectLevelFrameRight" extends="dialogBg">
+        <Value name="size" value="400px 500px"/>
+        <Value name="position" value="550px 0px"/>
+    </Profile>
+    <Profile name="selectLevelFrameLoading" extends="dialogBg">
+        <Value name="size" value="500px 300px"/>
+        <Value name="position" value="0px 0px"/>
+    </Profile>    
+    <Profile name="selectLevelTextInput" extends="textInput" with="anchorMiddleLeft">
+        <Value name="handleFocus" value="true"/>
+        <Value name="position" value="20px 0"/>
+        <Value name="size" value="350px 48px"/>
+        <Value name="margin" value="30px 28px 49px 16px"/>
+        <Value name="maxInputTextWidth" value="290px"/>
+        <Value name="textSize" value="18px"/>
+        <Value name="textBold" value="false"/>
+        <Value name="textAlignment" value="center"/>
+        <Value name="textVerticalAlignment" value="middle"/>
+        <Value name="enterWhenClickOutside" value="true"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketSelectListLeft" extends="ingameMenuContractsList" with="anchorTopLeft">
+        <Value name="size" value="350px 350px"/>
+        <Value name="position" value="20px -140.77px"/>
+    </Profile>
+    <Profile name="ingameMenuGlobalMarketSelectListLeftItem" extends="ingameMenuContractsListItem" with="anchorTopLeft">
+        <Value name="size" value="350px 40.77px"/>
+    </Profile> 
+    <Profile name="ingameMenuGlobalMarketSelectLoadingAnimation" extends="baseReference" with="anchorTopCenter">
+        <Value name="size" value="127px 127px" />
+        <Value name="pivot" value="0.5 0.5" />
+        <Value name="position" value="0px -100px" />
+        <Value name="imageUVs" value="293px 495px 127px 127px" />
+        <Value name="imageColor" value="$preset_colorMainUI" />
+
+        <Value name="animationMode" value="rotate" />
+        <Value name="animationSpeed" value="1000"/>
+
+        <Variant name="mobile">
+            <Value name="size" value="60px 60px"/>
+        </Variant>
+    </Profile>
+</GUIProfiles>
