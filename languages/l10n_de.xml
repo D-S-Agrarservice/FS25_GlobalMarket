@@ -1,35 +1,35 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <l10n>
-<elements>
-        <e k="ui_ingameMenuGlobalMarketOnline" v="Globaler Markt - Online"/>
-        <e k="ui_ingameMenuGlobalMarketOffline" v="Globaler Markt - Offline"/>
-        <e k="ui_ingameMenuGlobalMarketOnlineDesc" v="Der Markt ist mit dem Server verbunden!"/>
-        <e k="ui_ingameMenuGlobalMarketOfflineDesc" v="Der Markt ist derzeit nicht mit dem Server verbunden und wird simuliert."/>
-        <e k="ui_btn_sell" v="an Globaler Markt verkaufen"/>
-        <e k="ui_btn_buy" v="vom Globaler Markt kaufen"/>
-        <e k="ui_ingameMenuGlobalMarketHeaderStorage" v="Lagerbestand"/>
-        <e k="ui_ingameMenuGlobalMarketHeaderMarket" v="Globaler Markt"/>
-        <e k="ui_ingameMenuGlobalMarketFruit" v="Frucht"/>
-        <e k="ui_ingameMenuGlobalMarketAvailable" v="Verfügbare Menge"/>
-        <e k="ui_ingameMenuGlobalMarketCount" v="Anzahl"/>
-        <e k="ui_ingameMenuGlobalMarketPrice" v="Preis"/>
-        <e k="ui_ingameMenuGlobalMarketToggleTrue" v="Zeige: Alles"/>
-        <e k="ui_ingameMenuGlobalMarketToggleFalse" v="Zeige: Verfügbar"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage" v="Vom Lager verkaufen"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket" v="Aus Markt kaufen"/>
-        <e k="ui_ingameMenuGlobalMarketSelectBtnSell" v="Verkaufen"/>
-        <e k="ui_ingameMenuGlobalMarketSelectBtnBuy" v="Kaufen"/>
-        <e k="ui_ingameMenuGlobalMarketSelectBtnCancel" v="Abbrechen"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel" v="Mengenauswahl:"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice" v="voraussichtlicher Verkaufspreis:"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice" v="voraussichtlicher Kaufpreis:"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice" v="Lieferkosten:"/>
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="Du hast nicht genug Geld!"/>
-        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle" v="Lagerauswahl"/>
-        <e k="ui_ingameMenuGlobalMarketSelectStorageName" v="Name"/>
-        <e k="ui_ingameMenuGlobalMarketSelectStorageFree" v="Frei"/>
-        <e k="ui_ingameMenuGlobalMarketSelectLoading" v="Warten auf Beendigung der Transaktion . . ."/>
-        <e k="ui_ingameMenuGlobalMarketToggleStorageSilo" v="Silo"/>
-        <e k="ui_ingameMenuGlobalMarketToggleStorageObject" v="Objektlager"/>    
-</elements>
+    <elements>
+        <e k="ui_btn_buy"                                          v="vom Globaler Markt kaufen" />
+        <e k="ui_btn_sell"                                         v="an Globaler Markt verkaufen" />
+        <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Verfügbare Menge" />
+        <e k="ui_ingameMenuGlobalMarketCount"                      v="Anzahl" />
+        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Frucht" />
+        <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Globaler Markt" />
+        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Lagerbestand" />
+        <e k="ui_ingameMenuGlobalMarketOffline"                    v="Globaler Markt - Offline" />
+        <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="Der Markt ist derzeit nicht mit dem Server verbunden und wird simuliert." />
+        <e k="ui_ingameMenuGlobalMarketOnline"                     v="Globaler Markt - Online" />
+        <e k="ui_ingameMenuGlobalMarketOnlineDesc"                 v="Der Markt ist mit dem Server verbunden!" />
+        <e k="ui_ingameMenuGlobalMarketPrice"                      v="Preis" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Kaufen" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnCancel"            v="Abbrechen" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnSell"              v="Verkaufen" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="voraussichtlicher Kaufpreis:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Lieferkosten:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Mengenauswahl:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Aus Markt kaufen" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="Du hast nicht genug Geld!" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="voraussichtlicher Verkaufspreis:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Vom Lager verkaufen" />
+        <e k="ui_ingameMenuGlobalMarketSelectLoading"              v="Warten auf Beendigung der Transaktion . . ." />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageFree"          v="Frei" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageName"          v="Name" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Lagerauswahl" />
+        <e k="ui_ingameMenuGlobalMarketToggleFalse"                v="Zeige: Verfügbar" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Objektlager" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageSilo"          v="Silo" />
+        <e k="ui_ingameMenuGlobalMarketToggleTrue"                 v="Zeige: Alles" />
+    </elements>
 </l10n>

@@ -80,11 +80,8 @@ Note importanti:
 - Attualmente non ci sind pallet e balle nel mercato offline.
 - Non è possibile acquistare/vendere balle in fase di insilamento al momento.]]></it>
     </description>
-
     <iconFilename>icon_GlobalMarket.dds</iconFilename>
     <multiplayer supported="true"/>
-    <l10n filenamePrefix="languages/l10n" />
-
     <extraSourceFiles>
         <sourceFile filename="GlobalMarket.lua" />
     </extraSourceFiles>
