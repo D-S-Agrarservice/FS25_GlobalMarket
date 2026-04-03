@@ -1,114 +1,66 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<GUI name="GlobalMarket">
-    <GuiElement type="empty" profile="fs25_menuContainer">
+<GUI name="ingameMenuGlobalMarket">
+    <GuiElement profile="fs25_menuContainer" id="mainContainer">
 
-        <GuiElement type="empty" profile="fs25_menuHeaderPanel">
-            <GuiElement type="bitmap" profile="fs25_menuHeaderIconBg">
-                <GuiElement type="bitmap" profile="fs25_menuHeaderIcon" imageSliceId="gui.icon_ingameMenu_prices" />
-            </GuiElement>
-            <GuiElement type="text" profile="fs25_menuHeaderTitle" id="textHeader" text="$l10n_ui_ingameMenuGlobalMarketHeaderMarket" />
-            <GuiElement type="text" profile="fs25_menuHeaderTitle" id="textHeaderDesc" position="400px 0px" textAlignment="left" textSize="24px" textColor="0.7 0.7 0.7 1" />
+        <GuiElement profile="fs25_menuHeaderPanel">
+            <Bitmap profile="fs25_menuHeaderIconBg">
+                <Bitmap profile="globalMarketMenuHeaderIcon" />
+            </Bitmap>
+            <Text profile="fs25_menuHeaderTitle" id="categoryHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderMarket" />
+
+            <RoundCorner profile="fs25_shopMoneyBoxBg" id="shopMoneyBoxBg" />
+            <BoxLayout profile="fs25_shopMoneyBox" id="shopMoneyBox">
+                <Text profile="fs25_shopBalance" text="KONTOSTAND:" />
+                <Text profile="fs25_shopMoney" id="currentBalanceText" />
+            </BoxLayout>
         </GuiElement>
 
-        <GuiElement type="empty" profile="ingameMenuSettingsBox" id="mainBox">
+        <GuiElement size="650px 750px" position="20px 40px">
+            <Text profile="fs25_statisticsHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="10px 710px" />
 
-            <GuiElement type="empty" profile="ingameMenuSettingsBoxLeft">
-                <GuiElement type="text" profile="fs25_statisticsHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="0px 20px"/>
-
-                <GuiElement type="button" profile="ingameMenuGmHeaderBtnToggle" position="250px -15px" id="btnToggleStorageSiloObject" onClick="onClickToggleStorageSiloObject">
-                    <GuiElement type="text" profile="ingameMenuGmHeaderBtnToggleText" id="btnToggleStorageSiloObjectText"/>
-                </GuiElement>
-
-                <GuiElement type="empty" id="sectionStorageSilo">
-                    <GuiElement type="smoothList" profile="fs25_statisticsList" id="gmTableStorage" focusInit="onOpen" listSectionHeader="sectionStorage" position="0px -60px" size="500px 650px">
-                        <GuiElement type="listItem" profile="fs25_statisticsListItem" name="gmTableStorageRowTemplate" >
-                            <GuiElement type="bitmap" profile="fs25_statisticsListItemBg" name="alternating" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemName" position="20px 0px" size="230px 45px" name="filltype" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemValue" position="250px 0px" size="230px 45px" textAlignment="right" name="level" />
-                        </GuiElement>
-                        <GuiElement type="listItem" profile="fs25_pricesProductListSection" name="sectionStorage">
-                            <GuiElement type="text" profile="fs25_pricesProductListSectionTitle" text="Contracts Title" name="title"/>
-                        </GuiElement>
-                    </GuiElement>
-                    <GuiElement type="threePartBitmap" profile="fs25_sliderDockedBg" size="12px 650px" position="510px -60px">
-                        <GuiElement type="slider" profile="fs25_listSlider" size="6px 642px" dataElementId="gmTableStorage" id="tableSliderStorage" handleFocus="false" focusInit="onOpen"/>
-                    </GuiElement>
-                </GuiElement>
-
-                <GuiElement type="empty" id="sectionStorageObject" visible="false">
-                    <GuiElement type="smoothList" profile="fs25_statisticsList" id="gmTableStorageObject" focusInit="onOpen" listSectionHeader="sectionHeaderStorageObject" position="0px -60px" size="500px 650px">
-                        <GuiElement type="listItem" profile="fs25_statisticsListItem" name="gmTableStorageObjectRowTemplate" >
-                            <GuiElement type="bitmap" profile="fs25_statisticsListItemBg" name="alternating" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemName" position="20px 0px" size="230px 45px" name="filltype" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemValue" position="250px 0px" size="230px 45px" textAlignment="right" name="count" />
-                        </GuiElement>
-                        <GuiElement type="listItem" profile="fs25_pricesProductListSection" name="sectionHeaderStorageObject">
-                            <GuiElement type="text" profile="fs25_pricesProductListSectionTitle" text="Contracts Title" name="title"/>
-                        </GuiElement>
-                    </GuiElement>
-                    <GuiElement type="threePartBitmap" profile="fs25_sliderDockedBg" size="12px 650px" position="510px -60px">
-                        <GuiElement type="slider" profile="fs25_listSlider" size="6px 642px" dataElementId="gmTableStorageObject" id="tableSliderStorageObject" handleFocus="false" focusInit="onOpen"/>
-                    </GuiElement>
-                </GuiElement>
+            <GuiElement position="0px 660px" size="650px 40px">
+                <Text profile="globalMarketHeader" position="40px 10px" size="250px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                <Text profile="globalMarketHeaderRight" position="300px 10px" size="300px 24px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
-            <GuiElement type="empty" profile="ingameMenuSettingsBoxRight">
-                <GuiElement type="text" profile="fs25_statisticsHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderMarket" position="0px 20px"/>
-
-                <GuiElement type="button" profile="ingameMenuGmHeaderBtnToggle" position="550px -15px" id="btnToggleMarketSiloObject" onClick="onClickToggleMarketSiloObject">
-                    <GuiElement type="text" profile="ingameMenuGmHeaderBtnToggleText" id="btnToggleMarketSiloObjectText"/>
-                </GuiElement>
-
-                <GuiElement type="empty" id="sectionMarketSilo">
-                    <GuiElement type="button" profile="ingameMenuGmHeaderBtnToggle" position="250px -15px" id="btnToggleMarket" onClick="onClickToggleMarket">
-                        <GuiElement type="text" profile="ingameMenuGmHeaderBtnToggleText" id="btnToggleMarketText" text="Crop Description"/>
-                    </GuiElement>
-
-                    <GuiElement type="empty" profile="fs25_statisticsHeaderBox" id="tableHeaderBox" size="800px 32px" position="0px -60px">
-                        <GuiElement type="text" profile="fs25_statisticsHeaderText" size="300px 32px" position="20px 0px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
-                        <GuiElement type="text" profile="fs25_statisticsHeaderText" size="250px 32px" position="320px 0px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
-                        <GuiElement type="text" profile="fs25_statisticsHeaderText" size="200px 32px" position="570px 0px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
-                        <GuiElement type="threePartBitmap" profile="fs25_lineSeparatorBottom" position="0px -2px" />
-                    </GuiElement>
-
-                    <GuiElement type="smoothList" profile="fs25_statisticsList" id="gmTableMarket" focusInit="onOpen" position="0px -95px" size="800px 615px">
-                        <GuiElement type="listItem" profile="fs25_statisticsListItem" name="gmTableMarketRowTemplate" >
-                            <GuiElement type="bitmap" profile="fs25_statisticsListItemBg" name="alternating" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemName" position="20px 0px" size="300px 45px" name="filltype" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemValue" position="320px 0px" size="250px 45px" textAlignment="left" name="level" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemValue" position="570px 0px" size="200px 45px" textAlignment="left" name="price" />
-                        </GuiElement>
-                    </GuiElement>
-                    <GuiElement type="threePartBitmap" profile="fs25_sliderDockedBg" size="12px 615px" position="810px -95px">
-                        <GuiElement type="slider" profile="fs25_listSlider" size="6px 607px" dataElementId="gmTableMarket" id="tableSliderMarket" handleFocus="false" focusInit="onOpen"/>
-                    </GuiElement>
-                </GuiElement>
-
-                <GuiElement type="empty" id="sectionMarketObject" visible="false">
-                    <GuiElement type="empty" profile="fs25_statisticsHeaderBox" id="tableHeaderBox2" size="800px 32px" position="0px -60px">
-                        <GuiElement type="text" profile="fs25_statisticsHeaderText" size="300px 32px" position="20px 0px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
-                        <GuiElement type="text" profile="fs25_statisticsHeaderText" size="250px 32px" position="320px 0px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
-                        <GuiElement type="text" profile="fs25_statisticsHeaderText" size="200px 32px" position="570px 0px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
-                        <GuiElement type="threePartBitmap" profile="fs25_lineSeparatorBottom" position="0px -2px" />
-                    </GuiElement>
-
-                    <GuiElement type="smoothList" profile="fs25_statisticsList" id="gmTableMarketObject" focusInit="onOpen" listSectionHeader="marketObjectCategorie" position="0px -95px" size="800px 615px">
-                        <GuiElement type="listItem" profile="fs25_statisticsListItem" name="gmTableMarketObjectRowTemplate">
-                            <GuiElement type="bitmap" profile="fs25_statisticsListItemBg" name="alternating" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemName" position="20px 0px" size="300px 45px" name="level" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemValue" position="320px 0px" size="250px 45px" textAlignment="left" name="count" />
-                            <GuiElement type="text" profile="fs25_statisticsListItemValue" position="570px 0px" size="200px 45px" textAlignment="left" name="price" />
-                        </GuiElement>
-                        <GuiElement type="listItem" profile="fs25_pricesProductListSection" name="marketObjectCategorie">
-                            <GuiElement type="text" profile="fs25_pricesProductListSectionTitle" text="Contracts Title" name="title"/>
-                        </GuiElement>
-                    </GuiElement>
-                    <GuiElement type="threePartBitmap" profile="fs25_sliderDockedBg" size="12px 615px" position="810px -95px">
-                        <GuiElement type="slider" profile="fs25_listSlider" size="6px 607px" dataElementId="gmTableMarketObject" id="tableSliderMarketObject" handleFocus="false" focusInit="onOpen"/>
-                    </GuiElement>
-                </GuiElement>
-
-            </GuiElement>
+            <SmoothList profile="emptyPanel" id="gmTableStorage" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="true" showHighlights="true">
+                <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
+                    <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                    <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 4px" />
+                    <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="250px 32px" name="name" />
+                    <Text profile="globalMarketRowCellRight" position="300px 0px" size="300px 32px" name="amount" />
+                </ListItem>
+            </SmoothList>
         </GuiElement>
+
+        <GuiElement size="650px 750px" position="700px 40px">
+            <Text profile="fs25_statisticsHeaderText" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 710px" />
+
+            <GuiElement position="0px 660px" size="650px 40px">
+                <Text profile="globalMarketHeader" position="10px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                <Text profile="globalMarketHeaderRight" position="220px 10px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
+                <Text profile="globalMarketHeader" position="390px 10px" size="40px 24px" text="TR." />
+                <Text profile="globalMarketHeaderRight" position="440px 10px" size="180px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
+            </GuiElement>
+
+            <SmoothList profile="emptyPanel" id="gmTableMarket" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="true" showHighlights="true">
+                <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
+                    <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                    <Text profile="globalMarketRowCellLeftBright" position="10px 0px" size="200px 32px" name="name" />
+                    <Text profile="globalMarketRowCellRight" position="220px 0px" size="150px 32px" name="price" />
+                    <Bitmap profile="globalMarketRowCellArrow" position="400px 7px" name="trend" />
+                    <Text profile="globalMarketRowCellRight" position="440px 0px" size="180px 32px" name="amount" />
+                </ListItem>
+            </SmoothList>
+        </GuiElement>
+
+        <GuiElement profile="globalMarketFooterBox1">
+            <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
+            <Text profile="globalMarketHeaderBright" position="40px 0px" text="GESAMT"/>
+            <Text profile="globalMarketHeaderRightBright" position="400px 0px" size="310px 32px" id="totalStorageDisplay" text="0 L"/>
+        </GuiElement>
+
     </GuiElement>
 </GUI>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<GUI name="GlobalMarketDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer" />
+    <Bitmap profile="dialogFullscreenBg" id="dialogBg" />
+    
+    <GuiElement profile="globalMarketDialogBg" id="dialogElement">
+        
+        <ThreePartBitmap profile="fs25_dialogBgMiddle" with="anchorStretch" />
+        <ThreePartBitmap profile="fs25_dialogBgTop" />
+        <ThreePartBitmap profile="fs25_dialogBgBottom" />
+        
+        <GuiElement profile="fs25_dialogContentContainer" size="100% 100%">
+            <Text profile="fs25_siloDialogTitle" id="dialogTitleElement" />
+            <Text profile="fs25_siloDialogText" id="dialogInfoTextElement" />
+            
+            <MultiTextOption profile="globalMarketStorageDropdown" id="storageSelectionElement" onClick="onClickStorage">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+            
+            <GuiElement profile="globalMarketInputContainer" with="anchorTopCenter">
+                <Bitmap profile="fs25_textInputBg" />
+                <Bitmap profile="fs25_textInputIconBox">
+                    <Bitmap profile="fs25_textInputIcon" />
+                </Bitmap>
+                <TextInput profile="globalMarketAmountInput" id="amountInput" onTextChanged="onAmountChanged" text="0" maxCharacters="10" />
+            </GuiElement>
+            
+            <GuiElement profile="globalMarketMaxContainer" with="anchorTopCenter">
+                <Bitmap profile="fs25_settingsButtonBg" />
+                <Button profile="globalMarketMaxButton" text="MAX" onClick="onClickMaxAmount" />
+            </GuiElement>
+            
+            <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
+        </GuiElement>
+        
+        <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
+            <Button profile="buttonOK" text="$l10n_button_start" onClick="onClickOk" id="yesButton" />
+            <Bitmap profile="fs25_dialogButtonBoxSeparator" />
+            <Button profile="buttonBack" text="$l10n_button_back" onClick="onClickBack" id="noButton" />
+        </BoxLayout>
+    </GuiElement>
+    
+    <GUIProfiles>
+        <Profile name="globalMarketDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
+            <size value="620px 420px" />
+        </Profile>
+        <Profile name="fs25_siloDialogTitle" extends="fs25_dialogTitle">
+            <width value="580px" />
+            <position value="0px -30px" />
+        </Profile>
+        <Profile name="fs25_siloDialogText" extends="fs25_dialogText">
+            <width value="580px" />
+            <position value="0px -80px" />
+            <textAutoWidth value="true" />
+        </Profile>
+        <Profile name="globalMarketStorageDropdown" extends="fs25_multiTextOption" with="anchorTopCenter">
+            <width value="400px" />
+            <position value="0px -140px" />
+        </Profile>
+        
+        <Profile name="globalMarketInputContainer" extends="emptyPanel" with="anchorTopCenter">
+            <size value="220px 36px" />
+            <position value="-50px -210px" />
+        </Profile>
+        
+        <Profile name="globalMarketAmountInput" extends="fs25_textInput" with="anchorMiddleCenter">
+            <size value="200px 32px" />
+            <textSize value="22px" />
+            <textAlignment value="center" />
+        </Profile>
+        
+        <Profile name="globalMarketMaxContainer" extends="emptyPanel" with="anchorTopCenter">
+            <size value="60px 36px" />
+            <position value="120px -210px" />
+        </Profile>
+        
+        <Profile name="globalMarketMaxButton" extends="buttonOK" with="anchorStretchingYStretchingX">
+            <fitToContent value="false" />
+            <textSize value="20px" />
+            <touchIconSliceId value="noSlice" />
+            <iconSliceId value="noSlice" />
+            <touchIconSize value="0 0" />
+            <iconSize value="0 0" />
+            <iconTextOffset value="0 0" />
+        </Profile>
+        
+        <Profile name="globalMarketTotalText" extends="fs25_dialogText" with="anchorTopCenter">
+            <width value="580px" />
+            <position value="0px -280px" />
+            <textAlignment value="center" />
+        </Profile>
+    </GUIProfiles>
+</GUI>

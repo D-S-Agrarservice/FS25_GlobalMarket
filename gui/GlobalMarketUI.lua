@@ -1,156 +1,205 @@
 --
--- FS25 - GlobalMarket (UI Module)
---
--- Komplett und lauffähig für den Offline-Modus.
+-- FS25 - GlobalMarketUI
+-- Note: All comments exclusively in English.
 --
 
 GlobalMarketUI = {}
 local GlobalMarketUI_mt = Class(GlobalMarketUI, TabbedMenuFrameElement)
 
-function GlobalMarketUI.init()
-    g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
-
-    local ui = GlobalMarketUI.new()
-    g_gui:loadGui(GlobalMarket.dir .. "gui/InGameMenuGlobalMarket.xml", "GlobalMarket", ui)
-
-    local selectLevel = GlobalMarketSelectLevelUI.new()
-    g_gui:loadGui(GlobalMarket.dir .. "gui/SelectLevel.xml", "SelectLevel", selectLevel)
-    g_currentMission.globalMarketSelectLevelUi = selectLevel
+function GlobalMarketUI.new(target, custom_mt)
+    local self = TabbedMenuFrameElement.new(target, custom_mt or GlobalMarketUI_mt)
+    self.storageData = {}
+    self.marketData = {}
+    self.i18n = g_i18n
+    self.currentListFocus = "storage"
+    self.isUpdatingSelection = false -- Safety guard to prevent infinite loops
+    return self
 end
 
-function GlobalMarketUI.new(target, customMt)
-    local self = TabbedMenuFrameElement.new(target, customMt or GlobalMarketUI_mt)
-    return self
+function GlobalMarketUI:onGuiSetupFinished()
+    GlobalMarketUI:superClass().onGuiSetupFinished(self)
+
+    if self.gmTableStorage ~= nil then
+        self.gmTableStorage:setDataSource(self)
+        self.gmTableStorage:setDelegate(self)
+    end
+
+    if self.gmTableMarket ~= nil then
+        self.gmTableMarket:setDataSource(self)
+        self.gmTableMarket:setDelegate(self)
+    end
 end
 
 function GlobalMarketUI:onFrameOpen()
     GlobalMarketUI:superClass().onFrameOpen(self)
-    g_currentMission.globalMarket:debugLog("UI: Main frame opened.")
+
     self:updateContent()
+
+    local backButton = { inputAction = InputAction.MENU_BACK }
+
+    self.actionButtonInfo = {
+        inputAction = InputAction.MENU_ACCEPT,
+        text = self.i18n:getText("ui_btn_sell") or "Verkaufen",
+        callback = function() self:onButtonAction() end,
+        disabled = true
+    }
+
+    self:setMenuButtonInfo({ backButton, self.actionButtonInfo })
+
+    if self.gmTableStorage ~= nil then
+        FocusManager:setFocus(self.gmTableStorage)
+    end
 end
 
 function GlobalMarketUI:updateContent()
-    local gm = g_currentMission.globalMarket
-
-    -- Texte für den Header setzen
-    if self.textHeader ~= nil then
-        self.textHeader:setText(g_i18n:getText("ui_ingameMenuGlobalMarketHeaderMarket"))
+    if self.currentBalanceText ~= nil and g_currentMission ~= nil then
+        local currentMoney = g_currentMission:getMoney()
+        self.currentBalanceText:setText(self.i18n:formatMoney(currentMoney, 0, true, true))
     end
 
-    if self.textHeaderDesc ~= nil then
-        self.textHeaderDesc:setText(g_i18n:getText("ui_ingameMenuGlobalMarketOfflineDesc"))
-    end
+    -- Fetching data from our dummy provider instead of hardcoding it here
+    self.storageData = GlobalMarketDummyData.getStorageList()
+    self.marketData = GlobalMarketDummyData.getMarketList()
 
-    -- Tabellen aktualisieren
-    self:updateStorageList()
-    self:updateMarketList()
+    if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
+    if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end
 end
 
 -- =========================================================================
--- Listen Logik (Komplett)
+-- LIST CALLBACKS
 -- =========================================================================
 
-function GlobalMarketUI:updateStorageList()
-    local gm = g_currentMission.globalMarket
-    gm:debugLog("UI: Refreshing Storage List...")
-
-    -- Sicherheitscheck, ob das UI-Element geladen ist
-    if self.gmTableStorage ~= nil then
-        -- Listen leeren vor der Neuerstellung
-        if type(self.gmTableStorage.deleteListItems) == "function" then
-            self.gmTableStorage:deleteListItems()
-        end
-
-        -- Da wir offline sind, simulieren wir hier eine leere Liste
-        -- oder greifen auf lokale Hof-Daten zu, falls du diese hier anzeigen willst.
-        -- Im FS25 läuft das über ListElements, die automatisch scrollbar sind.
-    end
+function GlobalMarketUI:getNumberOfSections(list)
+    return 1
 end
 
-function GlobalMarketUI:updateMarketList()
-    local gm = g_currentMission.globalMarket
-    gm:debugLog("UI: Refreshing Market List...")
+function GlobalMarketUI:getNumberOfItemsInSection(list, section)
+    if list == self.gmTableStorage then return #self.storageData end
+    if list == self.gmTableMarket then return #self.marketData end
+    return 0
+end
 
-    if self.gmTableMarket ~= nil then
-        if type(self.gmTableMarket.deleteListItems) == "function" then
-            self.gmTableMarket:deleteListItems()
+function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
+    if list == self.gmTableStorage then
+        local data = self.storageData[index]
+        if data then
+            local icon = cell:getAttribute("icon")
+            local name = cell:getAttribute("name")
+            local amount = cell:getAttribute("amount")
+
+            if icon then icon:setImageFilename(data.icon) end
+            if name then name:setText(data.title) end
+            if amount then amount:setText(self.i18n:formatVolume(data.level, 0)) end
         end
+    elseif list == self.gmTableMarket then
+        local data = self.marketData[index]
+        if data then
+            local name = cell:getAttribute("name")
+            local amount = cell:getAttribute("amount")
+            local price = cell:getAttribute("price")
+            local trend = cell:getAttribute("trend")
 
-        -- Alle Offline-FillTypes durchgehen und in die Tabelle schreiben
-        for _, marketItem in pairs(gm.offlineMarketFillTypes) do
-            if marketItem ~= nil and marketItem.fillType ~= nil then
-                local fillTypeDesc = g_fillTypeManager:getFillTypeByName(marketItem.fillType)
+            if name then name:setText(data.title) end
+            if amount then amount:setText(self.i18n:formatVolume(data.level, 0)) end
+            if price then price:setText(self.i18n:formatMoney(data.price, 0, true, true)) end
 
-                if fillTypeDesc ~= nil then
-                    local newRow = self.gmTableMarket:cloneElement()
-                    if newRow ~= nil then
-                        -- Werte setzen, falls die IDs in deiner XML existieren
-                        if newRow.cellTextFillType ~= nil then
-                            newRow.cellTextFillType:setText(fillTypeDesc.title)
-                        end
-                        if newRow.cellTextFillLevel ~= nil then
-                            newRow.cellTextFillLevel:setText(tostring(math.floor(marketItem.fillLevel)))
-                        end
-                        if newRow.cellTextPrice ~= nil then
-                            newRow.cellTextPrice:setText(tostring(math.floor(marketItem.price)))
-                        end
-                    end
+            if trend then
+                local profile = "globalMarketRowCellArrow"
+                if data.trend == SellingStation.PRICE_CLIMBING then
+                    profile = "globalMarketRowCellArrowClimbing"
+                elseif data.trend == SellingStation.PRICE_FALLING then
+                    profile = "globalMarketRowCellArrowFalling"
                 end
+                trend:applyProfile(profile, true)
             end
         end
     end
 end
 
 -- =========================================================================
--- Button Callbacks (Sichtbarkeits-Toggle)
+-- QoL: DYNAMIC HIGHLIGHT AND BUTTON TEXT
 -- =========================================================================
+function GlobalMarketUI:onListSelectionChanged(list, section, index)
+    if self.isUpdatingSelection then return end
+    self.isUpdatingSelection = true
 
-function GlobalMarketUI:onClickToggleStorageSiloObject()
-    local gm = g_currentMission.globalMarket
-    gm:debugLog("UI: Toggle Storage Silo/Object view clicked.")
+    if self.actionButtonInfo ~= nil then
+        if list == self.gmTableStorage then
+            if index > 0 then
+                self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Verkaufen"
+                self.currentListFocus = "storage"
+                self.actionButtonInfo.disabled = false
 
-    if self.sectionStorageSilo ~= nil and self.sectionStorageObject ~= nil then
-        local isSiloVisible = self.sectionStorageSilo:getIsVisible()
-        self.sectionStorageSilo:setVisible(not isSiloVisible)
-        self.sectionStorageObject:setVisible(isSiloVisible)
+                -- Deselect the right list
+                if self.gmTableMarket ~= nil then
+                    self.gmTableMarket:setSelectedIndex(0)
+                end
+            else
+                if self.currentListFocus == "storage" then
+                    self.actionButtonInfo.disabled = true
+                end
+            end
+        elseif list == self.gmTableMarket then
+            if index > 0 then
+                self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Kaufen"
+                self.currentListFocus = "market"
+                self.actionButtonInfo.disabled = false
+
+                -- Deselect the left list
+                if self.gmTableStorage ~= nil then
+                    self.gmTableStorage:setSelectedIndex(0)
+                end
+            else
+                if self.currentListFocus == "market" then
+                    self.actionButtonInfo.disabled = true
+                end
+            end
+        end
+
+        self:setMenuButtonInfoDirty()
+    end
+
+    self.isUpdatingSelection = false
+end
+
+-- =========================================================================
+-- ACTIONS
+-- =========================================================================
+function GlobalMarketUI:onDialogResult(amount, storageId, actionType)
+    if amount > 0 then
+        GlobalMarket.debugLog(string.format("DIALOG RESULT -> Action: %s | Amount: %s | Storage ID: %s", actionType, tostring(amount), tostring(storageId)))
+    else
+        GlobalMarket.debugLog("Dialog cancelled or 0 amount.")
     end
 end
 
-function GlobalMarketUI:onClickToggleMarketSiloObject()
-    local gm = g_currentMission.globalMarket
-    gm:debugLog("UI: Toggle Market Silo/Object view clicked.")
+function GlobalMarketUI:onButtonAction()
+    GlobalMarket.debugLog("Button wurde geklickt! Fokus liegt auf: " .. tostring(self.currentListFocus))
 
-    if self.sectionMarketSilo ~= nil and self.sectionMarketObject ~= nil then
-        local isSiloVisible = self.sectionMarketSilo:getIsVisible()
-        self.sectionMarketSilo:setVisible(not isSiloVisible)
-        self.sectionMarketObject:setVisible(isSiloVisible)
+    local dialog = g_currentMission.globalMarket.dialog
+
+    if dialog == nil then
+        GlobalMarket.debugLog("FEHLER: Der Dialog 'GlobalMarketDialog' wurde in den screenControllers nicht gefunden!")
+        return
     end
-end
 
--- =========================================================================
--- Select Level UI (Popup Dialog)
--- =========================================================================
-
-GlobalMarketSelectLevelUI = {}
--- WICHTIGER FIX: Wir erben von FrameElement, um den YesNoDialog-Crash zu verhindern
-local GlobalMarketSelectLevelUI_mt = Class(GlobalMarketSelectLevelUI, FrameElement)
-
-function GlobalMarketSelectLevelUI.new(target, customMt)
-    local self = FrameElement.new(target, customMt or GlobalMarketSelectLevelUI_mt)
-    return self
-end
-
-function GlobalMarketSelectLevelUI:onFrameOpen()
-    g_currentMission.globalMarket:debugLog("UI: Select Level dialog opened.")
-    GlobalMarketSelectLevelUI:superClass().onFrameOpen(self)
-
-    -- Standardwerte beim Öffnen des Dialogs setzen
-    if self.textLevel ~= nil then self.textLevel:setText("0") end
-    if self.levelPrice ~= nil then self.levelPrice:setText("0 €") end
-end
-
-function GlobalMarketSelectLevelUI:onClickBack()
-    if self.target ~= nil and type(self.target.closeDialog) == "function" then
-        self.target:closeDialog(self)
+    if self.currentListFocus == "storage" then
+        local _, index = self.gmTableStorage:getSelectedPath()
+        local data = self.storageData[index]
+        if data then
+            GlobalMarket.debugLog("Rufe Dialog für Verkaufen auf: " .. tostring(data.title))
+            dialog:show(self, self.onDialogResult, "SELL", data.title, data.level, 1200)
+        else
+            GlobalMarket.debugLog("FEHLER: Keine Daten in der Storage-Tabelle am Index gefunden.")
+        end
+    elseif self.currentListFocus == "market" then
+        local _, index = self.gmTableMarket:getSelectedPath()
+        local data = self.marketData[index]
+        if data then
+            GlobalMarket.debugLog("Rufe Dialog für Kaufen auf: " .. tostring(data.title))
+            dialog:show(self, self.onDialogResult, "BUY", data.title, 100000, data.price)
+        else
+            GlobalMarket.debugLog("FEHLER: Keine Daten in der Market-Tabelle am Index gefunden.")
+        end
     end
 end
