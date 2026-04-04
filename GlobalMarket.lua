@@ -32,7 +32,7 @@ if GlobalMarket.config.useUI then
     source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 end
 if GlobalMarket.config.useEconomy then
-    source(GlobalMarket.dir .. "modules/GlobalMarketEconomy.lua")
+    source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
 end
 if GlobalMarket.config.useStorage then
     source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
@@ -58,12 +58,16 @@ function GlobalMarket:loadMap(name)
 
     g_currentMission.globalMarket = self
 
+
     if g_gui ~= nil then
         g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
     end
 
-    if GlobalMarket.config.useEconomy and self.initEconomy ~= nil then
-        self:initEconomy()
+    if GlobalMarket.config.useEconomy and self.initOfflineMarket ~= nil then
+        self:initOfflineMarket()
+
+        g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
+
         if g_currentMission:getIsServer() and self.loadFromXMLFile ~= nil then
             self:loadFromXMLFile()
         end

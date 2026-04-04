@@ -4,6 +4,7 @@
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Globalen Markt öffnen" />
         <e k="ui_btn_buy"                                          v="vom Globalen Markt kaufen" />
         <e k="ui_btn_sell"                                         v="an Globalen Markt verkaufen" />
+        <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Verfügbare Menge" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Anzahl" />
         <e k="ui_ingameMenuGlobalMarketFruit"                      v="Frucht" />
