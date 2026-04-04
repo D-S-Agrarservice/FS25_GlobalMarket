@@ -2,6 +2,63 @@
 -- FS25 - GlobalMarket (Storage Module)
 --
 
+-- =========================================================================
+-- UI Helper Functions
+-- =========================================================================
+
+-- Gets all valid player storages for a specific fillType
+-- @param fillTypeName string: The name of the fillType (e.g., "MAIZE")
+-- @param farmId integer: The ID of the farm requesting the storages
+-- @param isSelling boolean: True if player wants to sell to GM (needs stock), False if buying (needs free capacity)
+function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
+    local availableStorages = {}
+
+    local fillTypeDesc = g_fillTypeManager:getFillTypeByName(fillTypeName)
+    if fillTypeDesc == nil then 
+        GlobalMarket.debugLog("Storage: FillType '%s' not found.", tostring(fillTypeName))
+        return availableStorages 
+    end
+
+    local fillTypeIndex = fillTypeDesc.index
+
+    for storage, _ in pairs(g_currentMission.storageSystem.storages) do
+        -- Check ownership and ensure it's not the GM market itself
+        if storage.ownerFarmId == farmId and not storage.isGmMarket then
+            if storage:getIsFillTypeSupported(fillTypeIndex) then
+                
+                local level = storage:getFillLevel(fillTypeIndex)
+                local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
+
+                -- Attempt to get a human-readable name
+                local placeable = storage.owningPlaceable
+                local storageName = placeable ~= nil and placeable:getName() or "Unknown Silo"
+
+                -- Filter based on transaction context
+                if isSelling and level > 0 then
+                    table.insert(availableStorages, {
+                        storage = storage,
+                        id = storage.id,
+                        title = storageName,
+                        level = level,
+                        freeCapacity = freeCapacity
+                    })
+                elseif not isSelling and freeCapacity > 0 then
+                    table.insert(availableStorages, {
+                        storage = storage,
+                        id = storage.id,
+                        title = storageName,
+                        level = level,
+                        freeCapacity = freeCapacity
+                    })
+                end
+            end
+        end
+    end
+
+    GlobalMarket.debugLog("Storage: Found %d valid storages for %s (isSelling: %s)", #availableStorages, fillTypeName, tostring(isSelling))
+    return availableStorages
+end
+
 function GlobalMarket:sellSilo(price, playerFarmId, fillTypeName, fillLevel, storage, playerUserId)
     self:sellBuySilo(MoneyType.SOLD_PRODUCTS, price, playerFarmId, fillTypeName, fillLevel * -1, storage, playerUserId)
 end

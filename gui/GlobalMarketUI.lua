@@ -1,6 +1,5 @@
 --
 -- FS25 - GlobalMarketUI
--- Note: All comments exclusively in English.
 --
 
 GlobalMarketUI = {}
@@ -165,41 +164,69 @@ end
 -- =========================================================================
 -- ACTIONS
 -- =========================================================================
-function GlobalMarketUI:onDialogResult(amount, storageId, actionType)
+function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName)
     if amount > 0 then
-        GlobalMarket.debugLog(string.format("DIALOG RESULT -> Action: %s | Amount: %s | Storage ID: %s", actionType, tostring(amount), tostring(storageId)))
+        GlobalMarket.debugLog(string.format("DIALOG RESULT -> Action: %s | Amount: %s | Storage ID: %s | FillType: %s", actionType, tostring(amount), tostring(storageId), tostring(fillTypeName)))
+
+        -- Mode for Backend: 1 = SELL (Player sells to Market), 2 = BUY (Player buys from Market)
+        local mode = actionType == "SELL" and 1 or 2
+
+        -- Execute the actual transaction in our Storage Module
+        if g_currentMission.globalMarket.onSellBuy ~= nil then
+            g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, nil, nil, nil)
+        else
+            GlobalMarket.debugLog("ERROR: GlobalMarket:onSellBuy function is missing or storage module not loaded!")
+        end
     else
         GlobalMarket.debugLog("Dialog cancelled or 0 amount.")
     end
 end
 
 function GlobalMarketUI:onButtonAction()
-    GlobalMarket.debugLog("Button wurde geklickt! Fokus liegt auf: " .. tostring(self.currentListFocus))
+    GlobalMarket.debugLog("Button clicked! Focus is on: " .. tostring(self.currentListFocus))
 
     local dialog = g_currentMission.globalMarket.dialog
 
     if dialog == nil then
-        GlobalMarket.debugLog("FEHLER: Der Dialog 'GlobalMarketDialog' wurde in den screenControllers nicht gefunden!")
+        GlobalMarket.debugLog("ERROR: Dialog 'GlobalMarketDialog' not found in screenControllers!")
         return
     end
+
+    local playerFarmId = g_currentMission:getFarmId()
 
     if self.currentListFocus == "storage" then
         local _, index = self.gmTableStorage:getSelectedPath()
         local data = self.storageData[index]
+
         if data then
-            GlobalMarket.debugLog("Rufe Dialog für Verkaufen auf: " .. tostring(data.title))
-            dialog:show(self, self.onDialogResult, "SELL", data.title, data.level, 1200)
+            -- Fetch actual storages from backend (isSelling = true -> needs stock)
+            local silos = g_currentMission.globalMarket:getAvailableStorages(data.fillType, playerFarmId, true)
+
+            if #silos > 0 then
+                GlobalMarket.debugLog("Opening SELL dialog for: " .. tostring(data.title))
+                dialog:show(self, self.onDialogResult, "SELL", data.title, data.fillType, data.price, silos)
+            else
+                GlobalMarket.debugLog("Info: No silo found with %s on farm %d.", data.title, playerFarmId)
+            end
         else
-            GlobalMarket.debugLog("FEHLER: Keine Daten in der Storage-Tabelle am Index gefunden.")
+            GlobalMarket.debugLog("ERROR: No data found in storage table at given index.")
         end
     elseif self.currentListFocus == "market" then
         local _, index = self.gmTableMarket:getSelectedPath()
         local data = self.marketData[index]
+
         if data then
-            GlobalMarket.debugLog("Rufe Dialog für Kaufen auf: " .. tostring(data.title))
-            dialog:show(self, self.onDialogResult, "BUY", data.title, 100000, data.price)
+            -- Fetch actual storages from backend (isSelling = false -> needs free capacity)
+            local silos = g_currentMission.globalMarket:getAvailableStorages(data.fillType, playerFarmId, false)
+
+            if #silos > 0 then
+                GlobalMarket.debugLog("Opening BUY dialog for: " .. tostring(data.title))
+                dialog:show(self, self.onDialogResult, "BUY", data.title, data.fillType, data.price, silos)
+            else
+                GlobalMarket.debugLog("Info: No silo with free capacity found for %s on farm %d.", data.title, playerFarmId)
+            end
         else
-            GlobalMarket.debugLog("FEHLER: Keine Daten in der Market-Tabelle am Index gefunden.")
+            GlobalMarket.debugLog("ERROR: No data found in market table at given index.")
         end
     end
 end

@@ -10,7 +10,7 @@ GlobalMarket.debug = true
 GlobalMarket.config = {
     useUI      = true,
     useEconomy = false,
-    useStorage = false,
+    useStorage = true,
     useSync    = false
 }
 

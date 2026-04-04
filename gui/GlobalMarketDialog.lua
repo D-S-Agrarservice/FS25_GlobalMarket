@@ -10,6 +10,7 @@ function GlobalMarketDialog.new(target, custom_mt)
 
     self.actionType = "SELL"
     self.fillTypeTitle = ""
+    self.fillTypeName = "" -- Store the raw fillType name (e.g., "MAIZE") for the backend transaction
     self.pricePer1000 = 0
     self.maxAmount = 0
     self.currentAmount = 0
@@ -20,21 +21,22 @@ function GlobalMarketDialog.new(target, custom_mt)
 end
 
 -- Call this to open the dialog from outside
-function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle, availableAmount, price)
+-- @param target table: The calling UI instance
+-- @param callbackFunc function: The function to execute on OK
+-- @param actionType string: "SELL" or "BUY"
+-- @param fillTypeTitle string: Localized name of the fruit
+-- @param fillTypeName string: Raw name of the fruit
+-- @param price number: Current price per 1000L
+-- @param silos table: List of available storages from the backend
+function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle, fillTypeName, price, silos)
     self.target = target
     self.callbackFunc = callbackFunc
     self.actionType = actionType
     self.fillTypeTitle = fillTypeTitle
-    self.maxAmount = availableAmount
+    self.fillTypeName = fillTypeName
     self.pricePer1000 = price
     self.currentAmount = 0
-
-    -- Load dummy locations
-    if GlobalMarketDummyData ~= nil then
-        self.storageLocations = GlobalMarketDummyData.getStorageLocations()
-    else
-        self.storageLocations = { {id = 1, name = "Dummy Farm 1"} }
-    end
+    self.storageLocations = silos or {}
 
     g_gui:showDialog("GlobalMarketDialog")
 end
@@ -42,31 +44,27 @@ end
 function GlobalMarketDialog:onOpen()
     GlobalMarketDialog:superClass().onOpen(self)
 
-    -- Set Title
-    local titlePrefix = self.actionType == "SELL" and "Verkaufen: " or "Kaufen: "
+    -- Set localized Title based on action
+    local titlePrefix = self.actionType == "SELL" and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderStorage") .. ": ") or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderMarket") .. ": ")
     self.dialogTitleElement:setText(titlePrefix .. tostring(self.fillTypeTitle))
 
-    -- Set Action Button Text (Dynamically replace "START")
+    -- Set Action Button Text (using l10n strings)
     local actionText = self.actionType == "SELL" and (g_i18n:getText("ui_btn_sell") or "VERKAUFEN") or (g_i18n:getText("ui_btn_buy") or "KAUFEN")
     if self.yesButton ~= nil then
         self.yesButton:setText(actionText)
     end
 
-    -- Set Info Text
-    local infoText = string.format("Menge verfügbar: %s L | Preis: %s / 1000L", g_i18n:formatVolume(self.maxAmount, 0), g_i18n:formatMoney(self.pricePer1000, 0, true, true))
-    self.dialogInfoTextElement:setText(infoText)
-
-    -- Setup Storage Dropdown
+    -- Setup Storage Dropdown from actual backend data
     local storageNames = {}
-    for i, loc in ipairs(self.storageLocations) do
-        table.insert(storageNames, loc.name)
+    for _, loc in ipairs(self.storageLocations) do
+        table.insert(storageNames, loc.title)
     end
-    self.storageSelectionElement:setTexts(storageNames)
-    self.storageSelectionElement:setState(1, true)
 
-    -- Reset Input
-    self.amountInput:setText("0")
-    self:updateTotalValue()
+    self.storageSelectionElement:setTexts(storageNames)
+
+    -- Initialize with the first silo to trigger UI updates
+    self.storageSelectionElement:setState(1, true)
+    self:onClickStorage(1)
 
     -- Focus input immediately
     FocusManager:setFocus(self.amountInput)
@@ -74,11 +72,26 @@ end
 
 function GlobalMarketDialog:onClickStorage(state)
     self.selectedStorageIndex = state
+    local selectedSilo = self.storageLocations[state]
+
+    if selectedSilo ~= nil then
+        -- Update max amount based on action context (stock vs free capacity)
+        self.maxAmount = self.actionType == "SELL" and selectedSilo.level or selectedSilo.freeCapacity
+
+        -- Build localized info string
+        local availableText = g_i18n:getText("ui_ingameMenuGlobalMarketAvailable") or "Verfuegbare Menge"
+        local priceText = g_i18n:getText("ui_ingameMenuGlobalMarketPrice") or "Preis"
+        local infoText = string.format("%s: %s L | %s: %s / 1000L", availableText, g_i18n:formatVolume(self.maxAmount, 0), priceText, g_i18n:formatMoney(self.pricePer1000, 0, true, true))
+
+        self.dialogInfoTextElement:setText(infoText)
+
+        -- Re-evaluate current input to clamp it if it exceeds the new max capacity
+        self:onAmountChanged()
+    end
 end
 
 function GlobalMarketDialog:onClickMaxAmount()
     self.amountInput:setText(tostring(self.maxAmount))
-
     self:onAmountChanged()
 end
 
@@ -89,7 +102,6 @@ function GlobalMarketDialog:onAmountChanged(...)
     if amount == nil then
         self.currentAmount = 0
     else
-
         if amount > self.maxAmount then
             amount = self.maxAmount
             self.amountInput:setText(tostring(amount))
@@ -102,18 +114,22 @@ end
 
 function GlobalMarketDialog:updateTotalValue()
     local total = (self.currentAmount / 1000) * self.pricePer1000
-    self.totalValueText:setText(string.format("Gesamtwert: %s", g_i18n:formatMoney(total, 0, true, true)))
 
-    -- Disable OK button if amount is 0
+    -- Use l10n strings for the total value header
+    local totalValueHeader = self.actionType == "SELL" and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderSellPrice") or "Voraussichtlicher Verkaufspreis:") or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderBuyPrice") or "Voraussichtlicher Kaufpreis:")
+
+    self.totalValueText:setText(string.format("%s %s", totalValueHeader, g_i18n:formatMoney(total, 0, true, true)))
+
+    -- Disable OK button if amount is 0 or less
     self.yesButton:setDisabled(self.currentAmount <= 0)
 end
 
 function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
 
-    if self.callbackFunc ~= nil then
-        -- Return Data: Amount, StorageID, ActionType
-        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType)
+    if self.callbackFunc ~= nil and selectedStorage ~= nil then
+        -- Return Data: Target, Amount, StorageID, ActionType, RawFillTypeName
+        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName)
     end
 
     GlobalMarketDialog:superClass().onClickOk(self)
