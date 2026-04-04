@@ -56,8 +56,16 @@ function GlobalMarketUI:updateContent()
         self.currentBalanceText:setText(self.i18n:formatMoney(currentMoney, 0, true, true))
     end
 
-    -- Clear data to prevent crashes until the real backend aggregation is hooked up
-    self.storageData = {}
+    local playerFarmId = g_currentMission:getFarmId()
+
+    -- Fetch real aggregated storage data from backend
+    if g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.getAggregatedStorageData ~= nil then
+        self.storageData = g_currentMission.globalMarket:getAggregatedStorageData(playerFarmId)
+    else
+        self.storageData = {}
+    end
+
+    -- Market data remains empty until the economy module is connected
     self.marketData = {}
 
     if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
@@ -86,19 +94,33 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
             local name = cell:getAttribute("name")
             local amount = cell:getAttribute("amount")
 
-            if icon then icon:setImageFilename(data.icon) end
-            if name then name:setText(data.title) end
+            -- Fetch the fillType details directly from the engine
+            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+
+            if fillTypeDesc ~= nil then
+                if icon then icon:setImageFilename(fillTypeDesc.hudOverlayFilename) end
+                if name then name:setText(fillTypeDesc.title) end
+            end
+
             if amount then amount:setText(self.i18n:formatVolume(data.level, 0)) end
         end
     elseif list == self.gmTableMarket then
         local data = self.marketData[index]
         if data then
+            local icon = cell:getAttribute("icon")
             local name = cell:getAttribute("name")
             local amount = cell:getAttribute("amount")
             local price = cell:getAttribute("price")
             local trend = cell:getAttribute("trend")
 
-            if name then name:setText(data.title) end
+            -- Same here for the market side
+            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+
+            if fillTypeDesc ~= nil then
+                if icon then icon:setImageFilename(fillTypeDesc.hudOverlayFilename) end
+                if name then name:setText(fillTypeDesc.title) end
+            end
+
             if amount then amount:setText(self.i18n:formatVolume(data.level, 0)) end
             if price then price:setText(self.i18n:formatMoney(data.price, 0, true, true)) end
 

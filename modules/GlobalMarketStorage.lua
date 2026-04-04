@@ -59,6 +59,51 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     return availableStorages
 end
 
+-- Gets aggregated fill levels for all valid player storages to display in the UI list
+-- @param farmId integer: The ID of the farm requesting the data
+-- @return table: Array of tables containing aggregated fillType data
+function GlobalMarket:getAggregatedStorageData(farmId)
+    local aggregatedData = {}
+    local fillTypeTotals = {}
+
+    -- Step 1: Iterate over all storages and sum up the fill levels
+    for storage, _ in pairs(g_currentMission.storageSystem.storages) do
+        if storage.ownerFarmId == farmId and not storage.isGmMarket then
+            for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
+                if fillLevel > 0.1 then
+                    if fillTypeTotals[fillTypeIndex] == nil then
+                        fillTypeTotals[fillTypeIndex] = 0
+                    end
+                    fillTypeTotals[fillTypeIndex] = fillTypeTotals[fillTypeIndex] + fillLevel
+                end
+            end
+        end
+    end
+
+    -- Step 2: Format the lean data structure
+    for fillTypeIndex, totalLevel in pairs(fillTypeTotals) do
+        local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
+        if fillTypeDesc ~= nil then
+            table.insert(aggregatedData, {
+                fillType = fillTypeDesc.name,
+                level = totalLevel,
+                price = 0 -- Note: Price set to 0 for now until Economy module is connected
+            })
+        end
+    end
+
+    -- Step 3: Sort alphabetically by fetching the title on the fly
+    table.sort(aggregatedData, function(a, b)
+        local descA = g_fillTypeManager:getFillTypeByName(a.fillType)
+        local descB = g_fillTypeManager:getFillTypeByName(b.fillType)
+        local titleA = descA ~= nil and descA.title or ""
+        local titleB = descB ~= nil and descB.title or ""
+        return titleA < titleB
+    end)
+
+    return aggregatedData
+end
+
 function GlobalMarket:sellSilo(price, playerFarmId, fillTypeName, fillLevel, storage, playerUserId)
     self:sellBuySilo(MoneyType.SOLD_PRODUCTS, price, playerFarmId, fillTypeName, fillLevel * -1, storage, playerUserId)
 end
