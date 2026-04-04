@@ -128,23 +128,13 @@ function GlobalMarketSettings.addSectionHeader(settingsPage, settingsLayout)
     end
 end
 
--- Clones a multi-state option dynamically by finding a suitable template
--- Clones a multi-state option dynamically by finding a suitable template
+-- Clones a known, explicit Multi-Option template
 function GlobalMarketSettings.addMultiOption(settingsPage, settingsLayout, controlId, titleKey, tooltipKey, texts, callbackName)
-    -- Find a valid Multi-Option template dynamically
-    local original = nil
-    for _, elem in ipairs(settingsLayout.elements) do
-        -- We specifically look for a true MultiTextOptionElement (like the volume slider)
-        if elem.elements ~= nil and elem.elements[1] ~= nil then
-            if elem.elements[1]:isa(MultiTextOptionElement) then
-                original = elem
-                break
-            end
-        end
-    end
+    -- We strictly use a known MultiTextOption element from the vanilla generalSettingsLayout
+    local original = settingsPage.multiVolumeVoiceBox
 
     if original == nil then 
-        GlobalMarket.debugLog("ERROR: Could not find a suitable MultiTextOptionElement template to clone!")
+        GlobalMarket.debugLog("ERROR: Could not find settingsPage.multiVolumeVoiceBox to clone!")
         return nil 
     end
 
@@ -157,7 +147,7 @@ function GlobalMarketSettings.addMultiOption(settingsPage, settingsLayout, contr
     menuOption:setTexts(texts)
     menuOption:setCallback("onClickCallback", callbackName)
 
-    -- Safe Admin/SP check (Host or MasterUser)
+    -- Safe Admin/SP check
     local isAdmin = false
     if g_currentMission ~= nil then
         isAdmin = g_currentMission:getIsServer() or g_currentMission.isMasterUser
