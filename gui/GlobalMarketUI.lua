@@ -56,9 +56,9 @@ function GlobalMarketUI:updateContent()
         self.currentBalanceText:setText(self.i18n:formatMoney(currentMoney, 0, true, true))
     end
 
-    -- Fetching data from our dummy provider instead of hardcoding it here
-    self.storageData = GlobalMarketDummyData.getStorageList()
-    self.marketData = GlobalMarketDummyData.getMarketList()
+    -- Clear data to prevent crashes until the real backend aggregation is hooked up
+    self.storageData = {}
+    self.marketData = {}
 
     if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
     if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end

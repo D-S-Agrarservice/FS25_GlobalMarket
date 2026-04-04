@@ -268,19 +268,27 @@ function GlobalMarket.Storage_registerXMLPaths(schema, basePath)
 end
 Storage.registerXMLPaths = Utils.appendedFunction(Storage.registerXMLPaths, GlobalMarket.Storage_registerXMLPaths)
 
--- EXACT FS25 MATCH: PlaceableObjectStorage:onLoad(_)
-function GlobalMarket.PlaceableObjectStorage_onLoad(self, _)
+-- SAFE HOOK: PlaceableObjectStorage
+function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
+    -- Die Original-Funktion ausführen
+    superFunc(self, savegame)
+
     local spec = self.spec_objectStorage
     if spec ~= nil and self.xmlFile ~= nil then
         spec.isGmMarket = self.xmlFile:getValue("placeable.objectStorage#isGmMarket", false)
     end
 end
-PlaceableObjectStorage.onLoad = Utils.appendedFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
+PlaceableObjectStorage.onLoad = Utils.overwrittenFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
 
--- EXACT FS25 MATCH: Storage:load(components, xmlFile, key, i3dMappings, baseDirectory)
-function GlobalMarket.Storage_load(self, components, xmlFile, key, i3dMappings, baseDirectory)
-    if xmlFile ~= nil and key ~= nil then
+-- SAFE HOOK: Storage
+function GlobalMarket.Storage_load(self, superFunc, components, xmlFile, key, i3dMappings, baseDirectory)
+    -- Die Original-Funktion ausführen UND das Ergebnis (true/false) speichern
+    local success = superFunc(self, components, xmlFile, key, i3dMappings, baseDirectory)
+    -- Nur weitermachen, wenn Vanilla erfolgreich geladen hat und der key ein String ist
+    if success and xmlFile ~= nil and type(key) == "string" then
         self.isGmMarket = xmlFile:getValue(key .. "#isGmMarket", false)
     end
+    -- EXTREM WICHTIG: Das Vanilla-Ergebnis an die Engine zurückgeben!
+    return success
 end
-Storage.load = Utils.appendedFunction(Storage.load, GlobalMarket.Storage_load)
+Storage.load = Utils.overwrittenFunction(Storage.load, GlobalMarket.Storage_load)
