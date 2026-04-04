@@ -48,7 +48,8 @@
             <SmoothList profile="emptyPanel" id="gmTableMarket" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true">
                 <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
                     <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
-                    <Text profile="globalMarketRowCellLeftBright" position="10px 0px" size="200px 32px" name="name" />
+                    <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 4px" />
+                    <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="200px 32px" name="name" />
                     <Text profile="globalMarketRowCellRight" position="220px 0px" size="150px 32px" name="price" />
                     <Bitmap profile="globalMarketRowCellArrow" position="400px 7px" name="trend" />
                     <Text profile="globalMarketRowCellRight" position="440px 0px" size="180px 32px" name="amount" />

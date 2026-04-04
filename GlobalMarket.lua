@@ -37,20 +37,27 @@ if GlobalMarket.config.useUI then
     source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
     source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 end
+
 if GlobalMarket.config.useEconomy then
     source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
+    -- Savegame module must be loaded here to ensure offline data is saved/loaded!
+    source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
 end
+
 if GlobalMarket.config.useStorage then
     source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
 end
+
+-- Events must be loaded unconditionally to ensure MP compatibility and internal transactions work
+source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
+source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
+source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
+source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
+source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
+
+-- Only load the external .exe sync module if the config allows it
 if GlobalMarket.config.useSync then
-    source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
     source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
-    source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
-    source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
-    source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
-    source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
-    source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
 end
 
 function GlobalMarket:loadMap(name)

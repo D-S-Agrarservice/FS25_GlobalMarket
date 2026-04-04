@@ -144,6 +144,10 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
         local totalPrice = marketPricePerUnit * level
         local moneyType = (mode == 2) and MoneyType.BOUGHT_MATERIALS or MoneyType.SOLD_PRODUCTS
 
+        -- FIX: The old playerFarmId is nil, which causes addMoney to silently fail.
+        -- We extract the correct Farm ID from the storage owner.
+        local targetFarmId = targetStorage.ownerFarmId or g_currentMission:getFarmId()
+
         -- LOGISTIC PACK: Check if we charge delivery fees
         local deliveryCosts = 0
         if not (targetStorage.isGmMarket or false) then
@@ -156,12 +160,15 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
         -- Final balance (Buying = negative, Selling = positive)
         local finalAccountBalance = (mode == 2) and (totalPrice * -1) or totalPrice
 
+        -- If this debug line doesn't show up in the log, the file wasn't saved!
+        GlobalMarket.debugLog("  -> Booking Money: %f to FarmID: %s", finalAccountBalance, tostring(targetFarmId))
+
         if g_server ~= nil then
             -- Execute on Server
-            g_currentMission:addMoney(finalAccountBalance, g_currentMission.playerFarmId, moneyType, true, true)
+            g_currentMission:addMoney(finalAccountBalance, targetFarmId, moneyType, true, true)
 
             if deliveryCosts > 0 then
-                g_currentMission:addMoney(deliveryCosts * -1, g_currentMission.playerFarmId, MoneyType.OTHER, true, true)
+                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.OTHER, true, true)
             end
 
             -- Update Physical Storage
@@ -181,13 +188,19 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
             end
 
             -- Recalculate Prices after transaction
-            self:updateOfflinePrices()
+            if self.updateOfflinePrices ~= nil then
+                self:updateOfflinePrices()
+            end
 
-            -- Broadcast to Clients
-            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+            -- Broadcast to Clients (Only if Sync is enabled)
+            if GlobalMarket.config.useSync and SynchOfflineMarketEvent ~= nil then
+                g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+            end
         else
-            -- Send to Server if we are a Client
-            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(finalAccountBalance, g_currentMission.playerFarmId, level, filltypeName, targetStorage, g_currentMission.playerUserId))
+            -- Send to Server if we are a Client (Only if Sync is enabled)
+            if GlobalMarket.config.useSync and SellBuyOfflineMarketEvent ~= nil then
+                g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(finalAccountBalance, targetFarmId, level, filltypeName, targetStorage, g_currentMission.playerUserId))
+            end
         end
     end
 end
