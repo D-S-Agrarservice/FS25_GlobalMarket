@@ -10,7 +10,7 @@
 
             <RoundCorner profile="fs25_shopMoneyBoxBg" id="shopMoneyBoxBg" />
             <BoxLayout profile="fs25_shopMoneyBox" id="shopMoneyBox">
-                <Text profile="fs25_shopBalance" text="KONTOSTAND:" />
+                <Text profile="fs25_shopBalance" text="$l10n_ui_gm_balance" />
                 <Text profile="fs25_shopMoney" id="currentBalanceText" />
             </BoxLayout>
         </GuiElement>
@@ -40,7 +40,7 @@
             <GuiElement position="0px 660px" size="650px 40px">
                 <Text profile="globalMarketHeader" position="10px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
                 <Text profile="globalMarketHeaderRight" position="220px 10px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
-                <Text profile="globalMarketHeader" position="390px 10px" size="40px 24px" text="TR." />
+                <Text profile="globalMarketHeader" position="390px 10px" size="40px 24px" text="$l10n_ui_gm_trend" />
                 <Text profile="globalMarketHeaderRight" position="440px 10px" size="180px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
@@ -59,7 +59,7 @@
 
         <GuiElement profile="globalMarketFooterBox1">
             <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
-            <Text profile="globalMarketHeaderBright" position="40px 0px" text="GESAMT BESTAND:"/>
+            <Text profile="globalMarketHeaderBright" position="40px 0px" text="$l10n_ui_gm_total_storage"/>
             <Text profile="globalMarketHeaderRightBright" position="400px 0px" size="310px 32px" id="totalStorageDisplay" text="0 L"/>
         </GuiElement>
 

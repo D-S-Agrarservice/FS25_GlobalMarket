@@ -54,13 +54,19 @@ function GlobalMarket:loadFromXMLFile()
                 for _, ft in pairs(self.offlineMarketFillTypes) do
                     if ft.fillType == fillType then
                         ft.fillLevel = level
-                        ft.price = GlobalMarket.calcOfflinePrice(ft.normalPrice, ft.fillLevel)
-                        GlobalMarket.debugLog("  -> Loaded %s: Level=%f, Price=%f", fillType, level, ft.price)
+                        -- Removed old calcOfflinePrice call here because pricing is now centralized
+                        GlobalMarket.debugLog("  -> Loaded %s: Level=%f", fillType, level)
                         break
                     end
                 end
             end)
             xmlFile:delete()
+
+            -- Recalculate all prices once after all levels are loaded
+            if self.updateOfflinePrices ~= nil then
+                self:updateOfflinePrices()
+            end
+
             GlobalMarket.debugLog("  -> Savegame loading completed.")
         end
     else

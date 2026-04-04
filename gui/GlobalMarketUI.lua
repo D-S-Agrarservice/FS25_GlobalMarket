@@ -38,7 +38,7 @@ function GlobalMarketUI:onFrameOpen()
     local backButton = { inputAction = InputAction.MENU_BACK }
     self.actionButtonInfo = {
         inputAction = InputAction.MENU_ACCEPT,
-        text = self.i18n:getText("ui_btn_sell") or "Verkaufen",
+        text = self.i18n:getText("ui_btn_sell") or "Sell",
         callback = function() self:onButtonAction() end,
         disabled = true
     }
@@ -97,6 +97,8 @@ function GlobalMarketUI:getNumberOfItemsInSection(list, section)
     return 0
 end
 
+-- Populates each row in the storage and market lists
+-- Handles HUD icons and dynamic price trend arrows based on basePrice comparison
 function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     local data = (list == self.gmTableStorage) and self.storageData[index] or self.marketData[index]
     if not data then return end
@@ -108,26 +110,47 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     local trend = cell:getAttribute("trend")
 
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
-
+    
     if name and fillTypeDesc then
         name:setText(fillTypeDesc.title)
     end
 
+    -- Icon logic for both lists
     if icon and fillTypeDesc then
         icon:setImageFilename(fillTypeDesc.hudOverlayFilename)
     end
 
-    if amount then
+    if amount then 
         local val = (list == self.gmTableStorage) and data.level or data.fillLevel
-        amount:setText(self.i18n:formatVolume(val, 0))
+        amount:setText(self.i18n:formatVolume(val, 0)) 
     end
 
-    if price then
-        price:setText(self.i18n:formatMoney(data.price, 0, true, true))
+    -- Price and Trend logic
+    if price then 
+        price:setText(self.i18n:formatMoney(data.price, 0, true, true)) 
     end
 
+    -- Trend arrow logic (Market list only)
     if trend then
-        trend:setVisible(true)
+        if list == self.gmTableMarket then
+            trend:setVisible(true)
+
+            -- We assume data.basePrice is the value from the offline module
+            local basePrice = (data.basePrice or 0.5) * 1000
+
+            -- Trend detection with 5% threshold
+            if data.price > (basePrice * 1.05) then
+                trend:applyProfile("globalMarketRowCellArrowClimbing")
+            elseif data.price < (basePrice * 0.95) then
+                trend:applyProfile("globalMarketRowCellArrowFalling")
+            else
+                -- Price is stable, hide arrow
+                trend:setVisible(false)
+            end
+        else
+            -- Hide trend arrow in storage list
+            trend:setVisible(false)
+        end
     end
 end
 
@@ -143,13 +166,13 @@ function GlobalMarketUI:onListSelectionChanged(list, section, index)
     if list == self.gmTableStorage then
         self.currentListFocus = "storage"
         if self.actionButtonInfo ~= nil then
-            self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Verkaufen"
+            self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Sell"
         end
         if self.gmTableMarket then self.gmTableMarket:setSelectedIndex(0) end
     else
         self.currentListFocus = "market"
         if self.actionButtonInfo ~= nil then
-            self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Kaufen"
+            self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Buy"
         end
         if self.gmTableStorage then self.gmTableStorage:setSelectedIndex(0) end
     end

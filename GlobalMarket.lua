@@ -42,6 +42,7 @@ if GlobalMarket.config.useEconomy then
     source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
     -- Savegame module must be loaded here to ensure offline data is saved/loaded!
     source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
+    source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
 end
 
 if GlobalMarket.config.useStorage then

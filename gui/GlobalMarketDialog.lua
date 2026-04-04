@@ -75,8 +75,27 @@ function GlobalMarketDialog:onClickStorage(state)
     local selectedSilo = self.storageLocations[state]
 
     if selectedSilo ~= nil then
-        -- Update max amount based on action context (stock vs free capacity)
-        self.maxAmount = self.actionType == "SELL" and selectedSilo.level or selectedSilo.freeCapacity
+        if self.actionType == "SELL" then
+            -- SELLING: Max amount is strictly what the silo holds
+            self.maxAmount = selectedSilo.level
+        else
+            -- BUYING: Find the available stock in the global market
+            local marketStock = 0
+            local gm = g_currentMission.globalMarket
+            local marketData = gm:getIsMarketOnline() and gm.fillTypes or gm.offlineMarketFillTypes
+
+            if marketData ~= nil then
+                for _, data in pairs(marketData) do
+                    if data.fillType == self.fillTypeName then
+                        marketStock = data.fillLevel or 0
+                        break
+                    end
+                end
+            end
+
+            -- Limit max amount to whatever is smaller: Silo free space OR Market stock
+            self.maxAmount = math.min(selectedSilo.freeCapacity, marketStock)
+        end
 
         -- Build localized info string
         local availableText = g_i18n:getText("ui_ingameMenuGlobalMarketAvailable") or "Verfuegbare Menge"
