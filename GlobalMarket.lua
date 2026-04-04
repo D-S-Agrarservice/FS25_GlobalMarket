@@ -7,12 +7,17 @@ GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
 GlobalMarket.debug = true
 
+
 GlobalMarket.config = {
     useUI      = true,
-    useEconomy = false,
+    useEconomy = true, 
     useStorage = true,
     useSync    = false
 }
+
+-- Static delivery costs for logistics calculation
+GlobalMarket.DELIVER_COST = 50
+GlobalMarket.DELIVER_COST_PERLITER = 0.05
 
 function GlobalMarket.debugLog(text, ...)
     if GlobalMarket.debug then
@@ -27,6 +32,7 @@ function GlobalMarket.debugLog(text, ...)
     end
 end
 
+-- Source includes
 if GlobalMarket.config.useUI then
     source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
     source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
@@ -58,14 +64,15 @@ function GlobalMarket:loadMap(name)
 
     g_currentMission.globalMarket = self
 
-
     if g_gui ~= nil then
         g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
     end
 
+    -- Initialize Offline Market if economy is enabled
     if GlobalMarket.config.useEconomy and self.initOfflineMarket ~= nil then
         self:initOfflineMarket()
 
+        -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
 
         if g_currentMission:getIsServer() and self.loadFromXMLFile ~= nil then
@@ -94,19 +101,20 @@ end
 local function onFinishedLoading(mission)
     if GlobalMarket.config.useUI and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
         if GlobalMarketUI ~= nil then
-
+            -- 1. Load Transaction Dialog
             local dialogController = GlobalMarketDialog.new()
             g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketDialog.xml", "GlobalMarketDialog", dialogController)
-
             g_currentMission.globalMarket.dialog = dialogController
 
+            -- 2. Load Main Market UI (Updated Path and Name)
             local uiController = GlobalMarketUI.new()
-            local xmlFilename = GlobalMarket.dir .. "gui/InGameMenuGlobalMarket.xml"
+            local xmlFilename = GlobalMarket.dir .. "gui/GlobalMarketUI.xml"
 
-            g_gui:loadGui(xmlFilename, "ingameMenuGlobalMarket", uiController, true)
+            g_gui:loadGui(xmlFilename, "GlobalMarketUI", uiController, true)
             g_currentMission.globalMarket.ui = uiController
 
-            g_currentMission.globalMarket:fixInGameMenu(uiController, "ingameMenuGlobalMarket")
+            -- Inject Tab into InGameMenu
+            g_currentMission.globalMarket:fixInGameMenu(uiController, "GlobalMarketUI")
         else
             GlobalMarket.debugLog("ERROR: GlobalMarketUI class is nil.")
         end
@@ -148,7 +156,7 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
         end
     end
 
-    -- 2. Shift the internal pages mapping (THIS WAS MISSING AND CAUSED THE JUMPING!)
+    -- 2. Shift the internal pages mapping
     for i, page in ipairs(inGameMenu.pagingElement.pages) do
         if page.element == frame then
             table.remove(inGameMenu.pagingElement.pages, i)
@@ -163,10 +171,10 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     -- Register the page using the predicate function
     inGameMenu:registerPage(frame, targetPos, function() return self:isMarketEnabled() end)
 
-    -- 1. Create the tab with default/nil profiles to satisfy the engine
+    -- Create Tab
     local tab = inGameMenu:addPageTab(frame, nil, nil, "gui.icon_ingameMenu_prices")
 
-    -- 2. Wenn die Engine das Tab-Element brav zurückgibt, überschreiben wir das Bild
+    -- Custom Icon Injection
     if tab ~= nil and type(tab) == "table" then
         if tab.icon ~= nil then
             local iconFileName = Utils.getFilename('images/menuIcon.dds', GlobalMarket.dir)
@@ -175,7 +183,7 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
         end
     end
 
-    -- 3. Shift the pageFrames table (ALSO MISSING!)
+    -- 3. Shift the pageFrames table
     for i, pFrame in ipairs(inGameMenu.pageFrames) do
         if pFrame == frame then
             table.remove(inGameMenu.pageFrames, i)
@@ -185,7 +193,7 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     end
 
     inGameMenu:rebuildTabList()
-    GlobalMarket.debugLog("GlobalMarket GUI registered, injected, and mapping fixed successfully.")
+    GlobalMarket.debugLog("GlobalMarket GUI registered as %s and mapping fixed.", pageName)
 end
 
 function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAnalog, isMouse, deviceCategory, binding)

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<GUI name="GlobalMarketUI">
+    <GuiElement profile="fs25_menuContainer" id="mainContainer">
+
+        <GuiElement profile="fs25_menuHeaderPanel">
+            <Bitmap profile="fs25_menuHeaderIconBg">
+                <Bitmap profile="globalMarketMenuHeaderIcon" />
+            </Bitmap>
+            <Text profile="fs25_menuHeaderTitle" id="categoryHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderMarket" />
+
+            <RoundCorner profile="fs25_shopMoneyBoxBg" id="shopMoneyBoxBg" />
+            <BoxLayout profile="fs25_shopMoneyBox" id="shopMoneyBox">
+                <Text profile="fs25_shopBalance" text="KONTOSTAND:" />
+                <Text profile="fs25_shopMoney" id="currentBalanceText" />
+            </BoxLayout>
+        </GuiElement>
+
+        <GuiElement profile="ingameMenuSettingsBoxLeft">
+            <Text profile="fs25_statisticsHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="10px 710px" />
+
+            <GuiElement position="0px 660px" size="500px 40px">
+                <Text profile="globalMarketHeader" position="40px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                <Text profile="globalMarketHeaderRight" position="250px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="500px 2px" />
+            </GuiElement>
+
+            <SmoothList profile="emptyPanel" id="gmTableStorage" position="0px 10px" size="500px 640px" handleFocus="true" selectedWithoutFocus="true" showHighlights="true">
+                <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
+                    <Bitmap profile="globalMarketRowCellImage" name="icon" />
+                    <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="200px 32px" name="name" />
+                    <Text profile="globalMarketRowCellRight" position="250px 0px" size="200px 32px" name="amount" />
+                </ListItem>
+            </SmoothList>
+        </GuiElement>
+
+        <GuiElement profile="ingameMenuSettingsBoxRight">
+            <Text profile="fs25_statisticsHeaderText" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 710px" />
+
+            <GuiElement position="0px 660px" size="800px 40px">
+                <Text profile="globalMarketHeader" position="10px 10px" size="250px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                <Text profile="globalMarketHeaderRight" position="270px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
+                <Text profile="globalMarketHeader" position="480px 10px" size="40px 24px" text="TR." />
+                <Text profile="globalMarketHeaderRight" position="550px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="800px 2px" />
+            </GuiElement>
+
+            <SmoothList profile="emptyPanel" id="gmTableMarket" position="0px 10px" size="800px 640px" handleFocus="true" selectedWithoutFocus="true" showHighlights="true">
+                <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
+                    <Text profile="globalMarketRowCellLeftBright" position="10px 0px" size="250px 32px" name="name" />
+                    <Text profile="globalMarketRowCellRight" position="270px 0px" size="200px 32px" name="price" />
+                    <Bitmap profile="globalMarketRowCellArrow" position="490px 7px" name="trend" />
+                    <Text profile="globalMarketRowCellRight" position="550px 0px" size="200px 32px" name="amount" />
+                </ListItem>
+            </SmoothList>
+        </GuiElement>
+
+        <GuiElement profile="globalMarketFooterBox1">
+            <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px 0px" />
+            <Text profile="globalMarketHeaderBright" position="40px 10px" text="GESAMT BESTAND:"/>
+            <Text profile="globalMarketHeaderRightBright" position="300px 10px" size="200px 32px" id="totalStorageDisplay" text="0 L"/>
+        </GuiElement>
+
+    </GuiElement>
+</GUI>
