@@ -8,10 +8,8 @@ local GlobalMarketUI_mt = Class(GlobalMarketUI, TabbedMenuFrameElement)
 function GlobalMarketUI.new(target, custom_mt)
     local self = TabbedMenuFrameElement.new(target, custom_mt or GlobalMarketUI_mt)
 
-    self.storageData = {}      -- Local farm storage (Section 1)
-    self.terminalData = {}     -- GM Logistic Terminals (Section 2)
-    self.marketData = {}       -- Global Market offers
-
+    self.storageData = {}
+    self.marketData = {}
     self.i18n = g_i18n
     self.currentListFocus = "storage"
     self.isUpdatingSelection = false
@@ -40,7 +38,7 @@ function GlobalMarketUI:onFrameOpen()
     local backButton = { inputAction = InputAction.MENU_BACK }
     self.actionButtonInfo = {
         inputAction = InputAction.MENU_ACCEPT,
-        text = self.i18n:getText("ui_btn_sell") or "Sell",
+        text = self.i18n:getText("ui_btn_sell") or "Verkaufen",
         callback = function() self:onButtonAction() end,
         disabled = true
     }
@@ -53,32 +51,31 @@ function GlobalMarketUI:onFrameOpen()
 end
 
 function GlobalMarketUI:updateContent()
+    local gm = g_currentMission.globalMarket
+
+    -- Update balance
     if self.currentBalanceText ~= nil and g_currentMission ~= nil then
         self.currentBalanceText:setText(self.i18n:formatMoney(g_currentMission:getMoney(), 0, true, true))
     end
 
     local farmId = g_currentMission:getFarmId()
-    local gm = g_currentMission.globalMarket
 
-    -- 1. Fetch Storage Data (Split into Farm vs. Terminal)
-    self.storageData = {}
-    self.terminalData = {}
+    -- Load storage data
+    self.storageData = gm:getAggregatedStorageData(farmId)
 
-    local allStorageData = gm:getAggregatedStorageData(farmId)
-    -- Note: We modified getAggregatedStorageData in GMStorage to return a flag or we filter here
-    -- For now, we assume the backend returns everything and we sort by isGmMarket
-    for _, data in ipairs(allStorageData) do
-        -- We check each fillType's presence in terminals vs normal silos
-        -- To keep it simple for the UI, we just use the aggregated list
-        table.insert(self.storageData, data)
+    -- Calculate total volume for footer display
+    local totalVolume = 0
+    for _, data in ipairs(self.storageData) do
+        totalVolume = totalVolume + (data.level or 0)
+    end
+    if self.totalStorageDisplay ~= nil then
+        self.totalStorageDisplay:setText(self.i18n:formatVolume(totalVolume, 0))
     end
 
-    -- 2. Fetch Market Data (Online vs. Offline)
-    self.marketData = {}
+    -- Load market data
     if gm:getIsMarketOnline() then
         self.marketData = gm.fillTypes or {}
     else
-        -- Use data from our new GlobalMarketOffline module
         self.marketData = gm.offlineMarketFillTypes or {}
     end
 
@@ -91,7 +88,7 @@ end
 -- =========================================================================
 
 function GlobalMarketUI:getNumberOfSections(list)
-    return 1 -- Simplified for the first stable version
+    return 1
 end
 
 function GlobalMarketUI:getNumberOfItemsInSection(list, section)
@@ -111,19 +108,26 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     local trend = cell:getAttribute("trend")
 
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
-    if fillTypeDesc ~= nil then
-        if icon then icon:setImageFilename(fillTypeDesc.hudOverlayFilename) end
-        if name then name:setText(fillTypeDesc.title) end
+
+    if name and fillTypeDesc then
+        name:setText(fillTypeDesc.title)
     end
 
-    if amount then amount:setText(self.i18n:formatVolume(data.fillLevel or data.level, 0)) end
-    if price then price:setText(self.i18n:formatMoney(data.price, 0, true, true)) end
+    if icon and fillTypeDesc then
+        icon:setImageFilename(fillTypeDesc.hudOverlayFilename)
+    end
 
-    -- Trend logic (only for market list)
-    if trend and list == self.gmTableMarket then
-        local profile = "globalMarketRowCellArrow" -- Default
-        -- Add trend comparison logic here later
-        trend:applyProfile(profile, true)
+    if amount then
+        local val = (list == self.gmTableStorage) and data.level or data.fillLevel
+        amount:setText(self.i18n:formatVolume(val, 0))
+    end
+
+    if price then
+        price:setText(self.i18n:formatMoney(data.price, 0, true, true))
+    end
+
+    if trend then
+        trend:setVisible(true)
     end
 end
 
@@ -131,58 +135,61 @@ end
 -- SELECTION & ACTIONS
 -- =========================================================================
 
+-- Fix for line 140: Ensure actionButtonInfo exists before modifying its properties
 function GlobalMarketUI:onListSelectionChanged(list, section, index)
     if self.isUpdatingSelection then return end
     self.isUpdatingSelection = true
 
     if list == self.gmTableStorage then
         self.currentListFocus = "storage"
-        self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Sell"
+        if self.actionButtonInfo ~= nil then
+            self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Verkaufen"
+        end
         if self.gmTableMarket then self.gmTableMarket:setSelectedIndex(0) end
     else
         self.currentListFocus = "market"
-        self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Buy"
+        if self.actionButtonInfo ~= nil then
+            self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Kaufen"
+        end
         if self.gmTableStorage then self.gmTableStorage:setSelectedIndex(0) end
     end
 
-    self.actionButtonInfo.disabled = (index <= 0)
-    self:setMenuButtonInfoDirty()
+    if self.actionButtonInfo ~= nil then
+        self.actionButtonInfo.disabled = (index <= 0)
+        self:setMenuButtonInfoDirty()
+    end
+
     self.isUpdatingSelection = false
 end
 
+-- Connects perfectly to your existing GMDialog.lua signature
 function GlobalMarketUI:onButtonAction()
     local gm = g_currentMission.globalMarket
-    local dialog = gm.dialog
-    if not dialog then return end
-
     local list = (self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket
     local _, index = list:getSelectedPath()
     local data = (self.currentListFocus == "storage") and self.storageData[index] or self.marketData[index]
 
-    if data then
+    if data and gm.dialog ~= nil then
         local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
         local isSelling = (self.currentListFocus == "storage")
         local actionType = isSelling and "SELL" or "BUY"
 
-        -- Fetch available silos for the dialog (Filtered by farm and capacity/stock)
         local silos = gm:getAvailableStorages(data.fillType, g_currentMission:getFarmId(), isSelling)
 
         if #silos > 0 then
-            dialog:show(self, self.onDialogResult, actionType, fillTypeDesc.title, data.fillType, data.price, silos)
+            -- Calls your GMDialog exactly as structured in your script
+            gm.dialog:show(self, self.onDialogResult, actionType, fillTypeDesc.title, data.fillType, data.price, silos)
         else
-            -- Optional: Show warning if no storage available
-            GlobalMarket.debugLog("Action failed: No suitable storage/terminal found.")
+            GlobalMarket.debugLog("Action failed: No suitable storage found.")
         end
     end
 end
 
+-- Callback receiver from your GMDialog.lua
 function GlobalMarketUI:onDialogResult(target, amount, storageId, actionType, fillTypeName)
     if amount > 0 then
         local mode = (actionType == "SELL") and 1 or 2
-        -- Execute transaction via Storage Module
         g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId)
-
-        -- Refresh UI after transaction
         self:updateContent()
     end
 end

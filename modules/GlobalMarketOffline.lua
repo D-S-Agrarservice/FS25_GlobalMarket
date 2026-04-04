@@ -80,3 +80,17 @@ function GlobalMarket:runOfflineSimulation()
         g_server:broadcastEvent(SynchOfflineMarketEvent.new())
     end
 end
+
+-- Retrieves the offline price by fillType name. 
+-- Prevents UI crash during table population.
+function GlobalMarket:getOfflinePriceByFillType(fillTypeName)
+    if self.offlineMarketFillTypes == nil then return 0 end
+
+    for _, data in pairs(self.offlineMarketFillTypes) do
+        if data.fillType == fillTypeName then
+            return data.price or 0
+        end
+    end
+
+    return 0
+end
