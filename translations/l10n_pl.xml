@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<l10n>
+    <elements>
+        <e k="input_GLOBAL_MARKET_OPEN"                            v="Otwórz Rynek Globalny" />
+        <e k="ui_btn_buy"                                          v="kup na Rynku Globalnym" />
+        <e k="ui_btn_sell"                                         v="sprzedaj na Rynek Globalny" />
+        <e k="ui_gm_balance"                                       v="SALDO:" />
+        <e k="ui_gm_settings_header"                               v="RYNEK GLOBALNY" />
+        <e k="ui_gm_settings_baseCost"                             v="Koszty dostawy: Opłata podstawowa" />
+        <e k="ui_gm_settings_baseCost_desc"                        v="Ustala stałą opłatę podstawową za dostawy towarowe do lub z prywatnego silosu." />
+        <e k="ui_gm_settings_literCost"                            v="Koszty dostawy: Cena za litr" />
+        <e k="ui_gm_settings_literCost_desc"                       v="Ustala dodatkowe koszty transportu za każdy sprzedany/kupiony litr." />
+        <e k="ui_gm_total_storage"                                 v="ZAPAS CAŁKOWITY:" />
+        <e k="ui_gm_trend"                                         v="TREND" />
+        <e k="ui_gm_terminal_hint"                                 v=" (Centrum logistyczne GM - bez opłat)" />
+        <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Dostępna ilość" />
+        <e k="ui_ingameMenuGlobalMarketCount"                      v="Ilość" />
+        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Uprawa" />
+        <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Rynek Globalny" />
+        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Zapas w silosie" />
+        <e k="ui_ingameMenuGlobalMarketOffline"                    v="Rynek Globalny - Offline" />
+        <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="Rynek nie jest obecnie połączony z serwerem i jest symulowany." />
+        <e k="ui_ingameMenuGlobalMarketOnline"                     v="Rynek Globalny - Online" />
+        <e k="ui_ingameMenuGlobalMarketOnlineDesc"                 v="Rynek jest połączony z serwerem!" />
+        <e k="ui_ingameMenuGlobalMarketPrice"                      v="Cena" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Kup" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnCancel"            v="Anuluj" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnSell"              v="Sprzedaj" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="przewidywana cena zakupu:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Koszty dostawy:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Wybór ilości:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Kup z rynku" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="Nie masz wystarczająco dużo pieniędzy!" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="przewidywana cena sprzedaży:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Sprzedaj z silosu" />
+        <e k="ui_ingameMenuGlobalMarketSelectLoading"              v="Oczekiwanie na zakończenie transakcji . . ." />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageFree"          v="Wolne" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageName"          v="Nazwa" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Wybór silosu" />
+        <e k="ui_ingameMenuGlobalMarketToggleFalse"                v="Pokaż: Dostępne" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Magazyn obiektów" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageSilo"          v="Silos" />
+        <e k="ui_ingameMenuGlobalMarketToggleTrue"                 v="Pokaż: Wszystko" />
+    </elements>
+</l10n>

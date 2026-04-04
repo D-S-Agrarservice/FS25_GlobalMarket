@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<l10n>
+    <elements>
+        <e k="input_GLOBAL_MARKET_OPEN"                            v="Abrir Mercado Global" />
+        <e k="ui_btn_buy"                                          v="comprar en el Mercado Global" />
+        <e k="ui_btn_sell"                                         v="vender al Mercado Global" />
+        <e k="ui_gm_balance"                                       v="SALDO:" />
+        <e k="ui_gm_settings_header"                               v="MERCADO GLOBAL" />
+        <e k="ui_gm_settings_baseCost"                             v="Gastos de envío: Tarifa base" />
+        <e k="ui_gm_settings_baseCost_desc"                        v="Establece la tarifa base fija para envíos de mercancías hacia o desde el silo de la granja privada." />
+        <e k="ui_gm_settings_literCost"                            v="Gastos de envío: Precio por litro" />
+        <e k="ui_gm_settings_literCost_desc"                       v="Establece los costos de transporte adicionales por cada litro comercializado." />
+        <e k="ui_gm_total_storage"                                 v="STOCK TOTAL:" />
+        <e k="ui_gm_trend"                                         v="TEND." />
+        <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />
+        <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Cantidad disponible" />
+        <e k="ui_ingameMenuGlobalMarketCount"                      v="Cantidad" />
+        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Cultivo" />
+        <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Mercado Global" />
+        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Stock almacenado" />
+        <e k="ui_ingameMenuGlobalMarketOffline"                    v="Mercado Global - Desconectado" />
+        <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="El mercado no está conectado actualmente al servidor y está siendo simulado." />
+        <e k="ui_ingameMenuGlobalMarketOnline"                     v="Mercado Global - Conectado" />
+        <e k="ui_ingameMenuGlobalMarketOnlineDesc"                 v="¡El mercado está conectado al servidor!" />
+        <e k="ui_ingameMenuGlobalMarketPrice"                      v="Precio" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Comprar" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnCancel"            v="Cancelar" />
+        <e k="ui_ingameMenuGlobalMarketSelectBtnSell"              v="Vender" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="precio de compra esperado:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Gastos de envío:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Selección de cantidad:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Comprar en el mercado" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="¡No tienes suficiente dinero!" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="precio de venta esperado:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Vender desde el silo" />
+        <e k="ui_ingameMenuGlobalMarketSelectLoading"              v="Esperando a que termine la transacción . . ." />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageFree"          v="Libre" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageName"          v="Nombre" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Selección de silo" />
+        <e k="ui_ingameMenuGlobalMarketToggleFalse"                v="Mostrar: Disponible" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Almacenamiento de objetos" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageSilo"          v="Silo" />
+        <e k="ui_ingameMenuGlobalMarketToggleTrue"                 v="Mostrar: Todo" />
+    </elements>
+</l10n>

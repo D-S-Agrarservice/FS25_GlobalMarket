@@ -58,6 +58,17 @@ function GlobalMarketUI:updateContent()
         self.currentBalanceText:setText(self.i18n:formatMoney(g_currentMission:getMoney(), 0, true, true))
     end
 
+    -- Update Online/Offline Status Texts
+    if self.marketStatusTitle ~= nil and self.marketStatusDesc ~= nil then
+        if gm:getIsMarketOnline() then
+            self.marketStatusTitle:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOnline"))
+            self.marketStatusDesc:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOnlineDesc"))
+        else
+            self.marketStatusTitle:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOffline"))
+            self.marketStatusDesc:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOfflineDesc"))
+        end
+    end
+
     local farmId = g_currentMission:getFarmId()
 
     -- Load storage data

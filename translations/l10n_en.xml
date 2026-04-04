@@ -4,11 +4,20 @@
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Open Global Market" />
         <e k="ui_btn_buy"                                          v="buy from Global Market" />
         <e k="ui_btn_sell"                                         v="sell to Global Market" />
-        <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Available quantity" />
-        <e k="ui_ingameMenuGlobalMarketCount"                      v="Count" />
-        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Fruit" />
+        <e k="ui_gm_balance"                                       v="BALANCE:" />
+        <e k="ui_gm_settings_header"                               v="GLOBAL MARKET" />
+        <e k="ui_gm_settings_baseCost"                             v="Delivery Costs: Base Fee" />
+        <e k="ui_gm_settings_baseCost_desc"                        v="Sets the fixed base fee for freight deliveries to or from the private farm silo." />
+        <e k="ui_gm_settings_literCost"                            v="Delivery Costs: Price per Liter" />
+        <e k="ui_gm_settings_literCost_desc"                       v="Sets the additional transport costs per traded liter." />
+        <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
+        <e k="ui_gm_trend"                                         v="TR." />
+        <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
+        <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Available Amount" />
+        <e k="ui_ingameMenuGlobalMarketCount"                      v="Amount" />
+        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Crop" />
         <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Global Market" />
-        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Storage inventory" />
+        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Storage Stock" />
         <e k="ui_ingameMenuGlobalMarketOffline"                    v="Global Market - Offline" />
         <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="The market is currently not connected to the server and is being simulated." />
         <e k="ui_ingameMenuGlobalMarketOnline"                     v="Global Market - Online" />
@@ -17,19 +26,19 @@
         <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Buy" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnCancel"            v="Cancel" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnSell"              v="Sell" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="estimated purchase price:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="delivery costs:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="expected purchase price:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Delivery costs:" />
         <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Quantity selection:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Buy from Market" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Buy from market" />
         <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="You don't have enough money!" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="estimated selling price:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Sell from Storage" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="expected selling price:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Sell from storage" />
         <e k="ui_ingameMenuGlobalMarketSelectLoading"              v="Waiting for transaction to complete . . ." />
         <e k="ui_ingameMenuGlobalMarketSelectStorageFree"          v="Free" />
         <e k="ui_ingameMenuGlobalMarketSelectStorageName"          v="Name" />
-        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Storage Selection" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Storage selection" />
         <e k="ui_ingameMenuGlobalMarketToggleFalse"                v="Show: Available" />
-        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Object Storage" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Object storage" />
         <e k="ui_ingameMenuGlobalMarketToggleStorageSilo"          v="Silo" />
         <e k="ui_ingameMenuGlobalMarketToggleTrue"                 v="Show: All" />
     </elements>
