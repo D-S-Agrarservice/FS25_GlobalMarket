@@ -268,7 +268,8 @@ function GlobalMarket.Storage_registerXMLPaths(schema, basePath)
 end
 Storage.registerXMLPaths = Utils.appendedFunction(Storage.registerXMLPaths, GlobalMarket.Storage_registerXMLPaths)
 
-function GlobalMarket:PlaceableObjectStorage_onLoad(savegame)
+-- EXACT FS25 MATCH: PlaceableObjectStorage:onLoad(_)
+function GlobalMarket.PlaceableObjectStorage_onLoad(self, _)
     local spec = self.spec_objectStorage
     if spec ~= nil and self.xmlFile ~= nil then
         spec.isGmMarket = self.xmlFile:getValue("placeable.objectStorage#isGmMarket", false)
@@ -276,8 +277,9 @@ function GlobalMarket:PlaceableObjectStorage_onLoad(savegame)
 end
 PlaceableObjectStorage.onLoad = Utils.appendedFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
 
-function GlobalMarket:Storage_load(components, xmlFile, key, i3dMappings)
-    if xmlFile ~= nil then
+-- EXACT FS25 MATCH: Storage:load(components, xmlFile, key, i3dMappings, baseDirectory)
+function GlobalMarket.Storage_load(self, components, xmlFile, key, i3dMappings, baseDirectory)
+    if xmlFile ~= nil and key ~= nil then
         self.isGmMarket = xmlFile:getValue(key .. "#isGmMarket", false)
     end
 end

@@ -28,7 +28,6 @@ function GlobalMarket.debugLog(text, ...)
 end
 
 if GlobalMarket.config.useUI then
-    source(GlobalMarket.dir .. "modules/GlobalMarketDummyData.lua")
     source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
     source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 end
