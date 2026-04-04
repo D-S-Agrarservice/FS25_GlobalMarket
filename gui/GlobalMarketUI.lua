@@ -221,14 +221,18 @@ function GlobalMarketUI:onButtonAction()
         local data = self.storageData[index]
 
         if data then
+            -- Resolve localized title on the fly
+            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+            local displayTitle = fillTypeDesc ~= nil and fillTypeDesc.title or data.fillType
+
             -- Fetch actual storages from backend (isSelling = true -> needs stock)
             local silos = g_currentMission.globalMarket:getAvailableStorages(data.fillType, playerFarmId, true)
 
             if #silos > 0 then
-                GlobalMarket.debugLog("Opening SELL dialog for: " .. tostring(data.title))
-                dialog:show(self, self.onDialogResult, "SELL", data.title, data.fillType, data.price, silos)
+                GlobalMarket.debugLog("Opening SELL dialog for: " .. tostring(displayTitle))
+                dialog:show(self, self.onDialogResult, "SELL", displayTitle, data.fillType, data.price, silos)
             else
-                GlobalMarket.debugLog("Info: No silo found with %s on farm %d.", data.title, playerFarmId)
+                GlobalMarket.debugLog("Info: No silo found with %s on farm %d.", displayTitle, playerFarmId)
             end
         else
             GlobalMarket.debugLog("ERROR: No data found in storage table at given index.")
@@ -238,14 +242,18 @@ function GlobalMarketUI:onButtonAction()
         local data = self.marketData[index]
 
         if data then
+            -- Resolve localized title on the fly
+            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+            local displayTitle = fillTypeDesc ~= nil and fillTypeDesc.title or data.fillType
+
             -- Fetch actual storages from backend (isSelling = false -> needs free capacity)
             local silos = g_currentMission.globalMarket:getAvailableStorages(data.fillType, playerFarmId, false)
 
             if #silos > 0 then
-                GlobalMarket.debugLog("Opening BUY dialog for: " .. tostring(data.title))
-                dialog:show(self, self.onDialogResult, "BUY", data.title, data.fillType, data.price, silos)
+                GlobalMarket.debugLog("Opening BUY dialog for: " .. tostring(displayTitle))
+                dialog:show(self, self.onDialogResult, "BUY", displayTitle, data.fillType, data.price, silos)
             else
-                GlobalMarket.debugLog("Info: No silo with free capacity found for %s on farm %d.", data.title, playerFarmId)
+                GlobalMarket.debugLog("Info: No silo with free capacity found for %s on farm %d.", displayTitle, playerFarmId)
             end
         else
             GlobalMarket.debugLog("ERROR: No data found in market table at given index.")

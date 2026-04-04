@@ -10,42 +10,44 @@
 -- @param fillTypeName string: The name of the fillType (e.g., "MAIZE")
 -- @param farmId integer: The ID of the farm requesting the storages
 -- @param isSelling boolean: True if player wants to sell to GM (needs stock), False if buying (needs free capacity)
-function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
+    function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     local availableStorages = {}
 
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(fillTypeName)
     if fillTypeDesc == nil then 
-        GlobalMarket.debugLog("Storage: FillType '%s' not found.", tostring(fillTypeName))
         return availableStorages 
     end
 
     local fillTypeIndex = fillTypeDesc.index
 
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        -- Check ownership and ensure it's not the GM market itself
         if storage.ownerFarmId == farmId and not storage.isGmMarket then
             if storage:getIsFillTypeSupported(fillTypeIndex) then
-                
+
                 local level = storage:getFillLevel(fillTypeIndex)
                 local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
 
-                -- Attempt to get a human-readable name
-                local placeable = storage.owningPlaceable
-                local storageName = placeable ~= nil and placeable:getName() or "Unknown Silo"
+                -- Improved name detection for FS25 placeables
+                local storageName = "Silo"
+                if storage.owningPlaceable ~= nil then
+                    storageName = storage.owningPlaceable:getName()
+                end
 
-                -- Filter based on transaction context
-                if isSelling and level > 0 then
+                -- Use the rootNode as a reliable unique ID across the network
+                local uniqueId = storage.rootNode
+
+                if isSelling and level > 0.1 then
                     table.insert(availableStorages, {
                         storage = storage,
-                        id = storage.id,
+                        id = uniqueId,
                         title = storageName,
                         level = level,
                         freeCapacity = freeCapacity
                     })
-                elseif not isSelling and freeCapacity > 0 then
+                elseif not isSelling and freeCapacity > 0.1 then
                     table.insert(availableStorages, {
                         storage = storage,
-                        id = storage.id,
+                        id = uniqueId,
                         title = storageName,
                         level = level,
                         freeCapacity = freeCapacity
@@ -55,7 +57,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
         end
     end
 
-    GlobalMarket.debugLog("Storage: Found %d valid storages for %s (isSelling: %s)", #availableStorages, fillTypeName, tostring(isSelling))
     return availableStorages
 end
 
@@ -228,14 +229,14 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
         GlobalMarket.debugLog("  -> Routing to Online Market logic...")
         if filltypeName ~= nil then
             for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-                if storage.id == storageId then
+                if storage.rootNode == storageId then
                     g_client:getServerConnection():sendEvent(SellBuySiloGlobalMarketEvent.new(mode, filltypeName, level, storage, g_currentMission.playerUserId))
                     break
                 end
             end
         elseif attributes ~= nil then
             for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-                if storage.id == storageId then
+                if storage.rootNode == storageId then
                     -- Requires SellBuyObjectGlobalMarketEvent to exist
                     if SellBuyObjectGlobalMarketEvent ~= nil then
                         g_client:getServerConnection():sendEvent(SellBuyObjectGlobalMarketEvent.new(mode, count, attributes, storage, g_currentMission.playerUserId))
@@ -261,7 +262,7 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
                     end
 
                     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-                        if storage.id == storageId then
+                        if storage.rootNode == storageId then
                             if not g_currentMission.missionDynamicInfo.isMultiplayer then
                                 self:sellBuyOfflineMarket(price, moneyType, g_currentMission.inGameMenu.playerFarmId, level, filltypeName, storage, g_currentMission.playerUserId)
                             else
@@ -314,8 +315,8 @@ end
 Storage.registerXMLPaths = Utils.appendedFunction(Storage.registerXMLPaths, GlobalMarket.Storage_registerXMLPaths)
 
 -- SAFE HOOK: PlaceableObjectStorage
-function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
-    -- Die Original-Funktion ausführen
+    function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
+    -- Execute the original basegame function
     superFunc(self, savegame)
 
     local spec = self.spec_objectStorage
@@ -326,14 +327,16 @@ end
 PlaceableObjectStorage.onLoad = Utils.overwrittenFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
 
 -- SAFE HOOK: Storage
-function GlobalMarket.Storage_load(self, superFunc, components, xmlFile, key, i3dMappings, baseDirectory)
-    -- Die Original-Funktion ausführen UND das Ergebnis (true/false) speichern
+    function GlobalMarket.Storage_load(self, superFunc, components, xmlFile, key, i3dMappings, baseDirectory)
+    -- Execute the original basegame function AND store the return value
     local success = superFunc(self, components, xmlFile, key, i3dMappings, baseDirectory)
-    -- Nur weitermachen, wenn Vanilla erfolgreich geladen hat und der key ein String ist
+
+    -- Only proceed if vanilla loaded successfully and the key is a valid string
     if success and xmlFile ~= nil and type(key) == "string" then
         self.isGmMarket = xmlFile:getValue(key .. "#isGmMarket", false)
     end
-    -- EXTREM WICHTIG: Das Vanilla-Ergebnis an die Engine zurückgeben!
+
+    -- EXTREMELY IMPORTANT: Return the vanilla success result back to the engine!
     return success
 end
 Storage.load = Utils.overwrittenFunction(Storage.load, GlobalMarket.Storage_load)
