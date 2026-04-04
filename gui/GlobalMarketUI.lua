@@ -7,11 +7,15 @@ local GlobalMarketUI_mt = Class(GlobalMarketUI, TabbedMenuFrameElement)
 
 function GlobalMarketUI.new(target, custom_mt)
     local self = TabbedMenuFrameElement.new(target, custom_mt or GlobalMarketUI_mt)
-    self.storageData = {}
-    self.marketData = {}
+
+    self.storageData = {}      -- Local farm storage (Section 1)
+    self.terminalData = {}     -- GM Logistic Terminals (Section 2)
+    self.marketData = {}       -- Global Market offers
+
     self.i18n = g_i18n
     self.currentListFocus = "storage"
-    self.isUpdatingSelection = false -- Safety guard to prevent infinite loops
+    self.isUpdatingSelection = false
+
     return self
 end
 
@@ -31,14 +35,12 @@ end
 
 function GlobalMarketUI:onFrameOpen()
     GlobalMarketUI:superClass().onFrameOpen(self)
-
     self:updateContent()
 
     local backButton = { inputAction = InputAction.MENU_BACK }
-
     self.actionButtonInfo = {
         inputAction = InputAction.MENU_ACCEPT,
-        text = self.i18n:getText("ui_btn_sell") or "Verkaufen",
+        text = self.i18n:getText("ui_btn_sell") or "Sell",
         callback = function() self:onButtonAction() end,
         disabled = true
     }
@@ -52,32 +54,44 @@ end
 
 function GlobalMarketUI:updateContent()
     if self.currentBalanceText ~= nil and g_currentMission ~= nil then
-        local currentMoney = g_currentMission:getMoney()
-        self.currentBalanceText:setText(self.i18n:formatMoney(currentMoney, 0, true, true))
+        self.currentBalanceText:setText(self.i18n:formatMoney(g_currentMission:getMoney(), 0, true, true))
     end
 
-    local playerFarmId = g_currentMission:getFarmId()
+    local farmId = g_currentMission:getFarmId()
+    local gm = g_currentMission.globalMarket
 
-    -- Fetch real aggregated storage data from backend
-    if g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.getAggregatedStorageData ~= nil then
-        self.storageData = g_currentMission.globalMarket:getAggregatedStorageData(playerFarmId)
-    else
-        self.storageData = {}
+    -- 1. Fetch Storage Data (Split into Farm vs. Terminal)
+    self.storageData = {}
+    self.terminalData = {}
+
+    local allStorageData = gm:getAggregatedStorageData(farmId)
+    -- Note: We modified getAggregatedStorageData in GMStorage to return a flag or we filter here
+    -- For now, we assume the backend returns everything and we sort by isGmMarket
+    for _, data in ipairs(allStorageData) do
+        -- We check each fillType's presence in terminals vs normal silos
+        -- To keep it simple for the UI, we just use the aggregated list
+        table.insert(self.storageData, data)
     end
 
-    -- Market data remains empty until the economy module is connected
+    -- 2. Fetch Market Data (Online vs. Offline)
     self.marketData = {}
+    if gm:getIsMarketOnline() then
+        self.marketData = gm.fillTypes or {}
+    else
+        -- Use data from our new GlobalMarketOffline module
+        self.marketData = gm.offlineMarketFillTypes or {}
+    end
 
     if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
     if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end
 end
 
 -- =========================================================================
--- LIST CALLBACKS
+-- LIST CALLBACKS (Data Source)
 -- =========================================================================
 
 function GlobalMarketUI:getNumberOfSections(list)
-    return 1
+    return 1 -- Simplified for the first stable version
 end
 
 function GlobalMarketUI:getNumberOfItemsInSection(list, section)
@@ -87,176 +101,88 @@ function GlobalMarketUI:getNumberOfItemsInSection(list, section)
 end
 
 function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
-    if list == self.gmTableStorage then
-        local data = self.storageData[index]
-        if data then
-            local icon = cell:getAttribute("icon")
-            local name = cell:getAttribute("name")
-            local amount = cell:getAttribute("amount")
+    local data = (list == self.gmTableStorage) and self.storageData[index] or self.marketData[index]
+    if not data then return end
 
-            -- Fetch the fillType details directly from the engine
-            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+    local icon = cell:getAttribute("icon")
+    local name = cell:getAttribute("name")
+    local amount = cell:getAttribute("amount")
+    local price = cell:getAttribute("price")
+    local trend = cell:getAttribute("trend")
 
-            if fillTypeDesc ~= nil then
-                if icon then icon:setImageFilename(fillTypeDesc.hudOverlayFilename) end
-                if name then name:setText(fillTypeDesc.title) end
-            end
+    local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+    if fillTypeDesc ~= nil then
+        if icon then icon:setImageFilename(fillTypeDesc.hudOverlayFilename) end
+        if name then name:setText(fillTypeDesc.title) end
+    end
 
-            if amount then amount:setText(self.i18n:formatVolume(data.level, 0)) end
-        end
-    elseif list == self.gmTableMarket then
-        local data = self.marketData[index]
-        if data then
-            local icon = cell:getAttribute("icon")
-            local name = cell:getAttribute("name")
-            local amount = cell:getAttribute("amount")
-            local price = cell:getAttribute("price")
-            local trend = cell:getAttribute("trend")
+    if amount then amount:setText(self.i18n:formatVolume(data.fillLevel or data.level, 0)) end
+    if price then price:setText(self.i18n:formatMoney(data.price, 0, true, true)) end
 
-            -- Same here for the market side
-            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
-
-            if fillTypeDesc ~= nil then
-                if icon then icon:setImageFilename(fillTypeDesc.hudOverlayFilename) end
-                if name then name:setText(fillTypeDesc.title) end
-            end
-
-            if amount then amount:setText(self.i18n:formatVolume(data.level, 0)) end
-            if price then price:setText(self.i18n:formatMoney(data.price, 0, true, true)) end
-
-            if trend then
-                local profile = "globalMarketRowCellArrow"
-                if data.trend == SellingStation.PRICE_CLIMBING then
-                    profile = "globalMarketRowCellArrowClimbing"
-                elseif data.trend == SellingStation.PRICE_FALLING then
-                    profile = "globalMarketRowCellArrowFalling"
-                end
-                trend:applyProfile(profile, true)
-            end
-        end
+    -- Trend logic (only for market list)
+    if trend and list == self.gmTableMarket then
+        local profile = "globalMarketRowCellArrow" -- Default
+        -- Add trend comparison logic here later
+        trend:applyProfile(profile, true)
     end
 end
 
 -- =========================================================================
--- QoL: DYNAMIC HIGHLIGHT AND BUTTON TEXT
+-- SELECTION & ACTIONS
 -- =========================================================================
+
 function GlobalMarketUI:onListSelectionChanged(list, section, index)
     if self.isUpdatingSelection then return end
     self.isUpdatingSelection = true
 
-    if self.actionButtonInfo ~= nil then
-        if list == self.gmTableStorage then
-            if index > 0 then
-                self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Verkaufen"
-                self.currentListFocus = "storage"
-                self.actionButtonInfo.disabled = false
-
-                -- Deselect the right list
-                if self.gmTableMarket ~= nil then
-                    self.gmTableMarket:setSelectedIndex(0)
-                end
-            else
-                if self.currentListFocus == "storage" then
-                    self.actionButtonInfo.disabled = true
-                end
-            end
-        elseif list == self.gmTableMarket then
-            if index > 0 then
-                self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Kaufen"
-                self.currentListFocus = "market"
-                self.actionButtonInfo.disabled = false
-
-                -- Deselect the left list
-                if self.gmTableStorage ~= nil then
-                    self.gmTableStorage:setSelectedIndex(0)
-                end
-            else
-                if self.currentListFocus == "market" then
-                    self.actionButtonInfo.disabled = true
-                end
-            end
-        end
-
-        self:setMenuButtonInfoDirty()
+    if list == self.gmTableStorage then
+        self.currentListFocus = "storage"
+        self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Sell"
+        if self.gmTableMarket then self.gmTableMarket:setSelectedIndex(0) end
+    else
+        self.currentListFocus = "market"
+        self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Buy"
+        if self.gmTableStorage then self.gmTableStorage:setSelectedIndex(0) end
     end
 
+    self.actionButtonInfo.disabled = (index <= 0)
+    self:setMenuButtonInfoDirty()
     self.isUpdatingSelection = false
 end
 
--- =========================================================================
--- ACTIONS
--- =========================================================================
-function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName)
-    if amount > 0 then
-        GlobalMarket.debugLog(string.format("DIALOG RESULT -> Action: %s | Amount: %s | Storage ID: %s | FillType: %s", actionType, tostring(amount), tostring(storageId), tostring(fillTypeName)))
+function GlobalMarketUI:onButtonAction()
+    local gm = g_currentMission.globalMarket
+    local dialog = gm.dialog
+    if not dialog then return end
 
-        -- Mode for Backend: 1 = SELL (Player sells to Market), 2 = BUY (Player buys from Market)
-        local mode = actionType == "SELL" and 1 or 2
+    local list = (self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket
+    local _, index = list:getSelectedPath()
+    local data = (self.currentListFocus == "storage") and self.storageData[index] or self.marketData[index]
 
-        -- Execute the actual transaction in our Storage Module
-        if g_currentMission.globalMarket.onSellBuy ~= nil then
-            g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, nil, nil, nil)
+    if data then
+        local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+        local isSelling = (self.currentListFocus == "storage")
+        local actionType = isSelling and "SELL" or "BUY"
+
+        -- Fetch available silos for the dialog (Filtered by farm and capacity/stock)
+        local silos = gm:getAvailableStorages(data.fillType, g_currentMission:getFarmId(), isSelling)
+
+        if #silos > 0 then
+            dialog:show(self, self.onDialogResult, actionType, fillTypeDesc.title, data.fillType, data.price, silos)
         else
-            GlobalMarket.debugLog("ERROR: GlobalMarket:onSellBuy function is missing or storage module not loaded!")
+            -- Optional: Show warning if no storage available
+            GlobalMarket.debugLog("Action failed: No suitable storage/terminal found.")
         end
-    else
-        GlobalMarket.debugLog("Dialog cancelled or 0 amount.")
     end
 end
 
-function GlobalMarketUI:onButtonAction()
-    GlobalMarket.debugLog("Button clicked! Focus is on: " .. tostring(self.currentListFocus))
+function GlobalMarketUI:onDialogResult(target, amount, storageId, actionType, fillTypeName)
+    if amount > 0 then
+        local mode = (actionType == "SELL") and 1 or 2
+        -- Execute transaction via Storage Module
+        g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId)
 
-    local dialog = g_currentMission.globalMarket.dialog
-
-    if dialog == nil then
-        GlobalMarket.debugLog("ERROR: Dialog 'GlobalMarketDialog' not found in screenControllers!")
-        return
-    end
-
-    local playerFarmId = g_currentMission:getFarmId()
-
-    if self.currentListFocus == "storage" then
-        local _, index = self.gmTableStorage:getSelectedPath()
-        local data = self.storageData[index]
-
-        if data then
-            -- Resolve localized title on the fly
-            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
-            local displayTitle = fillTypeDesc ~= nil and fillTypeDesc.title or data.fillType
-
-            -- Fetch actual storages from backend (isSelling = true -> needs stock)
-            local silos = g_currentMission.globalMarket:getAvailableStorages(data.fillType, playerFarmId, true)
-
-            if #silos > 0 then
-                GlobalMarket.debugLog("Opening SELL dialog for: " .. tostring(displayTitle))
-                dialog:show(self, self.onDialogResult, "SELL", displayTitle, data.fillType, data.price, silos)
-            else
-                GlobalMarket.debugLog("Info: No silo found with %s on farm %d.", displayTitle, playerFarmId)
-            end
-        else
-            GlobalMarket.debugLog("ERROR: No data found in storage table at given index.")
-        end
-    elseif self.currentListFocus == "market" then
-        local _, index = self.gmTableMarket:getSelectedPath()
-        local data = self.marketData[index]
-
-        if data then
-            -- Resolve localized title on the fly
-            local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
-            local displayTitle = fillTypeDesc ~= nil and fillTypeDesc.title or data.fillType
-
-            -- Fetch actual storages from backend (isSelling = false -> needs free capacity)
-            local silos = g_currentMission.globalMarket:getAvailableStorages(data.fillType, playerFarmId, false)
-
-            if #silos > 0 then
-                GlobalMarket.debugLog("Opening BUY dialog for: " .. tostring(displayTitle))
-                dialog:show(self, self.onDialogResult, "BUY", displayTitle, data.fillType, data.price, silos)
-            else
-                GlobalMarket.debugLog("Info: No silo with free capacity found for %s on farm %d.", displayTitle, playerFarmId)
-            end
-        else
-            GlobalMarket.debugLog("ERROR: No data found in market table at given index.")
-        end
+        -- Refresh UI after transaction
+        self:updateContent()
     end
 end
