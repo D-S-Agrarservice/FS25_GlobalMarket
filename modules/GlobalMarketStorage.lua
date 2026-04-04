@@ -215,33 +215,49 @@ function GlobalMarket.updateUi(streamId, timestamp, connection)
     end
 end
 
+-- UI updates remain on the Storage level, as fill level sync happens here
 Storage.readUpdateStream = Utils.appendedFunction(Storage.readUpdateStream, GlobalMarket.updateUi)
 PlaceableObjectStorage.onReadUpdateStream = Utils.appendedFunction(PlaceableObjectStorage.onReadUpdateStream, GlobalMarket.updateUi)
 
+-- 1. XML Path Registration (Cleanly targeting the specific specializations)
 function GlobalMarket.PlaceableObjectStorage_registerXMLPaths(schema, basePath)
-    schema:register(XMLValueType.BOOL, basePath .. ".objectStorage#isGmMarket", "ObjectStorage is GlobalMarketPlaceable", false)
+    schema:register(XMLValueType.BOOL, basePath .. "#isGmMarket", "ObjectStorage is GlobalMarketPlaceable", false)
 end
 PlaceableObjectStorage.registerXMLPaths = Utils.appendedFunction(PlaceableObjectStorage.registerXMLPaths, GlobalMarket.PlaceableObjectStorage_registerXMLPaths)
 
-function GlobalMarket.Storage_registerXMLPaths(schema, basePath)
-    schema:register(XMLValueType.BOOL, basePath .. "#isGmMarket", "Storage is GlobalMarketPlaceable", false)
+function GlobalMarket.PlaceableSilo_registerXMLPaths(schema, basePath)
+    schema:register(XMLValueType.BOOL, basePath .. "#isGmMarket", "Silo is GlobalMarketPlaceable", false)
 end
-Storage.registerXMLPaths = Utils.appendedFunction(Storage.registerXMLPaths, GlobalMarket.Storage_registerXMLPaths)
+PlaceableSilo.registerXMLPaths = Utils.appendedFunction(PlaceableSilo.registerXMLPaths, GlobalMarket.PlaceableSilo_registerXMLPaths)
 
+-- 2. Loading Logic (Read XML and pass the flag to the physical storages)
 function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
     superFunc(self, savegame)
     local spec = self.spec_objectStorage
     if spec ~= nil and self.xmlFile ~= nil then
         spec.isGmMarket = self.xmlFile:getValue("placeable.objectStorage#isGmMarket", false)
+
+        -- Apply to the placeable itself and its internal storage node
+        self.isGmMarket = spec.isGmMarket
+        if spec.storage ~= nil then
+            spec.storage.isGmMarket = spec.isGmMarket
+        end
     end
 end
 PlaceableObjectStorage.onLoad = Utils.overwrittenFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
 
-function GlobalMarket.Storage_load(self, superFunc, components, xmlFile, key, i3dMappings, baseDirectory)
-    local success = superFunc(self, components, xmlFile, key, i3dMappings, baseDirectory)
-    if success and xmlFile ~= nil and type(key) == "string" then
-        self.isGmMarket = xmlFile:getValue(key .. "#isGmMarket", false)
+function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
+    superFunc(self, savegame)
+    local spec = self.spec_silo
+    if spec ~= nil and self.xmlFile ~= nil then
+        spec.isGmMarket = self.xmlFile:getValue("placeable.silo#isGmMarket", false)
+
+        -- Pass the flag down to all child storages so the existing getAvailableStorages loop works flawlessly
+        if spec.storages ~= nil then
+            for _, storage in ipairs(spec.storages) do
+                storage.isGmMarket = spec.isGmMarket
+            end
+        end
     end
-    return success
 end
-Storage.load = Utils.overwrittenFunction(Storage.load, GlobalMarket.Storage_load)
+PlaceableSilo.onLoad = Utils.overwrittenFunction(PlaceableSilo.onLoad, GlobalMarket.PlaceableSilo_onLoad)
