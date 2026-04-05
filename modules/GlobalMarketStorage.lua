@@ -219,20 +219,16 @@ end
 Storage.readUpdateStream = Utils.appendedFunction(Storage.readUpdateStream, GlobalMarket.updateUi)
 PlaceableObjectStorage.onReadUpdateStream = Utils.appendedFunction(PlaceableObjectStorage.onReadUpdateStream, GlobalMarket.updateUi)
 
--- 1. XML Path Registration (Directly injecting into the global Placeable schema)
-if Placeable.xmlSchema ~= nil then
-    Placeable.xmlSchema:register(XMLValueType.BOOL, "placeable.objectStorage#isGmMarket", "ObjectStorage is GlobalMarketPlaceable", false)
-    Placeable.xmlSchema:register(XMLValueType.BOOL, "placeable.silo#isGmMarket", "Silo is GlobalMarketPlaceable", false)
-else
-    GlobalMarket.debugLog("ERROR: Placeable.xmlSchema is nil! Cannot register XML paths.")
-end
+-- =========================================================================
+-- Loading Logic (Bypassing strict XML schema validation using getBool)
+-- =========================================================================
 
--- 2. Loading Logic (Read XML and pass the flag to the physical storages)
 function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
     superFunc(self, savegame)
     local spec = self.spec_objectStorage
     if spec ~= nil and self.xmlFile ~= nil then
-        spec.isGmMarket = self.xmlFile:getValue("placeable.objectStorage#isGmMarket", false)
+        -- Using getBool instead of getValue to skip schema validation
+        spec.isGmMarket = self.xmlFile:getBool("placeable.objectStorage#isGmMarket", false)
 
         -- Apply to the placeable itself and its internal storage node
         self.isGmMarket = spec.isGmMarket
@@ -247,7 +243,8 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
     superFunc(self, savegame)
     local spec = self.spec_silo
     if spec ~= nil and self.xmlFile ~= nil then
-        spec.isGmMarket = self.xmlFile:getValue("placeable.silo#isGmMarket", false)
+        -- Using getBool instead of getValue to skip schema validation
+        spec.isGmMarket = self.xmlFile:getBool("placeable.silo#isGmMarket", false)
 
         -- Pass the flag down to all child storages so the existing getAvailableStorages loop works flawlessly
         if spec.storages ~= nil then
