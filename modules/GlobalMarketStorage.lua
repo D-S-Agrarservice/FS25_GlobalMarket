@@ -219,16 +219,13 @@ end
 Storage.readUpdateStream = Utils.appendedFunction(Storage.readUpdateStream, GlobalMarket.updateUi)
 PlaceableObjectStorage.onReadUpdateStream = Utils.appendedFunction(PlaceableObjectStorage.onReadUpdateStream, GlobalMarket.updateUi)
 
--- 1. XML Path Registration (Cleanly targeting the specific specializations)
-function GlobalMarket.PlaceableObjectStorage_registerXMLPaths(schema, basePath)
-    schema:register(XMLValueType.BOOL, basePath .. "#isGmMarket", "ObjectStorage is GlobalMarketPlaceable", false)
+-- 1. XML Path Registration (Directly injecting into the global Placeable schema)
+if Placeable.xmlSchema ~= nil then
+    Placeable.xmlSchema:register(XMLValueType.BOOL, "placeable.objectStorage#isGmMarket", "ObjectStorage is GlobalMarketPlaceable", false)
+    Placeable.xmlSchema:register(XMLValueType.BOOL, "placeable.silo#isGmMarket", "Silo is GlobalMarketPlaceable", false)
+else
+    GlobalMarket.debugLog("ERROR: Placeable.xmlSchema is nil! Cannot register XML paths.")
 end
-PlaceableObjectStorage.registerXMLPaths = Utils.appendedFunction(PlaceableObjectStorage.registerXMLPaths, GlobalMarket.PlaceableObjectStorage_registerXMLPaths)
-
-function GlobalMarket.PlaceableSilo_registerXMLPaths(schema, basePath)
-    schema:register(XMLValueType.BOOL, basePath .. "#isGmMarket", "Silo is GlobalMarketPlaceable", false)
-end
-PlaceableSilo.registerXMLPaths = Utils.appendedFunction(PlaceableSilo.registerXMLPaths, GlobalMarket.PlaceableSilo_registerXMLPaths)
 
 -- 2. Loading Logic (Read XML and pass the flag to the physical storages)
 function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
