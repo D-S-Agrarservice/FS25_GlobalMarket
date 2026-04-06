@@ -132,8 +132,22 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     end
 
     if amount then 
-        local val = (list == self.gmTableStorage) and data.level or data.fillLevel
-        amount:setText(self.i18n:formatVolume(val, 0)) 
+        if list == self.gmTableStorage then
+            local baseText = self.i18n:formatVolume(data.level, 0)
+
+            -- Dynamically append storage locations if goods are split or entirely in GM
+            if data.levelGM > 0 and data.levelPrivate > 0 then
+                local gmText = self.i18n:formatVolume(data.levelGM, 0)
+                local privText = self.i18n:formatVolume(data.levelPrivate, 0)
+                amount:setText(string.format("%s (Hof: %s | GM: %s)", baseText, privText, gmText))
+            elseif data.levelGM > 0 and data.levelPrivate == 0 then
+                amount:setText(string.format("%s (nur GM)", baseText))
+            else
+                amount:setText(baseText)
+            end
+        else
+            amount:setText(self.i18n:formatVolume(data.fillLevel, 0)) 
+        end
     end
 
     -- Price and Trend logic

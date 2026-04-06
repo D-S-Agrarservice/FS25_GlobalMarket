@@ -112,18 +112,31 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
 end
 
 -- Gets aggregated fill levels for all valid player storages to display in the UI list
--- Includes private silos, object storages AND GM terminals owned by the farm.
+-- Separates private farm storages and GM terminals for UI detail view.
 function GlobalMarket:getAggregatedStorageData(farmId)
     local aggregatedData = {}
     local fillTypeTotals = {}
 
+    -- Helper to initialize table structure
+    local function initFillType(index)
+        if fillTypeTotals[index] == nil then
+            fillTypeTotals[index] = { total = 0, private = 0, gm = 0 }
+        end
+    end
+
     -- 1. Bulk Storages (Silos & GM Terminals)
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        -- We now include GM terminals so the UI lists the fillTypes correctly
         if storage.ownerFarmId == farmId then
+            local isGM = storage.isGmMarket or false
             for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
                 if fillLevel > 0.1 then
-                    fillTypeTotals[fillTypeIndex] = (fillTypeTotals[fillTypeIndex] or 0) + fillLevel
+                    initFillType(fillTypeIndex)
+                    fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
+                    if isGM then
+                        fillTypeTotals[fillTypeIndex].gm = fillTypeTotals[fillTypeIndex].gm + fillLevel
+                    else
+                        fillTypeTotals[fillTypeIndex].private = fillTypeTotals[fillTypeIndex].private + fillLevel
+                    end
                 end
             end
         end
@@ -132,6 +145,7 @@ function GlobalMarket:getAggregatedStorageData(farmId)
     -- 2. Object Storages (Bale/Pallet Storages & GM Object Terminals)
     for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
         if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
+            local isGM = placeable.isGmMarket or false
             local spec = placeable.spec_objectStorage
             for _, objectInfo in ipairs(spec.objectInfos) do
                 local obj = objectInfo.objects[1]
@@ -141,30 +155,36 @@ function GlobalMarket:getAggregatedStorageData(farmId)
                 if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                     objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
                     objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
-
-                    -- Filter out fermenting bales (FS22 restriction carry-over for logic safety)
                     if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
                     if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
                 elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                    -- AbstractPalletObject
                     objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
                     objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
                 end
 
                 if objFillType ~= nil and not isFermenting then
-                    fillTypeTotals[objFillType] = (fillTypeTotals[objFillType] or 0) + (objLevel * objectInfo.numObjects)
+                    initFillType(objFillType)
+                    local totalVol = objLevel * objectInfo.numObjects
+                    fillTypeTotals[objFillType].total = fillTypeTotals[objFillType].total + totalVol
+                    if isGM then
+                        fillTypeTotals[objFillType].gm = fillTypeTotals[objFillType].gm + totalVol
+                    else
+                        fillTypeTotals[objFillType].private = fillTypeTotals[objFillType].private + totalVol
+                    end
                 end
             end
         end
     end
 
     -- Convert totals into UI-ready table
-    for fillTypeIndex, totalLevel in pairs(fillTypeTotals) do
+    for fillTypeIndex, totals in pairs(fillTypeTotals) do
         local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
         if fillTypeDesc ~= nil then
             table.insert(aggregatedData, {
                 fillType = fillTypeDesc.name,
-                level = totalLevel,
+                level = totals.total,
+                levelPrivate = totals.private,
+                levelGM = totals.gm,
                 price = self:getOfflinePriceByFillType(fillTypeDesc.name)
             })
         end
