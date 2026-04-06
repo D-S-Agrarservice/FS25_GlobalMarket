@@ -36,7 +36,7 @@
 
         <GuiElement size="650px 750px" position="700px 40px">
             <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="600px 30px" textSize="22px" />
-            <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 690px" size="630px 24px" textSize="16px" textColor="0.7 0.7 0.7 1" />
+            <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 700px" size="630px 24px" textSize="16px" textColor="0.7 0.7 0.7 1" />
 
             <GuiElement position="0px 660px" size="650px 40px">
                 <Text profile="globalMarketHeader" position="10px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
