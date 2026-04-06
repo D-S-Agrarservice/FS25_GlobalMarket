@@ -7,61 +7,101 @@
 -- UI Helper Functions
 -- =========================================================================
 
--- Gets all valid player storages for a specific fillType
+-- Gets all valid player storages for a specific fillType (Includes Bulk and ObjectStorages)
 -- @param fillTypeName string: The name of the fillType (e.g., "MAIZE")
 -- @param farmId integer: The ID of the farm requesting the storages
--- @param isSelling boolean: True if player wants to sell to GM (needs stock), False if buying (needs free capacity)
+-- @param isSelling boolean: True if player wants to sell to GM, False if buying
 function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     local availableStorages = {}
-
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(fillTypeName)
+
     if fillTypeDesc == nil then
         return availableStorages
     end
 
     local fillTypeIndex = fillTypeDesc.index
 
+    -- 1. Scan regular bulk storages (Silos, Extensions)
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        -- Filter: Only owned storages
-        if storage.ownerFarmId == farmId then
-            if storage:getIsFillTypeSupported(fillTypeIndex) then
+        if storage.ownerFarmId == farmId and storage:getIsFillTypeSupported(fillTypeIndex) then
+            local level = storage:getFillLevel(fillTypeIndex)
+            local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
 
-                local level = storage:getFillLevel(fillTypeIndex)
-                local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
+            local storageName = storage.owningPlaceable ~= nil and storage.owningPlaceable:getName() or "Silo"
+            local displayTitle = storageName
 
-                -- Improved name detection for FS25 placeables
-                local storageName = "Silo"
-                if storage.owningPlaceable ~= nil then
-                    storageName = storage.owningPlaceable:getName()
+            if storage.isGmMarket then
+                displayTitle = storageName .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
+            end
+
+            if (isSelling and level > 0.1) or (not isSelling and freeCapacity > 0.1) then
+                table.insert(availableStorages, {
+                    storage = storage,
+                    id = storage.rootNode,
+                    title = displayTitle,
+                    level = level,
+                    freeCapacity = freeCapacity,
+                    isGmMarket = storage.isGmMarket or false,
+                    isObjectStorage = false
+                })
+            end
+        end
+    end
+
+    -- 2. Scan PlaceableObjectStorages (Bales, Pallets)
+    for _, placeable in ipairs(g_currentMission.placeableSystem:getPlaceables()) do
+        if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
+            local spec = placeable.spec_objectStorage
+
+            -- Skip if GM terminal checking is needed and it's a specific object storage terminal
+            local isGmMarket = placeable.isGmMarket or false
+
+            if placeable:getObjectStorageSupportsFillType(fillTypeIndex) then
+                local totalFillLevel = 0
+
+                -- Calculate exact fill level from abstract objects
+                for _, objectInfo in ipairs(spec.objectInfos) do
+                    local obj = objectInfo.objects[1]
+                    local objFillType, objLevel = nil, 0
+                    local isFermenting = false
+
+                    if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                        objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
+                        objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+
+                        -- Filter out fermenting bales
+                        if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
+                        if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
+                    elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                        -- AbstractPalletObject
+                        objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
+                        objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                    end
+
+                    if objFillType == fillTypeIndex and not isFermenting then
+                        totalFillLevel = totalFillLevel + (objLevel * objectInfo.numObjects)
+                    end
                 end
 
-                -- LOGISTIC PACK: If it's a GM Terminal, we flag it in the UI title using l10n
-                local displayTitle = storageName
-                if storage.isGmMarket then
-                    local hint = g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)"
-                    displayTitle = storageName .. hint
+                -- Free capacity in ObjectStorages is slot-based, not liter-based.
+                -- We approximate a standard 5000L capacity per free slot for UI purposes.
+                local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
+                local approximatedFreeCapacity = freeSlots * 5000
+
+                local displayTitle = placeable:getName()
+                if isGmMarket then
+                    displayTitle = displayTitle .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
                 end
 
-                -- Use the rootNode as a reliable unique ID across the network
-                local uniqueId = storage.rootNode
-
-                if isSelling and level > 0.1 then
+                if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1) then
                     table.insert(availableStorages, {
-                        storage = storage,
-                        id = uniqueId,
+                        storage = placeable, -- Note: We pass the placeable, not a 'storage' object
+                        id = placeable.rootNode,
                         title = displayTitle,
-                        level = level,
-                        freeCapacity = freeCapacity,
-                        isGmMarket = storage.isGmMarket or false
-                    })
-                elseif not isSelling and freeCapacity > 0.1 then
-                    table.insert(availableStorages, {
-                        storage = storage,
-                        id = uniqueId,
-                        title = displayTitle,
-                        level = level,
-                        freeCapacity = freeCapacity,
-                        isGmMarket = storage.isGmMarket or false
+                        level = totalFillLevel,
+                        freeCapacity = approximatedFreeCapacity,
+                        isGmMarket = isGmMarket,
+                        isObjectStorage = true -- Flag to trigger different logic in onSellBuy
                     })
                 end
             end
@@ -76,12 +116,38 @@ function GlobalMarket:getAggregatedStorageData(farmId)
     local aggregatedData = {}
     local fillTypeTotals = {}
 
+    -- 1. Bulk Storages
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        -- We exclude GM Terminals from the "Owned Stock" summary to keep it clean
         if storage.ownerFarmId == farmId and not (storage.isGmMarket or false) then
             for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
                 if fillLevel > 0.1 then
                     fillTypeTotals[fillTypeIndex] = (fillTypeTotals[fillTypeIndex] or 0) + fillLevel
+                end
+            end
+        end
+    end
+
+    -- 2. Object Storages
+    for _, placeable in ipairs(g_currentMission.placeableSystem:getPlaceables()) do
+        if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId and not (placeable.isGmMarket or false) then
+            local spec = placeable.spec_objectStorage
+            for _, objectInfo in ipairs(spec.objectInfos) do
+                local obj = objectInfo.objects[1]
+                local objFillType, objLevel = nil, 0
+                local isFermenting = false
+
+                if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                    objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
+                    objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+                    if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
+                    if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
+                elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                    objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
+                    objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                end
+
+                if objFillType ~= nil and not isFermenting then
+                    fillTypeTotals[objFillType] = (fillTypeTotals[objFillType] or 0) + (objLevel * objectInfo.numObjects)
                 end
             end
         end
@@ -93,12 +159,11 @@ function GlobalMarket:getAggregatedStorageData(farmId)
             table.insert(aggregatedData, {
                 fillType = fillTypeDesc.name,
                 level = totalLevel,
-                price = self:getOfflinePriceByFillType(fillTypeDesc.name) -- Fetches from the new Offline module
+                price = self:getOfflinePriceByFillType(fillTypeDesc.name)
             })
         end
     end
 
-    -- Sort alphabetically
     table.sort(aggregatedData, function(a, b)
         local titleA = g_fillTypeManager:getFillTypeByName(a.fillType).title
         local titleB = g_fillTypeManager:getFillTypeByName(b.fillType).title
