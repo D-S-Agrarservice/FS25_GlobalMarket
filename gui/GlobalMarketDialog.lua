@@ -203,11 +203,11 @@ function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
 
     if self.callbackFunc ~= nil and selectedStorage ~= nil then
-        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName)
+
+        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage)
     end
 
     GlobalMarketDialog:superClass().onClickOk(self)
-
     self:close()
 
     return false

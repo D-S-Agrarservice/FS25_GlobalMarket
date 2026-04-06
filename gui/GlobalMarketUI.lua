@@ -255,13 +255,12 @@ function GlobalMarketUI:onButtonAction()
     end
 end
 
--- Callback receiver from your GMDialog.lua
--- Fixed parameter shift: Removed 'target' as explicit parameter,
--- because Lua's ':' syntax implicitly handles 'self.target' as 'self'.
-function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName)
+-- Callback receiver from GMDialog.lua
+function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName, isObjectStorage)
     if amount > 0 then
         local mode = (actionType == "SELL") and 1 or 2
-        g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId)
+
+        g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, 0, nil, nil, isObjectStorage, g_currentMission:getFarmId())
         self:updateContent()
     end
 end
