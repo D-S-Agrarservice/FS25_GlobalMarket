@@ -49,7 +49,7 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     end
 
     -- 2. Scan PlaceableObjectStorages (Bales, Pallets)
-    for _, placeable in ipairs(g_currentMission.placeableSystem:getPlaceables()) do
+    for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
         if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
             local spec = placeable.spec_objectStorage
 
@@ -112,13 +112,15 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
 end
 
 -- Gets aggregated fill levels for all valid player storages to display in the UI list
+-- Includes private silos, object storages AND GM terminals owned by the farm.
 function GlobalMarket:getAggregatedStorageData(farmId)
     local aggregatedData = {}
     local fillTypeTotals = {}
 
-    -- 1. Bulk Storages
+    -- 1. Bulk Storages (Silos & GM Terminals)
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        if storage.ownerFarmId == farmId and not (storage.isGmMarket or false) then
+        -- We now include GM terminals so the UI lists the fillTypes correctly
+        if storage.ownerFarmId == farmId then
             for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
                 if fillLevel > 0.1 then
                     fillTypeTotals[fillTypeIndex] = (fillTypeTotals[fillTypeIndex] or 0) + fillLevel
@@ -127,9 +129,9 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         end
     end
 
-    -- 2. Object Storages
-    for _, placeable in ipairs(g_currentMission.placeableSystem:getPlaceables()) do
-        if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId and not (placeable.isGmMarket or false) then
+    -- 2. Object Storages (Bale/Pallet Storages & GM Object Terminals)
+    for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+        if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
             local spec = placeable.spec_objectStorage
             for _, objectInfo in ipairs(spec.objectInfos) do
                 local obj = objectInfo.objects[1]
@@ -139,9 +141,12 @@ function GlobalMarket:getAggregatedStorageData(farmId)
                 if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                     objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
                     objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+
+                    -- Filter out fermenting bales (FS22 restriction carry-over for logic safety)
                     if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
                     if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
                 elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                    -- AbstractPalletObject
                     objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
                     objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
                 end
@@ -153,6 +158,7 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         end
     end
 
+    -- Convert totals into UI-ready table
     for fillTypeIndex, totalLevel in pairs(fillTypeTotals) do
         local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
         if fillTypeDesc ~= nil then
@@ -164,6 +170,7 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         end
     end
 
+    -- Sort alphabetically by title
     table.sort(aggregatedData, function(a, b)
         local titleA = g_fillTypeManager:getFillTypeByName(a.fillType).title
         local titleB = g_fillTypeManager:getFillTypeByName(b.fillType).title
@@ -274,7 +281,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, count, storageId, pla
     end
 
     local targetPlaceable = nil
-    for _, placeable in ipairs(g_currentMission.placeableSystem:getPlaceables()) do
+    for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
         if placeable.rootNode == storageId and placeable.spec_objectStorage ~= nil then
             targetPlaceable = placeable
             break
