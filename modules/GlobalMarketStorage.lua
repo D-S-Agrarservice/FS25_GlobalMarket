@@ -242,42 +242,82 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
         return
     end
 
-    -- Security for MP: If storage has no valid farm owner (like a shared GM Terminal), use the requesting player's farm ID
+    -- Security for MP: If storage has no valid farm owner, use the requesting player's farm ID
     local targetFarmId = targetStorage.ownerFarmId
     if targetFarmId == nil or targetFarmId == FarmManager.SPECTATOR_FARM_ID then
         targetFarmId = playerFarmId
     end
 
-    local marketPricePerUnit = self:getOfflinePriceByFillType(filltypeName) / 1000
-    local totalPrice = marketPricePerUnit * level
-    local moneyType = (mode == 2) and MoneyType.BOUGHT_MATERIALS or MoneyType.SOLD_PRODUCTS
-
-    local deliveryCosts = 0
-    if not (targetStorage.isGmMarket or false) then
-        deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * level) * EconomyManager.getCostMultiplier()
-    end
-
-    local finalAccountBalance = (mode == 2) and (totalPrice * -1) or totalPrice
-
     if g_server ~= nil then
+        local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
+
+        -- Get current market item data
+        local marketItem = nil
+        for _, ft in pairs(self.offlineMarketFillTypes) do
+            if ft.fillType == filltypeName then
+                marketItem = ft
+                break
+            end
+        end
+
+        if marketItem == nil then return end
+
+        -- =======================================================
+        -- SERVER-SIDE SECURITY VALIDATION
+        -- =======================================================
+        local currentSiloLevel = targetStorage:getFillLevel(fillTypeIndex)
+        local freeSiloCapacity = targetStorage:getFreeCapacity(fillTypeIndex)
+
+        if mode == 1 then
+            -- SELLING: Player cannot sell more than what is physically in the silo
+            level = math.min(level, currentSiloLevel)
+        elseif mode == 2 then
+            -- BUYING: Player cannot buy more than what fits in the silo OR what the market has
+            level = math.min(level, freeSiloCapacity)
+            level = math.min(level, marketItem.fillLevel)
+        end
+
+        -- Abort if the requested amount is zero or negative after limits applied
+        if level <= 0.01 then
+            GlobalMarket.debugLog("Backend Validation: Transaction aborted. Invalid amount or capacities.")
+            return
+        end
+
+        local marketPricePerUnit = marketItem.price / 1000
+        local totalPrice = marketPricePerUnit * level
+
+        local deliveryCosts = 0
+        if not (targetStorage.isGmMarket or false) then
+            deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * level) * EconomyManager.getCostMultiplier()
+        end
+
+        -- BUYING MONEY CHECK: Ensure the farm has enough funds including delivery
+        if mode == 2 then
+            local farm = g_farmManager:getFarmById(targetFarmId)
+            local totalCost = totalPrice + deliveryCosts
+            if farm == nil or farm.money < totalCost then
+                GlobalMarket.debugLog("Backend Validation: Transaction aborted. Insufficient funds.")
+                return
+            end
+        end
+
+        -- =======================================================
+        -- EXECUTE TRANSACTION
+        -- =======================================================
+        local finalAccountBalance = (mode == 2) and (totalPrice * -1) or totalPrice
+        local moneyType = (mode == 2) and MoneyType.BOUGHT_MATERIALS or MoneyType.SOLD_PRODUCTS
+
         g_currentMission:addMoney(finalAccountBalance, targetFarmId, moneyType, true, true)
 
         if deliveryCosts > 0 then
             g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.OTHER, true, true)
         end
 
-        local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
-        local currentSiloLevel = targetStorage:getFillLevel(fillTypeIndex)
         local newSiloLevel = (mode == 2) and (currentSiloLevel + level) or (currentSiloLevel - level)
         targetStorage:setFillLevel(newSiloLevel, fillTypeIndex, nil)
 
-        for _, ft in pairs(self.offlineMarketFillTypes) do
-            if ft.fillType == filltypeName then
-                local marketChange = (mode == 2) and (level * -1) or level
-                ft.fillLevel = math.max(ft.fillLevel + marketChange, 0)
-                break
-            end
-        end
+        local marketChange = (mode == 2) and (level * -1) or level
+        marketItem.fillLevel = math.max(marketItem.fillLevel + marketChange, 0)
 
         if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
         if GlobalMarket.config.useSync and SynchOfflineMarketEvent ~= nil then

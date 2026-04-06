@@ -1,6 +1,5 @@
 --
 -- FS25 - GlobalMarket - InitOfflineMarketEvent
--- Note: All comments and documentation are in English.
 --
 
 InitOfflineMarketEvent = {}
