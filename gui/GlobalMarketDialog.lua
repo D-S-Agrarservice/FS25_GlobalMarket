@@ -84,10 +84,15 @@ end
 function GlobalMarketDialog:onOpen()
     GlobalMarketDialog:superClass().onOpen(self)
 
+    -- FIX 1: Reset the sticky input field immediately
+    if self.amountInput ~= nil then
+        self.amountInput:setText("0")
+    end
+
     local titlePrefix = self.actionType == "SELL" and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderStorage") .. ": ") or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderMarket") .. ": ")
     self.dialogTitleElement:setText(titlePrefix .. tostring(self.fillTypeTitle))
 
-    local actionText = self.actionType == "SELL" and (g_i18n:getText("ui_btn_sell") or "VERKAUFEN") or (g_i18n:getText("ui_btn_buy") or "KAUFEN")
+    local actionText = self.actionType == "SELL" and (g_i18n:getText("ui_btn_sell") or "SELL") or (g_i18n:getText("ui_btn_buy") or "BUY")
     if self.yesButton ~= nil then
         self.yesButton:setText(actionText)
     end
@@ -128,10 +133,10 @@ function GlobalMarketDialog:onClickStorage(state)
             self.maxAmount = math.min(selectedSilo.freeCapacity, marketStock)
         end
 
-        local infoText = string.format("%s: %s L | %s: %s / 1000L",
-            g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"),
-            g_i18n:formatVolume(self.maxAmount, 0),
-            g_i18n:getText("ui_ingameMenuGlobalMarketPrice"),
+        local infoText = string.format("%s: %s L | %s: %s / 1000L", 
+            g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"), 
+            g_i18n:formatVolume(self.maxAmount, 0), 
+            g_i18n:getText("ui_ingameMenuGlobalMarketPrice"), 
             g_i18n:formatMoney(self.pricePer1000, 0, true, true))
 
         self.dialogInfoTextElement:setText(infoText)
@@ -140,8 +145,19 @@ function GlobalMarketDialog:onClickStorage(state)
 end
 
 function GlobalMarketDialog:onClickMaxAmount()
-    -- Native-like behavior: Formatting numbers correctly
-    self.amountInput:setText(string.format("%d", math.floor(self.maxAmount)))
+    local fillAmount = self.maxAmount
+
+    if self.actionType == "BUY" then
+        local currentMoney = g_currentMission:getMoney()
+        if currentMoney <= 0 then
+            fillAmount = 0
+        else
+            local maxAffordable = (currentMoney / self.pricePer1000) * 1000
+            fillAmount = math.min(self.maxAmount, maxAffordable)
+        end
+    end
+
+    self.amountInput:setText(string.format("%d", math.floor(fillAmount)))
     self:onAmountChanged()
 end
 
@@ -164,20 +180,43 @@ end
 
 function GlobalMarketDialog:updateTotalValue()
     local total = (self.currentAmount / 1000) * self.pricePer1000
-    local totalValueHeader = self.actionType == "SELL" and g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderSellPrice") or g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderBuyPrice")
 
-    self.totalValueText:setText(string.format("%s %s", totalValueHeader, g_i18n:formatMoney(total, 0, true, true)))
-    self.yesButton:setDisabled(self.currentAmount <= 0)
+    -- FIX 3: Check funds when manually typing a number
+    local hasEnoughMoney = true
+    if self.actionType == "BUY" then
+        hasEnoughMoney = g_currentMission:getMoney() >= total
+    end
+
+    if not hasEnoughMoney then
+        self.totalValueText:setText(g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney"))
+        self.totalValueText:setTextColor(0.8, 0.05, 0.05, 1) -- Turn text red
+        self.yesButton:setDisabled(true)
+    else
+        local totalValueHeader = self.actionType == "SELL" and g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderSellPrice") or g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderBuyPrice")
+        self.totalValueText:setText(string.format("%s %s", totalValueHeader, g_i18n:formatMoney(total, 0, true, true)))
+        self.totalValueText:setTextColor(1, 1, 1, 1) -- Reset to white
+        self.yesButton:setDisabled(self.currentAmount <= 0)
+    end
 end
 
 function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
+
     if self.callbackFunc ~= nil and selectedStorage ~= nil then
         self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName)
     end
+
     GlobalMarketDialog:superClass().onClickOk(self)
+
+    self:close()
+
+    return false
 end
 
 function GlobalMarketDialog:onClickBack()
     GlobalMarketDialog:superClass().onClickBack(self)
+
+    self:close()
+
+    return false
 end

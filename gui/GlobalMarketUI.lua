@@ -55,7 +55,15 @@ function GlobalMarketUI:updateContent()
 
     -- Update balance
     if self.currentBalanceText ~= nil and g_currentMission ~= nil then
-        self.currentBalanceText:setText(self.i18n:formatMoney(g_currentMission:getMoney(), 0, true, true))
+        local money = g_currentMission:getMoney()
+        self.currentBalanceText:setText(self.i18n:formatMoney(money, 0, true, true))
+
+        -- Native Giants coloring for negative balance
+        if money < 0 then
+            self.currentBalanceText:setTextColor(0.8, 0.05, 0.05, 1) -- Dark Red
+        else
+            self.currentBalanceText:setTextColor(1, 1, 1, 1) -- White
+        end
     end
 
     -- Update Online/Offline Status Texts
