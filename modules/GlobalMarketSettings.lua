@@ -96,7 +96,10 @@ end
 
 function GlobalMarketSettings:addSectionHeader(settingsFrame)
     local textElement = TextElement.new()
-    textElement:loadProfile(g_gui:getProfile("fs25_settingsSectionHeader"), true)
+    local textElementProfile = g_gui:getProfile("fs25_settingsSectionHeader")
+
+    textElement.name = "sectionHeader" -- WICHTIG: Verhindert, dass die Engine es als normale Zeile markiert
+    textElement:loadProfile(textElementProfile, true)
     textElement:setText(g_i18n:getText("ui_gm_settings_header") or "GLOBAL MARKET SETTINGS")
 
     settingsFrame.gameSettingsLayout:addElement(textElement)
@@ -105,21 +108,25 @@ end
 
 function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey, tooltipKey, texts, callbackName)
     local bitMap = BitmapElement.new()
-    bitMap:loadProfile(g_gui:getProfile("fs25_multiTextOptionContainer"), true)
+    local bitMapProfile = g_gui:getProfile("fs25_multiTextOptionContainer")
+    bitMap:loadProfile(bitMapProfile, true)
 
     local multiTextOption = MultiTextOptionElement.new()
-    multiTextOption:loadProfile(g_gui:getProfile("fs25_settingsMultiTextOption"), true)
+    local multiTextOptionProfile = g_gui:getProfile("fs25_settingsMultiTextOption")
+    multiTextOption:loadProfile(multiTextOptionProfile, true)
     multiTextOption.target = GlobalMarketSettings
     multiTextOption:setCallback("onClickCallback", callbackName)
     multiTextOption:setTexts(texts)
 
     local multiTextOptionTitle = TextElement.new()
-    multiTextOptionTitle:loadProfile(g_gui:getProfile("fs25_settingsMultiTextOptionTitle"), true)
+    local multiTextOptionTitleProfile = g_gui:getProfile("fs25_settingsMultiTextOptionTitle")
+    multiTextOptionTitle:loadProfile(multiTextOptionTitleProfile, true)
     multiTextOptionTitle:setText(g_i18n:getText(titleKey))
 
     local multiTextOptionTooltip = TextElement.new()
-    multiTextOptionTooltip:loadProfile(g_gui:getProfile("fs25_multiTextOptionTooltip"), true)
-    multiTextOptionTooltip.name = "ignore"
+    local multiTextOptionTooltipProfile = g_gui:getProfile("fs25_multiTextOptionTooltip")
+    multiTextOptionTooltip.name = "ignore" -- WICHTIG: Verhindert Fokus-Bugs im Unter-Element
+    multiTextOptionTooltip:loadProfile(multiTextOptionTooltipProfile, true)
     multiTextOptionTooltip:setText(g_i18n:getText(tooltipKey))
 
     -- Assemble elements
@@ -138,7 +145,7 @@ function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey,
     -- Store reference for state updates
     GlobalMarketSettings.CONTROLS[controlId] = multiTextOption
 
-    return multiTextOption
+    return multiTextOption, bitMap
 end
 
 function GlobalMarketSettings.onFrameOpen(settingsFrame)
