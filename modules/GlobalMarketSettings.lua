@@ -98,7 +98,7 @@ function GlobalMarketSettings:addSectionHeader(settingsFrame)
     local textElement = TextElement.new()
     local textElementProfile = g_gui:getProfile("fs25_settingsSectionHeader")
 
-    textElement.name = "sectionHeader" -- WICHTIG: Verhindert, dass die Engine es als normale Zeile markiert
+    textElement.name = "sectionHeader"
     textElement:loadProfile(textElementProfile, true)
     textElement:setText(g_i18n:getText("ui_gm_settings_header") or "GLOBAL MARKET SETTINGS")
 
@@ -125,7 +125,7 @@ function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey,
 
     local multiTextOptionTooltip = TextElement.new()
     local multiTextOptionTooltipProfile = g_gui:getProfile("fs25_multiTextOptionTooltip")
-    multiTextOptionTooltip.name = "ignore" -- WICHTIG: Verhindert Fokus-Bugs im Unter-Element
+    multiTextOptionTooltip.name = "ignore"
     multiTextOptionTooltip:loadProfile(multiTextOptionTooltipProfile, true)
     multiTextOptionTooltip:setText(g_i18n:getText(tooltipKey))
 
