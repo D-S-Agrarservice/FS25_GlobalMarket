@@ -121,7 +121,7 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     local trend = cell:getAttribute("trend")
 
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
-    
+
     if name and fillTypeDesc then
         name:setText(fillTypeDesc.title)
     end
@@ -131,7 +131,7 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
         icon:setImageFilename(fillTypeDesc.hudOverlayFilename)
     end
 
-    if amount then 
+    if amount then
         if list == self.gmTableStorage then
             local baseText = self.i18n:formatVolume(data.level, 0)
 
@@ -139,20 +139,34 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
             if data.levelGM > 0 and data.levelPrivate > 0 then
                 local gmText = self.i18n:formatVolume(data.levelGM, 0)
                 local privText = self.i18n:formatVolume(data.levelPrivate, 0)
-                amount:setText(string.format("%s (Hof: %s | GM: %s)", baseText, privText, gmText))
+
+                -- L10N fetch with fallback
+                local splitFormat = self.i18n:getText("ui_gm_storage_split")
+                if splitFormat == nil or splitFormat == "ui_gm_storage_split" then
+                    splitFormat = "(Farm: %s | GM: %s)"
+                end
+
+                local formattedDetail = string.format(splitFormat, privText, gmText)
+                amount:setText(string.format("%s %s", baseText, formattedDetail))
+
             elseif data.levelGM > 0 and data.levelPrivate == 0 then
-                amount:setText(string.format("%s (nur GM)", baseText))
+                local onlyGmText = self.i18n:getText("ui_gm_storage_only")
+                if onlyGmText == nil or onlyGmText == "ui_gm_storage_only" then
+                    onlyGmText = "(GM only)"
+                end
+
+                amount:setText(string.format("%s %s", baseText, onlyGmText))
             else
                 amount:setText(baseText)
             end
         else
-            amount:setText(self.i18n:formatVolume(data.fillLevel, 0)) 
+            amount:setText(self.i18n:formatVolume(data.fillLevel, 0))
         end
     end
 
     -- Price and Trend logic
-    if price then 
-        price:setText(self.i18n:formatMoney(data.price, 0, true, true)) 
+    if price then
+        price:setText(self.i18n:formatMoney(data.price, 0, true, true))
     end
 
     -- Trend arrow logic (Market list only)
@@ -234,7 +248,7 @@ function GlobalMarketUI:onButtonAction()
 end
 
 -- Callback receiver from your GMDialog.lua
--- Fixed parameter shift: Removed 'target' as explicit parameter, 
+-- Fixed parameter shift: Removed 'target' as explicit parameter,
 -- because Lua's ':' syntax implicitly handles 'self.target' as 'self'.
 function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName)
     if amount > 0 then
