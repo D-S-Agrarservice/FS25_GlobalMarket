@@ -17,6 +17,10 @@
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
+            <MultiTextOption profile="globalMarketFormatDropdown" id="formatSelectionElement" onClick="onClickFormat" isVisible="false">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
             <GuiElement profile="globalMarketInputGroup" with="anchorTopCenter">
                 <GuiElement profile="emptyPanel" position="0px 0px" size="200px 40px" with="anchorMiddleLeft">
                     <Bitmap profile="fs25_textInputBg" size="100% 100%" />
@@ -38,25 +42,33 @@
 
     <GUIProfiles>
         <Profile name="globalMarketDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
-            <size value="620px 420px" />
+            <size value="620px 470px" />
         </Profile>
+
         <Profile name="fs25_siloDialogTitle" extends="fs25_dialogTitle">
             <width value="580px" />
             <position value="0px -30px" />
         </Profile>
+
         <Profile name="fs25_siloDialogText" extends="fs25_dialogText">
             <width value="580px" />
             <position value="0px -80px" />
             <textAutoWidth value="true" />
         </Profile>
+
         <Profile name="globalMarketStorageDropdown" extends="fs25_multiTextOption" with="anchorTopCenter">
             <width value="400px" />
             <position value="0px -140px" />
         </Profile>
 
+        <Profile name="globalMarketFormatDropdown" extends="fs25_multiTextOption" with="anchorTopCenter">
+            <width value="400px" />
+            <position value="0px -190px" />
+        </Profile>
+
         <Profile name="globalMarketInputGroup" extends="emptyPanel" with="anchorTopCenter">
             <size value="290px 40px" />
-            <position value="0px -210px" />
+            <position value="0px -260px" />
         </Profile>
 
         <Profile name="globalMarketAmountInput" extends="fs25_textInput" with="anchorMiddleCenter">
@@ -80,7 +92,7 @@
 
         <Profile name="globalMarketTotalText" extends="fs25_dialogText" with="anchorTopCenter">
             <width value="580px" />
-            <position value="0px -280px" />
+            <position value="0px -330px" />
             <textAlignment value="center" />
         </Profile>
     </GUIProfiles>
