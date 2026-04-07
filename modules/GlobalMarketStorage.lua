@@ -523,10 +523,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             end
 
             targetPlaceable:setObjectStorageObjectInfosDirty()
-        end -- End of "elseif mode == 2 then"
-
-        -- NEW: Trigger local UI refresh with a slight delay (150ms) to avoid race conditions
-        addTimer(150, "delayedUiRefresh", self)
+        end
 
         if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
         if GlobalMarket.config.useSync and SynchOfflineMarketEvent ~= nil then
@@ -553,17 +550,6 @@ end
 -- UI updates remain on the Storage level, as fill level sync happens here
 Storage.readUpdateStream = Utils.appendedFunction(Storage.readUpdateStream, GlobalMarket.updateUi)
 PlaceableObjectStorage.onReadUpdateStream = Utils.appendedFunction(PlaceableObjectStorage.onReadUpdateStream, GlobalMarket.updateUi)
-
--- =========================================================================
--- Helper Functions
--- =========================================================================
-
--- Delays the UI update to allow the engine to process the dirty flags
-function GlobalMarket:delayedUiRefresh()
-    if g_currentMission.globalMarketUi ~= nil then
-        g_currentMission.globalMarketUi:updateContent()
-    end
-end
 
 -- =========================================================================
 -- Loading Logic (Bypassing strict XML schema validation using getBool)

@@ -13,6 +13,7 @@ function GlobalMarketUI.new(target, custom_mt)
     self.i18n = g_i18n
     self.currentListFocus = "storage"
     self.isUpdatingSelection = false
+    self.refreshCountdown = 0
 
     return self
 end
@@ -100,6 +101,22 @@ function GlobalMarketUI:updateContent()
 
     if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
     if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end
+end
+
+-- =========================================================================
+-- NATIVE UI UPDATE LOOP
+-- =========================================================================
+function GlobalMarketUI:update(dt)
+    GlobalMarketUI:superClass().update(self, dt)
+
+    -- Handle the delayed refresh to prevent race conditions with engine updates
+    if self.refreshCountdown > 0 then
+        self.refreshCountdown = self.refreshCountdown - dt
+        if self.refreshCountdown <= 0 then
+            self.refreshCountdown = 0
+            self:updateContent()
+        end
+    end
 end
 
 -- =========================================================================
@@ -261,6 +278,8 @@ function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeNa
         local mode = (actionType == "SELL") and 1 or 2
 
         g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, 0, nil, nil, isObjectStorage, g_currentMission:getFarmId())
-        self:updateContent()
+        
+        -- NEW: Start the countdown (250ms) instead of a direct update
+        self.refreshCountdown = 250
     end
 end
