@@ -278,8 +278,12 @@ function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeNa
         local mode = (actionType == "SELL") and 1 or 2
 
         g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, 0, nil, nil, isObjectStorage, g_currentMission:getFarmId())
-        
-        -- NEW: Start the countdown (250ms) instead of a direct update
-        self.refreshCountdown = 250
+
+        -- NEW: Dynamic countdown based on storage type to sync with engine background updates
+        if isObjectStorage then
+            self.refreshCountdown = 1200 -- 1000ms native engine delay + 200ms buffer
+        else
+            self.refreshCountdown = 250 -- Quick refresh for bulk/liquids
+        end
     end
 end
