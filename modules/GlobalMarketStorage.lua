@@ -55,13 +55,13 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
             local spec = placeable.spec_objectStorage
             local isGmMarket = placeable.isGmMarket or false
 
-            -- NEW: Extract supported formats natively from the storage spec
             local supportsPallets = spec.supportsPallets or false
             local supportsBales = spec.supportsBales or false
 
             if placeable:getObjectStorageSupportsFillType(fillTypeIndex) then
                 local totalFillLevel = 0
 
+                -- Count existing objects for selling
                 for _, objectInfo in ipairs(spec.objectInfos) do
                     local obj = objectInfo.objects[1]
                     local objFillType, objLevel = nil, 0
@@ -85,12 +85,28 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
                 local approximatedFreeCapacity = freeSlots * 1000
 
+                -- NEW: Dynamic Filter Logic for Buying based on native fillType flags
+                local isValidForBuying = true
+                if not isSelling then
+                    local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
+                    if fillType ~= nil then
+                        local canBeBale = fillType.isBaleType or false
+                        local canBePallet = fillType.isPalletType or false
+
+                        -- The storage is valid if it supports at least one format that the fillType also supports
+                        if not ((supportsBales and canBeBale) or (supportsPallets and canBePallet)) then
+                            isValidForBuying = false
+                        end
+                    end
+                end
+
                 local displayTitle = placeable:getName()
                 if isGmMarket then
                     displayTitle = displayTitle .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
                 end
 
-                if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1) then
+                -- Apply the filter
+                if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1 and isValidForBuying) then
                     table.insert(availableStorages, {
                         storage = placeable,
                         id = placeable.rootNode,
@@ -99,7 +115,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                         freeCapacity = approximatedFreeCapacity,
                         isGmMarket = isGmMarket,
                         isObjectStorage = true,
-                        -- NEW: Passing the parameters to the UI
                         supportsPallets = supportsPallets,
                         supportsBales = supportsBales
                     })
