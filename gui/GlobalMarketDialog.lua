@@ -30,7 +30,7 @@ function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle
     self.currentAmount = 0
     self.storageLocations = silos or {}
 
-    -- Hijack block removed. We completely rely on the custom GM dialog 
+    -- Hijack block removed. We completely rely on the custom GM dialog
     -- to handle both bulk and object storages seamlessly via liter inputs.
     g_gui:showDialog("GlobalMarketDialog")
 end
@@ -78,6 +78,11 @@ end
 function GlobalMarketDialog:onOpen()
     GlobalMarketDialog:superClass().onOpen(self)
 
+    -- NEW: Variables for format logic
+    self.currentCountFactor = 1
+    self.currentFormatXml = nil
+    self.availableFormats = {}
+
     -- FIX 1: Reset the sticky input field immediately
     if self.amountInput ~= nil then
         self.amountInput:setText("0")
@@ -107,7 +112,16 @@ function GlobalMarketDialog:onClickStorage(state)
     self.selectedStorageIndex = state
     local selectedSilo = self.storageLocations[state]
 
+    -- Hide the format selection by default and reset variables
+    if self.formatSelectionElement ~= nil then
+        self.formatSelectionElement:setVisible(false)
+    end
+    self.currentCountFactor = 1
+    self.currentFormatXml = nil
+    self.availableFormats = {}
+
     if selectedSilo ~= nil then
+        -- 1. Calculate maxAmount for the storage as usual
         if self.actionType == "SELL" then
             self.maxAmount = selectedSilo.level
         else
@@ -123,18 +137,67 @@ function GlobalMarketDialog:onClickStorage(state)
                     end
                 end
             end
-
             self.maxAmount = math.min(selectedSilo.freeCapacity, marketStock)
         end
 
-        local infoText = string.format("%s: %s L | %s: %s / 1000L", 
-            g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"), 
-            g_i18n:formatVolume(self.maxAmount, 0), 
-            g_i18n:getText("ui_ingameMenuGlobalMarketPrice"), 
+        -- 2. NEW: Scan engine for formats if it's an ObjectStorage and we are BUYING
+        if selectedSilo.isObjectStorage and self.actionType == "BUY" then
+            local fillType = g_fillTypeManager:getFillTypeByName(self.fillTypeName)
+
+            if fillType ~= nil then
+                if selectedSilo.supportsBales and fillType.isBaleType and g_baleManager ~= nil then
+                    -- Scan FS25 BaleManager for matching bales
+                    for _, bale in ipairs(g_baleManager.bales) do
+                        if bale.isAvailable then
+                            for _, ftData in ipairs(bale.fillTypes) do
+                                if ftData.fillTypeIndex == fillType.index then
+                                    local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
+                                    local title = ""
+                                    if isRound then
+                                        title = string.format("Roundbale (%.2fm)", diameter or width or 1.25)
+                                    else
+                                        title = string.format("Squarebale (%.2fm)", length or 2.40)
+                                    end
+                                    table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity})
+                                end
+                            end
+                        end
+                    end
+                elseif selectedSilo.supportsPallets and fillType.isPalletType then
+                    -- Fallback for pallets
+                    table.insert(self.availableFormats, {title = "Pallet", xml = fillType.palletFilename, capacity = 1000})
+                end
+
+                -- If formats exist, populate the dropdown texts and show it
+                if #self.availableFormats > 0 then
+                    local texts = {}
+                    for _, format in ipairs(self.availableFormats) do
+                        table.insert(texts, format.title)
+                    end
+                    self.formatSelectionElement:setTexts(texts)
+                    self.formatSelectionElement:setVisible(true)
+                end
+            end
+        end
+
+        -- 3. Update the info text below the title
+        local infoText = string.format("%s: %s L | %s: %s / 1000L",
+            g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"),
+            g_i18n:formatVolume(self.maxAmount, 0),
+            g_i18n:getText("ui_ingameMenuGlobalMarketPrice"),
             g_i18n:formatMoney(self.pricePer1000, 0, true, true))
 
         self.dialogInfoTextElement:setText(infoText)
-        self:onAmountChanged()
+
+        -- 4. Trigger follow-up logic
+        if #self.availableFormats > 0 then
+            self.formatSelectionElement:setState(1, true)
+            if self.onClickFormat ~= nil then
+                self:onClickFormat(1)
+            end
+        else
+            self:onAmountChanged()
+        end
     end
 end
 
