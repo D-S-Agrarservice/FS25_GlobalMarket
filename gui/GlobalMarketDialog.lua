@@ -30,14 +30,8 @@ function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle
     self.currentAmount = 0
     self.storageLocations = silos or {}
 
-    -- Check if we are dealing with ObjectStorage (Bales/Pallets)
-    -- We assume if the first available storage is an ObjectStorage, we use the native dialog
-    local firstStorage = self.storageLocations[1]
-    if firstStorage ~= nil and firstStorage.isObjectStorage then
-        self:showNativeObjectStorageDialog(firstStorage)
-        return -- Do not show the custom GlobalMarketDialog
-    end
-
+    -- Hijack block removed. We completely rely on the custom GM dialog 
+    -- to handle both bulk and object storages seamlessly via liter inputs.
     g_gui:showDialog("GlobalMarketDialog")
 end
 

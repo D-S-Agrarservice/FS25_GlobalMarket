@@ -11,6 +11,7 @@
 -- @param fillTypeName string: The name of the fillType (e.g., "MAIZE")
 -- @param farmId integer: The ID of the farm requesting the storages
 -- @param isSelling boolean: True if player wants to sell to GM, False if buying
+-- Gets all valid player storages for a specific fillType (Includes Bulk and ObjectStorages)
 function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     local availableStorages = {}
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(fillTypeName)
@@ -52,14 +53,11 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
         if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
             local spec = placeable.spec_objectStorage
-
-            -- Skip if GM terminal checking is needed and it's a specific object storage terminal
             local isGmMarket = placeable.isGmMarket or false
 
             if placeable:getObjectStorageSupportsFillType(fillTypeIndex) then
                 local totalFillLevel = 0
 
-                -- Calculate exact fill level from abstract objects
                 for _, objectInfo in ipairs(spec.objectInfos) do
                     local obj = objectInfo.objects[1]
                     local objFillType, objLevel = nil, 0
@@ -68,12 +66,9 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                     if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                         objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
                         objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
-
-                        -- Filter out fermenting bales
                         if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
                         if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
                     elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                        -- AbstractPalletObject
                         objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
                         objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
                     end
@@ -83,10 +78,8 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                     end
                 end
 
-                -- Free capacity in ObjectStorages is slot-based, not liter-based.
-                -- We approximate a standard 5000L capacity per free slot for UI purposes.
                 local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
-                local approximatedFreeCapacity = freeSlots * 5000
+                local approximatedFreeCapacity = freeSlots * 1000
 
                 local displayTitle = placeable:getName()
                 if isGmMarket then
@@ -95,13 +88,13 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
 
                 if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1) then
                     table.insert(availableStorages, {
-                        storage = placeable, -- Note: We pass the placeable, not a 'storage' object
+                        storage = placeable,
                         id = placeable.rootNode,
                         title = displayTitle,
                         level = totalFillLevel,
                         freeCapacity = approximatedFreeCapacity,
                         isGmMarket = isGmMarket,
-                        isObjectStorage = true -- Flag to trigger different logic in onSellBuy
+                        isObjectStorage = true
                     })
                 end
             end
