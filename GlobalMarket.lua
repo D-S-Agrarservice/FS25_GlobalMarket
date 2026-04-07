@@ -10,7 +10,7 @@ GlobalMarket.debug = true
 
 GlobalMarket.config = {
     useUI      = true,
-    useEconomy = true, 
+    useEconomy = true,
     useStorage = true,
     useSync    = false
 }
@@ -215,6 +215,52 @@ function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAn
                 g_gui:showGui("InGameMenu")
                 inGameMenu:goToPage(self.ui)
             end
+        end
+    end
+    self:dumpFillTypeData()
+end
+
+-- =========================================================================
+-- TEMPORARY DEBUG: FillType & Manager Dump
+-- =========================================================================
+function GlobalMarket:dumpFillTypeData()
+    -- We test one crop that is typically palletized and one that is baled
+    local fillTypesToTest = {"CHILLI", "DRYGRASS_WINDROW"}
+
+    for _, name in ipairs(fillTypesToTest) do
+        local fillType = g_fillTypeManager:getFillTypeByName(name)
+
+        if fillType ~= nil then
+            print("==============================================================")
+            print("[GM Debug] DUMPING FILLTYPE FROM MANAGER: " .. name)
+            print("==============================================================")
+
+            -- Dump the fillType table directly (depth 3 to prevent infinite loops)
+            DebugUtil.printTableRecursively(fillType, "--> ", 0, 3)
+
+            -- Check the BaleManager for references to this fillType
+            if g_baleManager ~= nil then
+                print("--------------------------------------------------------------")
+                print("[GM Debug] BALE MANAGER DATA FOR: " .. name)
+                print("--------------------------------------------------------------")
+
+                -- Check if the basic support boolean function exists and returns true
+                if g_baleManager.getIsFillTypeSupported ~= nil then
+                    local isSupported = g_baleManager:getIsFillTypeSupported(fillType.index)
+                    print("--> getIsFillTypeSupported: " .. tostring(isSupported))
+                end
+
+                -- Dump the specific registered bale array for this fillType if it exists
+                if g_baleManager.fillTypes ~= nil and g_baleManager.fillTypes[fillType.index] ~= nil then
+                    print("--> Registered Bales for this FillType:")
+                    DebugUtil.printTableRecursively(g_baleManager.fillTypes[fillType.index], "----> ", 0, 3)
+                else
+                    print("--> No specific bale arrays found in g_baleManager.fillTypes for this index.")
+                end
+            end
+            print("==============================================================\n")
+        else
+            print("[GM Debug] WARNING: FillType '" .. name .. "' not found in engine!")
         end
     end
 end
