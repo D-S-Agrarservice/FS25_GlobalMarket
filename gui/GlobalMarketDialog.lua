@@ -310,10 +310,10 @@ function GlobalMarketDialog:onAmountChanged()
     local totalLiters = self.currentAmount * self.currentCountFactor
     local totalPrice = (totalLiters / 1000) * self.pricePer1000
 
-    -- Update the total value text display
+    -- Update the total value text display (FIX: Used g_i18n instead of g_currentMission)
     if self.totalValueText ~= nil then
         self.totalValueText:setText(string.format("Total: %s (%s L)",
-            g_currentMission:formatMoney(totalPrice),
+            g_i18n:formatMoney(totalPrice, 0, true, true),
             g_i18n:formatVolume(totalLiters, 0)))
     end
 
