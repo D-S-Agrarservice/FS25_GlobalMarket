@@ -5,6 +5,7 @@
         <e k="ui_btn_buy"                                          v="vom Globalen Markt kaufen" />
         <e k="ui_btn_sell"                                         v="an Globalen Markt verkaufen" />
         <e k="ui_gm_balance"                                       v="KONTOSTAND:" />
+        <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />
         <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_baseCost"                             v="Lieferkosten: Grundgebühr" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Legt die feste Grundgebühr für Speditionslieferungen zum oder vom privaten Hof-Silo fest." />

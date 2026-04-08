@@ -201,6 +201,63 @@ function GlobalMarketDialog:onClickStorage(state)
     end
 end
 
+function GlobalMarketDialog:onClickFormat(state)
+    local selectedFormat = self.availableFormats[state]
+    if selectedFormat ~= nil then
+        self.currentFormatXml = selectedFormat.xml
+        self.currentCountFactor = selectedFormat.capacity or 1000
+
+        local selectedSilo = self.storageLocations[self.selectedStorageIndex]
+        local maxPieces = 0
+
+        if selectedSilo ~= nil and selectedSilo.isObjectStorage then
+            local spec = selectedSilo.storage.spec_objectStorage
+
+            -- Safely get capacity with Giants default fallback of 250 if not defined in XML
+            local maxCapacity = spec.capacity or 250
+            local numStored = spec.numStoredObjects or 0
+            local freeSlots = math.max(0, maxCapacity - numStored)
+
+            -- Determine how many pieces we can actually afford from the market stock
+            local marketStock = 0
+            local gm = g_currentMission.globalMarket
+            local marketData = gm:getIsMarketOnline() and gm.fillTypes or gm.offlineMarketFillTypes
+            if marketData ~= nil then
+                for _, data in pairs(marketData) do
+                    if data.fillType == self.fillTypeName then
+                        marketStock = data.fillLevel or 0
+                        break
+                    end
+                end
+            end
+
+            local maxPiecesFromMarket = math.floor(marketStock / self.currentCountFactor)
+
+            -- The absolute maximum pieces is the lower of the two limits
+            maxPieces = math.min(freeSlots, maxPiecesFromMarket)
+        end
+
+        -- Store the calculated max pieces so onAmountChanged can use it
+        self.currentMaxPieces = maxPieces
+
+        -- Update info text using translation system
+        local l10nString = g_i18n:getText("ui_gm_format_info")
+        -- Fallback just in case the translation is missing
+        if l10nString == nil or l10nString == "ui_gm_format_info" then
+            l10nString = "Format: %s | Max: %d | 1 = %d L"
+        end
+
+        local infoText = string.format(l10nString, selectedFormat.title, self.currentMaxPieces, self.currentCountFactor)
+        self.dialogInfoTextElement:setText(infoText)
+
+        -- Reset input field and trigger calculation
+        if self.amountInput ~= nil then
+            self.amountInput:setText("0")
+        end
+        self:onAmountChanged()
+    end
+end
+
 function GlobalMarketDialog:onClickMaxAmount()
     local fillAmount = self.maxAmount
 
@@ -218,21 +275,37 @@ function GlobalMarketDialog:onClickMaxAmount()
     self:onAmountChanged()
 end
 
-function GlobalMarketDialog:onAmountChanged(...)
+function GlobalMarketDialog:onAmountChanged()
     local text = self.amountInput:getText()
-    local amount = tonumber(text)
+    local amount = tonumber(text) or 0
 
-    if amount == nil then
-        self.currentAmount = 0
-    else
-        if amount > self.maxAmount then
-            amount = self.maxAmount
-            self.amountInput:setText(string.format("%d", math.floor(amount)))
-        end
-        self.currentAmount = amount
+    -- Cap the input to the maximum allowed value (Default is maxAmount for Bulk)
+    local effectiveMax = self.maxAmount
+
+    -- If we are in object mode, use the exactly calculated maxPieces limit
+    if self.currentCountFactor > 1 and self.currentMaxPieces ~= nil then
+        effectiveMax = self.currentMaxPieces
     end
 
-    self:updateTotalValue()
+    if amount > effectiveMax then
+        amount = effectiveMax
+        self.amountInput:setText(tostring(amount))
+    end
+    self.currentAmount = amount
+
+    -- Price calculation: pieces * litersPerPiece * pricePer1000
+    local totalLiters = self.currentAmount * self.currentCountFactor
+    local totalPrice = (totalLiters / 1000) * self.pricePer1000
+
+    -- Update the total value text display
+    if self.totalValueText ~= nil then
+        self.totalValueText:setText(string.format("Total: %s (%s L)",
+            g_currentMission:formatMoney(totalPrice),
+            g_i18n:formatVolume(totalLiters, 0)))
+    end
+
+    -- Enable or disable the confirm button based on the input amount
+    self.yesButton:setDisabled(amount <= 0)
 end
 
 function GlobalMarketDialog:updateTotalValue()
