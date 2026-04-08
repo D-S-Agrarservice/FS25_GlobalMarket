@@ -163,7 +163,7 @@ function GlobalMarketDialog:onClickStorage(state)
                                         title = string.format("%s (%.2fm)", l10nSquare, length or 2.40)
                                     end
 
-                                    table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity})
+                                    table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity, unitKey = "ui_gm_unit_bale"})
                                 end
                             end
                         end
@@ -179,7 +179,7 @@ function GlobalMarketDialog:onClickStorage(state)
                         palletTitle = storeItem.name or palletTitle
                     end
 
-                    table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = palletCapacity})
+                    table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = palletCapacity, unitKey = "ui_gm_unit_pallet"})
                 end
 
                 -- If formats exist, populate the dropdown texts and show it
@@ -220,6 +220,9 @@ function GlobalMarketDialog:onClickFormat(state)
     if selectedFormat ~= nil then
         self.currentFormatXml = selectedFormat.xml
         self.currentCountFactor = selectedFormat.capacity or 1000
+
+        -- Speichere den neuen Unit-Key (Ballen oder Paletten)
+        self.currentUnitKey = selectedFormat.unitKey or "ui_gm_unit_piece"
 
         local selectedSilo = self.storageLocations[self.selectedStorageIndex]
         local maxPieces = 0
@@ -326,8 +329,8 @@ function GlobalMarketDialog:onAmountChanged()
 
     -- Update the dynamic unit text next to the MAX button based on the current format
     if self.inputUnitText ~= nil then
-        if self.currentCountFactor > 1 then
-            self.inputUnitText:setText(g_i18n:getText("ui_gm_unit_piece"))
+        if self.currentCountFactor > 1 and self.currentUnitKey ~= nil then
+            self.inputUnitText:setText(g_i18n:getText(self.currentUnitKey))
         else
             self.inputUnitText:setText(g_i18n:getText("ui_gm_unit_liter"))
         end
@@ -370,9 +373,15 @@ function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
 
     if self.callbackFunc ~= nil and selectedStorage ~= nil then
-        -- Pass the new format parameters to the backend
+        -- BUGFIX: Backend expects Liters! Convert pieces to total liters before sending.
+        local litersToProcess = self.currentAmount
+        if self.currentCountFactor > 1 then
+            litersToProcess = self.currentAmount * self.currentCountFactor
+        end
+
+        -- Pass the calculated liters to the backend
         -- Signature: target, amount, storageId, actionType, fillTypeName, isObjectStorage, formatXml, capacityPerObject
-        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage, self.currentFormatXml, self.currentCountFactor)
+        self.callbackFunc(self.target, litersToProcess, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage, self.currentFormatXml, self.currentCountFactor)
     end
 
     GlobalMarketDialog:superClass().onClickOk(self)

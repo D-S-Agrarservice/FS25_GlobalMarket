@@ -69,7 +69,7 @@
         </Profile>
 
         <Profile name="globalMarketInputGroup" extends="emptyPanel" with="anchorTopCenter">
-            <size value="340px 40px" />
+            <size value="400px 40px" />
             <position value="0px -260px" />
         </Profile>
 
@@ -95,7 +95,7 @@
         </Profile>
 
         <Profile name="globalMarketInputUnitText" extends="fs25_textDefault" with="anchorMiddleLeft">
-            <width value="40px" />
+            <width value="90px" />
             <position value="300px 0px" />
             <textSize value="18px" />
             <textAlignment value="left" />

@@ -8,8 +8,8 @@
         <e k="ui_gm_format_bulk"                                   v="Schüttgut (Lose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Palette" />
-        <e k="ui_gm_format_roundbale"                              v="Rundballen (%.2fm)" />
-        <e k="ui_gm_format_squarebale"                             v="Quaderballen (%.2fm)" />
+        <e k="ui_gm_format_roundbale"                              v="Rundballen" />
+        <e k="ui_gm_format_squarebale"                             v="Quaderballen" />
         <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_baseCost"                             v="Lieferkosten: Grundgebühr" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Legt die feste Grundgebühr für Speditionslieferungen zum oder vom privaten Hof-Silo fest." />
@@ -21,7 +21,8 @@
         <e k="ui_gm_trend"                                         v="TR." />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />
         <e k="ui_gm_unit_liter"                                    v="L" />
-        <e k="ui_gm_unit_piece"                                    v="Stück" />
+        <e k="ui_gm_unit_pallet"                                   v="Paletten" />
+        <e k="ui_gm_unit_bale"                                     v="Ballen" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Verfügbare Menge" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Anzahl" />
