@@ -7,7 +7,7 @@
         <e k="ui_gm_balance"                                       v="KONTOSTAND:" />
         <e k="ui_gm_format_bulk"                                   v="Schüttgut (Lose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />
-        <e k="ui_gm_format_pallet"                                 v="Standard-Palette" />
+        <e k="ui_gm_format_pallet"                                 v="Palette" />
         <e k="ui_gm_format_roundbale"                              v="Rundballen (%.2fm)" />
         <e k="ui_gm_format_squarebale"                             v="Quaderballen (%.2fm)" />
         <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />

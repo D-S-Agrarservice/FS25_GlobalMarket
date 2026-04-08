@@ -140,7 +140,7 @@ function GlobalMarketDialog:onClickStorage(state)
             self.maxAmount = math.min(selectedSilo.freeCapacity, marketStock)
         end
 
-        -- 2. NEW: Scan engine for formats if it's an ObjectStorage and we are BUYING
+        -- 2. Scan engine for formats if it's an ObjectStorage and we are BUYING
         if selectedSilo.isObjectStorage and self.actionType == "BUY" then
             local fillType = g_fillTypeManager:getFillTypeByName(self.fillTypeName)
 
@@ -153,19 +153,33 @@ function GlobalMarketDialog:onClickStorage(state)
                                 if ftData.fillTypeIndex == fillType.index then
                                     local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
                                     local title = ""
+
+                                    -- Use l10n translations instead of hardcoded strings
                                     if isRound then
-                                        title = string.format("Roundbale (%.2fm)", diameter or width or 1.25)
+                                        local l10nRound = g_i18n:getText("ui_gm_format_roundbale")
+                                        title = string.format("%s (%.2fm)", l10nRound, diameter or width or 1.25)
                                     else
-                                        title = string.format("Squarebale (%.2fm)", length or 2.40)
+                                        local l10nSquare = g_i18n:getText("ui_gm_format_squarebale")
+                                        title = string.format("%s (%.2fm)", l10nSquare, length or 2.40)
                                     end
+
                                     table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity})
                                 end
                             end
                         end
                     end
-                elseif selectedSilo.supportsPallets and fillType.isPalletType then
-                    -- Fallback for pallets
-                    table.insert(self.availableFormats, {title = "Pallet", xml = fillType.palletFilename, capacity = 1000})
+                elseif selectedSilo.supportsPallets and fillType.isPalletType and fillType.palletFilename ~= nil then
+                    -- Extract dynamic pallet data via StoreManager instead of hardcoding
+                    local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
+                    local palletTitle = g_i18n:getText("ui_gm_format_pallet")
+                    local palletCapacity = 1000 -- Default engine fallback for standard pallets
+
+                    if storeItem ~= nil then
+                        -- Use the native shop name for the pallet (e.g., "Pioneer Seed Pallet")
+                        palletTitle = storeItem.name or palletTitle
+                    end
+
+                    table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = palletCapacity})
                 end
 
                 -- If formats exist, populate the dropdown texts and show it
