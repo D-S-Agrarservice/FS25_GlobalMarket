@@ -28,7 +28,24 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
             local level = storage:getFillLevel(fillTypeIndex)
             local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
 
-            local storageName = storage.owningPlaceable ~= nil and storage.owningPlaceable:getName() or "Silo"
+            -- MATCHING LOGIC: Since FS25 does not assign owningPlaceable to Storage objects directly,
+            -- we match the storage object against the placeables to extract the custom building name.
+            local storageName = "Silo"
+            local foundOwner = false
+
+            for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+                if placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
+                    for _, s in ipairs(placeable.spec_silo.storages) do
+                        if s == storage then
+                            storageName = placeable:getName()
+                            foundOwner = true
+                            break
+                        end
+                    end
+                end
+                if foundOwner then break end
+            end
+
             local displayTitle = storageName
 
             if storage.isGmMarket then
@@ -85,7 +102,7 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
                 local approximatedFreeCapacity = freeSlots * 1000
 
-                -- NEW: Dynamic Filter Logic for Buying based on native fillType flags
+                -- Dynamic Filter Logic for Buying based on native fillType flags
                 local isValidForBuying = true
                 if not isSelling then
                     local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
@@ -93,7 +110,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                         local canBeBale = fillType.isBaleType or false
                         local canBePallet = fillType.isPalletType or false
 
-                        -- The storage is valid if it supports at least one format that the fillType also supports
                         if not ((supportsBales and canBeBale) or (supportsPallets and canBePallet)) then
                             isValidForBuying = false
                         end
@@ -105,7 +121,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                     displayTitle = displayTitle .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
                 end
 
-                -- Apply the filter
                 if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1 and isValidForBuying) then
                     table.insert(availableStorages, {
                         storage = placeable,
