@@ -499,12 +499,18 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 local abstractObject = abstractClass.new()
 
                 if isBale then
+                    -- Correctly populated using explicit FS25 requirements from saveBaleAttributesToXMLFile
                     abstractObject.baleAttributes = {
                         xmlFilename = xmlFilename,
                         fillLevel = actualCapacity,
                         fillType = fillTypeIndex,
+                        variationIndex = 1,
+                        farmId = targetFarmId,
+                        isMissionBale = false,
                         wrappingState = 0,
-                        variationIndex = 1
+                        wrappingColor = {1, 1, 1},
+                        isFermenting = false,
+                        fermentationTime = 0
                     }
                 else
                     abstractObject.palletAttributes = {
@@ -540,7 +546,6 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
     else
         -- CLIENT SEND EVENT
         if GlobalMarket.config.useSync and SellBuyOfflineMarketEvent ~= nil then
-            -- Note: New parameters appended to the event call for Multiplayer sync
             g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceable, requestedLiters, true, playerFarmId, formatXml, capacityPerObject))
         end
     end
