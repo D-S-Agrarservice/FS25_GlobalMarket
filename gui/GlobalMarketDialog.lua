@@ -261,13 +261,26 @@ end
 function GlobalMarketDialog:onClickMaxAmount()
     local fillAmount = self.maxAmount
 
+    -- If we are in object mode, default fillAmount is the max pieces
+    if self.currentCountFactor > 1 and self.currentMaxPieces ~= nil then
+        fillAmount = self.currentMaxPieces
+    end
+
     if self.actionType == "BUY" then
         local currentMoney = g_currentMission:getMoney()
         if currentMoney <= 0 then
             fillAmount = 0
         else
-            local maxAffordable = (currentMoney / self.pricePer1000) * 1000
-            fillAmount = math.min(self.maxAmount, maxAffordable)
+            -- Calculate how many liters we can afford
+            local maxAffordableLiters = (currentMoney / self.pricePer1000) * 1000
+
+            if self.currentCountFactor > 1 then
+                -- Convert affordable liters to pieces
+                local maxAffordablePieces = math.floor(maxAffordableLiters / self.currentCountFactor)
+                fillAmount = math.min(fillAmount, maxAffordablePieces)
+            else
+                fillAmount = math.min(fillAmount, maxAffordableLiters)
+            end
         end
     end
 
@@ -333,8 +346,9 @@ function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
 
     if self.callbackFunc ~= nil and selectedStorage ~= nil then
-
-        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage)
+        -- Pass the new format parameters to the backend
+        -- Signature: target, amount, storageId, actionType, fillTypeName, isObjectStorage, formatXml, capacityPerObject
+        self.callbackFunc(self.target, self.currentAmount, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage, self.currentFormatXml, self.currentCountFactor)
     end
 
     GlobalMarketDialog:superClass().onClickOk(self)
