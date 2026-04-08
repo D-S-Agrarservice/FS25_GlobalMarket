@@ -254,9 +254,8 @@ function GlobalMarketDialog:onClickFormat(state)
         -- Store the calculated max pieces so onAmountChanged can use it
         self.currentMaxPieces = maxPieces
 
-        -- Update info text using translation system
+        -- Update info text using translation system with a safe fallback
         local l10nString = g_i18n:getText("ui_gm_format_info")
-        -- Fallback just in case the translation is missing
         if l10nString == nil or l10nString == "ui_gm_format_info" then
             l10nString = "Format: %s | Max: %d | 1 = %d L"
         end
@@ -320,11 +319,20 @@ function GlobalMarketDialog:onAmountChanged()
     end
     self.currentAmount = amount
 
+    -- Update the dynamic unit text next to the MAX button based on the current format
+    if self.inputUnitText ~= nil then
+        if self.currentCountFactor > 1 then
+            self.inputUnitText:setText(g_i18n:getText("ui_gm_unit_piece"))
+        else
+            self.inputUnitText:setText(g_i18n:getText("ui_gm_unit_liter"))
+        end
+    end
+
     -- Price calculation: pieces * litersPerPiece * pricePer1000
     local totalLiters = self.currentAmount * self.currentCountFactor
     local totalPrice = (totalLiters / 1000) * self.pricePer1000
 
-    -- Update the total value text display (FIX: Used g_i18n instead of g_currentMission)
+    -- Update the total value text display
     if self.totalValueText ~= nil then
         self.totalValueText:setText(string.format("Total: %s (%s L)",
             g_i18n:formatMoney(totalPrice, 0, true, true),
@@ -334,6 +342,7 @@ function GlobalMarketDialog:onAmountChanged()
     -- Enable or disable the confirm button based on the input amount
     self.yesButton:setDisabled(amount <= 0)
 end
+
 
 function GlobalMarketDialog:updateTotalValue()
     local total = (self.currentAmount / 1000) * self.pricePer1000
