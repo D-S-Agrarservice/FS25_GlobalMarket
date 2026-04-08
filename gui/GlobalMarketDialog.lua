@@ -333,19 +333,8 @@ function GlobalMarketDialog:onAmountChanged()
         end
     end
 
-    -- Price calculation: pieces * litersPerPiece * pricePer1000
-    local totalLiters = self.currentAmount * self.currentCountFactor
-    local totalPrice = (totalLiters / 1000) * self.pricePer1000
-
-    -- Update the total value text display
-    if self.totalValueText ~= nil then
-        self.totalValueText:setText(string.format("Total: %s (%s L)",
-            g_i18n:formatMoney(totalPrice, 0, true, true),
-            g_i18n:formatVolume(totalLiters, 0)))
-    end
-
-    -- Enable or disable the confirm button based on the input amount
-    self.yesButton:setDisabled(amount <= 0)
+    -- Trigger the total value calculation, UI text update, and button state
+    self:updateTotalValue()
 end
 
 function GlobalMarketDialog:updateTotalValue()

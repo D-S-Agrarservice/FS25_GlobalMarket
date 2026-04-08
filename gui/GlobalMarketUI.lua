@@ -273,13 +273,14 @@ function GlobalMarketUI:onButtonAction()
 end
 
 -- Callback receiver from GMDialog.lua
-function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName, isObjectStorage)
+function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName, isObjectStorage, formatXml, capacityPerObject)
     if amount > 0 then
         local mode = (actionType == "SELL") and 1 or 2
 
-        g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, 0, nil, nil, isObjectStorage, g_currentMission:getFarmId())
+        -- Pass the new format parameters (formatXml, capacityPerObject) to the main market logic
+        g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, 0, nil, nil, isObjectStorage, g_currentMission:getFarmId(), formatXml, capacityPerObject)
 
-        -- NEW: Dynamic countdown based on storage type to sync with engine background updates
+        -- Dynamic countdown based on storage type to sync with engine background updates
         if isObjectStorage then
             self.refreshCountdown = 1200 -- 1000ms native engine delay + 200ms buffer
         else

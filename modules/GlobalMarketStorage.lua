@@ -220,15 +220,14 @@ end
 -- =========================================================================
 
 -- Main Entry Point for UI Actions (Router)
-function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, attributes, objectId, isObjectStorage, playerFarmId)
+function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, attributes, objectId, isObjectStorage, playerFarmId, formatXml, capacityPerObject)
     -- Fallback for playerFarmId if not provided by older UI calls
     if playerFarmId == nil then
         playerFarmId = g_currentMission:getFarmId()
     end
 
     if isObjectStorage then
-
-        self:onSellBuyObjects(mode, filltypeName, level, storageId, playerFarmId)
+        self:onSellBuyObjects(mode, filltypeName, level, storageId, playerFarmId, formatXml, capacityPerObject)
     else
         -- Route to Bulk backend
         self:onSellBuyBulk(mode, filltypeName, level, storageId, playerFarmId)
@@ -347,7 +346,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
 end
 
 -- Handle object transactions (Ballen/Paletten in ObjectStorages)
-function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, storageId, playerFarmId)
+function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, storageId, playerFarmId, formatXml, capacityPerObject)
     GlobalMarket.debugLog("Backend: onSellBuyObjects [Mode: %d, FillType: %s, Requested Liters: %f]", mode, filltypeName, requestedLiters)
 
     if requestedLiters <= 0.01 then
@@ -446,34 +445,28 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             if marketItem == nil then return end
 
             local availableLitersToBuy = math.min(requestedLiters, marketItem.fillLevel)
-            local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
-            local xmlFilename = nil
-            local isBale = false
-            local capacityPerObject = 5000
 
-            -- 1. Try finding a default pallet
-            if fillType.palletFilename ~= nil and fillType.palletFilename ~= "" then
-                xmlFilename = fillType.palletFilename
-                capacityPerObject = fillType.palletCapacity or 5000
-            else
-                -- 2. Try finding a default bale (FIXED CAPACITY READING)
-                for _, bale in pairs(g_baleManager.bales) do
-                    local baleFillType = bale.fillTypes and bale.fillTypes[fillTypeIndex]
-                    if baleFillType ~= nil then
-                        xmlFilename = bale.filename
-                        capacityPerObject = baleFillType.capacity -- Korrekter Zugriff auf die Kapazität!
+            -- Use the exact parameters passed from the UI instead of guessing
+            local xmlFilename = formatXml
+            local actualCapacity = capacityPerObject or 5000
+
+            if xmlFilename == nil then
+                GlobalMarket.debugLog("ERROR: No valid Pallet or Bale XML provided for FillType %s", filltypeName)
+                return
+            end
+
+            -- Determine if the format is a bale by checking the engine's bale manager
+            local isBale = false
+            if g_baleManager ~= nil then
+                for _, bale in ipairs(g_baleManager.bales) do
+                    if bale.xmlFilename == xmlFilename then
                         isBale = true
                         break
                     end
                 end
             end
 
-            if xmlFilename == nil then
-                GlobalMarket.debugLog("ERROR: No valid Pallet or Bale XML found for FillType %s", filltypeName)
-                return
-            end
-
-            local numObjectsToBuy = math.floor(availableLitersToBuy / capacityPerObject)
+            local numObjectsToBuy = math.floor(availableLitersToBuy / actualCapacity)
             local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
             numObjectsToBuy = math.min(numObjectsToBuy, freeSlots)
 
@@ -482,7 +475,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 return
             end
 
-            local actualLitersBought = numObjectsToBuy * capacityPerObject
+            local actualLitersBought = numObjectsToBuy * actualCapacity
             local marketPricePerUnit = marketItem.price / 1000
             local totalPrice = marketPricePerUnit * actualLitersBought
 
@@ -508,7 +501,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 if isBale then
                     abstractObject.baleAttributes = {
                         xmlFilename = xmlFilename,
-                        fillLevel = capacityPerObject,
+                        fillLevel = actualCapacity,
                         fillType = fillTypeIndex,
                         wrappingState = 0,
                         variationIndex = 1
@@ -519,7 +512,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                         isBigBag = false,
                         ownerFarmId = targetFarmId,
                         fillType = fillTypeIndex,
-                        fillLevel = capacityPerObject,
+                        fillLevel = actualCapacity,
                         configurations = {
                             fillUnit = 1
                         }
@@ -547,7 +540,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
     else
         -- CLIENT SEND EVENT
         if GlobalMarket.config.useSync and SellBuyOfflineMarketEvent ~= nil then
-            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceable, requestedLiters, true, playerFarmId))
+            -- Note: New parameters appended to the event call for Multiplayer sync
+            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceable, requestedLiters, true, playerFarmId, formatXml, capacityPerObject))
         end
     end
 end
