@@ -281,10 +281,11 @@ function GlobalMarketDialog:onClickMaxAmount()
 
     if self.actionType == "BUY" then
         local currentMoney = g_currentMission:getMoney()
+
         if currentMoney <= 0 then
             fillAmount = 0
-        else
-            -- Calculate how many liters we can afford
+        elseif self.pricePer1000 > 0 then
+            -- Safely calculate how many liters we can afford to prevent division by zero
             local maxAffordableLiters = (currentMoney / self.pricePer1000) * 1000
 
             if self.currentCountFactor > 1 then
@@ -295,10 +296,14 @@ function GlobalMarketDialog:onClickMaxAmount()
                 fillAmount = math.min(fillAmount, maxAffordableLiters)
             end
         end
+        -- If price is exactly 0, we do not restrict the fillAmount by money
     end
 
-    self.amountInput:setText(string.format("%d", math.floor(fillAmount)))
-    self:onAmountChanged()
+    -- Update the input field and trigger the calculation logic
+    if self.amountInput ~= nil then
+        self.amountInput:setText(string.format("%d", math.floor(fillAmount)))
+        self:onAmountChanged()
+    end
 end
 
 function GlobalMarketDialog:onAmountChanged()
