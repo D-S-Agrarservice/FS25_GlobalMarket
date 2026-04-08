@@ -94,9 +94,10 @@
             <imageFocusedColor value="$preset_fs25_colorMainHighlight" />
         </Profile>
 
-        <Profile name="globalMarketInputUnitText" extends="fs25_dialogTextSmall" with="anchorMiddleLeft">
+        <Profile name="globalMarketInputUnitText" extends="fs25_textDefault" with="anchorMiddleLeft">
             <width value="40px" />
             <position value="300px 0px" />
+            <textSize value="18px" />
             <textAlignment value="left" />
             <textColor value="$preset_colorWhite" />
         </Profile>
