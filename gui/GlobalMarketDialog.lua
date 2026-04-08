@@ -348,11 +348,12 @@ function GlobalMarketDialog:onAmountChanged()
     self.yesButton:setDisabled(amount <= 0)
 end
 
-
 function GlobalMarketDialog:updateTotalValue()
-    local total = (self.currentAmount / 1000) * self.pricePer1000
+    -- Calculate total liters respecting the format (bulk vs pieces)
+    local totalLiters = self.currentAmount * self.currentCountFactor
+    local total = (totalLiters / 1000) * self.pricePer1000
 
-    -- FIX 3: Check funds when manually typing a number
+    -- Check funds when buying
     local hasEnoughMoney = true
     if self.actionType == "BUY" then
         hasEnoughMoney = g_currentMission:getMoney() >= total
@@ -364,7 +365,13 @@ function GlobalMarketDialog:updateTotalValue()
         self.yesButton:setDisabled(true)
     else
         local totalValueHeader = self.actionType == "SELL" and g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderSellPrice") or g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderBuyPrice")
-        self.totalValueText:setText(string.format("%s %s", totalValueHeader, g_i18n:formatMoney(total, 0, true, true)))
+
+        -- Display header, money, and total liters dynamically
+        self.totalValueText:setText(string.format("%s %s (%s L)",
+            totalValueHeader,
+            g_i18n:formatMoney(total, 0, true, true),
+            g_i18n:formatVolume(totalLiters, 0)))
+
         self.totalValueText:setTextColor(1, 1, 1, 1) -- Reset to white
         self.yesButton:setDisabled(self.currentAmount <= 0)
     end
