@@ -28,6 +28,8 @@
                 </GuiElement>
 
                 <Button profile="globalMarketMaxButton" text="MAX" onClick="onClickMaxAmount" />
+                
+                <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
 
             <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
@@ -67,7 +69,7 @@
         </Profile>
 
         <Profile name="globalMarketInputGroup" extends="emptyPanel" with="anchorTopCenter">
-            <size value="290px 40px" />
+            <size value="340px 40px" />
             <position value="0px -260px" />
         </Profile>
 
@@ -77,17 +79,26 @@
             <textAlignment value="center" />
         </Profile>
 
-        <Profile name="globalMarketMaxButton" extends="buttonBase" with="anchorMiddleRight">
+        <Profile name="globalMarketMaxButton" extends="buttonBase" with="anchorMiddleLeft">
             <size value="80px 40px" />
-            <position value="0px 0px" />
+            <position value="210px 0px" />
             <textSize value="20px" />
-            <textBold value="true" /> <textAlignment value="center" />
+            <textBold value="true" /> 
+            <textPadding value="10px 0px" />
+            <textAlignment value="center" />
             <textColor value="$preset_colorWhite" />
             <textHighlightedColor value="$preset_fs25_colorMainDark" />
             <textFocusedColor value="$preset_fs25_colorMainDark" />
             <imageColor value="0 0 0 0.4" />
             <imageHighlightedColor value="$preset_fs25_colorMainHighlight" />
             <imageFocusedColor value="$preset_fs25_colorMainHighlight" />
+        </Profile>
+
+        <Profile name="globalMarketInputUnitText" extends="fs25_dialogTextSmall" with="anchorMiddleLeft">
+            <width value="40px" />
+            <position value="300px 0px" />
+            <textAlignment value="left" />
+            <textColor value="$preset_colorWhite" />
         </Profile>
 
         <Profile name="globalMarketTotalText" extends="fs25_dialogText" with="anchorTopCenter">
