@@ -21,7 +21,7 @@ GlobalMarketSettings.OPTIONS = {
 GlobalMarketSettings.current = {
     deliveryBaseIndex = 4, -- Default: 50
     deliveryLiterIndex = 4, -- Default: 0.05
-    isDebugActive = false, -- Default: Off (Boolean for CheckedOption)
+    isDebugActive = false, -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,   -- Default: Info
     debugDurationIndex = 1 -- Default: 1 Hour
 }
@@ -196,42 +196,42 @@ function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey,
     return multiTextOption, bitMap
 end
 
--- New function for the native Yes/No Checkbox Design
-function GlobalMarketSettings:addCheckedOption(settingsFrame, controlId, titleKey, tooltipKey, callbackName)
+-- Re-engineered function for the native FS25 Binary Option (Yes/No | On/Off toggle)
+function GlobalMarketSettings:addBinaryOption(settingsFrame, controlId, titleKey, tooltipKey, callbackName)
     local bitMap = BitmapElement.new()
     local bitMapProfile = g_gui:getProfile("fs25_multiTextOptionContainer")
     bitMap:loadProfile(bitMapProfile, true)
 
-    local checkedOption = CheckedOptionElement.new()
-    local checkedOptionProfile = g_gui:getProfile("fs25_settingsCheckedOption")
-    checkedOption:loadProfile(checkedOptionProfile, true)
-    checkedOption.target = GlobalMarketSettings
-    checkedOption:setCallback("onClickCallback", callbackName)
+    local binaryOption = BinaryOptionElement.new()
+    local binaryOptionProfile = g_gui:getProfile("fs25_settingsBinaryOption")
+    binaryOption:loadProfile(binaryOptionProfile, true)
+    binaryOption.target = GlobalMarketSettings
+    binaryOption:setCallback("onClickCallback", callbackName)
 
-    local checkedOptionTitle = TextElement.new()
-    local checkedOptionTitleProfile = g_gui:getProfile("fs25_settingsMultiTextOptionTitle")
-    checkedOptionTitle:loadProfile(checkedOptionTitleProfile, true)
-    checkedOptionTitle:setText(g_i18n:getText(titleKey))
+    local binaryOptionTitle = TextElement.new()
+    local binaryOptionTitleProfile = g_gui:getProfile("fs25_settingsMultiTextOptionTitle")
+    binaryOptionTitle:loadProfile(binaryOptionTitleProfile, true)
+    binaryOptionTitle:setText(g_i18n:getText(titleKey))
 
-    local checkedOptionTooltip = TextElement.new()
-    local checkedOptionTooltipProfile = g_gui:getProfile("fs25_multiTextOptionTooltip")
-    checkedOptionTooltip.name = "ignore"
-    checkedOptionTooltip:loadProfile(checkedOptionTooltipProfile, true)
-    checkedOptionTooltip:setText(g_i18n:getText(tooltipKey))
+    local binaryOptionTooltip = TextElement.new()
+    local binaryOptionTooltipProfile = g_gui:getProfile("fs25_multiTextOptionTooltip")
+    binaryOptionTooltip.name = "ignore"
+    binaryOptionTooltip:loadProfile(binaryOptionTooltipProfile, true)
+    binaryOptionTooltip:setText(g_i18n:getText(tooltipKey))
 
-    checkedOption:addElement(checkedOptionTooltip)
-    bitMap:addElement(checkedOption)
-    bitMap:addElement(checkedOptionTitle)
+    binaryOption:addElement(binaryOptionTooltip)
+    bitMap:addElement(binaryOption)
+    bitMap:addElement(binaryOptionTitle)
 
-    checkedOption:onGuiSetupFinished()
-    checkedOptionTitle:onGuiSetupFinished()
-    checkedOptionTooltip:onGuiSetupFinished()
+    binaryOption:onGuiSetupFinished()
+    binaryOptionTitle:onGuiSetupFinished()
+    binaryOptionTooltip:onGuiSetupFinished()
 
     settingsFrame.gameSettingsLayout:addElement(bitMap)
     bitMap:onGuiSetupFinished()
 
-    GlobalMarketSettings.CONTROLS[controlId] = checkedOption
-    return checkedOption, bitMap
+    GlobalMarketSettings.CONTROLS[controlId] = binaryOption
+    return binaryOption, bitMap
 end
 
 function GlobalMarketSettings.onFrameOpen(settingsFrame)
@@ -249,8 +249,8 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsBaseCost", "ui_gm_settings_baseCost", "ui_gm_settings_baseCost_desc", baseTexts, "onBaseCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsLiterCost", "ui_gm_settings_literCost", "ui_gm_settings_literCost_desc", literTexts, "onLiterCostChanged")
 
-        -- Inject New Debug Options (Using the newly created checked option for master switch)
-        GlobalMarketSettings:addCheckedOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
+        -- Inject New Debug Options (Using the accurate FS25 binary option for master switch)
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
 
@@ -295,6 +295,7 @@ function GlobalMarketSettings.refreshMenuState()
 
     local modeControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugMode"]
     if modeControl ~= nil then
+        -- BinaryOptions in FS25 usually use setIsChecked
         modeControl:setIsChecked(isDebugOn)
         modeControl:setDisabled(not isAdmin)
     end
@@ -331,7 +332,7 @@ function GlobalMarketSettings:onLiterCostChanged(state)
 end
 
 function GlobalMarketSettings:onDebugModeChanged(state)
-    -- Native CheckedOptions return boolean states in the callback
+    -- Native BinaryOptions return boolean states in the callback
     self.current.isDebugActive = state
     self:applyDebugSettings()
     self:saveToXML()
