@@ -5,6 +5,12 @@
         <e k="ui_btn_buy"                                          v="vom Globalen Markt kaufen" />
         <e k="ui_btn_sell"                                         v="an Globalen Markt verkaufen" />
         <e k="ui_gm_balance"                                       v="KONTOSTAND:" />
+        <e k="ui_gm_settings_debugMode"                            v="Debug-Modus" />
+        <e k="ui_gm_settings_debugMode_desc"                       v="Aktiviert erweiterte Entwickler-Logs für GlobalMarket." />
+        <e k="ui_gm_settings_debugLevel"                           v="Debug-Level" />
+        <e k="ui_gm_settings_debugLevel_desc"                      v="Bestimmt die Detailtiefe der Log-Ausgaben. Ab Level 'Debug' wird in eine externe Datei geschrieben." />
+        <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Dauer" />
+        <e k="ui_gm_settings_debugDuration_desc"                   v="Sicherheitslimit für extrem detailliertes Logging (Trace/Debug), um Performance-Einbrüche und extrem große Textdateien zu verhindern." />
         <e k="ui_gm_format_bulk"                                   v="Schüttgut (Lose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Palette" />

@@ -11,13 +11,19 @@ GlobalMarketSettings.CONTROLS = {}
 -- Define the available steps for the multi-options
 GlobalMarketSettings.OPTIONS = {
     DELIVERY_BASE = {0, 10, 25, 50, 75, 100, 150, 200},
-    DELIVERY_LITER = {0.0, 0.01, 0.02, 0.05, 0.10, 0.20}
+    DELIVERY_LITER = {0.0, 0.01, 0.02, 0.05, 0.10, 0.20},
+    -- Reordered array: Starts with Info on the far left
+    DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
+    DEBUG_DURATION = {"1 Hour", "3 Hours"}
 }
 
 -- Default values
 GlobalMarketSettings.current = {
     deliveryBaseIndex = 4, -- Default: 50
-    deliveryLiterIndex = 4 -- Default: 0.05
+    deliveryLiterIndex = 4, -- Default: 0.05
+    isDebugActive = false, -- Default: Off (Boolean for CheckedOption)
+    debugLevelIndex = 1,   -- Default: Info
+    debugDurationIndex = 1 -- Default: 1 Hour
 }
 
 -- Gets default indices based on the game's economic difficulty
@@ -34,6 +40,33 @@ function GlobalMarketSettings:getDefaultIndices()
         return 6, 5 -- Hard: Base=100, Liter=0.10
     else
         return 4, 4 -- Normal: Base=50, Liter=0.05
+    end
+end
+
+-- ============================================================================
+-- Debug Module Synchronization
+-- ============================================================================
+
+-- Syncs the UI settings with the actual Debug Module logic
+function GlobalMarketSettings:applyDebugSettings()
+    -- Only proceed if the debug manager has been initialized by the core script
+    if GlobalMarket.debugManager == nil then return end
+
+    -- Toggle master switch
+    GlobalMarket.debugManager.isActive = self.current.isDebugActive
+
+    -- If disabled, ensure deep logging is turned off
+    if not GlobalMarket.debugManager.isActive then
+        GlobalMarket.debugManager.deepLogActive = false
+        return
+    end
+
+    -- Handle Deep Logging activation based on Level (4 = Debug, 5 = Trace)
+    if self.current.debugLevelIndex >= 4 then
+        local durationHours = (self.current.debugDurationIndex == 1) and 1 or 3
+        GlobalMarket.debugManager:enableDeepLogging(durationHours)
+    else
+        GlobalMarket.debugManager.deepLogActive = false
     end
 end
 
@@ -55,7 +88,12 @@ function GlobalMarketSettings:loadFromXML()
     if not fileExists(savePath) then
         self.current.deliveryBaseIndex = defaultBase
         self.current.deliveryLiterIndex = defaultLiter
+        self.current.isDebugActive = false
+        self.current.debugLevelIndex = 1
+        self.current.debugDurationIndex = 1
+
         self:saveToXML()
+        self:applyDebugSettings()
 
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
@@ -67,9 +105,16 @@ function GlobalMarketSettings:loadFromXML()
         self.current.deliveryBaseIndex = xmlFile:getInt("globalMarketSettings#deliveryBaseIndex", defaultBase)
         self.current.deliveryLiterIndex = xmlFile:getInt("globalMarketSettings#deliveryLiterIndex", defaultLiter)
 
-        -- Apply to active global variables
+        -- Load Debug Settings
+        self.current.isDebugActive = xmlFile:getBool("globalMarketSettings.debug#isActive", false)
+        self.current.debugLevelIndex = xmlFile:getInt("globalMarketSettings.debug#levelIndex", 1)
+        self.current.debugDurationIndex = xmlFile:getInt("globalMarketSettings.debug#durationIndex", 1)
+
+        -- Apply to active global variables and modules
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
+
+        self:applyDebugSettings()
 
         xmlFile:delete()
         GlobalMarket.debugLog("GlobalMarketSettings: Loaded from XML.")
@@ -84,8 +129,15 @@ function GlobalMarketSettings:saveToXML()
     if xmlFile ~= nil then
         xmlFile:setInt("globalMarketSettings#deliveryBaseIndex", self.current.deliveryBaseIndex)
         xmlFile:setInt("globalMarketSettings#deliveryLiterIndex", self.current.deliveryLiterIndex)
+
+        -- Save Debug Settings
+        xmlFile:setBool("globalMarketSettings.debug#isActive", self.current.isDebugActive)
+        xmlFile:setInt("globalMarketSettings.debug#levelIndex", self.current.debugLevelIndex)
+        xmlFile:setInt("globalMarketSettings.debug#durationIndex", self.current.debugDurationIndex)
+
         xmlFile:save()
         xmlFile:delete()
+
         GlobalMarket.debugLog("GlobalMarketSettings: Saved to XML.")
     end
 end
@@ -129,12 +181,10 @@ function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey,
     multiTextOptionTooltip:loadProfile(multiTextOptionTooltipProfile, true)
     multiTextOptionTooltip:setText(g_i18n:getText(tooltipKey))
 
-    -- Assemble elements
     multiTextOption:addElement(multiTextOptionTooltip)
     bitMap:addElement(multiTextOption)
     bitMap:addElement(multiTextOptionTitle)
 
-    -- Finalize UI setup
     multiTextOption:onGuiSetupFinished()
     multiTextOptionTitle:onGuiSetupFinished()
     multiTextOptionTooltip:onGuiSetupFinished()
@@ -142,25 +192,67 @@ function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey,
     settingsFrame.gameSettingsLayout:addElement(bitMap)
     bitMap:onGuiSetupFinished()
 
-    -- Store reference for state updates
     GlobalMarketSettings.CONTROLS[controlId] = multiTextOption
-
     return multiTextOption, bitMap
+end
+
+-- New function for the native Yes/No Checkbox Design
+function GlobalMarketSettings:addCheckedOption(settingsFrame, controlId, titleKey, tooltipKey, callbackName)
+    local bitMap = BitmapElement.new()
+    local bitMapProfile = g_gui:getProfile("fs25_multiTextOptionContainer")
+    bitMap:loadProfile(bitMapProfile, true)
+
+    local checkedOption = CheckedOptionElement.new()
+    local checkedOptionProfile = g_gui:getProfile("fs25_settingsCheckedOption")
+    checkedOption:loadProfile(checkedOptionProfile, true)
+    checkedOption.target = GlobalMarketSettings
+    checkedOption:setCallback("onClickCallback", callbackName)
+
+    local checkedOptionTitle = TextElement.new()
+    local checkedOptionTitleProfile = g_gui:getProfile("fs25_settingsMultiTextOptionTitle")
+    checkedOptionTitle:loadProfile(checkedOptionTitleProfile, true)
+    checkedOptionTitle:setText(g_i18n:getText(titleKey))
+
+    local checkedOptionTooltip = TextElement.new()
+    local checkedOptionTooltipProfile = g_gui:getProfile("fs25_multiTextOptionTooltip")
+    checkedOptionTooltip.name = "ignore"
+    checkedOptionTooltip:loadProfile(checkedOptionTooltipProfile, true)
+    checkedOptionTooltip:setText(g_i18n:getText(tooltipKey))
+
+    checkedOption:addElement(checkedOptionTooltip)
+    bitMap:addElement(checkedOption)
+    bitMap:addElement(checkedOptionTitle)
+
+    checkedOption:onGuiSetupFinished()
+    checkedOptionTitle:onGuiSetupFinished()
+    checkedOptionTooltip:onGuiSetupFinished()
+
+    settingsFrame.gameSettingsLayout:addElement(bitMap)
+    bitMap:onGuiSetupFinished()
+
+    GlobalMarketSettings.CONTROLS[controlId] = checkedOption
+    return checkedOption, bitMap
 end
 
 function GlobalMarketSettings.onFrameOpen(settingsFrame)
     if not GlobalMarketSettings.isMenuInjected then
         GlobalMarketSettings:addSectionHeader(settingsFrame)
 
-        -- Format options for UI display
+        -- Format texts for UI display
         local baseTexts = {}
         for _, val in ipairs(GlobalMarketSettings.OPTIONS.DELIVERY_BASE) do table.insert(baseTexts, tostring(val) .. " €") end
 
         local literTexts = {}
         for _, val in ipairs(GlobalMarketSettings.OPTIONS.DELIVERY_LITER) do table.insert(literTexts, tostring(val) .. " € / L") end
 
+        -- Inject Existing Options
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsBaseCost", "ui_gm_settings_baseCost", "ui_gm_settings_baseCost_desc", baseTexts, "onBaseCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsLiterCost", "ui_gm_settings_literCost", "ui_gm_settings_literCost_desc", literTexts, "onLiterCostChanged")
+
+        -- Inject New Debug Options (Using the newly created checked option for master switch)
+        GlobalMarketSettings:addCheckedOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
+        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
+        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
 
         settingsFrame.gameSettingsLayout:invalidateLayout()
 
@@ -184,6 +276,7 @@ function GlobalMarketSettings.refreshMenuState()
         isAdmin = g_currentMission:getIsServer() or g_currentMission.isMasterUser
     end
 
+    -- Delivery Controls
     local baseControl = GlobalMarketSettings.CONTROLS["gmSettingsBaseCost"]
     if baseControl ~= nil then
         baseControl:setState(GlobalMarketSettings.current.deliveryBaseIndex)
@@ -195,6 +288,30 @@ function GlobalMarketSettings.refreshMenuState()
         literControl:setState(GlobalMarketSettings.current.deliveryLiterIndex)
         literControl:setDisabled(not isAdmin)
     end
+
+    -- Debug Controls and Dependency Logic (Method A: Disabled States)
+    local isDebugOn = GlobalMarketSettings.current.isDebugActive
+    local isDeepLoggingLevel = (GlobalMarketSettings.current.debugLevelIndex >= 4)
+
+    local modeControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugMode"]
+    if modeControl ~= nil then
+        modeControl:setIsChecked(isDebugOn)
+        modeControl:setDisabled(not isAdmin)
+    end
+
+    local levelControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugLevel"]
+    if levelControl ~= nil then
+        levelControl:setState(GlobalMarketSettings.current.debugLevelIndex)
+        -- Disable if not admin or master switch is OFF
+        levelControl:setDisabled(not isAdmin or not isDebugOn)
+    end
+
+    local durationControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugDuration"]
+    if durationControl ~= nil then
+        durationControl:setState(GlobalMarketSettings.current.debugDurationIndex)
+        -- Disable if not admin, master switch is OFF, or level is below 'Debug'
+        durationControl:setDisabled(not isAdmin or not isDebugOn or not isDeepLoggingLevel)
+    end
 end
 
 -- ============================================================================
@@ -205,14 +322,33 @@ function GlobalMarketSettings:onBaseCostChanged(state)
     self.current.deliveryBaseIndex = state
     GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[state]
     self:saveToXML()
-    -- Note: Sync Event to clients will be triggered here later
 end
 
 function GlobalMarketSettings:onLiterCostChanged(state)
     self.current.deliveryLiterIndex = state
     GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[state]
     self:saveToXML()
-    -- Note: Sync Event to clients will be triggered here later
+end
+
+function GlobalMarketSettings:onDebugModeChanged(state)
+    -- Native CheckedOptions return boolean states in the callback
+    self.current.isDebugActive = state
+    self:applyDebugSettings()
+    self:saveToXML()
+    self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
+end
+
+function GlobalMarketSettings:onDebugLevelChanged(state)
+    self.current.debugLevelIndex = state
+    self:applyDebugSettings()
+    self:saveToXML()
+    self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
+end
+
+function GlobalMarketSettings:onDebugDurationChanged(state)
+    self.current.debugDurationIndex = state
+    self:applyDebugSettings()
+    self:saveToXML()
 end
 
 -- ============================================================================
