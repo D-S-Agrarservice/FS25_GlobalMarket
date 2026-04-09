@@ -1,6 +1,7 @@
 --
 -- FS25 - GlobalMarket Debug Module
 -- Description: Professional logging and table dumping system with recursion protection.
+-- Uses Round-Robin file rotation to comply with Giants Engine OS sandboxing.
 --
 
 GlobalMarketDebug = {}
@@ -22,6 +23,7 @@ function GlobalMarketDebug.new(modName, baseDir)
     self.deepLogActive = false
     self.deepLogEndTime = 0
     self.currentLogFile = nil
+    self.currentLogIndex = 1
 
     self:initLogDirectory()
     self:rotateLogs()
@@ -36,27 +38,44 @@ function GlobalMarketDebug:initLogDirectory()
 end
 
 function GlobalMarketDebug:rotateLogs()
-    -- Simple rolling log system (gm_dump_1.txt to gm_dump_3.txt)
-    for i = self.MAX_LOG_FILES - 1, 1, -1 do
-        local oldFile = self.logDir .. "gm_dump_" .. i .. ".txt"
-        local newFile = self.logDir .. "gm_dump_" .. (i + 1) .. ".txt"
+    -- Using a Round-Robin system with a tracker file to avoid os.rename restrictions
+    local indexPath = self.logDir .. "log_index.txt"
+    local lastIndex = 0
 
-        if fileExists(oldFile) then
-            if fileExists(newFile) then
-                deleteFile(newFile)
+    -- Read the last used index
+    if fileExists(indexPath) then
+        local file = io.open(indexPath, "r")
+        if file then
+            local content = file:read("*a")
+            local parsedIndex = tonumber(content)
+            if parsedIndex and parsedIndex >= 1 and parsedIndex <= self.MAX_LOG_FILES then
+                lastIndex = parsedIndex
             end
-            -- Using standard lua os.rename wrapped in pcall for safety in FS25
-            pcall(os.rename, oldFile, newFile)
+            file:close()
         end
+    end
+
+    -- Calculate next index (wrap around)
+    self.currentLogIndex = lastIndex + 1
+    if self.currentLogIndex > self.MAX_LOG_FILES then
+        self.currentLogIndex = 1
+    end
+
+    -- Save the new index
+    local outFile = io.open(indexPath, "w")
+    if outFile then
+        outFile:write(tostring(self.currentLogIndex))
+        outFile:close()
     end
 end
 
 function GlobalMarketDebug:openNewLogFile()
-    local filePath = self.logDir .. "gm_dump_1.txt"
+    -- Open the file based on the determined rotation index, overwriting old contents
+    local filePath = self.logDir .. "gm_dump_" .. self.currentLogIndex .. ".txt"
     self.currentLogFile = io.open(filePath, "w")
 
     if self.currentLogFile then
-        self.currentLogFile:write(string.format("=== %s Debug Log ===\n", self.modName))
+        self.currentLogFile:write(string.format("=== %s Debug Log (File %d) ===\n", self.modName, self.currentLogIndex))
         self.currentLogFile:write(string.format("Started: %s\n\n", getDate("%Y-%m-%d %H:%M:%S")))
         self.currentLogFile:flush()
     else
