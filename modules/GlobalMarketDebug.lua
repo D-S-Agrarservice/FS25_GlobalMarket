@@ -1,7 +1,7 @@
 --
 -- FS25 - GlobalMarket Debug Module
 -- Description: Professional logging and table dumping system with recursion protection.
--- Uses Round-Robin file rotation to comply with Giants Engine OS sandboxing.
+-- Uses XML-based Round-Robin file rotation to comply with Giants Engine OS sandboxing.
 --
 
 GlobalMarketDebug = {}
@@ -38,39 +38,38 @@ function GlobalMarketDebug:initLogDirectory()
 end
 
 function GlobalMarketDebug:rotateLogs()
-    -- Using a Round-Robin system with a tracker file to avoid os.rename restrictions
-    local indexPath = self.logDir .. "log_index.txt"
+    -- Using the native XML engine to track rotation to bypass io.open('r') restrictions
+    local indexPath = self.logDir .. "log_index.xml"
     local lastIndex = 0
 
-    -- Read the last used index
+    -- Read the last used index via XML
     if fileExists(indexPath) then
-        local file = io.open(indexPath, "r")
-        if file then
-            local content = file:read("*a")
-            local parsedIndex = tonumber(content)
-            if parsedIndex and parsedIndex >= 1 and parsedIndex <= self.MAX_LOG_FILES then
-                lastIndex = parsedIndex
-            end
-            file:close()
+        local xmlFile = XMLFile.load("LogIndexXML", indexPath)
+        if xmlFile ~= nil then
+            -- Fallback to 0 if the value doesn't exist
+            lastIndex = xmlFile:getInt("logIndex#value", 0)
+            xmlFile:delete()
         end
     end
 
-    -- Calculate next index (wrap around)
+    -- Calculate next index (wrap around 1 to MAX)
     self.currentLogIndex = lastIndex + 1
     if self.currentLogIndex > self.MAX_LOG_FILES then
         self.currentLogIndex = 1
     end
 
-    -- Save the new index
-    local outFile = io.open(indexPath, "w")
-    if outFile then
-        outFile:write(tostring(self.currentLogIndex))
-        outFile:close()
+    -- Save the new index via XML
+    local xmlOut = XMLFile.create("LogIndexXML", indexPath, "logIndex")
+    if xmlOut ~= nil then
+        xmlOut:setInt("logIndex#value", self.currentLogIndex)
+        xmlOut:save()
+        xmlOut:delete()
     end
 end
 
 function GlobalMarketDebug:openNewLogFile()
     -- Open the file based on the determined rotation index, overwriting old contents
+    -- io.open with 'w' mode is permitted by the FS engine
     local filePath = self.logDir .. "gm_dump_" .. self.currentLogIndex .. ".txt"
     self.currentLogFile = io.open(filePath, "w")
 

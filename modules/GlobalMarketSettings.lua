@@ -295,8 +295,8 @@ function GlobalMarketSettings.refreshMenuState()
 
     local modeControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugMode"]
     if modeControl ~= nil then
-        -- BinaryOptions in FS25 usually use setIsChecked
-        modeControl:setIsChecked(isDebugOn)
+        -- BinaryOptions in FS25 use states (1 = Off, 2 = On) instead of setIsChecked
+        modeControl:setState(isDebugOn and 2 or 1)
         modeControl:setDisabled(not isAdmin)
     end
 
@@ -332,8 +332,8 @@ function GlobalMarketSettings:onLiterCostChanged(state)
 end
 
 function GlobalMarketSettings:onDebugModeChanged(state)
-    -- Native BinaryOptions return boolean states in the callback
-    self.current.isDebugActive = state
+    -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
+    self.current.isDebugActive = (state == 2) 
     self:applyDebugSettings()
     self:saveToXML()
     self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
