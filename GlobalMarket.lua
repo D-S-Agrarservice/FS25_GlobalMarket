@@ -179,17 +179,18 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     -- Register the page using the predicate function
     inGameMenu:registerPage(frame, targetPos, function() return self:isMarketEnabled() end)
 
-    -- Create Tab
-    local tab = inGameMenu:addPageTab(frame, nil, nil, "gui.icon_ingameMenu_prices")
+    -- Create Tab cleanly using direct file path and UVs (No XML profile or post-injection needed)
+    local iconFileName = Utils.getFilename("images/menuIcon.dds", GlobalMarket.dir)
+    inGameMenu:addPageTab(frame, iconFileName, {0, 0, 0, 1, 1, 0, 1, 1})
 
     -- Custom Icon Injection
-    if tab ~= nil and type(tab) == "table" then
-        if tab.icon ~= nil then
-            local iconFileName = Utils.getFilename('images/menuIcon.dds', GlobalMarket.dir)
-            tab.icon:setImageFilename(iconFileName)
-            tab.icon:setImageUVs(nil, {0, 0, 0, 1, 1, 0, 1, 1})
-        end
-    end
+    -- if tab ~= nil and type(tab) == "table" then
+        -- if tab.icon ~= nil then
+            -- local iconFileName = Utils.getFilename('images/menuIcon.dds', GlobalMarket.dir)
+            -- tab.icon:setImageFilename(iconFileName)
+            -- tab.icon:setImageUVs(nil, {0, 0, 0, 1, 1, 0, 1, 1})
+        -- end
+    -- end
 
     -- 3. Shift the pageFrames table
     for i, pFrame in ipairs(inGameMenu.pageFrames) do

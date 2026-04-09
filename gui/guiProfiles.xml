@@ -13,8 +13,9 @@
 
     <Profile name="globalMarketMenuHeaderIcon" extends="baseReference" with="anchorMiddleCenter">
         <size value="50px 50px"/>
-        <imageSliceId value="gui.icon_ingameMenu_prices"/>
-        <imageColor value="$preset_fs25_colorMainDark"/>
+        <imageFilename value="../images/menuIcon.dds"/>
+        <imageUVs value="0 0 1 1"/>
+        <imageColor value="$preset_fs25_colorWhite"/>
     </Profile>
 
     <Profile name="globalMarketHeader" extends="baseReference">
