@@ -11,12 +11,14 @@
 -- @param fillTypeName string: The name of the fillType (e.g., "MAIZE")
 -- @param farmId integer: The ID of the farm requesting the storages
 -- @param isSelling boolean: True if player wants to sell to GM, False if buying
--- Gets all valid player storages for a specific fillType (Includes Bulk and ObjectStorages)
 function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     local availableStorages = {}
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(fillTypeName)
 
     if fillTypeDesc == nil then
+        if self.debugManager ~= nil then
+            self.debugManager:warning("getAvailableStorages: Unknown fillType '%s' requested.", tostring(fillTypeName))
+        end
         return availableStorages
     end
 
@@ -138,6 +140,10 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
         end
     end
 
+    if self.debugManager ~= nil then
+        self.debugManager:trace("getAvailableStorages: Found %d valid storages for %s.", #availableStorages, fillTypeName)
+    end
+
     return availableStorages
 end
 
@@ -244,17 +250,18 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
     if isObjectStorage then
         self:onSellBuyObjects(mode, filltypeName, level, storageId, playerFarmId, formatXml, capacityPerObject)
     else
-        -- Route to Bulk backend
         self:onSellBuyBulk(mode, filltypeName, level, storageId, playerFarmId)
     end
 end
 
 -- Handle standard bulk transactions
 function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, playerFarmId)
-    GlobalMarket.debugLog("Backend: onSellBuyBulk [Mode: %d, FillType: %s, Level: %f]", mode, filltypeName, level)
+    if self.debugManager ~= nil then
+        self.debugManager:info("Backend: onSellBuyBulk [Mode: %d, FillType: %s, Requested Level: %.2f]", mode, filltypeName, level)
+    end
 
     if self:getIsMarketOnline() then
-        GlobalMarket.debugLog("  -> Online-Mode: Redirecting to Sync Module (TBD).")
+        if self.debugManager ~= nil then self.debugManager:debug("Online-Mode: Redirecting to Sync Module (TBD).") end
         return
     end
 
@@ -267,7 +274,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
     end
 
     if targetStorage == nil then
-        GlobalMarket.debugLog("ERROR: Bulk Storage ID %s not found!", tostring(storageId))
+        if self.debugManager ~= nil then self.debugManager:error("Bulk Storage ID %s not found!", tostring(storageId)) end
         return
     end
 
@@ -280,7 +287,6 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
     if g_server ~= nil then
         local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
 
-        -- Get current market item data
         local marketItem = nil
         for _, ft in pairs(self.offlineMarketFillTypes) do
             if ft.fillType == filltypeName then
@@ -306,9 +312,8 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
             level = math.min(level, marketItem.fillLevel)
         end
 
-        -- Abort if the requested amount is zero or negative after limits applied
         if level <= 0.01 then
-            GlobalMarket.debugLog("Backend Validation: Transaction aborted. Invalid amount or capacities.")
+            if self.debugManager ~= nil then self.debugManager:warning("Bulk Transaction aborted: Invalid amount or zero capacities.") end
             return
         end
 
@@ -320,12 +325,11 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
             deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * level) * EconomyManager.getCostMultiplier()
         end
 
-        -- BUYING MONEY CHECK: Ensure the farm has enough funds including delivery
         if mode == 2 then
             local farm = g_farmManager:getFarmById(targetFarmId)
             local totalCost = totalPrice + deliveryCosts
             if farm == nil or farm.money < totalCost then
-                GlobalMarket.debugLog("Backend Validation: Transaction aborted. Insufficient funds.")
+                if self.debugManager ~= nil then self.debugManager:warning("Bulk Transaction aborted: Insufficient funds.") end
                 return
             end
         end
@@ -348,6 +352,10 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
         local marketChange = (mode == 2) and (level * -1) or level
         marketItem.fillLevel = math.max(marketItem.fillLevel + marketChange, 0)
 
+        if self.debugManager ~= nil then
+            self.debugManager:trace("Bulk transaction completed. Price: %.2f, Delivery: %.2f, New Silo Level: %.2f", math.abs(finalAccountBalance), deliveryCosts, newSiloLevel)
+        end
+
         if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
         if GlobalMarket.config.useSync and SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
@@ -362,15 +370,17 @@ end
 
 -- Handle object transactions (Bales/Pallets in ObjectStorages)
 function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, storageId, playerFarmId, formatXml, capacityPerObject)
-    GlobalMarket.debugLog("Backend: onSellBuyObjects [Mode: %d, FillType: %s, Requested Liters: %f]", mode, filltypeName, requestedLiters)
+    if self.debugManager ~= nil then
+        self.debugManager:info("Backend: onSellBuyObjects [Mode: %d, FillType: %s, Requested Liters: %.2f]", mode, filltypeName, requestedLiters)
+    end
 
     if requestedLiters <= 0.01 then
-        GlobalMarket.debugLog("Backend: Transaction aborted. Requested Liters is 0.")
+        if self.debugManager ~= nil then self.debugManager:warning("Object Transaction aborted. Requested Liters is 0.") end
         return
     end
 
     if self:getIsMarketOnline() then
-        GlobalMarket.debugLog("  -> Online-Mode: Redirecting to Sync Module (TBD).")
+        if self.debugManager ~= nil then self.debugManager:debug("Online-Mode: Redirecting to Sync Module (TBD).") end
         return
     end
 
@@ -382,7 +392,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
         end
     end
 
-    if targetPlaceable == nil then return end
+    if targetPlaceable == nil then
+        if self.debugManager ~= nil then self.debugManager:error("Object Storage ID %s not found!", tostring(storageId)) end
+        return
+    end
 
     local targetFarmId = targetPlaceable:getOwnerFarmId()
     if targetFarmId == nil or targetFarmId == FarmManager.SPECTATOR_FARM_ID then targetFarmId = playerFarmId end
@@ -397,6 +410,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
         if mode == 1 then
             local processedLiters = 0
 
+            -- Iterate backwards to safely remove elements from the table
             for i = #spec.storedObjects, 1, -1 do
                 if processedLiters >= requestedLiters then break end
 
@@ -428,6 +442,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                         table.remove(spec.storedObjects, i)
                         obj:delete()
 
+                        if self.debugManager ~= nil then self.debugManager:trace("Selling: AbstractObject removed (%.2f L)", objLevel) end
+
                         if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                             g_farmManager:updateFarmStats(targetFarmId, "storedBales", -1)
                         elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
@@ -437,7 +453,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 end
             end
 
-            if processedLiters <= 0 then return end
+            if processedLiters <= 0 then
+                if self.debugManager ~= nil then self.debugManager:warning("Selling aborted: No matching non-fermenting objects found in storage.") end
+                return
+            end
 
             spec.numStoredObjects = #spec.storedObjects
             targetPlaceable:setObjectStorageObjectInfosDirty()
@@ -459,6 +478,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 end
             end
 
+            if self.debugManager ~= nil then self.debugManager:debug("Sold %.2f Liters of objects. Total Earnings: %.2f (Cost: %.2f)", processedLiters, totalPrice, deliveryCosts) end
+
         -- ==========================================
         -- MODE 2: BUYING (From Market to Storage)
         -- ==========================================
@@ -471,12 +492,11 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
 
             local availableLitersToBuy = math.min(requestedLiters, marketItem.fillLevel)
 
-            -- Use the exact parameters passed from the UI instead of guessing
             local xmlFilename = formatXml
             local actualCapacity = capacityPerObject or 5000
 
             if xmlFilename == nil then
-                GlobalMarket.debugLog("ERROR: No valid Pallet or Bale XML provided for FillType %s", filltypeName)
+                if self.debugManager ~= nil then self.debugManager:error("Buying aborted: No valid Pallet or Bale XML provided for FillType %s", filltypeName) end
                 return
             end
 
@@ -496,7 +516,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             numObjectsToBuy = math.min(numObjectsToBuy, freeSlots)
 
             if numObjectsToBuy <= 0 then
-                GlobalMarket.debugLog("Backend: Not enough space or requested amount too small for one full object.")
+                if self.debugManager ~= nil then self.debugManager:warning("Buying aborted: Not enough free slots or requested amount too small for a full object.") end
                 return
             end
 
@@ -510,7 +530,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             end
 
             local farm = g_farmManager:getFarmById(targetFarmId)
-            if farm == nil or farm.money < (totalPrice + deliveryCosts) then return end
+            if farm == nil or farm.money < (totalPrice + deliveryCosts) then
+                if self.debugManager ~= nil then self.debugManager:warning("Buying aborted: Insufficient funds.") end
+                return
+            end
 
             -- Execute Payment
             g_currentMission:addMoney(totalPrice * -1, targetFarmId, MoneyType.BOUGHT_MATERIALS, true, true)
@@ -520,11 +543,11 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             local className = isBale and "Bale" or "Vehicle"
             local abstractClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME[className]
 
+            -- Build AbstractObjects to inject into the storage without rendering them in the world yet
             for i = 1, numObjectsToBuy do
                 local abstractObject = abstractClass.new()
 
                 if isBale then
-                    -- Correctly populated using explicit FS25 requirements from saveBaleAttributesToXMLFile
                     abstractObject.baleAttributes = {
                         xmlFilename = xmlFilename,
                         fillLevel = actualCapacity,
@@ -552,6 +575,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
 
                 if targetPlaceable.addAbstactObjectToObjectStorage ~= nil then
                     targetPlaceable:addAbstactObjectToObjectStorage(abstractObject)
+                    if self.debugManager ~= nil then self.debugManager:trace("Buying: Spawning AbstractObject %d/%d (%s)", i, numObjectsToBuy, className) end
                 end
             end
 
@@ -562,6 +586,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             end
 
             targetPlaceable:setObjectStorageObjectInfosDirty()
+
+            if self.debugManager ~= nil then self.debugManager:debug("Bought %d objects (Total: %.2f L). Total Cost: %.2f (Delivery: %.2f)", numObjectsToBuy, actualLitersBought, totalPrice, deliveryCosts) end
         end
 
         if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
@@ -580,13 +606,13 @@ end
 -- Engine Hooks & XML Registration
 -- =========================================================================
 
+-- Trigger UI content update when storage levels physically change
 function GlobalMarket.updateUi(streamId, timestamp, connection)
     if g_currentMission.globalMarketUi ~= nil then
         g_currentMission.globalMarketUi:updateContent()
     end
 end
 
--- UI updates remain on the Storage level, as fill level sync happens here
 Storage.readUpdateStream = Utils.appendedFunction(Storage.readUpdateStream, GlobalMarket.updateUi)
 PlaceableObjectStorage.onReadUpdateStream = Utils.appendedFunction(PlaceableObjectStorage.onReadUpdateStream, GlobalMarket.updateUi)
 
@@ -606,6 +632,10 @@ function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
         if spec.storage ~= nil then
             spec.storage.isGmMarket = spec.isGmMarket
         end
+
+        if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to ObjectStorage.")
+        end
     end
 end
 PlaceableObjectStorage.onLoad = Utils.overwrittenFunction(PlaceableObjectStorage.onLoad, GlobalMarket.PlaceableObjectStorage_onLoad)
@@ -622,6 +652,10 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
             for _, storage in ipairs(spec.storages) do
                 storage.isGmMarket = spec.isGmMarket
             end
+        end
+
+        if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to Silo and child storages.")
         end
     end
 end
