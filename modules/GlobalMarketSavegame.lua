@@ -2,6 +2,7 @@
 -- FS25 - GlobalMarket (Savegame Module)
 --
 
+-- Saves the current offline market fill levels to the active savegame directory.
 function GlobalMarket:saveToXmlFile()
     if not g_currentMission:getIsServer() then
         return
@@ -9,30 +10,37 @@ function GlobalMarket:saveToXmlFile()
 
     local savegamePath = g_currentMission.missionInfo.savegameDirectory
     if savegamePath == nil then
-        GlobalMarket.debugLog("Error: Savegame directory not found!")
+        if self.debugManager ~= nil then
+            self.debugManager:error("Savegame directory not found! Market data cannot be saved.")
+        end
         return
     end
 
     local fullPath = savegamePath .. "/globalMarket.xml"
-    GlobalMarket.debugLog("Saving market data to: %s", fullPath)
+    if self.debugManager ~= nil then
+        self.debugManager:info("Saving market data to: %s", fullPath)
+    end
 
     local xmlFile = XMLFile.create("globalMarket", fullPath, "globalMarket")
     if xmlFile ~= nil then
-        -- Save Offline Market
+        -- Save Offline Market stock levels
         xmlFile:setTable("globalMarket.offlineMarket.fillTypes.fillType", self.offlineMarketFillTypes, function (key, info, _)
             xmlFile:setString(key .. "#fillType", info.fillType)
             xmlFile:setFloat(key .. "#level", info.fillLevel)
         end)
 
-        -- If you had online save data hooks here previously, they would go here.
-        -- (e.g. Last known server IP, user credentials, etc.)
+        -- Note: Future online save data hooks (e.g., server IP, credentials) go here.
 
         xmlFile:save()
         xmlFile:delete()
-        GlobalMarket.debugLog("  -> Savegame successfully written.")
+
+        if self.debugManager ~= nil then
+            self.debugManager:info("Savegame successfully written.")
+        end
     end
 end
 
+-- Loads the market data from the active savegame and overrides the randomized start levels.
 function GlobalMarket:loadFromXMLFile()
     if not g_currentMission:getIsServer() then
         return
@@ -42,11 +50,14 @@ function GlobalMarket:loadFromXMLFile()
     if savegamePath == nil then return end
 
     local fullPath = savegamePath .. "/globalMarket.xml"
-    GlobalMarket.debugLog("Loading market data from: %s", fullPath)
+    if self.debugManager ~= nil then
+        self.debugManager:info("Loading market data from: %s", fullPath)
+    end
 
     if fileExists(fullPath) then
         local xmlFile = XMLFile.load("globalMarket", fullPath)
         if xmlFile ~= nil then
+            -- Iterates through saved fillTypes and applies the loaded stock levels
             xmlFile:iterate("globalMarket.offlineMarket.fillTypes.fillType", function (_, baseKey)
                 local fillType = xmlFile:getString(baseKey .. "#fillType")
                 local level = xmlFile:getFloat(baseKey .. "#level")
@@ -54,8 +65,10 @@ function GlobalMarket:loadFromXMLFile()
                 for _, ft in pairs(self.offlineMarketFillTypes) do
                     if ft.fillType == fillType then
                         ft.fillLevel = level
-                        -- Removed old calcOfflinePrice call here because pricing is now centralized
-                        GlobalMarket.debugLog("  -> Loaded %s: Level=%f", fillType, level)
+                        -- Logged as TRACE to prevent massive log spam when loading 100+ fillTypes
+                        if self.debugManager ~= nil then
+                            self.debugManager:trace("Loaded %s: Level=%.2f", fillType, level)
+                        end
                         break
                     end
                 end
@@ -67,23 +80,29 @@ function GlobalMarket:loadFromXMLFile()
                 self:updateOfflinePrices()
             end
 
-            GlobalMarket.debugLog("  -> Savegame loading completed.")
+            if self.debugManager ~= nil then
+                self.debugManager:info("Savegame loading completed.")
+            end
         end
     else
-        GlobalMarket.debugLog("  -> No savegame file found. Using randomized start levels.")
+        if self.debugManager ~= nil then
+            self.debugManager:info("No savegame file found. Using randomized start levels.")
+        end
     end
 end
 
--- Hook into the game's save process
+-- Appends to the native engine save routine to ensure our data is written simultaneously.
 FSBaseMission.saveSavegame = Utils.appendedFunction(FSBaseMission.saveSavegame, function()
     if g_currentMission.globalMarket ~= nil then
         g_currentMission.globalMarket:saveToXmlFile()
     end
 end)
 
--- Initial Sync for joining clients
+-- Syncs the initial state to players joining the multiplayer server.
 function GlobalMarket:sendInitialClientState(connection, user, farm)
-    GlobalMarket.debugLog("Syncing initial state to joining client: %s", tostring(user:getNickname()))
+    if self.debugManager ~= nil then
+        self.debugManager:debug("Syncing initial state to joining client: %s", tostring(user:getNickname()))
+    end
     connection:sendEvent(SynchOfflineMarketEvent.new())
 end
 
