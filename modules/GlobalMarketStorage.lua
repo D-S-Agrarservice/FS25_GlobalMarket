@@ -360,7 +360,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
     end
 end
 
--- Handle object transactions (Ballen/Paletten in ObjectStorages)
+-- Handle object transactions (Bales/Pallets in ObjectStorages)
 function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, storageId, playerFarmId, formatXml, capacityPerObject)
     GlobalMarket.debugLog("Backend: onSellBuyObjects [Mode: %d, FillType: %s, Requested Liters: %f]", mode, filltypeName, requestedLiters)
 
@@ -401,28 +401,38 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 if processedLiters >= requestedLiters then break end
 
                 local obj = spec.storedObjects[i]
-                local objFillType, objLevel = nil, 0
+                local objFillType, objLevel, objXml = nil, 0, nil
                 local isFermenting = false
 
                 if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                     objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
                     objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+                    objXml = (obj.baleObject ~= nil) and obj.baleObject.xmlFilename or (obj.baleAttributes ~= nil and obj.baleAttributes.xmlFilename)
                     if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
                     if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
                 elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
                     objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
                     objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                    objXml = obj.palletAttributes ~= nil and obj.palletAttributes.configFileName
                 end
 
                 if objFillType == fillTypeIndex and not isFermenting then
-                    processedLiters = processedLiters + objLevel
-                    table.remove(spec.storedObjects, i)
-                    obj:delete()
+                    local isFormatMatch = true
 
-                    if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                        g_farmManager:updateFarmStats(targetFarmId, "storedBales", -1)
-                    elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                        g_farmManager:updateFarmStats(targetFarmId, "storedPallets", -1)
+                    if formatXml ~= nil and objXml ~= nil and objXml ~= formatXml then
+                        isFormatMatch = false
+                    end
+
+                    if isFormatMatch and (requestedLiters - processedLiters) >= (objLevel - 0.1) then
+                        processedLiters = processedLiters + objLevel
+                        table.remove(spec.storedObjects, i)
+                        obj:delete()
+
+                        if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                            g_farmManager:updateFarmStats(targetFarmId, "storedBales", -1)
+                        elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                            g_farmManager:updateFarmStats(targetFarmId, "storedPallets", -1)
+                        end
                     end
                 end
             end

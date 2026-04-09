@@ -140,46 +140,91 @@ function GlobalMarketDialog:onClickStorage(state)
             self.maxAmount = math.min(selectedSilo.freeCapacity, marketStock)
         end
 
-        -- 2. Scan engine for formats if it's an ObjectStorage and we are BUYING
-        if selectedSilo.isObjectStorage and self.actionType == "BUY" then
+        -- 2. Handle format selection for ObjectStorages (Bales / Pallets)
+        if selectedSilo.isObjectStorage then
             local fillType = g_fillTypeManager:getFillTypeByName(self.fillTypeName)
 
             if fillType ~= nil then
-                if selectedSilo.supportsBales and fillType.isBaleType and g_baleManager ~= nil then
-                    -- Scan FS25 BaleManager for matching bales
-                    for _, bale in ipairs(g_baleManager.bales) do
-                        if bale.isAvailable then
-                            for _, ftData in ipairs(bale.fillTypes) do
-                                if ftData.fillTypeIndex == fillType.index then
-                                    local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
-                                    local title = ""
-
-                                    -- Use l10n translations instead of hardcoded strings
-                                    if isRound then
-                                        local l10nRound = g_i18n:getText("ui_gm_format_roundbale")
-                                        title = string.format("%s (%.2fm)", l10nRound, diameter or width or 1.25)
-                                    else
-                                        local l10nSquare = g_i18n:getText("ui_gm_format_squarebale")
-                                        title = string.format("%s (%.2fm)", l10nSquare, length or 2.40)
+                if self.actionType == "BUY" then
+                    -- BUYING: Scan engine for all possible supported formats
+                    if selectedSilo.supportsBales and fillType.isBaleType and g_baleManager ~= nil then
+                        for _, bale in ipairs(g_baleManager.bales) do
+                            if bale.isAvailable then
+                                for _, ftData in ipairs(bale.fillTypes) do
+                                    if ftData.fillTypeIndex == fillType.index then
+                                        local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
+                                        local title = isRound and string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_roundbale"), diameter or width or 1.25) or string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_squarebale"), length or 2.40)
+                                        table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity, unitKey = "ui_gm_unit_bale"})
                                     end
-
-                                    table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity, unitKey = "ui_gm_unit_bale"})
                                 end
                             end
                         end
-                    end
-                elseif selectedSilo.supportsPallets and fillType.isPalletType and fillType.palletFilename ~= nil then
-                    -- Extract dynamic pallet data via StoreManager instead of hardcoding
-                    local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
-                    local palletTitle = g_i18n:getText("ui_gm_format_pallet")
-                    local palletCapacity = 1000 -- Default engine fallback for standard pallets
-
-                    if storeItem ~= nil then
-                        -- Use the native shop name for the pallet (e.g., "Pioneer Seed Pallet")
-                        palletTitle = storeItem.name or palletTitle
+                    elseif selectedSilo.supportsPallets and fillType.isPalletType and fillType.palletFilename ~= nil then
+                        local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
+                        local palletTitle = storeItem ~= nil and storeItem.name or g_i18n:getText("ui_gm_format_pallet")
+                        table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = 1000, unitKey = "ui_gm_unit_pallet"})
                     end
 
-                    table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = palletCapacity, unitKey = "ui_gm_unit_pallet"})
+                elseif self.actionType == "SELL" then
+                    -- SELLING: Scan the actual storage for formats and count physical objects
+                    local spec = selectedSilo.storage.spec_objectStorage
+                    if spec ~= nil and spec.objectInfos ~= nil then
+                        local formatTracker = {}
+
+                        for _, objectInfo in ipairs(spec.objectInfos) do
+                            local obj = objectInfo.objects[1]
+                            local objFillType, objXml, objCapacity = nil, nil, 0
+                            local isFermenting = false
+
+                            if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                                objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
+                                objCapacity = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+                                objXml = (obj.baleObject ~= nil) and obj.baleObject.xmlFilename or (obj.baleAttributes ~= nil and obj.baleAttributes.xmlFilename)
+                                if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
+                                if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
+                            elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                                objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
+                                objCapacity = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                                objXml = obj.palletAttributes ~= nil and obj.palletAttributes.configFileName
+                            end
+
+                            -- Only count non-fermenting objects of the selected fillType
+                            if objFillType == fillType.index and objXml ~= nil and not isFermenting then
+                                if formatTracker[objXml] == nil then
+                                    local title = "Object"
+                                    local unitKey = "ui_gm_unit_piece"
+
+                                    if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                                        unitKey = "ui_gm_unit_bale"
+                                        if g_baleManager ~= nil then
+                                            local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(objXml)
+                                            title = isRound and string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_roundbale"), diameter or width or 1.25) or string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_squarebale"), length or 2.40)
+                                        end
+                                    else
+                                        unitKey = "ui_gm_unit_pallet"
+                                        local storeItem = g_storeManager:getItemByXMLFilename(objXml)
+                                        title = storeItem ~= nil and storeItem.name or g_i18n:getText("ui_gm_format_pallet")
+                                    end
+
+                                    formatTracker[objXml] = {
+                                        title = title,
+                                        xml = objXml,
+                                        capacity = objCapacity,
+                                        unitKey = unitKey,
+                                        actualCount = objectInfo.numObjects -- Store the physical count directly from engine
+                                    }
+                                else
+                                    -- Add up amounts if there are multiple stacks of the exact same XML format
+                                    formatTracker[objXml].actualCount = formatTracker[objXml].actualCount + objectInfo.numObjects
+                                end
+                            end
+                        end
+
+                        -- Move tracker data to our standard availableFormats table
+                        for _, formatData in pairs(formatTracker) do
+                            table.insert(self.availableFormats, formatData)
+                        end
+                    end
                 end
 
                 -- If formats exist, populate the dropdown texts and show it
@@ -221,37 +266,42 @@ function GlobalMarketDialog:onClickFormat(state)
         self.currentFormatXml = selectedFormat.xml
         self.currentCountFactor = selectedFormat.capacity or 1000
 
-        -- Speichere den neuen Unit-Key (Ballen oder Paletten)
         self.currentUnitKey = selectedFormat.unitKey or "ui_gm_unit_piece"
 
         local selectedSilo = self.storageLocations[self.selectedStorageIndex]
         local maxPieces = 0
 
         if selectedSilo ~= nil and selectedSilo.isObjectStorage then
-            local spec = selectedSilo.storage.spec_objectStorage
+            if self.actionType == "SELL" then
+                -- SELLING: Maximum is exactly the number of physical objects in storage
+                maxPieces = selectedFormat.actualCount or 0
+            else
+                -- BUYING: Maximum is determined by free slots and market stock
+                local spec = selectedSilo.storage.spec_objectStorage
 
-            -- Safely get capacity with Giants default fallback of 250 if not defined in XML
-            local maxCapacity = spec.capacity or 250
-            local numStored = spec.numStoredObjects or 0
-            local freeSlots = math.max(0, maxCapacity - numStored)
+                -- Safely get capacity with Giants default fallback of 250 if not defined in XML
+                local maxCapacity = spec.capacity or 250
+                local numStored = spec.numStoredObjects or 0
+                local freeSlots = math.max(0, maxCapacity - numStored)
 
-            -- Determine how many pieces we can actually afford from the market stock
-            local marketStock = 0
-            local gm = g_currentMission.globalMarket
-            local marketData = gm:getIsMarketOnline() and gm.fillTypes or gm.offlineMarketFillTypes
-            if marketData ~= nil then
-                for _, data in pairs(marketData) do
-                    if data.fillType == self.fillTypeName then
-                        marketStock = data.fillLevel or 0
-                        break
+                -- Determine how many pieces we can actually afford from the market stock
+                local marketStock = 0
+                local gm = g_currentMission.globalMarket
+                local marketData = gm:getIsMarketOnline() and gm.fillTypes or gm.offlineMarketFillTypes
+                if marketData ~= nil then
+                    for _, data in pairs(marketData) do
+                        if data.fillType == self.fillTypeName then
+                            marketStock = data.fillLevel or 0
+                            break
+                        end
                     end
                 end
+
+                local maxPiecesFromMarket = math.floor(marketStock / self.currentCountFactor)
+
+                -- The absolute maximum pieces is the lower of the two limits
+                maxPieces = math.min(freeSlots, maxPiecesFromMarket)
             end
-
-            local maxPiecesFromMarket = math.floor(marketStock / self.currentCountFactor)
-
-            -- The absolute maximum pieces is the lower of the two limits
-            maxPieces = math.min(freeSlots, maxPiecesFromMarket)
         end
 
         -- Store the calculated max pieces so onAmountChanged can use it
