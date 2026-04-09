@@ -5,8 +5,6 @@
 GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
-GlobalMarket.debug = true
-
 
 GlobalMarket.config = {
     useUI      = true,
@@ -19,8 +17,16 @@ GlobalMarket.config = {
 GlobalMarket.DELIVER_COST = 50
 GlobalMarket.DELIVER_COST_PERLITER = 0.05
 
+-- Source Core Debug Module first so it is available globally
+source(GlobalMarket.dir .. "modules/GlobalMarketDebug.lua")
+
+-- Wrapper function for backward compatibility
+-- Forwards all old debugLog calls seamlessly to the new Debug Manager
 function GlobalMarket.debugLog(text, ...)
-    if GlobalMarket.debug then
+    if GlobalMarket.debugManager ~= nil then
+        GlobalMarket.debugManager:info(text, ...)
+    else
+        -- Fallback if an event logs something before loadMap initialized the manager
         local content = tostring(text)
         local arg = {...}
         if #arg > 0 then
@@ -28,7 +34,7 @@ function GlobalMarket.debugLog(text, ...)
             local success, result = pcall(string.format, content, table.unpack(arg))
             content = success and result or (content .. " [Format Error]")
         end
-        print(string.format("[%s - Debug]: %s", GlobalMarket.modName, content))
+        print(string.format("[%s - Pre-Init]: %s", GlobalMarket.modName, content))
     end
 end
 
@@ -62,6 +68,11 @@ if GlobalMarket.config.useSync then
 end
 
 function GlobalMarket:loadMap(name)
+    -- Initialize the Debug Manager immediately
+    if GlobalMarketDebug ~= nil then
+        self.debugManager = GlobalMarketDebug.new(self.modName, self.dir)
+    end
+
     GlobalMarket.debugLog("GlobalMarket core loading...")
 
     self.fillTypes = {}
@@ -101,6 +112,11 @@ function GlobalMarket:getIsMarketOnline()
 end
 
 function GlobalMarket:update(dt)
+    -- Hook for internal debug timers
+    if self.debugManager ~= nil then
+        self.debugManager:update(dt)
+    end
+
     if GlobalMarket.config.useSync and self.runSyncUpdateLogic ~= nil then
         self:runSyncUpdateLogic(dt)
     end
@@ -124,7 +140,9 @@ local function onFinishedLoading(mission)
             -- Inject Tab into InGameMenu
             g_currentMission.globalMarket:fixInGameMenu(uiController, "GlobalMarketUI")
         else
-            GlobalMarket.debugLog("ERROR: GlobalMarketUI class is nil.")
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:error("GlobalMarketUI class is nil.")
+            end
         end
     end
 end
@@ -183,15 +201,6 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     local iconFileName = Utils.getFilename("images/menuIcon.dds", GlobalMarket.dir)
     inGameMenu:addPageTab(frame, iconFileName, {0, 0, 0, 1, 1, 0, 1, 1})
 
-    -- Custom Icon Injection
-    -- if tab ~= nil and type(tab) == "table" then
-        -- if tab.icon ~= nil then
-            -- local iconFileName = Utils.getFilename('images/menuIcon.dds', GlobalMarket.dir)
-            -- tab.icon:setImageFilename(iconFileName)
-            -- tab.icon:setImageUVs(nil, {0, 0, 0, 1, 1, 0, 1, 1})
-        -- end
-    -- end
-
     -- 3. Shift the pageFrames table
     for i, pFrame in ipairs(inGameMenu.pageFrames) do
         if pFrame == frame then
@@ -202,12 +211,19 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     end
 
     inGameMenu:rebuildTabList()
-    GlobalMarket.debugLog("GlobalMarket GUI registered as %s and mapping fixed.", pageName)
+
+    if GlobalMarket.debugManager ~= nil then
+        GlobalMarket.debugManager:debug("GlobalMarket GUI registered as %s and mapping fixed.", pageName)
+    end
 end
 
 function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAnalog, isMouse, deviceCategory, binding)
     if inputValue > 0 and GlobalMarket.config.useUI then
-        GlobalMarket.debugLog("Hotkey pressed! Toggling Menu...")
+        -- This is a very repetitive call, let's set it to trace
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:trace("Hotkey pressed! Toggling Menu...")
+        end
+
         local inGameMenu = g_gui.screenControllers[InGameMenu]
         if inGameMenu ~= nil then
             if g_gui.currentGuiName == "InGameMenu" and inGameMenu.currentPage == self.ui then
