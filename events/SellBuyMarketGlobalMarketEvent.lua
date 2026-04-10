@@ -1,5 +1,7 @@
 --
 -- FS25 - GlobalMarket - SellBuyMarketGlobalMarketEvent
+-- Description: Handles network synchronization for buying/selling online market objects.
+-- Routes client requests to the server, and broadcasts updates back to clients.
 --
 
 SellBuyMarketGlobalMarketEvent = {}
@@ -10,10 +12,12 @@ SellBuyMarketGlobalMarketEvent.ACTION_BUY = 2
 
 InitEventClass(SellBuyMarketGlobalMarketEvent, "SellBuyMarketGlobalMarketEvent")
 
+-- Creates an empty instance for reading from the network stream
 function SellBuyMarketGlobalMarketEvent.emptyNew()
     return Event.new(SellBuyMarketGlobalMarketEvent_mt)
 end
 
+-- Creates a populated instance for writing to the network stream
 function SellBuyMarketGlobalMarketEvent.new(action, price, playerFarmId, count, attributes, storage, playerUserId)
     local self = SellBuyMarketGlobalMarketEvent.emptyNew()
 
@@ -28,6 +32,7 @@ function SellBuyMarketGlobalMarketEvent.new(action, price, playerFarmId, count, 
     return self
 end
 
+-- Serializes the transaction payload into the network stream
 function SellBuyMarketGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.action)
     streamWriteInt32(streamId, self.price)
@@ -38,6 +43,7 @@ function SellBuyMarketGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt16(streamId, self.playerUserId)
 end
 
+-- Deserializes the transaction payload from the network stream
 function SellBuyMarketGlobalMarketEvent:readStream(streamId, connection)
     self.action = streamReadInt8(streamId)
     self.price = streamReadInt32(streamId)
@@ -50,25 +56,45 @@ function SellBuyMarketGlobalMarketEvent:readStream(streamId, connection)
     self:run(connection)
 end
 
+-- Executes the core event logic based on network authority (Server vs. Client)
 function SellBuyMarketGlobalMarketEvent:run(connection)
     if not connection:getIsServer() then
-        -- Logic on the Server side
-        GlobalMarket.debugLog("Server: Received SellBuyMarketGlobalMarketEvent (Action: %d, Count: %d)", self.action, self.count)
+        -- ===================================================
+        -- SERVER-SIDE LOGIC
+        -- ===================================================
+        if GlobalMarket.debugManager ~= nil then
+            local actionStr = (self.action == self.ACTION_SELL) and "SELL" or "BUY"
+            GlobalMarket.debugManager:info("Network (Server): Received %s request from UserID %d (Farm %d).", actionStr, self.playerUserId, self.playerFarmId)
+            GlobalMarket.debugManager:trace("Payload -> Count: %d, Price: %d, StorageId: %s", self.count, self.price, tostring(self.storage))
+        end
 
         if g_currentMission.globalMarket ~= nil then
+            -- Execute the physical transaction on the server
             if self.action == SellBuyMarketGlobalMarketEvent.ACTION_SELL then
                 g_currentMission.globalMarket:sellObject(self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId)
             else
                 g_currentMission.globalMarket:buyObject(self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId)
             end
 
-            -- Broadcast the transaction to all other clients
+            -- Broadcast the successful transaction to all OTHER clients for UI sync
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:debug("Network (Server): Transaction processed. Broadcasting update to all clients.")
+            end
             g_server:broadcastEvent(SellBuyMarketGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId), nil, connection)
+        else
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:error("Network (Server): Transaction aborted. g_currentMission.globalMarket is nil!")
+            end
         end
     else
-        -- Logic on the Client side
-        GlobalMarket.debugLog("Client: Received SellBuyMarketGlobalMarketEvent update.")
+        -- ===================================================
+        -- CLIENT-SIDE LOGIC
+        -- ===================================================
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:debug("Network (Client): Received transaction broadcast from server.")
+        end
 
+        -- If this specific client was the one who initiated the transaction, close their loading UI
         if g_currentMission.playerUserId == self.playerUserId then
             local gm = g_currentMission.globalMarket
             if gm ~= nil then
@@ -83,6 +109,7 @@ function SellBuyMarketGlobalMarketEvent:run(connection)
             end
         end
 
+        -- Refresh the UI to show the updated stock levels and prices
         if g_currentMission.globalMarketUi ~= nil then
             g_currentMission.globalMarketUi:updateContent()
         end

@@ -1,5 +1,7 @@
 --
 -- FS25 - GlobalMarket - SellBuySiloGlobalMarketEvent
+-- Description: Handles network synchronization for buying/selling bulk goods (Silos).
+-- Routes client requests to the server, and broadcasts updates back to clients.
 --
 
 SellBuySiloGlobalMarketEvent = {}
@@ -10,10 +12,12 @@ SellBuySiloGlobalMarketEvent.ACTION_BUY = 2
 
 InitEventClass(SellBuySiloGlobalMarketEvent, "SellBuySiloGlobalMarketEvent")
 
+-- Creates an empty instance for reading from the network stream
 function SellBuySiloGlobalMarketEvent.emptyNew()
     return Event.new(SellBuySiloGlobalMarketEvent_mt)
 end
 
+-- Creates a populated instance for writing to the network stream
 function SellBuySiloGlobalMarketEvent.new(action, price, playerFarmId, fillType, fillLevel, storage, playerUserId)
     local self = SellBuySiloGlobalMarketEvent.emptyNew()
 
@@ -29,6 +33,7 @@ function SellBuySiloGlobalMarketEvent.new(action, price, playerFarmId, fillType,
     return self
 end
 
+-- Serializes the transaction payload into the network stream
 function SellBuySiloGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.action)
     streamWriteInt32(streamId, self.price)
@@ -39,6 +44,7 @@ function SellBuySiloGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt16(streamId, self.playerUserId)
 end
 
+-- Deserializes the transaction payload from the network stream
 function SellBuySiloGlobalMarketEvent:readStream(streamId, connection)
     self.action = streamReadInt8(streamId)
     self.price = streamReadInt32(streamId)
@@ -51,25 +57,51 @@ function SellBuySiloGlobalMarketEvent:readStream(streamId, connection)
     self:run(connection)
 end
 
+-- Executes the core event logic based on network authority (Server vs. Client)
 function SellBuySiloGlobalMarketEvent:run(connection)
     if not connection:getIsServer() then
-        -- Logic on the Server side
-        GlobalMarket.debugLog("Server: Received SellBuySiloGlobalMarketEvent (Action: %d, FillType: %s, Level: %d)", self.action, self.fillType, self.fillLevel)
+        -- ===================================================
+        -- SERVER-SIDE LOGIC
+        -- ===================================================
+        if GlobalMarket.debugManager ~= nil then
+            local actionStr = (self.action == self.ACTION_SELL) and "SELL" or "BUY"
+            GlobalMarket.debugManager:info("Network (Server): Received %s Silo request from UserID %d (Farm %d).", actionStr, self.playerUserId, self.playerFarmId)
+            GlobalMarket.debugManager:trace("Payload -> FillType: %s, Level: %d, Price: %d, StorageId: %s", tostring(self.fillType), self.fillLevel, self.price, tostring(self.storage))
+        end
 
         if g_currentMission.globalMarket ~= nil then
-            if self.action == SellBuySiloGlobalMarketEvent.ACTION_SELL then
-                g_currentMission.globalMarket:sellSilo(self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId)
-            else
-                g_currentMission.globalMarket:buySilo(self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId)
-            end
+            if self.storage ~= nil then
+                -- Execute the physical transaction on the server
+                if self.action == SellBuySiloGlobalMarketEvent.ACTION_SELL then
+                    g_currentMission.globalMarket:sellSilo(self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId)
+                else
+                    g_currentMission.globalMarket:buySilo(self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId)
+                end
 
-            -- Broadcast to all other clients to keep silo levels in sync
-            g_server:broadcastEvent(SellBuySiloGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId), nil, connection)
+                -- Broadcast the successful transaction to all OTHER clients to keep UI in sync
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:debug("Network (Server): Silo transaction processed. Broadcasting update to all clients.")
+                end
+                g_server:broadcastEvent(SellBuySiloGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId), nil, connection)
+            else
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:error("Network (Server): Silo Transaction aborted. Received storage is nil (Sync mismatch).")
+                end
+            end
+        else
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:error("Network (Server): Silo Transaction aborted. g_currentMission.globalMarket is nil!")
+            end
         end
     else
-        -- Logic on the Client side (Feedback for the UI)
-        GlobalMarket.debugLog("Client: Received SellBuySiloGlobalMarketEvent broadcast.")
+        -- ===================================================
+        -- CLIENT-SIDE LOGIC
+        -- ===================================================
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:debug("Network (Client): Received Silo transaction broadcast from server.")
+        end
 
+        -- If this specific client was the one who initiated the transaction, close their loading UI
         if g_currentMission.playerUserId == self.playerUserId then
             local gm = g_currentMission.globalMarket
             if gm ~= nil then
@@ -84,6 +116,7 @@ function SellBuySiloGlobalMarketEvent:run(connection)
             end
         end
 
+        -- Refresh the UI to show the updated stock levels and prices
         if g_currentMission.globalMarketUi ~= nil then
             g_currentMission.globalMarketUi:updateContent()
         end
