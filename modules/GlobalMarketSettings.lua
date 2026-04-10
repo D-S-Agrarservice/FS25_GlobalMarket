@@ -117,7 +117,9 @@ function GlobalMarketSettings:loadFromXML()
         self:applyDebugSettings()
 
         xmlFile:delete()
-        GlobalMarket.debugLog("GlobalMarketSettings: Loaded from XML.")
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("Settings: Loaded from XML.")
+        end
     end
 end
 
@@ -138,7 +140,9 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:save()
         xmlFile:delete()
 
-        GlobalMarket.debugLog("GlobalMarketSettings: Saved to XML.")
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("Settings: Saved to XML.")
+        end
     end
 end
 
@@ -333,7 +337,7 @@ end
 
 function GlobalMarketSettings:onDebugModeChanged(state)
     -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
-    self.current.isDebugActive = (state == 2) 
+    self.current.isDebugActive = (state == 2)
     self:applyDebugSettings()
     self:saveToXML()
     self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
