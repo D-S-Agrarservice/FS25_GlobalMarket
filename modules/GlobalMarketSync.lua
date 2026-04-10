@@ -3,7 +3,9 @@
 --
 
 function GlobalMarket:initSync()
-    GlobalMarket.debugLog("Sync: Setting up optimized background listener...")
+    if self.debugManager ~= nil then
+        self.debugManager:info("Sync: Setting up optimized background listener...")
+    end
 
     self.isOnline = false
     self.lastConnectionState = false
@@ -26,6 +28,10 @@ function GlobalMarket:initSync()
     createFolder(settingsPath)
     createFolder(self.readFolder)
     createFolder(self.writeFolder)
+
+    if self.debugManager ~= nil then
+        self.debugManager:trace("Sync Folders verified. Read: %s | Write: %s", self.readFolder, self.writeFolder)
+    end
 end
 
 function GlobalMarket:runSyncUpdateLogic(dt)
@@ -52,10 +58,14 @@ function GlobalMarket:runSyncUpdateLogic(dt)
         if currentlyOnline ~= self.isOnline then
             self.isOnline = currentlyOnline
             if self.isOnline then
-                GlobalMarket.debugLog("Sync: EXE detected. Online mode active (Heartbeat slowed to %ds).", self.intervalStatusOn / 1000)
+                if self.debugManager ~= nil then
+                    self.debugManager:info("Sync: EXE detected. Online mode active (Heartbeat slowed to %ds).", self.intervalStatusOn / 1000)
+                end
                 self.lastConnectionState = true
             else
-                GlobalMarket.debugLog("Sync: EXE lost. Reverting to Offline mode.")
+                if self.debugManager ~= nil then
+                    self.debugManager:warning("Sync: EXE connection lost or version mismatch. Reverting to Offline mode.")
+                end
                 self.lastConnectionState = false
             end
 
@@ -71,21 +81,33 @@ function GlobalMarket:runSyncUpdateLogic(dt)
         self.timerData = 0
 
         local files = getFiles(self.readFolder)
-        if files ~= nil then
+        if files ~= nil and #files > 0 then
             local updateUi = false
             for _, filename in pairs(files) do
                 local fullPath = self.readFolder .. filename
                 local xmlFile = XMLFile.load("gmDataSync", fullPath)
+
                 if xmlFile ~= nil then
                     local action = xmlFile:getString("gmDataSync#action", "")
+
+                    if self.debugManager ~= nil then
+                        self.debugManager:trace("Sync: Found and processing file '%s' with action: '%s'", filename, action)
+                    end
+
                     if action == "marketData" then
                         self:parseMarketData(xmlFile)
                         updateUi = true
                     end
+
                     xmlFile:delete()
-                    deleteFile(fullPath)
+                    local deleted = deleteFile(fullPath)
+
+                    if not deleted and self.debugManager ~= nil then
+                        self.debugManager:error("Sync: Failed to delete processed file '%s'. Possible OS file lock.", fullPath)
+                    end
                 end
             end
+
             if updateUi and g_currentMission.globalMarketUi ~= nil then
                 g_currentMission.globalMarketUi:updateContent()
             end
@@ -93,6 +115,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
     end
 end
 
+-- Parses the incoming XML data from the EXE into the local Lua table
 function GlobalMarket:parseMarketData(xmlFile)
     self.fillTypes = {}
     xmlFile:iterate("gmDataSync.fillTypes.fillType", function (_, baseKey)
@@ -104,4 +127,9 @@ function GlobalMarket:parseMarketData(xmlFile)
             isObject = xmlFile:getBool(baseKey .. "#isObject") or false,
         })
     end)
+
+    if self.debugManager ~= nil then
+        self.debugManager:debug("Sync: Successfully parsed market data. Found %d items.", #self.fillTypes)
+        self.debugManager:traceTable("Sync: Dump of updated online market data", self.fillTypes)
+    end
 end
