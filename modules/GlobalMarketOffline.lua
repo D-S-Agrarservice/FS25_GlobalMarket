@@ -40,7 +40,7 @@ function GlobalMarket:initOfflineMarket()
     if self.debugManager ~= nil then
         self.debugManager:info("OfflineMarket: Initialized with %d dynamic fillTypes.", addedCount)
         -- Deep trace to verify the starting stock of all generated items
-        self.debugManager:trace("OfflineMarket: Initial state dumped.", self.offlineMarketFillTypes)
+        self.debugManager:traceTable("OfflineMarket: Initial state dumped.", self.offlineMarketFillTypes)
     end
 end
 
