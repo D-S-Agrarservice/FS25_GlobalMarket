@@ -1,5 +1,7 @@
 --
 -- FS25 - GlobalMarketUI
+-- Description: Main UI Frame for the GlobalMarket. Handles data rendering,
+-- user input routing, and triggers the transaction dialog.
 --
 
 GlobalMarketUI = {}
@@ -32,6 +34,7 @@ function GlobalMarketUI:onGuiSetupFinished()
     end
 end
 
+-- Initializes the UI state and bindings when the player opens the menu
 function GlobalMarketUI:onFrameOpen()
     GlobalMarketUI:superClass().onFrameOpen(self)
     self:updateContent()
@@ -51,6 +54,7 @@ function GlobalMarketUI:onFrameOpen()
     end
 end
 
+-- Fetches all current market and storage data and triggers a list redraw
 function GlobalMarketUI:updateContent()
     local gm = g_currentMission.globalMarket
 
@@ -97,6 +101,10 @@ function GlobalMarketUI:updateContent()
         self.marketData = gm.fillTypes or {}
     else
         self.marketData = gm.offlineMarketFillTypes or {}
+    end
+
+    if GlobalMarket.debugManager ~= nil then
+        GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d, Market items: %d", #self.storageData, #self.marketData)
     end
 
     if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
@@ -222,7 +230,7 @@ end
 -- SELECTION & ACTIONS
 -- =========================================================================
 
--- Fix for line 140: Ensure actionButtonInfo exists before modifying its properties
+-- Updates the active list focus and toggles the action button (Buy/Sell)
 function GlobalMarketUI:onListSelectionChanged(list, section, index)
     if self.isUpdatingSelection then return end
     self.isUpdatingSelection = true
@@ -249,7 +257,7 @@ function GlobalMarketUI:onListSelectionChanged(list, section, index)
     self.isUpdatingSelection = false
 end
 
--- Connects perfectly to your existing GMDialog.lua signature
+-- Triggered when the user clicks 'Buy' or 'Sell'
 function GlobalMarketUI:onButtonAction()
     local gm = g_currentMission.globalMarket
     local list = (self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket
@@ -260,27 +268,38 @@ function GlobalMarketUI:onButtonAction()
         local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
         local isSelling = (self.currentListFocus == "storage")
         local actionType = isSelling and "SELL" or "BUY"
+        local farmId = g_currentMission:getFarmId()
 
-        local silos = gm:getAvailableStorages(data.fillType, g_currentMission:getFarmId(), isSelling)
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:debug("UI Action triggered: %s for %s", actionType, tostring(data.fillType))
+        end
+
+        local silos = gm:getAvailableStorages(data.fillType, farmId, isSelling)
 
         if #silos > 0 then
-            -- Calls your GMDialog exactly as structured in your script
+            -- Calls the popup dialog to select the specific storage and amount
             gm.dialog:show(self, self.onDialogResult, actionType, fillTypeDesc.title, data.fillType, data.price, silos)
         else
-            GlobalMarket.debugLog("Action failed: No suitable storage found.")
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:warning("UI Action failed: No suitable storage found for %s of %s (Farm ID: %d).", actionType, tostring(data.fillType), farmId)
+            end
         end
     end
 end
 
--- Callback receiver from GMDialog.lua
+-- Callback receiver from the GMDialog popup
 function GlobalMarketUI:onDialogResult(amount, storageId, actionType, fillTypeName, isObjectStorage, formatXml, capacityPerObject)
     if amount > 0 then
         local mode = (actionType == "SELL") and 1 or 2
 
-        -- Pass the new format parameters (formatXml, capacityPerObject) to the main market logic
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("UI Dialog Result received: Mode %s, FillType %s, Amount %.2f, StorageID %s", tostring(actionType), tostring(fillTypeName), amount, tostring(storageId))
+        end
+
+        -- Pass the transaction to the main market logic
         g_currentMission.globalMarket:onSellBuy(mode, fillTypeName, amount, storageId, 0, nil, nil, isObjectStorage, g_currentMission:getFarmId(), formatXml, capacityPerObject)
 
-        -- Dynamic countdown based on storage type to sync with engine background updates
+        -- Dynamic countdown based on storage type to sync with engine background updates before redrawing UI
         if isObjectStorage then
             self.refreshCountdown = 1200 -- 1000ms native engine delay + 200ms buffer
         else

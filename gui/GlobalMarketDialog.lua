@@ -1,5 +1,7 @@
 --
 -- FS25 - GlobalMarketDialog
+-- Description: Interactive popup dialog handling user input for transactions.
+-- Manages bulk/liquid inputs as well as dynamic format selection (Bales/Pallets).
 --
 
 GlobalMarketDialog = {}
@@ -20,6 +22,7 @@ function GlobalMarketDialog.new(target, custom_mt)
     return self
 end
 
+-- Initializes the dialog with data from the main UI and triggers the display
 function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle, fillTypeName, price, silos)
     self.target = target
     self.callbackFunc = callbackFunc
@@ -30,12 +33,16 @@ function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle
     self.currentAmount = 0
     self.storageLocations = silos or {}
 
+    if GlobalMarket.debugManager ~= nil then
+        GlobalMarket.debugManager:trace("Dialog opened: %s %s (Price: %.2f). Available Storages: %d", actionType, tostring(fillTypeName), price, #self.storageLocations)
+    end
+
     -- Hijack block removed. We completely rely on the custom GM dialog
     -- to handle both bulk and object storages seamlessly via liter inputs.
     g_gui:showDialog("GlobalMarketDialog")
 end
 
--- Triggers the native FS25 ObjectStorageDialog for Bales/Pallets
+-- Triggers the native FS25 ObjectStorageDialog for Bales/Pallets (Fallback for generic interactions)
 function GlobalMarketDialog:showNativeObjectStorageDialog(storage)
     local p = g_currentMission.placeableSystem.placeables[storage.id]
     if p ~= nil and p.spec_objectStorage ~= nil then
@@ -66,8 +73,6 @@ function GlobalMarketDialog:onNativeObjectStorageCallback(selectedInfoIndex, amo
     if selectedInfoIndex ~= nil and amount ~= nil and amount > 0 then
         -- Native dialog returns amount of objects. We need to calculate the total liters for the backend.
         -- Note: This is a simplified calculation, assuming standard capacities per object.
-        -- For Global Market transaction, we pass the "amount" (count) if the backend supports it,
-        -- or multiply by capacity. Let's stick to the callback structure:
         if self.callbackFunc ~= nil then
             -- We pass the count as "amount" and the backend must handle it if storage.isObjectStorage is true
             self.callbackFunc(self.target, amount, self.storageLocations[1].id, self.actionType, self.fillTypeName)
@@ -75,15 +80,16 @@ function GlobalMarketDialog:onNativeObjectStorageCallback(selectedInfoIndex, amo
     end
 end
 
+-- Native UI hook triggered right before the dialog becomes visible
 function GlobalMarketDialog:onOpen()
     GlobalMarketDialog:superClass().onOpen(self)
 
-    -- NEW: Variables for format logic
+    -- Variables for format logic
     self.currentCountFactor = 1
     self.currentFormatXml = nil
     self.availableFormats = {}
 
-    -- FIX 1: Reset the sticky input field immediately
+    -- Reset the sticky input field immediately
     if self.amountInput ~= nil then
         self.amountInput:setText("0")
     end
@@ -108,6 +114,7 @@ function GlobalMarketDialog:onOpen()
     FocusManager:setFocus(self.amountInput)
 end
 
+-- Triggered when the user selects a different storage from the dropdown
 function GlobalMarketDialog:onClickStorage(state)
     self.selectedStorageIndex = state
     local selectedSilo = self.storageLocations[state]
@@ -260,12 +267,12 @@ function GlobalMarketDialog:onClickStorage(state)
     end
 end
 
+-- Triggered when the user changes the object format dropdown (Bales/Pallets)
 function GlobalMarketDialog:onClickFormat(state)
     local selectedFormat = self.availableFormats[state]
     if selectedFormat ~= nil then
         self.currentFormatXml = selectedFormat.xml
         self.currentCountFactor = selectedFormat.capacity or 1000
-
         self.currentUnitKey = selectedFormat.unitKey or "ui_gm_unit_piece"
 
         local selectedSilo = self.storageLocations[self.selectedStorageIndex]
@@ -307,6 +314,10 @@ function GlobalMarketDialog:onClickFormat(state)
         -- Store the calculated max pieces so onAmountChanged can use it
         self.currentMaxPieces = maxPieces
 
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:debug("Dialog: Format selected '%s' (Capacity: %d, MaxPieces: %d)", selectedFormat.title, self.currentCountFactor, self.currentMaxPieces)
+        end
+
         -- Update info text using translation system with a safe fallback
         local l10nString = g_i18n:getText("ui_gm_format_info")
         if l10nString == nil or l10nString == "ui_gm_format_info" then
@@ -324,6 +335,7 @@ function GlobalMarketDialog:onClickFormat(state)
     end
 end
 
+-- Triggered when the user clicks the 'MAX' button next to the input field
 function GlobalMarketDialog:onClickMaxAmount()
     local fillAmount = self.maxAmount
 
@@ -359,6 +371,7 @@ function GlobalMarketDialog:onClickMaxAmount()
     end
 end
 
+-- Handles user keyboard input and validates against limits (No logging to prevent spam)
 function GlobalMarketDialog:onAmountChanged()
     local text = self.amountInput:getText()
     local amount = tonumber(text) or 0
@@ -390,6 +403,7 @@ function GlobalMarketDialog:onAmountChanged()
     self:updateTotalValue()
 end
 
+-- Calculates the final price and toggles the OK button based on funds
 function GlobalMarketDialog:updateTotalValue()
     -- Calculate total liters respecting the format (bulk vs pieces)
     local totalLiters = self.currentAmount * self.currentCountFactor
@@ -419,6 +433,7 @@ function GlobalMarketDialog:updateTotalValue()
     end
 end
 
+-- Triggered when the user confirms the transaction popup
 function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
 
@@ -429,7 +444,11 @@ function GlobalMarketDialog:onClickOk()
             litersToProcess = self.currentAmount * self.currentCountFactor
         end
 
-        -- Pass the calculated liters to the backend
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("Dialog Confirmed: Dispatching %s transaction for %.2f L of %s.", self.actionType, litersToProcess, tostring(self.fillTypeName))
+        end
+
+        -- Pass the calculated liters to the main UI callback
         -- Signature: target, amount, storageId, actionType, fillTypeName, isObjectStorage, formatXml, capacityPerObject
         self.callbackFunc(self.target, litersToProcess, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage, self.currentFormatXml, self.currentCountFactor)
     end
@@ -442,8 +461,6 @@ end
 
 function GlobalMarketDialog:onClickBack()
     GlobalMarketDialog:superClass().onClickBack(self)
-
     self:close()
-
     return false
 end
