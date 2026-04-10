@@ -1,11 +1,13 @@
 --
 -- FS25 - GlobalMarket (Core)
+-- Description: Main module registry and initialization hub.
 --
 
 GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
 
+-- Feature toggles (Restart required if changed)
 GlobalMarket.config = {
     useUI      = true,
     useEconomy = true,
@@ -17,28 +19,22 @@ GlobalMarket.config = {
 GlobalMarket.DELIVER_COST = 50
 GlobalMarket.DELIVER_COST_PERLITER = 0.05
 
--- Source Core Debug Module first so it is available globally
+-- =========================================================================
+-- DEBUG MANAGER INITIALIZATION (Highest Priority)
+-- =========================================================================
+-- Source Core Debug Module first so it is available globally BEFORE any other code runs
 source(GlobalMarket.dir .. "modules/GlobalMarketDebug.lua")
 
--- Wrapper function for backward compatibility
--- Forwards all old debugLog calls seamlessly to the new Debug Manager
-function GlobalMarket.debugLog(text, ...)
-    if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:info(text, ...)
-    else
-        -- Fallback if an event logs something before loadMap initialized the manager
-        local content = tostring(text)
-        local arg = {...}
-        if #arg > 0 then
-            for i = 1, #arg do arg[i] = tostring(arg[i]) end
-            local success, result = pcall(string.format, content, table.unpack(arg))
-            content = success and result or (content .. " [Format Error]")
-        end
-        print(string.format("[%s - Pre-Init]: %s", GlobalMarket.modName, content))
-    end
+-- Instantiating the Debug Manager immediately so it's ready for boot sequence errors
+if GlobalMarketDebug ~= nil then
+    GlobalMarket.debugManager = GlobalMarketDebug.new(GlobalMarket.modName, GlobalMarket.dir)
+    GlobalMarket.debugManager:info("=== GlobalMarket Boot Sequence Started ===")
 end
 
--- Source includes
+-- =========================================================================
+-- MODULE INJECTIONS
+-- =========================================================================
+
 if GlobalMarket.config.useUI then
     source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
     source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
@@ -67,13 +63,15 @@ if GlobalMarket.config.useSync then
     source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 end
 
-function GlobalMarket:loadMap(name)
-    -- Initialize the Debug Manager immediately
-    if GlobalMarketDebug ~= nil then
-        self.debugManager = GlobalMarketDebug.new(self.modName, self.dir)
-    end
+-- =========================================================================
+-- ENGINE HOOKS & LIFECYCLE
+-- =========================================================================
 
-    GlobalMarket.debugLog("GlobalMarket core loading...")
+-- Triggered when the player successfully loads into a map (SP or MP Server)
+function GlobalMarket:loadMap(name)
+    if self.debugManager ~= nil then
+        self.debugManager:info("Map loading detected. Initializing GlobalMarket core systems...")
+    end
 
     self.fillTypes = {}
     self.offlineMarketFillTypes = {}
@@ -99,18 +97,22 @@ function GlobalMarket:loadMap(name)
         end
     end
 
+    -- Initialize External Sync if enabled
     if GlobalMarket.config.useSync and self.initSync ~= nil then
         self:initSync()
+        -- Ask server for initial data if we are a client
         if g_client ~= nil and not g_currentMission:getIsServer() and InitOfflineMarketEvent ~= nil then
             g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
         end
     end
 end
 
+-- Used by the UI to check if the external EXE is currently connected
 function GlobalMarket:getIsMarketOnline()
     return self.isOnline == true
 end
 
+-- Global frame update loop (Be careful with heavy operations here)
 function GlobalMarket:update(dt)
     -- Hook for internal debug timers
     if self.debugManager ~= nil then
@@ -122,15 +124,21 @@ function GlobalMarket:update(dt)
     end
 end
 
+-- Triggered right after the map finishes loading, before the player can move.
+-- Used to safely inject our custom UI into the native Game Menu without crashes.
 local function onFinishedLoading(mission)
     if GlobalMarket.config.useUI and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
         if GlobalMarketUI ~= nil then
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:info("Injecting GlobalMarket UI into native game menu...")
+            end
+
             -- 1. Load Transaction Dialog
             local dialogController = GlobalMarketDialog.new()
             g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketDialog.xml", "GlobalMarketDialog", dialogController)
             g_currentMission.globalMarket.dialog = dialogController
 
-            -- 2. Load Main Market UI (Updated Path and Name)
+            -- 2. Load Main Market UI
             local uiController = GlobalMarketUI.new()
             local xmlFilename = GlobalMarket.dir .. "gui/GlobalMarketUI.xml"
 
@@ -141,21 +149,29 @@ local function onFinishedLoading(mission)
             g_currentMission.globalMarket:fixInGameMenu(uiController, "GlobalMarketUI")
         else
             if GlobalMarket.debugManager ~= nil then
-                GlobalMarket.debugManager:error("GlobalMarketUI class is nil.")
+                GlobalMarket.debugManager:error("UI Injection failed! GlobalMarketUI class is nil.")
             end
         end
     end
 end
 FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, onFinishedLoading)
 
+-- Helper for the menu registry
 function GlobalMarket:isMarketEnabled()
     return true
 end
+
+-- =========================================================================
+-- UI MENU HACKS (FS25 Compatibility)
+-- =========================================================================
 
 -- Manual Tab Injection to prevent InGameMenu crashes and fix Tab-Jumping
 function GlobalMarket:fixInGameMenu(frame, pageName)
     local inGameMenu = g_gui.screenControllers[InGameMenu]
     if inGameMenu == nil or inGameMenu.pagingElement == nil then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:error("UI Injection aborted: InGameMenu or pagingElement is missing.")
+        end
         return
     end
 
@@ -213,15 +229,19 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     inGameMenu:rebuildTabList()
 
     if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:debug("GlobalMarket GUI registered as %s and mapping fixed.", pageName)
+        GlobalMarket.debugManager:debug("GlobalMarket GUI registered natively as '%s' at position %d.", pageName, targetPos)
     end
 end
 
+-- =========================================================================
+-- INPUT BINDINGS
+-- =========================================================================
+
+-- Triggered via the custom input binding to open/close the market
 function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAnalog, isMouse, deviceCategory, binding)
     if inputValue > 0 and GlobalMarket.config.useUI then
-        -- This is a very repetitive call, let's set it to trace
         if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:trace("Hotkey pressed! Toggling Menu...")
+            GlobalMarket.debugManager:trace("Hotkey pressed: Toggling GlobalMarket Menu.")
         end
 
         local inGameMenu = g_gui.screenControllers[InGameMenu]
@@ -260,4 +280,5 @@ local function registerGlobalPlayerActionEvents(playerInputComponent, contextNam
 end
 PlayerInputComponent.registerGlobalPlayerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerGlobalPlayerActionEvents, registerGlobalPlayerActionEvents)
 
+-- Register the mod with the engine
 addModEventListener(GlobalMarket)
