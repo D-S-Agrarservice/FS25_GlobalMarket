@@ -57,7 +57,7 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
             if (isSelling and level > 0.1) or (not isSelling and freeCapacity > 0.1) then
                 table.insert(availableStorages, {
                     storage = storage,
-                    id = storage.rootNode,
+                    id = storage, -- FIX: Pass the actual table reference, not the rootNode
                     title = displayTitle,
                     level = level,
                     freeCapacity = freeCapacity,
@@ -126,7 +126,7 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1 and isValidForBuying) then
                     table.insert(availableStorages, {
                         storage = placeable,
-                        id = placeable.rootNode,
+                        id = placeable, -- FIX: Pass the actual table reference, not the rootNode
                         title = displayTitle,
                         level = totalFillLevel,
                         freeCapacity = approximatedFreeCapacity,
@@ -255,7 +255,7 @@ function GlobalMarket:onSellBuy(mode, filltypeName, level, storageId, count, att
 end
 
 -- Handle standard bulk transactions
-function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, playerFarmId)
+function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj, playerFarmId)
     if self.debugManager ~= nil then
         self.debugManager:info("Backend: onSellBuyBulk [Mode: %d, FillType: %s, Requested Level: %.2f]", mode, filltypeName, level)
     end
@@ -265,16 +265,11 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
         return
     end
 
-    local targetStorage = nil
-    for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        if storage.rootNode == storageId then
-            targetStorage = storage
-            break
-        end
-    end
+    -- FIX: Use the directly passed object reference instead of iterating over rootNodes
+    local targetStorage = targetStorageObj
 
-    if targetStorage == nil then
-        if self.debugManager ~= nil then self.debugManager:error("Bulk Storage ID %s not found!", tostring(storageId)) end
+    if targetStorage == nil or type(targetStorage) ~= "table" then
+        if self.debugManager ~= nil then self.debugManager:error("Bulk Transaction aborted: Valid Storage Object not found!") end
         return
     end
 
@@ -317,7 +312,8 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
             return
         end
 
-        local marketPricePerUnit = marketItem.price / 1000
+        -- FIX: Use the identical price resolving function as the UI
+        local marketPricePerUnit = self:getOfflinePriceByFillType(filltypeName) / 1000
         local totalPrice = marketPricePerUnit * level
 
         local deliveryCosts = 0
@@ -328,6 +324,12 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
         if mode == 2 then
             local farm = g_farmManager:getFarmById(targetFarmId)
             local totalCost = totalPrice + deliveryCosts
+
+            if self.debugManager ~= nil then
+                local currentFarmMoney = farm ~= nil and farm.money or -1
+                self.debugManager:trace("Validation Check -> targetFarmId: %s | Farm Money: %.2f | Cost (totalCost): %.2f", tostring(targetFarmId), currentFarmMoney, totalCost)
+            end
+
             if farm == nil or farm.money < totalCost then
                 if self.debugManager ~= nil then self.debugManager:warning("Bulk Transaction aborted: Insufficient funds.") end
                 return
@@ -370,7 +372,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
 end
 
 -- Handle object transactions (Bales/Pallets in ObjectStorages)
-function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, storageId, playerFarmId, formatXml, capacityPerObject)
+function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targetPlaceableObj, playerFarmId, formatXml, capacityPerObject)
     if self.debugManager ~= nil then
         self.debugManager:info("Backend: onSellBuyObjects [Mode: %d, FillType: %s, Requested Liters: %.2f]", mode, filltypeName, requestedLiters)
     end
@@ -385,16 +387,11 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
         return
     end
 
-    local targetPlaceable = nil
-    for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-        if placeable.rootNode == storageId and placeable.spec_objectStorage ~= nil then
-            targetPlaceable = placeable
-            break
-        end
-    end
+    -- FIX: Use the directly passed object reference instead of iterating over rootNodes
+    local targetPlaceable = targetPlaceableObj
 
-    if targetPlaceable == nil then
-        if self.debugManager ~= nil then self.debugManager:error("Object Storage ID %s not found!", tostring(storageId)) end
+    if targetPlaceable == nil or type(targetPlaceable) ~= "table" then
+        if self.debugManager ~= nil then self.debugManager:error("Object Storage ID transaction aborted: Valid Placeable Object not found!") end
         return
     end
 
@@ -472,8 +469,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, false)
             g_currentMission:addMoney(totalPrice, targetFarmId, moneyType, true, true)
 
-            if deliveryCosts > 0 then 
-                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true) 
+            if deliveryCosts > 0 then
+                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true)
             end
 
             for _, ft in pairs(self.offlineMarketFillTypes) do
@@ -535,6 +532,12 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             end
 
             local farm = g_farmManager:getFarmById(targetFarmId)
+
+            if self.debugManager ~= nil then
+                local currentFarmMoney = farm ~= nil and farm.money or -1
+                self.debugManager:trace("Validation Check -> targetFarmId: %s | Farm Money: %.2f | Cost (totalCost): %.2f", tostring(targetFarmId), currentFarmMoney, totalPrice + deliveryCosts)
+            end
+
             if farm == nil or farm.money < (totalPrice + deliveryCosts) then
                 if self.debugManager ~= nil then self.debugManager:warning("Buying aborted: Insufficient funds.") end
                 return
@@ -544,8 +547,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, true)
             g_currentMission:addMoney(totalPrice * -1, targetFarmId, moneyType, true, true)
 
-            if deliveryCosts > 0 then 
-                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true) 
+            if deliveryCosts > 0 then
+                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true)
             end
             marketItem.fillLevel = math.max(marketItem.fillLevel - actualLitersBought, 0)
 
