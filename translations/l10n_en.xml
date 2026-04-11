@@ -1,23 +1,55 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <l10n>
     <elements>
+        <e k="finance_gmBuy"                                       v="GM Purchases (Total)" />
+        <e k="finance_gmBuyBale"                                   v="GM Purchase: Bales" />
+        <e k="finance_gmBuyBulk"                                   v="GM Purchase: Bulk" />
+        <e k="finance_gmBuyLiquid"                                 v="GM Purchase: Liquids" />
+        <e k="finance_gmBuyPiece"                                  v="GM Purchase: Pieces / Pallets" />
+        <e k="finance_gmFee"                                       v="GM Delivery Costs" />
+        <e k="finance_gmSell"                                      v="GM Sales (Total)" />
+        <e k="finance_gmSellBale"                                  v="GM Sale: Bales" />
+        <e k="finance_gmSellBulk"                                  v="GM Sale: Bulk" />
+        <e k="finance_gmSellLiquid"                                v="GM Sale: Liquids" />
+        <e k="finance_gmSellPiece"                                 v="GM Sale: Pieces / Pallets" />
+
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Open Global Market" />
-        <e k="ui_btn_buy"                                          v="buy from Global Market" />
-        <e k="ui_btn_sell"                                         v="sell to Global Market" />
+
+        <e k="ui_btn_buy"                                          v="Buy from Global Market" />
+        <e k="ui_btn_sell"                                         v="Sell to Global Market" />
         <e k="ui_gm_balance"                                       v="BALANCE:" />
-        <e k="ui_gm_settings_header"                               v="GLOBAL MARKET" />
+        <e k="ui_gm_format_bulk"                                   v="Bulk (Loose)" />
+        <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Pcs | 1 Pc = %d L" />
+        <e k="ui_gm_format_pallet"                                 v="Pallet" />
+        <e k="ui_gm_format_roundbale"                              v="Round Bale" />
+        <e k="ui_gm_format_squarebale"                             v="Square Bale" />
         <e k="ui_gm_settings_baseCost"                             v="Delivery Costs: Base Fee" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Sets the fixed base fee for freight deliveries to or from the private farm silo." />
+        <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Duration" />
+        <e k="ui_gm_settings_debugDuration_desc"                   v="Safety limit for extremely detailed logging (Trace/Debug) to prevent performance drops and excessively large text files." />
+        <e k="ui_gm_settings_debugLevel"                           v="Debug Level" />
+        <e k="ui_gm_settings_debugLevel_desc"                      v="Determines the detail level of log outputs. From level 'Debug' upwards, it writes to an external file." />
+        <e k="ui_gm_settings_debugMode"                            v="Debug Mode" />
+        <e k="ui_gm_settings_debugMode_desc"                       v="Activates extended developer logs for GlobalMarket." />
+        <e k="ui_gm_settings_detailedFinance"                      v="Detailed Finance Statistics" />
+        <e k="ui_gm_settings_detailedFinance_desc"                 v="Activates a breakdown of GlobalMarket transactions by goods category in the finance overview. (Requires a savegame reload!)" />
+        <e k="ui_gm_settings_header"                               v="GLOBAL MARKET" />
         <e k="ui_gm_settings_literCost"                            v="Delivery Costs: Price per Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Sets the additional transport costs per traded liter." />
+        <e k="ui_gm_storage_only"                                  v="(GM only)" />
+        <e k="ui_gm_storage_split"                                 v="(Farm: %s | GM: %s)" />
+        <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
         <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
         <e k="ui_gm_trend"                                         v="TR." />
-        <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
+        <e k="ui_gm_unit_bale"                                     v="Bales" />
+        <e k="ui_gm_unit_liter"                                    v="L" />
+        <e k="ui_gm_unit_pallet"                                   v="Pallets" />
+
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Available Amount" />
-        <e k="ui_ingameMenuGlobalMarketCount"                      v="Amount" />
-        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Crop" />
+        <e k="ui_ingameMenuGlobalMarketCount"                      v="Count" />
+        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Product" />
         <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Global Market" />
-        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Storage Stock" />
+        <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Storage Inventory" />
         <e k="ui_ingameMenuGlobalMarketOffline"                    v="Global Market - Offline" />
         <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="The market is currently not connected to the server and is being simulated." />
         <e k="ui_ingameMenuGlobalMarketOnline"                     v="Global Market - Online" />
@@ -26,19 +58,19 @@
         <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Buy" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnCancel"            v="Cancel" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnSell"              v="Sell" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="expected purchase price:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Delivery costs:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Quantity selection:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Buy from market" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="Estimated Purchase Price:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Delivery Costs:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Quantity Selection:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Buy from Market" />
         <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="You don't have enough money!" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="expected selling price:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Sell from storage" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="Estimated Selling Price:" />
+        <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Sell from Storage" />
         <e k="ui_ingameMenuGlobalMarketSelectLoading"              v="Waiting for transaction to complete . . ." />
         <e k="ui_ingameMenuGlobalMarketSelectStorageFree"          v="Free" />
         <e k="ui_ingameMenuGlobalMarketSelectStorageName"          v="Name" />
-        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Storage selection" />
+        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Storage Selection" />
         <e k="ui_ingameMenuGlobalMarketToggleFalse"                v="Show: Available" />
-        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Object storage" />
+        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Object Storage" />
         <e k="ui_ingameMenuGlobalMarketToggleStorageSilo"          v="Silo" />
         <e k="ui_ingameMenuGlobalMarketToggleTrue"                 v="Show: All" />
     </elements>
