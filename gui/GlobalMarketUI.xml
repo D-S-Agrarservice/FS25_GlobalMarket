@@ -24,7 +24,7 @@
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
-            <SmoothList profile="emptyPanel" id="gmTableStorage" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true">
+            <SmoothList profile="emptyPanel" id="gmTableStorage" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
                 <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
                     <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                     <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
@@ -46,7 +46,7 @@
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
-            <SmoothList profile="emptyPanel" id="gmTableMarket" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true">
+            <SmoothList profile="emptyPanel" id="gmTableMarket" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
                 <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
                     <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                     <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />

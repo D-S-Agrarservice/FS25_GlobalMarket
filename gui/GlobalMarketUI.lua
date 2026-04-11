@@ -257,12 +257,28 @@ function GlobalMarketUI:onListSelectionChanged(list, section, index)
     self.isUpdatingSelection = false
 end
 
--- Triggered when the user clicks 'Buy' or 'Sell'
-function GlobalMarketUI:onButtonAction()
+-- Triggered when the user clicks 'Buy' or 'Sell', OR via double-click on a table row
+function GlobalMarketUI:onButtonAction(list, section, index)
     local gm = g_currentMission.globalMarket
-    local list = (self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket
-    local _, index = list:getSelectedPath()
-    local data = (self.currentListFocus == "storage") and self.storageData[index] or self.marketData[index]
+
+    -- If triggered via double-click, we get the list and index directly.
+    -- If triggered via the button, we fall back to the currently focused list.
+    local targetList = list or ((self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket)
+    local targetIndex = index
+
+    -- If no index was passed (button click), get the selected path from the list
+    if targetIndex == nil then
+        _, targetIndex = targetList:getSelectedPath()
+    else
+        -- If it was a double-click, ensure the UI state updates to the clicked list
+        if targetList == self.gmTableStorage then
+            self:onListSelectionChanged(self.gmTableStorage, 1, targetIndex)
+        else
+            self:onListSelectionChanged(self.gmTableMarket, 1, targetIndex)
+        end
+    end
+
+    local data = (self.currentListFocus == "storage") and self.storageData[targetIndex] or self.marketData[targetIndex]
 
     if data and gm.dialog ~= nil then
         local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)

@@ -256,17 +256,25 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         local literTexts = {}
         for _, val in ipairs(GlobalMarketSettings.OPTIONS.DELIVERY_LITER) do table.insert(literTexts, tostring(val) .. " € / L") end
 
-        -- Inject Existing Options
+        -- =========================================================
+        -- 1. DELIVERY COSTS
+        -- =========================================================
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsBaseCost", "ui_gm_settings_baseCost", "ui_gm_settings_baseCost_desc", baseTexts, "onBaseCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsLiterCost", "ui_gm_settings_literCost", "ui_gm_settings_literCost_desc", literTexts, "onLiterCostChanged")
 
+        -- =========================================================
+        -- 2. FINANCE SETTINGS
+        -- =========================================================
+        -- Inject Detailed Finance Toggle
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
+
+        -- =========================================================
+        -- 3. DEBUG MODE
+        -- =========================================================
         -- Inject New Debug Options (Using the accurate FS25 binary option for master switch)
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
-
-        -- Inject Detailed Finance Toggle
-        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
 
         settingsFrame.gameSettingsLayout:invalidateLayout()
 
