@@ -32,6 +32,48 @@ if GlobalMarketDebug ~= nil then
 end
 
 -- =========================================================================
+-- ENGINE FIX: GUI $moddir$ PATH RESOLVER
+-- =========================================================================
+-- The native UI engine cannot resolve $moddir$ paths for external UI images.
+-- This global hook intercepts the path resolution and fixes it for all mods.
+
+local originalResolveFilename = GuiOverlay.resolveFilename
+
+GuiOverlay.resolveFilename = function(filename)
+    if filename ~= nil and type(filename) == "string" then
+        -- Check if the filename uses the standard Giants mod directory placeholder
+        -- Format: "$moddir$MOD_NAME/path/to/image.dds"
+        if string.startsWith(filename, "$moddir$") then
+            -- Find the first slash after $moddir$ to extract the mod name
+            local modNameEndPos = string.find(filename, "/", 9) -- 9 is the length of "$moddir$" + 1
+
+            if modNameEndPos ~= nil then
+                local extractedModName = string.sub(filename, 9, modNameEndPos - 1)
+                local remainingPath = string.sub(filename, modNameEndPos + 1)
+
+                -- Ask the mod manager for the physical directory of this specific mod
+                local modItem = g_modManager:getModByName(extractedModName)
+
+                if modItem ~= nil and modItem.modDir ~= nil then
+                    filename = modItem.modDir .. remainingPath
+
+                    if GlobalMarket.debugManager ~= nil then
+                        GlobalMarket.debugManager:trace("UI Engine Fix: Successfully resolved $moddir$ path to -> %s", filename)
+                    end
+                else
+                    if GlobalMarket.debugManager ~= nil then
+                        GlobalMarket.debugManager:error("UI Engine Fix Failed: Could not resolve $moddir$ path. Mod '%s' is not loaded or missing!", extractedModName)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Pass the (potentially fixed) filename back to the original engine function
+    return originalResolveFilename(filename)
+end
+
+-- =========================================================================
 -- MODULE INJECTIONS
 -- =========================================================================
 

@@ -11,11 +11,12 @@
         <Preset name="colorUVs" value="10px 1010px 4px 4px"/>
     </Presets>
 
-    <Profile name="globalMarketMenuHeaderIcon" extends="baseReference" with="anchorMiddleCenter">
+    <Profile name="globalMarketMenuHeaderIcon" with="anchorMiddleCenter">
         <size value="50px 50px"/>
-        <imageFilename value="../images/menuIcon.dds"/>
         <imageUVs value="0 0 1 1"/>
-        <imageColor value="$preset_fs25_colorWhite"/>
+        <imageColor value="0 0 0 1"/>
+        <imageSliceId value="noSlice"/>
+        <imageFilename value="$moddir$FS25_GlobalMarket/images/storageList.png"/>
     </Profile>
 
     <Profile name="globalMarketHeader" extends="baseReference">

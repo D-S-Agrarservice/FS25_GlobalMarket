@@ -4,10 +4,9 @@
 
         <GuiElement profile="fs25_menuHeaderPanel">
             <Bitmap profile="fs25_menuHeaderIconBg">
-                <Bitmap profile="globalMarketMenuHeaderIcon" />
+                <Bitmap profile="globalMarketMenuHeaderIcon" id="gmMenuHeaderIcon" />
             </Bitmap>
             <Text profile="fs25_menuHeaderTitle" id="categoryHeaderText" text="$l10n_ui_ingameMenuGlobalMarketHeaderMarket" />
-
             <RoundCorner profile="fs25_shopMoneyBoxBg" id="shopMoneyBoxBg" />
             <BoxLayout profile="fs25_shopMoneyBox" id="shopMoneyBox">
                 <Text profile="fs25_shopBalance" text="$l10n_ui_gm_balance" />
