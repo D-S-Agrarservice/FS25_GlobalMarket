@@ -85,8 +85,8 @@ function GlobalMarket:runOfflineSimulation()
     end
 
     for _, data in pairs(self.offlineMarketFillTypes) do
-        -- Random fluctuation: -5000 to +4500 Liters
-        local fluctuation = math.random(-50, 45) * 100
+        -- Random fluctuation: -50000 to +45000 Liters
+        local fluctuation = math.random(-500, 450) * 100
         data.fillLevel = math.max(data.fillLevel + fluctuation, 0)
 
         if self.debugManager ~= nil then

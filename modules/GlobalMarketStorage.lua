@@ -70,9 +70,11 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
 
     -- 2. Scan PlaceableObjectStorages (Bales, Pallets)
     for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-        if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
+        local isGmMarket = placeable.isGmMarket or false
+
+        -- FIX: Allow access if the player owns the building OR if it is a GM Terminal
+        if placeable.spec_objectStorage ~= nil and (placeable:getOwnerFarmId() == farmId or isGmMarket) then
             local spec = placeable.spec_objectStorage
-            local isGmMarket = placeable.isGmMarket or false
 
             local supportsPallets = spec.supportsPallets or false
             local supportsBales = spec.supportsBales or false
@@ -180,25 +182,32 @@ function GlobalMarket:getAggregatedStorageData(farmId)
 
     -- 2. Object Storages (Bale/Pallet Storages & GM Object Terminals)
     for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-        if placeable.spec_objectStorage ~= nil and placeable:getOwnerFarmId() == farmId then
-            local isGM = placeable.isGmMarket or false
+        local isGM = placeable.isGmMarket or false
+
+        -- Process if the player owns the building OR if it's a communal GM terminal
+        if placeable.spec_objectStorage ~= nil and (placeable:getOwnerFarmId() == farmId or isGM) then
             local spec = placeable.spec_objectStorage
             for _, objectInfo in ipairs(spec.objectInfos) do
                 local obj = objectInfo.objects[1]
                 local objFillType, objLevel = nil, 0
                 local isFermenting = false
+                local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
                 if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                     objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
                     objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+                    objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+
                     if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
                     if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
                 elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
                     objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
                     objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                    objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
                 end
 
-                if objFillType ~= nil and not isFermenting then
+                -- FIX: Strictly filter by the object's farmId, not the building's farmId
+                if objFillType ~= nil and not isFermenting and objFarmId == farmId then
                     initFillType(objFillType)
                     local totalVol = objLevel * objectInfo.numObjects
                     fillTypeTotals[objFillType].total = fillTypeTotals[objFillType].total + totalVol
@@ -387,7 +396,6 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         return
     end
 
-    -- FIX: Use the directly passed object reference instead of iterating over rootNodes
     local targetPlaceable = targetPlaceableObj
 
     if targetPlaceable == nil or type(targetPlaceable) ~= "table" then
@@ -395,8 +403,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         return
     end
 
-    local targetFarmId = targetPlaceable:getOwnerFarmId()
-    if targetFarmId == nil or targetFarmId == FarmManager.SPECTATOR_FARM_ID then targetFarmId = playerFarmId end
+    -- FIX: Money and Ownership MUST strictly belong to the acting player.
+    local targetFarmId = playerFarmId
 
     if g_server ~= nil then
         local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
@@ -408,51 +416,99 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         if mode == 1 then
             local processedLiters = 0
 
-            -- Iterate backwards to safely remove elements from the table
-            for i = #spec.storedObjects, 1, -1 do
+            -- To safely delete abstract objects, we must use the native Engine function
+            -- so that objectInfos and storedObjects are kept in sync.
+            -- Since the engine function needs the objectInfoIndex, we iterate over objectInfos.
+            for infoIndex = #spec.objectInfos, 1, -1 do
                 if processedLiters >= requestedLiters then break end
 
-                local obj = spec.storedObjects[i]
-                local objFillType, objLevel, objXml = nil, 0, nil
-                local isFermenting = false
-
-                if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                    objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
-                    objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
-                    objXml = (obj.baleObject ~= nil) and obj.baleObject.xmlFilename or (obj.baleAttributes ~= nil and obj.baleAttributes.xmlFilename)
-                    if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
-                    if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
-                elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                    objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
-                    objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
-                    objXml = obj.palletAttributes ~= nil and obj.palletAttributes.configFileName
+                local objectInfo = spec.objectInfos[infoIndex]
+                if objectInfo == nil or objectInfo.objects == nil or #objectInfo.objects == 0 then
+                    continue
                 end
 
-                if objFillType == fillTypeIndex and not isFermenting then
+                -- Check the properties of the first object in the group
+                local sampleObj = objectInfo.objects[1]
+                local objFillType, objLevel, objXml = nil, 0, nil
+                local isFermenting = false
+                local objFarmId = FarmManager.SPECTATOR_FARM_ID
+                local isBaleType = false
+
+                if sampleObj.REFERENCE_CLASS_NAME == "Bale" or sampleObj.REFERENCE_CLASS_NAME == "PackedBale" then
+                    isBaleType = true
+                    objFillType = (sampleObj.baleObject ~= nil) and sampleObj.baleObject:getFillType() or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillType)
+                    objLevel = (sampleObj.baleObject ~= nil) and sampleObj.baleObject:getFillLevel() or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillLevel)
+                    objXml = (sampleObj.baleObject ~= nil) and sampleObj.baleObject.xmlFilename or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.xmlFilename)
+                    objFarmId = (sampleObj.baleObject ~= nil and sampleObj.baleObject.ownerFarmId) or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+
+                    if sampleObj.baleObject ~= nil and sampleObj.baleObject.isFermenting then isFermenting = true end
+                    if sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.isFermenting then isFermenting = true end
+                elseif sampleObj.REFERENCE_CLASS_NAME == "Vehicle" then
+                    objFillType = sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.fillType
+                    objLevel = sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.fillLevel
+                    objXml = sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.configFileName
+                    objFarmId = sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
+                end
+
+                -- FIX: Ensure we only sell items that actually belong to the acting player
+                if objFillType == fillTypeIndex and not isFermenting and objFarmId == targetFarmId then
                     local isFormatMatch = true
 
                     if formatXml ~= nil and objXml ~= nil and objXml ~= formatXml then
                         isFormatMatch = false
                     end
 
-                    if isFormatMatch and (requestedLiters - processedLiters) >= (objLevel - 0.1) then
-                        processedLiters = processedLiters + objLevel
-                        table.remove(spec.storedObjects, i)
-                        obj:delete()
+                    if isFormatMatch then
+                        -- Calculate how many whole objects we can sell from this group
+                        local remainingLitersToSell = requestedLiters - processedLiters
+                        local objectsToSell = math.floor(remainingLitersToSell / objLevel)
 
-                        if self.debugManager ~= nil then self.debugManager:trace("Selling: AbstractObject removed (%.2f L)", objLevel) end
+                        -- Cap at the available objects in this group
+                        objectsToSell = math.min(objectsToSell, objectInfo.numObjects)
 
-                        if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                            g_farmManager:updateFarmStats(targetFarmId, "storedBales", -1)
-                        elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                            g_farmManager:updateFarmStats(targetFarmId, "storedPallets", -1)
+                        if objectsToSell > 0 then
+                            local soldLiters = objectsToSell * objLevel
+                            processedLiters = processedLiters + soldLiters
+
+                            if self.debugManager ~= nil then
+                                self.debugManager:trace("Selling: Removing %d objects of type %s (%.2f L)", objectsToSell, sampleObj.REFERENCE_CLASS_NAME, soldLiters)
+                            end
+
+                            -- Remove the items from the internal tables safely
+                            for j = 1, objectsToSell do
+                                local objToRemove = objectInfo.objects[1]
+
+                                -- 1. Remove from storedObjects array
+                                for k = 1, #spec.storedObjects do
+                                    if spec.storedObjects[k] == objToRemove then
+                                        table.remove(spec.storedObjects, k)
+                                        break
+                                    end
+                                end
+
+                                -- 2. Remove from the group
+                                table.remove(objectInfo.objects, 1)
+                            end
+
+                            -- Update group count or remove group if empty
+                            objectInfo.numObjects = #objectInfo.objects
+                            if objectInfo.numObjects == 0 then
+                                table.remove(spec.objectInfos, infoIndex)
+                            end
+
+                            -- Update Farm Stats
+                            if isBaleType then
+                                g_farmManager:updateFarmStats(targetFarmId, "storedBales", -objectsToSell)
+                            else
+                                g_farmManager:updateFarmStats(targetFarmId, "storedPallets", -objectsToSell)
+                            end
                         end
                     end
                 end
             end
 
             if processedLiters <= 0 then
-                if self.debugManager ~= nil then self.debugManager:warning("Selling aborted: No matching non-fermenting objects found in storage.") end
+                if self.debugManager ~= nil then self.debugManager:warning("Selling aborted: No matching non-fermenting objects owned by player found.") end
                 return
             end
 
