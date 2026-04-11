@@ -1,34 +1,49 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <l10n>
     <elements>
+        <e k="finance_gmBuy"                                       v="GM Einkäufe (Gesamt)" />
+        <e k="finance_gmBuyBale"                                   v="GM Einkauf: Ballen" />
+        <e k="finance_gmBuyBulk"                                   v="GM Einkauf: Schüttgut" />
+        <e k="finance_gmBuyLiquid"                                 v="GM Einkauf: Flüssigkeiten" />
+        <e k="finance_gmBuyPiece"                                  v="GM Einkauf: Stückgut / Paletten" />
+        <e k="finance_gmFee"                                       v="GM Speditionskosten" />
+        <e k="finance_gmSell"                                      v="GM Verkäufe (Gesamt)" />
+        <e k="finance_gmSellBale"                                  v="GM Verkauf: Ballen" />
+        <e k="finance_gmSellBulk"                                  v="GM Verkauf: Schüttgut" />
+        <e k="finance_gmSellLiquid"                                v="GM Verkauf: Flüssigkeiten" />
+        <e k="finance_gmSellPiece"                                 v="GM Verkauf: Stückgut / Paletten" />
+
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Globalen Markt öffnen" />
+
         <e k="ui_btn_buy"                                          v="vom Globalen Markt kaufen" />
         <e k="ui_btn_sell"                                         v="an Globalen Markt verkaufen" />
         <e k="ui_gm_balance"                                       v="KONTOSTAND:" />
-        <e k="ui_gm_settings_debugMode"                            v="Debug-Modus" />
-        <e k="ui_gm_settings_debugMode_desc"                       v="Aktiviert erweiterte Entwickler-Logs für GlobalMarket." />
-        <e k="ui_gm_settings_debugLevel"                           v="Debug-Level" />
-        <e k="ui_gm_settings_debugLevel_desc"                      v="Bestimmt die Detailtiefe der Log-Ausgaben. Ab Level 'Debug' wird in eine externe Datei geschrieben." />
-        <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Dauer" />
-        <e k="ui_gm_settings_debugDuration_desc"                   v="Sicherheitslimit für extrem detailliertes Logging (Trace/Debug), um Performance-Einbrüche und extrem große Textdateien zu verhindern." />
         <e k="ui_gm_format_bulk"                                   v="Schüttgut (Lose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Palette" />
         <e k="ui_gm_format_roundbale"                              v="Rundballen" />
         <e k="ui_gm_format_squarebale"                             v="Quaderballen" />
-        <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_baseCost"                             v="Lieferkosten: Grundgebühr" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Legt die feste Grundgebühr für Speditionslieferungen zum oder vom privaten Hof-Silo fest." />
+        <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Dauer" />
+        <e k="ui_gm_settings_debugDuration_desc"                   v="Sicherheitslimit für extrem detailliertes Logging (Trace/Debug), um Performance-Einbrüche und extrem große Textdateien zu verhindern." />
+        <e k="ui_gm_settings_debugLevel"                           v="Debug-Level" />
+        <e k="ui_gm_settings_debugLevel_desc"                      v="Bestimmt die Detailtiefe der Log-Ausgaben. Ab Level 'Debug' wird in eine externe Datei geschrieben." />
+        <e k="ui_gm_settings_debugMode"                            v="Debug-Modus" />
+        <e k="ui_gm_settings_debugMode_desc"                       v="Aktiviert erweiterte Entwickler-Logs für GlobalMarket." />
+        <e k="ui_gm_settings_detailedFinance"                      v="Detaillierte Finanzstatistik" />
+        <e k="ui_gm_settings_detailedFinance_desc"                 v="Aktiviert eine nach Güterklassen aufgeteilte Auflistung der GlobalMarket-Transaktionen in der Finanzübersicht. (Erfordert ein Neuladen des Spielstands!)" />
+        <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_literCost"                            v="Lieferkosten: Preis pro Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Legt die zusätzlichen Transportkosten pro gehandeltem Liter fest." />
         <e k="ui_gm_storage_only"                                  v="(nur GM)" />
         <e k="ui_gm_storage_split"                                 v="(Hof: %s | GM: %s)" />
+        <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />
         <e k="ui_gm_total_storage"                                 v="GESAMT BESTAND:" />
         <e k="ui_gm_trend"                                         v="TR." />
-        <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />
+        <e k="ui_gm_unit_bale"                                     v="Ballen" />
         <e k="ui_gm_unit_liter"                                    v="L" />
         <e k="ui_gm_unit_pallet"                                   v="Paletten" />
-        <e k="ui_gm_unit_bale"                                     v="Ballen" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Verfügbare Menge" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Anzahl" />

@@ -338,12 +338,13 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, storageId, player
         -- EXECUTE TRANSACTION
         -- =======================================================
         local finalAccountBalance = (mode == 2) and (totalPrice * -1) or totalPrice
-        local moneyType = (mode == 2) and MoneyType.BOUGHT_MATERIALS or MoneyType.SOLD_PRODUCTS
+        local isBuying = (mode == 2)
+        local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying)
 
         g_currentMission:addMoney(finalAccountBalance, targetFarmId, moneyType, true, true)
 
         if deliveryCosts > 0 then
-            g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.OTHER, true, true)
+            g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true)
         end
 
         local newSiloLevel = (mode == 2) and (currentSiloLevel + level) or (currentSiloLevel - level)
@@ -468,8 +469,12 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
                 deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * processedLiters) * EconomyManager.getCostMultiplier()
             end
 
-            g_currentMission:addMoney(totalPrice, targetFarmId, MoneyType.SOLD_PRODUCTS, true, true)
-            if deliveryCosts > 0 then g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.OTHER, true, true) end
+            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, false)
+            g_currentMission:addMoney(totalPrice, targetFarmId, moneyType, true, true)
+
+            if deliveryCosts > 0 then 
+                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true) 
+            end
 
             for _, ft in pairs(self.offlineMarketFillTypes) do
                 if ft.fillType == filltypeName then
@@ -536,8 +541,12 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, stor
             end
 
             -- Execute Payment
-            g_currentMission:addMoney(totalPrice * -1, targetFarmId, MoneyType.BOUGHT_MATERIALS, true, true)
-            if deliveryCosts > 0 then g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.OTHER, true, true) end
+            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, true)
+            g_currentMission:addMoney(totalPrice * -1, targetFarmId, moneyType, true, true)
+
+            if deliveryCosts > 0 then 
+                g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true) 
+            end
             marketItem.fillLevel = math.max(marketItem.fillLevel - actualLitersBought, 0)
 
             local className = isBale and "Bale" or "Vehicle"

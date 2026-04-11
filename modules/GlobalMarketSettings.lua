@@ -23,7 +23,8 @@ GlobalMarketSettings.current = {
     deliveryLiterIndex = 4, -- Default: 0.05
     isDebugActive = false, -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,   -- Default: Info
-    debugDurationIndex = 1 -- Default: 1 Hour
+    debugDurationIndex = 1, -- Default: 1 Hour
+    isDetailedFinance = false -- Default: Off (Simple Finance)
 }
 
 -- Gets default indices based on the game's economic difficulty
@@ -105,6 +106,9 @@ function GlobalMarketSettings:loadFromXML()
         self.current.deliveryBaseIndex = xmlFile:getInt("globalMarketSettings#deliveryBaseIndex", defaultBase)
         self.current.deliveryLiterIndex = xmlFile:getInt("globalMarketSettings#deliveryLiterIndex", defaultLiter)
 
+        -- Load Detailed Finance Setting
+        self.current.isDetailedFinance = xmlFile:getBool("globalMarketSettings#isDetailedFinance", false)
+
         -- Load Debug Settings
         self.current.isDebugActive = xmlFile:getBool("globalMarketSettings.debug#isActive", false)
         self.current.debugLevelIndex = xmlFile:getInt("globalMarketSettings.debug#levelIndex", 1)
@@ -131,6 +135,9 @@ function GlobalMarketSettings:saveToXML()
     if xmlFile ~= nil then
         xmlFile:setInt("globalMarketSettings#deliveryBaseIndex", self.current.deliveryBaseIndex)
         xmlFile:setInt("globalMarketSettings#deliveryLiterIndex", self.current.deliveryLiterIndex)
+
+        -- Save Detailed Finance Setting
+        xmlFile:setBool("globalMarketSettings#isDetailedFinance", self.current.isDetailedFinance)
 
         -- Save Debug Settings
         xmlFile:setBool("globalMarketSettings.debug#isActive", self.current.isDebugActive)
@@ -258,6 +265,9 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
 
+        -- Inject Detailed Finance Toggle
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
+
         settingsFrame.gameSettingsLayout:invalidateLayout()
 
         -- Update alternating row background colors
@@ -291,6 +301,14 @@ function GlobalMarketSettings.refreshMenuState()
     if literControl ~= nil then
         literControl:setState(GlobalMarketSettings.current.deliveryLiterIndex)
         literControl:setDisabled(not isAdmin)
+    end
+
+    -- Finance Controls
+    local financeControl = GlobalMarketSettings.CONTROLS["gmSettingsDetailedFinance"]
+    if financeControl ~= nil then
+        -- BinaryOptions in FS25 use states (1 = Off, 2 = On)
+        financeControl:setState(GlobalMarketSettings.current.isDetailedFinance and 2 or 1)
+        financeControl:setDisabled(not isAdmin)
     end
 
     -- Debug Controls and Dependency Logic (Method A: Disabled States)
@@ -333,6 +351,13 @@ function GlobalMarketSettings:onLiterCostChanged(state)
     self.current.deliveryLiterIndex = state
     GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[state]
     self:saveToXML()
+end
+
+function GlobalMarketSettings:onDetailedFinanceChanged(state)
+    -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
+    self.current.isDetailedFinance = (state == 2)
+    self:saveToXML()
+    self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
 end
 
 function GlobalMarketSettings:onDebugModeChanged(state)

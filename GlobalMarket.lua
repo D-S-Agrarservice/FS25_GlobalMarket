@@ -45,6 +45,7 @@ if GlobalMarket.config.useEconomy then
     -- Savegame module must be loaded here to ensure offline data is saved/loaded!
     source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
     source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
+    source(GlobalMarket.dir .. "modules/GlobalMarketFinance.lua")
 end
 
 if GlobalMarket.config.useStorage then
@@ -85,7 +86,22 @@ function GlobalMarket:loadMap(name)
         g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
     end
 
-    -- Initialize Offline Market if economy is enabled
+    -- =========================================================
+    -- CORE MODULES (Always load, regardless of Offline or Sync)
+    -- =========================================================
+    -- 1. Load settings first so states are available!
+    if GlobalMarketSettings ~= nil and GlobalMarketSettings.loadFromXML ~= nil then
+        GlobalMarketSettings:loadFromXML()
+    end
+
+    -- 2. Initialize Finance system with loaded settings
+    if GlobalMarketFinance ~= nil then
+        GlobalMarketFinance.init()
+    end
+
+    -- =========================================================
+    -- OFFLINE MARKET (Local simulation logic)
+    -- =========================================================
     if GlobalMarket.config.useEconomy and self.initOfflineMarket ~= nil then
         self:initOfflineMarket()
 
@@ -97,10 +113,12 @@ function GlobalMarket:loadMap(name)
         end
     end
 
-    -- Initialize External Sync if enabled
+    -- =========================================================
+    -- ONLINE MARKET (External sync via .exe)
+    -- =========================================================
     if GlobalMarket.config.useSync and self.initSync ~= nil then
         self:initSync()
-        -- Ask server for initial data if we are a client
+        -- Request initial data if the current instance is a client
         if g_client ~= nil and not g_currentMission:getIsServer() and InitOfflineMarketEvent ~= nil then
             g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
         end
