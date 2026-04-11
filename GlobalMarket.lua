@@ -92,6 +92,8 @@ end
 
 if GlobalMarket.config.useStorage then
     source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
+    -- Load Access Module to inject terminal permissions
+    source(GlobalMarket.dir .. "modules/GlobalMarketAccess.lua")
 end
 
 -- Events must be loaded unconditionally to ensure MP compatibility and internal transactions work
@@ -139,6 +141,11 @@ function GlobalMarket:loadMap(name)
     -- 2. Initialize Finance system with loaded settings
     if GlobalMarketFinance ~= nil then
         GlobalMarketFinance.init()
+    end
+
+    -- Initialize Access & Permission Hooks
+    if GlobalMarketAccess ~= nil and GlobalMarketAccess.init ~= nil then
+        GlobalMarketAccess.init()
     end
 
     -- =========================================================
