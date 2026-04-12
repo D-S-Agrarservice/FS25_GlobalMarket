@@ -187,3 +187,69 @@ function GlobalMarketAccess.init()
         GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
     end
 end
+
+-- =========================================================================
+    -- Hook 5: InfoTrigger UI Split (Meins vs. Fremdgüter)
+    -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
+    -- =========================================================================
+
+    -- FIX: Adjusted signature to account for Specialization superFunc chaining
+    local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
+        -- Check if it's a GM Market
+        local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
+
+        if not isGmMarket then
+            -- Not a GM Terminal, run default behavior
+            return superFunc(self, engineSuperFunc, infoTable)
+        end
+
+        local spec = self.spec_objectStorage
+        local originalObjectInfos = spec.objectInfos
+
+        -- Split the data
+        local playerFarmId = g_currentMission:getFarmId()
+        local myInfos = {}
+        local foreignCount = 0
+
+        if originalObjectInfos ~= nil then
+            for i = 1, #originalObjectInfos do
+                local objectInfo = originalObjectInfos[i]
+                if objectInfo.objects ~= nil and objectInfo.objects[1] ~= nil then
+                    local obj = objectInfo.objects[1]
+                    local objFarmId = FarmManager.SPECTATOR_FARM_ID
+
+                    if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                        objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                    elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                        objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
+                    end
+
+                    if objFarmId == playerFarmId then
+                        table.insert(myInfos, objectInfo)
+                    else
+                        foreignCount = foreignCount + objectInfo.numObjects
+                    end
+                end
+            end
+        end
+
+        -- Temporarily mask the objectInfos for the base game function
+        spec.objectInfos = myInfos
+
+        -- Run base function: It will print accurate total capacity, but only list the player's items
+        superFunc(self, engineSuperFunc, infoTable)
+
+        -- Restore original data immediately to not break game logic
+        spec.objectInfos = originalObjectInfos
+
+        -- Append foreign goods summary at the bottom
+        if foreignCount > 0 then
+            -- Checks if modder provided a translation, otherwise defaults to "Fremdgüter"
+            local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Fremdgüter"
+            table.insert(infoTable, { title = foreignTitle, text = tostring(foreignCount) })
+        end
+    end
+
+    if PlaceableObjectStorage ~= nil then
+        PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
+    end

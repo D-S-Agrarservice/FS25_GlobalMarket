@@ -15,6 +15,8 @@
 
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Abrir Mercado Global" />
 
+        <e k="info_gmForeignGoods"                                 v="Mercancías externas" />
+
         <e k="ui_btn_buy"                                          v="Comprar en el Mercado Global" />
         <e k="ui_btn_sell"                                         v="Vender al Mercado Global" />
         <e k="ui_gm_balance"                                       v="SALDO:" />
@@ -40,10 +42,10 @@
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />
         <e k="ui_gm_total_storage"                                 v="STOCK TOTAL:" />
-        <e k="ui_gm_trend"                                         v="TEND." />
+        <e k="ui_gm_trend"                                         v="Tendencia" />
         <e k="ui_gm_unit_bale"                                     v="Pacas" />
-        <e k="ui_gm_unit_liter"                                    v="L" />
-        <e k="ui_gm_unit_pallet"                                   v="Palés" />
+        <e k="ui_gm_unit_liter"                                    v="Litros" />
+        <e k="ui_gm_unit_pallet"                                   v="Palets" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Cantidad disponible" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Cantidad" />
