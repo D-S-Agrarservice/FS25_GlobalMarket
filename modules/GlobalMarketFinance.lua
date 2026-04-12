@@ -115,12 +115,18 @@ function GlobalMarketFinance.registerLiquidCategory(categoryName)
 end
 
 function GlobalMarketFinance.loadExternalModExtensions()
+    -- Create a temporary schema for the external XMLs to satisfy the Engine's strict validator
+    local schema = XMLSchema.new("GMFinanceExtension")
+    schema:register(XMLValueType.STRING, "globalMarket.liquidCategories.category(?)#name", "Name of the custom liquid category")
+
     -- Scan all active mods for the ghost XML
     for _, mod in ipairs(g_modManager:getActiveMods()) do
         local xmlPath = mod.modDir .. "gm_finance.xml"
 
         if fileExists(xmlPath) then
-            local xmlFile = XMLFile.load("GMExtension", xmlPath)
+            -- Pass the schema into the load function as the third argument
+            local xmlFile = XMLFile.load("GMExtension", xmlPath, schema)
+
             if xmlFile ~= nil then
                 -- Parse the custom liquid categories
                 xmlFile:iterate("globalMarket.liquidCategories.category", function(_, key)
