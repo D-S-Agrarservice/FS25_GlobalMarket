@@ -329,7 +329,7 @@ function GlobalMarketDialog:onClickFormat(state)
 
         -- Reset input field and trigger calculation
         if self.amountInput ~= nil then
-            self.amountInput:setText()
+            self.amountInput:setText("0")
         end
         self:onAmountChanged()
     end
