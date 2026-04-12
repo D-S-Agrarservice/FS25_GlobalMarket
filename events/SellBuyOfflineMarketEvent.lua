@@ -87,7 +87,8 @@ function SellBuyOfflineMarketEvent:run(connection)
                 local capToPass = (self.capacityPerObject > 0) and self.capacityPerObject or nil
 
                 -- Route the client's request through the server's authoritative transaction backend
-                g_currentMission.globalMarket:onSellBuy(self.mode, self.filltypeName, self.level, self.storageObject.rootNode, self.count, nil, nil, self.isObjectStorage, self.playerFarmId, xmlToPass, capToPass)
+                -- FIX: Pass the actual storage object table instead of just the rootNode ID
+                g_currentMission.globalMarket:onSellBuy(self.mode, self.filltypeName, self.level, self.storageObject, self.count, nil, nil, self.isObjectStorage, self.playerFarmId, xmlToPass, capToPass)
             else
                 if GlobalMarket.debugManager ~= nil then
                     GlobalMarket.debugManager:error("Network (Server): Transaction aborted. Received storageObject is nil (Sync mismatch).")

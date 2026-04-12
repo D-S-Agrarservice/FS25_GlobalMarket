@@ -34,7 +34,7 @@ local function setupFinanceSystemEarly()
     if settingsDirectory == nil or settingsDirectory == "" then
         settingsDirectory = string.format("%smodSettings/%s/", getUserProfileAppPath(), GlobalMarket.modName)
     end
-    
+
     local savePath = settingsDirectory .. "settings.xml"
     if fileExists(savePath) then
         local xmlFile = XMLFile.load("GMSettingsEarly", savePath)
@@ -94,24 +94,77 @@ end
 setupFinanceSystemEarly()
 
 -- Dummy init function so we don't crash GlobalMarket:loadMap when it calls this
-function GlobalMarketFinance.init() end
+function GlobalMarketFinance.init()
+    -- Start scanning for external mod extensions once the map loads
+    GlobalMarketFinance.loadExternalModExtensions()
+end
+
+-- =========================================================================
+-- EXTERNAL MOD EXTENSION LOGIC
+-- =========================================================================
+GlobalMarketFinance.liquidCategories = {"LIQUID", "SLURRYTANK", "SPRAYER"}
+
+function GlobalMarketFinance.registerLiquidCategory(categoryName)
+    local upperName = string.upper(categoryName)
+    if not table.hasElement(GlobalMarketFinance.liquidCategories, upperName) then
+        table.insert(GlobalMarketFinance.liquidCategories, upperName)
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("GM Finance: Registered custom liquid category '%s' from external mod.", upperName)
+        end
+    end
+end
+
+function GlobalMarketFinance.loadExternalModExtensions()
+    -- Scan all active mods for the ghost XML
+    for _, mod in ipairs(g_modManager:getActiveMods()) do
+        local xmlPath = mod.modDir .. "gm_finance.xml"
+
+        if fileExists(xmlPath) then
+            local xmlFile = XMLFile.load("GMExtension", xmlPath)
+            if xmlFile ~= nil then
+                -- Parse the custom liquid categories
+                xmlFile:iterate("globalMarket.liquidCategories.category", function(_, key)
+                    local catName = xmlFile:getValue(key .. "#name")
+                    if catName ~= nil then
+                        GlobalMarketFinance.registerLiquidCategory(catName)
+                    end
+                end)
+                xmlFile:delete()
+            end
+        end
+    end
+end
 
 -- =========================================================================
 -- ROUTING LOGIC
 -- =========================================================================
-function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying)
+function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPallet)
     local isDetailed = GlobalMarketFinance.isDetailedCached
 
     if not isDetailed then
         return isBuying and MoneyType.GM_BUY or MoneyType.GM_SELL
     end
 
-    if g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, "BALE") then
+    -- 1. Explicit Overrides from the Storage Module
+    if isBale then
         return isBuying and MoneyType.GM_BUY_BALE or MoneyType.GM_SELL_BALE
-    elseif g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, "LIQUID") then
-        return isBuying and MoneyType.GM_BUY_LIQUID or MoneyType.GM_SELL_LIQUID
-    elseif g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, "PIECE") then
+    end
+    if isPallet then
         return isBuying and MoneyType.GM_BUY_PIECE or MoneyType.GM_SELL_PIECE
+    end
+
+    -- 2. Clean Array-Check for Liquid Categories (Using the global table)
+    local isLiquid = false
+    for _, category in ipairs(GlobalMarketFinance.liquidCategories) do
+        if g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, category) then
+            isLiquid = true
+            break -- Found a match, stop looping to save performance
+        end
+    end
+
+    -- 3. Final Routing
+    if isLiquid then
+        return isBuying and MoneyType.GM_BUY_LIQUID or MoneyType.GM_SELL_LIQUID
     else
         return isBuying and MoneyType.GM_BUY_BULK or MoneyType.GM_SELL_BULK
     end

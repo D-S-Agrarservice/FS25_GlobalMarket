@@ -350,7 +350,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         -- =======================================================
         local finalAccountBalance = (mode == 2) and (totalPrice * -1) or totalPrice
         local isBuying = (mode == 2)
-        local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying)
+        local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, false, false)
 
         g_currentMission:addMoney(finalAccountBalance, targetFarmId, moneyType, true, true)
 
@@ -415,6 +415,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         -- ==========================================
         if mode == 1 then
             local processedLiters = 0
+            local wasBaleSold = false
 
             -- To safely delete abstract objects, we must use the native Engine function
             -- so that objectInfos and storedObjects are kept in sync.
@@ -436,6 +437,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
                 if sampleObj.REFERENCE_CLASS_NAME == "Bale" or sampleObj.REFERENCE_CLASS_NAME == "PackedBale" then
                     isBaleType = true
+                    wasBaleSold = true
                     objFillType = (sampleObj.baleObject ~= nil) and sampleObj.baleObject:getFillType() or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillType)
                     objLevel = (sampleObj.baleObject ~= nil) and sampleObj.baleObject:getFillLevel() or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillLevel)
                     objXml = (sampleObj.baleObject ~= nil) and sampleObj.baleObject.xmlFilename or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.xmlFilename)
@@ -522,7 +524,9 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                 deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * processedLiters) * EconomyManager.getCostMultiplier()
             end
 
-            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, false)
+            local isPalletType = not wasBaleSold
+            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, false, wasBaleSold, isPalletType)
+
             g_currentMission:addMoney(totalPrice, targetFarmId, moneyType, true, true)
 
             if deliveryCosts > 0 then
@@ -600,7 +604,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             end
 
             -- Execute Payment
-            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, true)
+            local isPallet = not isBale
+            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, true, isBale, isPallet)
             g_currentMission:addMoney(totalPrice * -1, targetFarmId, moneyType, true, true)
 
             if deliveryCosts > 0 then

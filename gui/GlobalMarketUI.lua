@@ -60,14 +60,24 @@ function GlobalMarketUI:updateContent()
 
     -- Update balance
     if self.currentBalanceText ~= nil and g_currentMission ~= nil then
-        local money = g_currentMission:getMoney()
-        self.currentBalanceText:setText(self.i18n:formatMoney(money, 0, true, true))
+        local farm = g_farmManager:getFarmById(g_localPlayer.farmId)
+        local moneyText = self.i18n:formatMoney(farm.money, 0, true, true)
 
-        -- Native Giants coloring for negative balance
-        if money < 0 then
-            self.currentBalanceText:setTextColor(0.8, 0.05, 0.05, 1) -- Dark Red
+        -- Clean Giants profile application
+        if farm.money <= -1 then
+            self.currentBalanceText:applyProfile(ShopMenu.GUI_PROFILE.SHOP_MONEY_NEGATIVE, nil, true)
         else
-            self.currentBalanceText:setTextColor(1, 1, 1, 1) -- White
+            self.currentBalanceText:applyProfile(ShopMenu.GUI_PROFILE.SHOP_MONEY, nil, true)
+        end
+
+        self.currentBalanceText:setText(moneyText)
+
+        -- Dynamically resize the background box based on text length (Giants Native Method)
+        if self.shopMoneyBox ~= nil then
+            self.shopMoneyBox:invalidateLayout()
+            if self.shopMoneyBoxBg ~= nil then
+                self.shopMoneyBoxBg:setSize(self.shopMoneyBox.flowSizes[1] + 60 * g_pixelSizeScaledX)
+            end
         end
     end
 
