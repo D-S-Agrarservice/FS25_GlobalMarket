@@ -166,7 +166,10 @@ function GlobalMarketDialog:onClickStorage(state)
                                 end
                             end
                         end
-                    elseif selectedSilo.supportsPallets and fillType.isPalletType and fillType.palletFilename ~= nil then
+                    -- NATIVE PALLET BRIDGE (FS25 WAY):
+                    -- Bypass strict isPalletType check. If a palletFilename exists, 
+                    -- the UI must offer it as a valid purchase format.
+                    elseif selectedSilo.supportsPallets and (fillType.isPalletType or (fillType.palletFilename ~= nil and fillType.palletFilename ~= "")) then
                         local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
                         local palletTitle = storeItem ~= nil and storeItem.name or g_i18n:getText("ui_gm_format_pallet")
                         table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = 1000, unitKey = "ui_gm_unit_pallet"})

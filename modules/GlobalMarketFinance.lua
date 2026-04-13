@@ -151,27 +151,55 @@ function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPal
         return isBuying and MoneyType.GM_BUY or MoneyType.GM_SELL
     end
 
-    -- 1. Explicit Overrides from the Storage Module
-    if isBale then
-        return isBuying and MoneyType.GM_BUY_BALE or MoneyType.GM_SELL_BALE
-    end
-    if isPallet then
-        return isBuying and MoneyType.GM_BUY_PIECE or MoneyType.GM_SELL_PIECE
+    local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
+    if fillType == nil then
+        -- Failsafe fallback
+        return isBuying and MoneyType.GM_BUY_BULK or MoneyType.GM_SELL_BULK
     end
 
-    -- 2. Clean Array-Check for Liquid Categories (Using the global table)
+    -- 1. Check for Liquids (Absolute Content Priority)
+    -- Liquids are always booked as liquids, regardless of being in a tank or an IBC pallet.
     local isLiquid = false
     for _, category in ipairs(GlobalMarketFinance.liquidCategories) do
         if g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, category) then
             isLiquid = true
-            break -- Found a match, stop looping to save performance
+            break
         end
     end
 
-    -- 3. Final Routing
     if isLiquid then
         return isBuying and MoneyType.GM_BUY_LIQUID or MoneyType.GM_SELL_LIQUID
-    else
-        return isBuying and MoneyType.GM_BUY_BULK or MoneyType.GM_SELL_BULK
     end
+
+    -- 2. User Explicit Choice: Bale
+    -- If the UI explicitly passed isBale=true (user selected a bale storage/format),
+    -- it overrides any native bulk flags (e.g., for Hay or Straw).
+    if isBale then
+        return isBuying and MoneyType.GM_BUY_BALE or MoneyType.GM_SELL_BALE
+    end
+
+    -- 3. User Explicit Choice: Pallet/Piece
+    -- If the UI explicitly passed isPallet=true, the user consciously bought/sold
+    -- a pallet (e.g., Wheat in a wooden box). It counts as a piece good.
+    if isPallet then
+        return isBuying and MoneyType.GM_BUY_PIECE or MoneyType.GM_SELL_PIECE
+    end
+
+    -- 4. Fallback for Silo Transactions (Native Engine Flags)
+    -- If neither bale nor pallet was selected, it's a standard bulk/silo transaction.
+    -- We check if the item is natively a piece good (like Wool or Saplings) just in case,
+    -- otherwise it defaults to Bulk.
+    local hasPalletXML = (fillType.palletFilename ~= nil and fillType.palletFilename ~= "")
+    local isPieceCategory = g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, "PIECE")
+
+    if fillType.isPalletType or isPieceCategory or (hasPalletXML and not fillType.isBulkType) then
+        return isBuying and MoneyType.GM_BUY_PIECE or MoneyType.GM_SELL_PIECE
+    end
+
+    if fillType.isBaleType then
+        return isBuying and MoneyType.GM_BUY_BALE or MoneyType.GM_SELL_BALE
+    end
+
+    -- Final Absolute Fallback (Standard Bulk)
+    return isBuying and MoneyType.GM_BUY_BULK or MoneyType.GM_SELL_BULK
 end

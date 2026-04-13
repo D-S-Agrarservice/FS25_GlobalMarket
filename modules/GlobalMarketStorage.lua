@@ -114,6 +114,13 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                         local canBeBale = fillType.isBaleType or false
                         local canBePallet = fillType.isPalletType or false
 
+                        -- NATIVE PALLET BRIDGE (FS25 WAY):
+                        -- Allow anything that has a valid pallet XML defined by the engine,
+                        -- including liquids (IBCs) and bulk (fillable pallets like wooden boxes).
+                        if fillType.palletFilename ~= nil and fillType.palletFilename ~= "" then
+                            canBePallet = true
+                        end
+
                         if not ((supportsBales and canBeBale) or (supportsPallets and canBePallet)) then
                             isValidForBuying = false
                         end

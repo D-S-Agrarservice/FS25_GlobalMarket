@@ -172,6 +172,8 @@ function GlobalMarket:loadMap(name)
             g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
         end
     end
+
+    self:dumpFillTypeData()
 end
 
 -- Used by the UI to check if the external EXE is currently connected
@@ -346,6 +348,55 @@ local function registerGlobalPlayerActionEvents(playerInputComponent, contextNam
     end
 end
 PlayerInputComponent.registerGlobalPlayerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerGlobalPlayerActionEvents, registerGlobalPlayerActionEvents)
+
+-- =========================================================================
+-- TEMPORARY DEBUG: FillType & Manager Dump (ALL FillTypes)
+-- =========================================================================
+function GlobalMarket:dumpFillTypeData()
+    if g_fillTypeManager == nil or g_fillTypeManager.fillTypes == nil then
+        print("[GM Debug] WARNING: g_fillTypeManager is not available yet!")
+        return
+    end
+
+    print("==============================================================")
+    print("[GM Debug] INITIATING MASSIVE FILLTYPE DUMP")
+    print("==============================================================")
+
+    for _, fillType in pairs(g_fillTypeManager.fillTypes) do
+        if fillType ~= nil and fillType.name ~= nil then
+            print("--------------------------------------------------------------")
+            print("[GM Debug] DUMPING FILLTYPE FROM MANAGER: " .. tostring(fillType.name))
+            print("--------------------------------------------------------------")
+
+            -- Dump the fillType table directly (depth 3 to prevent infinite loops)
+            DebugUtil.printTableRecursively(fillType, "--> ", 0, 3)
+
+            -- Check the BaleManager for references to this fillType
+            if g_baleManager ~= nil then
+                print("--------------------------------------------------------------")
+                print("[GM Debug] BALE MANAGER DATA FOR: " .. tostring(fillType.name))
+                print("--------------------------------------------------------------")
+
+                -- Check if the basic support boolean function exists and returns true
+                if g_baleManager.getIsFillTypeSupported ~= nil then
+                    local isSupported = g_baleManager:getIsFillTypeSupported(fillType.index)
+                    print("--> getIsFillTypeSupported: " .. tostring(isSupported))
+                end
+
+                -- Dump the specific registered bale array for this fillType if it exists
+                if g_baleManager.fillTypes ~= nil and g_baleManager.fillTypes[fillType.index] ~= nil then
+                    print("--> Registered Bales for this FillType:")
+                    DebugUtil.printTableRecursively(g_baleManager.fillTypes[fillType.index], "----> ", 0, 3)
+                else
+                    print("--> No specific bale arrays found in g_baleManager.fillTypes for this index.")
+                end
+            end
+        end
+    end
+    print("==============================================================")
+    print("[GM Debug] MASSIVE FILLTYPE DUMP COMPLETE!")
+    print("==============================================================")
+end
 
 -- Register the mod with the engine
 addModEventListener(GlobalMarket)
