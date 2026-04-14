@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="107">
     <author>D-S-Agrarservice[Floowy]</author>
-    <version>1.0.0.0</version>
+    <version>0.9.6.27</version>
     <title>
         <en>GlobalMarket</en>
         <de>Globaler Markt</de>
@@ -35,7 +35,6 @@ Wird die EXE-Datei nicht ausgeführt, wirt der (Offline-)GlobalMarket simuliert.
 Die Preise im globalen Markt werden anhand des Füllstandes dynamisch berechnet. Ist viel Ware vorhanden, ist der Preis gering. Ist dagegen nichts vorhanden, ist der Preis hoch.
 
 Wichtige Hinweise:
-- Im offline Markt gibt es aktuell keine Paletten und Ballen
 - Es können keine Ballen gekauft/verkauft werden, die im Moment siliert werden]]></de>
         <es><![CDATA[¡Comercia con otros jugadores!
 
