@@ -77,6 +77,9 @@ end
 -- MODULE INJECTIONS
 -- =========================================================================
 
+-- Load the central API first so it is available to all other modules
+source(GlobalMarket.dir .. "modules/GlobalMarketAPI.lua")
+
 if GlobalMarket.config.useUI then
     source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
     source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
@@ -133,17 +136,23 @@ function GlobalMarket:loadMap(name)
     -- =========================================================
     -- CORE MODULES (Always load, regardless of Offline or Sync)
     -- =========================================================
-    -- 1. Load settings first so states are available!
+
+    -- 1. Initialize the Central API (Single Source of Truth)
+    if GlobalMarketAPI ~= nil and GlobalMarketAPI.init ~= nil then
+        GlobalMarketAPI.init()
+    end
+
+    -- 2. Load settings first so states are available!
     if GlobalMarketSettings ~= nil and GlobalMarketSettings.loadFromXML ~= nil then
         GlobalMarketSettings:loadFromXML()
     end
 
-    -- 2. Initialize Finance system with loaded settings
+    -- 3. Initialize Finance system with loaded settings
     if GlobalMarketFinance ~= nil then
         GlobalMarketFinance.init()
     end
 
-    -- Initialize Access & Permission Hooks
+    -- 4. Initialize Access & Permission Hooks
     if GlobalMarketAccess ~= nil and GlobalMarketAccess.init ~= nil then
         GlobalMarketAccess.init()
     end
@@ -368,8 +377,8 @@ function GlobalMarket:dumpFillTypeData()
             print("[GM Debug] DUMPING FILLTYPE FROM MANAGER: " .. tostring(fillType.name))
             print("--------------------------------------------------------------")
 
-            -- Dump the fillType table directly (depth 3 to prevent infinite loops)
-            DebugUtil.printTableRecursively(fillType, "--> ", 0, 3)
+            -- Dump the fillType table directly (depth 5 to prevent infinite loops)
+            DebugUtil.printTableRecursively(fillType, "--> ", 0, 5)
 
             -- Check the BaleManager for references to this fillType
             if g_baleManager ~= nil then
@@ -386,7 +395,7 @@ function GlobalMarket:dumpFillTypeData()
                 -- Dump the specific registered bale array for this fillType if it exists
                 if g_baleManager.fillTypes ~= nil and g_baleManager.fillTypes[fillType.index] ~= nil then
                     print("--> Registered Bales for this FillType:")
-                    DebugUtil.printTableRecursively(g_baleManager.fillTypes[fillType.index], "----> ", 0, 3)
+                    DebugUtil.printTableRecursively(g_baleManager.fillTypes[fillType.index], "----> ", 0, 5)
                 else
                     print("--> No specific bale arrays found in g_baleManager.fillTypes for this index.")
                 end
