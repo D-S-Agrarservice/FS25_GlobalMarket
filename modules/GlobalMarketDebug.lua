@@ -14,21 +14,21 @@ GlobalMarketDebug.DEEP_LOG_DURATION = 60 * 60 * 1000 -- 1 hour in milliseconds
 
 function GlobalMarketDebug.new(modName, baseDir)
     local self = setmetatable({}, GlobalMarketDebug_mt)
-    
+
     self.modName = modName
     self.baseDir = baseDir
     self.logDir = getUserProfileAppPath() .. "modSettings/" .. modName .. "/logs/"
-    
+
     self.isActive = true
     self.deepLogActive = false
     self.deepLogEndTime = 0
     self.currentLogFile = nil
     self.currentLogIndex = 1
-    
+
     self:initLogDirectory()
     self:rotateLogs()
     self:openNewLogFile()
-    
+
     return self
 end
 
@@ -43,7 +43,7 @@ function GlobalMarketDebug:rotateLogs()
     if fileExists(indexPath) then
         local xmlFile = XMLFile.load("LogIndexXML", indexPath)
         if xmlFile ~= nil then
-            lastIndex = xmlFile:getInt("logIndex#value", 0) 
+            lastIndex = xmlFile:getInt("logIndex#value", 0)
             xmlFile:delete()
         end
     end
@@ -64,7 +64,7 @@ end
 function GlobalMarketDebug:openNewLogFile()
     local filePath = self.logDir .. "gm_dump_" .. self.currentLogIndex .. ".txt"
     self.currentLogFile = io.open(filePath, "w")
-    
+
     if self.currentLogFile then
         self.currentLogFile:write(string.format("=== %s Debug Log (File %d) ===\n", self.modName, self.currentLogIndex))
         self.currentLogFile:write(string.format("Started: %s\n\n", getDate("%Y-%m-%d %H:%M:%S")))
@@ -78,7 +78,7 @@ function GlobalMarketDebug:enableDeepLogging(durationHours)
     local hours = durationHours or 1
     self.deepLogActive = true
     self.deepLogEndTime = g_currentMission.environment.dayTime + (hours * 60 * 60 * 1000)
-    
+
     self:info("Deep logging activated for %d hour(s).", hours)
 end
 
@@ -118,7 +118,7 @@ local function dumpTableSafe(tbl, indent, depth, visited)
 
     visited[tbl] = true
     local out = ""
-    
+
     for k, v in pairs(tbl) do
         local keyStr = tostring(k)
         if type(v) == "table" then
@@ -150,7 +150,7 @@ end
 function GlobalMarketDebug:error(text, ...)
     if not self.isActive then return end
     print(string.format("[%s - ERROR]: %s", self.modName, formatMessage(text, ...)))
-    print(debug.traceback("", 2)) 
+    print(debug.traceback("", 2))
 end
 
 -- TEXT ONLY Deep Logs
