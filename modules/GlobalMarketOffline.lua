@@ -14,10 +14,12 @@ function GlobalMarket:initOfflineMarket()
 
     if g_fillTypeManager ~= nil and g_fillTypeManager.fillTypes ~= nil then
         for _, fillType in pairs(g_fillTypeManager.fillTypes) do
-            -- Only add tradeable goods that appear in the price table
-            if fillType.showOnPriceTable then
-                -- Starting stock: Random between 50k and 250k Liters
-                local startLevel = math.random(5, 25) * 10000
+
+            -- Ask the API if this fillType is allowed on the market (handles Whitelist/Blacklist/Engine-Flags)
+            if GlobalMarketAPI.getIsFillTypeAllowed(fillType) then
+
+                -- Starting stock: Random between 0 and 750k Liters
+                local startLevel = math.random(0, 75) * 10000
 
                 table.insert(self.offlineMarketFillTypes, {
                     fillType = fillType.name,
