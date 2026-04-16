@@ -40,7 +40,7 @@
             <GuiElement position="0px 660px" size="650px 40px">
                 <Text profile="globalMarketHeader" position="10px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
                 <Text profile="globalMarketHeaderRight" position="220px 10px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
-                <Text profile="globalMarketHeader" position="390px 10px" size="40px 24px" text="$l10n_ui_gm_trend" />
+                <Text profile="globalMarketHeader" position="390px 10px" size="140px 24px" text="$l10n_ui_gm_trend" />
                 <Text profile="globalMarketHeaderRight" position="440px 10px" size="180px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
