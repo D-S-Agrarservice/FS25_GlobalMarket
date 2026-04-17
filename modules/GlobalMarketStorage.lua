@@ -381,7 +381,9 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         end
     else
         -- CLIENT SEND EVENT (Bulk)
-        if GlobalMarket.config.useSync and SellBuyOfflineMarketEvent ~= nil then
+        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP 
+        -- even if the external sync tool is disabled or currently unavailable.
+        if SellBuyOfflineMarketEvent ~= nil then
             g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, level, targetStorage, 0, false, playerFarmId))
         end
     end
@@ -675,8 +677,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
     else
-        -- CLIENT SEND EVENT
-        if GlobalMarket.config.useSync and SellBuyOfflineMarketEvent ~= nil then
+        -- CLIENT SEND EVENT (Objects)
+        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP 
+        -- even if the external sync tool is disabled or currently unavailable.
+        if SellBuyOfflineMarketEvent ~= nil then
             g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceable, requestedLiters, true, playerFarmId, formatXml, capacityPerObject))
         end
     end
