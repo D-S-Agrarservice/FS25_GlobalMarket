@@ -91,15 +91,17 @@ function GlobalMarketAccess.init()
     -- Ensures clients know the owner of stored objects for UI filtering
     -- =========================================================================
 
-    -- Bale Stream Hook Write
+    -- Bale Stream Hook Write (Object Method: obj:writeStream)
     local function baleWriteStreamHook(self, superFunc, streamId, connection)
         superFunc(self, streamId, connection)
         local farmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId) or (self.baleAttributes ~= nil and self.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
         streamWriteUIntN(streamId, farmId, FarmManager.FARM_ID_SEND_NUM_BITS)
     end
 
-    -- Bale Stream Hook Read (Note: This is a static constructor in FS)
-    local function baleReadStreamHook(superFunc, streamId, connection)
+    -- Bale Stream Hook Read (Static Constructor: Class.readStream)
+    -- FIX: For static functions, Utils.overwrittenFunction passes the first original argument (streamId)
+    -- before the superFunc. Signature adjusted to (streamId, superFunc, connection).
+    local function baleReadStreamHook(streamId, superFunc, connection)
         local self = superFunc(streamId, connection)
         self.baleAttributes.farmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS)
         return self
@@ -114,15 +116,16 @@ function GlobalMarketAccess.init()
         AbstractPackedBaleObject.readStream = Utils.overwrittenFunction(AbstractPackedBaleObject.readStream, baleReadStreamHook)
     end
 
-    -- Pallet Stream Hook Write
+    -- Pallet Stream Hook Write (Object Method: obj:writeStream)
     local function palletWriteStreamHook(self, superFunc, streamId, connection)
         superFunc(self, streamId, connection)
         local farmId = self.palletAttributes ~= nil and self.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
         streamWriteUIntN(streamId, farmId, FarmManager.FARM_ID_SEND_NUM_BITS)
     end
 
-    -- Pallet Stream Hook Read
-    local function palletReadStreamHook(superFunc, streamId, connection)
+    -- Pallet Stream Hook Read (Static Constructor: Class.readStream)
+    -- FIX: Same static signature adjustment as baleReadStreamHook.
+    local function palletReadStreamHook(streamId, superFunc, connection)
         local self = superFunc(streamId, connection)
         if self.palletAttributes ~= nil then
             self.palletAttributes.ownerFarmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS)
