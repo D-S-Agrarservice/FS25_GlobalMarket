@@ -36,7 +36,7 @@ end
 function SellBuyMarketGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.action)
     streamWriteInt32(streamId, self.price)
-    streamWriteInt8(streamId, self.playerFarmId)
+    streamWriteInt16(streamId, self.playerFarmId) -- FIX: Datatype matched to Int16
     streamWriteInt32(streamId, self.count)
     streamWriteString(streamId, self.attributes)
     NetworkUtil.writeNodeObject(streamId, self.storage)
@@ -47,7 +47,7 @@ end
 function SellBuyMarketGlobalMarketEvent:readStream(streamId, connection)
     self.action = streamReadInt8(streamId)
     self.price = streamReadInt32(streamId)
-    self.playerFarmId = streamReadInt8(streamId)
+    self.playerFarmId = streamReadInt16(streamId) -- FIX: Datatype matched to Int16
     self.count = streamReadInt32(streamId)
     self.attributes = streamReadString(streamId)
     self.storage = NetworkUtil.readNodeObject(streamId)
@@ -80,7 +80,8 @@ function SellBuyMarketGlobalMarketEvent:run(connection)
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:debug("Network (Server): Transaction processed. Broadcasting update to all clients.")
             end
-            g_server:broadcastEvent(SellBuyMarketGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId), nil, connection)
+            -- FIX: Removed connection exclusion in broadcast so the sender also gets unlocked
+            g_server:broadcastEvent(SellBuyMarketGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId))
         else
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:error("Network (Server): Transaction aborted. g_currentMission.globalMarket is nil!")

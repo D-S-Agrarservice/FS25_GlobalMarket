@@ -74,7 +74,8 @@ end
 -- Executes the core synchronization logic based on network authority
 function SynchOfflineMarketEvent:run(connection)
     -- If we are on the client, apply the read data to the local instance and refresh the UI
-    if not connection:getIsServer() then
+    -- FIX: Removed 'not'. For a Server-to-Client event, getIsServer() returns true on the client.
+    if connection:getIsServer() then
         if g_currentMission.globalMarket ~= nil then
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:debug("Network (Client): Received offline market sync. Updating local data.")

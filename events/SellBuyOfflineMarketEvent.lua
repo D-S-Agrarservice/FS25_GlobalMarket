@@ -21,7 +21,6 @@ function SellBuyOfflineMarketEvent.new(mode, filltypeName, level, storageObject,
     self.mode = mode
     self.filltypeName = filltypeName
     self.level = math.floor(level)
-    self.storageObject = storageObject
     self.count = count
     self.isObjectStorage = isObjectStorage or false
     self.playerFarmId = playerFarmId
@@ -29,6 +28,31 @@ function SellBuyOfflineMarketEvent.new(mode, filltypeName, level, storageObject,
     -- NEW parameters with safe fallbacks for bulk network transmission
     self.formatXml = formatXml or ""
     self.capacityPerObject = capacityPerObject or 0
+
+    -- FIX: Safe Network Node resolution to prevent transmitting raw Lua tables
+    self.targetPlaceable = nil
+    self.storageIndex = 1
+
+    if storageObject ~= nil then
+        if self.isObjectStorage then
+            self.targetPlaceable = storageObject
+        else
+            if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
+                for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+                    if placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
+                        for i, s in ipairs(placeable.spec_silo.storages) do
+                            if s == storageObject then
+                                self.targetPlaceable = placeable
+                                self.storageIndex = i
+                                break
+                            end
+                        end
+                    end
+                    if self.targetPlaceable ~= nil then break end
+                end
+            end
+        end
+    end
 
     return self
 end
@@ -38,7 +62,11 @@ function SellBuyOfflineMarketEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.mode)
     streamWriteString(streamId, self.filltypeName)
     streamWriteInt32(streamId, self.level)
-    NetworkUtil.writeNodeObject(streamId, self.storageObject)
+
+    -- FIX: Send the resolved Network Node and Index instead of the raw storage object
+    NetworkUtil.writeNodeObject(streamId, self.targetPlaceable)
+    streamWriteInt8(streamId, self.storageIndex)
+
     streamWriteInt32(streamId, self.count)
     streamWriteBool(streamId, self.isObjectStorage)
     streamWriteInt16(streamId, self.playerFarmId)
@@ -53,7 +81,11 @@ function SellBuyOfflineMarketEvent:readStream(streamId, connection)
     self.mode = streamReadInt8(streamId)
     self.filltypeName = streamReadString(streamId)
     self.level = streamReadInt32(streamId)
-    self.storageObject = NetworkUtil.readNodeObject(streamId)
+
+    -- FIX: Read the Network Node and Index
+    self.targetPlaceable = NetworkUtil.readNodeObject(streamId)
+    self.storageIndex = streamReadInt8(streamId)
+
     self.count = streamReadInt32(streamId)
     self.isObjectStorage = streamReadBool(streamId)
     self.playerFarmId = streamReadInt16(streamId)
@@ -61,6 +93,18 @@ function SellBuyOfflineMarketEvent:readStream(streamId, connection)
     -- NEW parameters read from the stream
     self.formatXml = streamReadString(streamId)
     self.capacityPerObject = streamReadInt32(streamId)
+
+    -- FIX: Reconstruct the original storageObject for backend compatibility
+    self.storageObject = nil
+    if self.targetPlaceable ~= nil then
+        if self.isObjectStorage then
+            self.storageObject = self.targetPlaceable
+        else
+            if self.targetPlaceable.spec_silo ~= nil and self.targetPlaceable.spec_silo.storages ~= nil then
+                self.storageObject = self.targetPlaceable.spec_silo.storages[self.storageIndex]
+            end
+        end
+    end
 
     self:run(connection)
 end
