@@ -7,13 +7,8 @@ GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
 
--- Feature toggles (Restart required if changed)
-GlobalMarket.config = {
-    useUI      = true,
-    useEconomy = true,
-    useStorage = true,
-    useSync    = false
-}
+-- REMOVED: Feature toggles (GlobalMarket.config) have been removed to enable seamless
+-- "Plug & Play" functionality for both offline simulation and online sync.
 
 -- Static delivery costs for logistics calculation
 GlobalMarket.DELIVER_COST = 50
@@ -76,40 +71,37 @@ end
 -- =========================================================================
 -- MODULE INJECTIONS
 -- =========================================================================
+-- ALL modules are now loaded unconditionally to ensure maximum stability.
 
 -- Load the central API first so it is available to all other modules
 source(GlobalMarket.dir .. "modules/GlobalMarketAPI.lua")
 
-if GlobalMarket.config.useUI then
-    source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
-    source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
-end
+-- UI Modules
+source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 
-if GlobalMarket.config.useEconomy then
-    source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
-    -- Savegame module must be loaded here to ensure offline data is saved/loaded!
-    source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
-    source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
-    source(GlobalMarket.dir .. "modules/GlobalMarketFinance.lua")
-end
+-- Economy & Savegame Modules
+source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketFinance.lua")
 
-if GlobalMarket.config.useStorage then
-    source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
-    -- Load Access Module to inject terminal permissions
-    source(GlobalMarket.dir .. "modules/GlobalMarketAccess.lua")
-end
+-- Storage & Access Modules
+source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
 
--- Events must be loaded unconditionally to ensure MP compatibility and internal transactions work
+-- Load Access Module to inject terminal permissions
+source(GlobalMarket.dir .. "modules/GlobalMarketAccess.lua")
+
+-- Events
 source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
 
--- Only load the external .exe sync module if the config allows it
-if GlobalMarket.config.useSync then
-    source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
-end
+-- External Sync Module
+source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
+
 
 -- =========================================================================
 -- ENGINE HOOKS & LIFECYCLE
@@ -134,7 +126,7 @@ function GlobalMarket:loadMap(name)
     end
 
     -- =========================================================
-    -- CORE MODULES (Always load, regardless of Offline or Sync)
+    -- CORE MODULES
     -- =========================================================
 
     -- 1. Initialize the Central API (Single Source of Truth)
@@ -160,7 +152,7 @@ function GlobalMarket:loadMap(name)
     -- =========================================================
     -- OFFLINE MARKET (Local simulation logic)
     -- =========================================================
-    if GlobalMarket.config.useEconomy and self.initOfflineMarket ~= nil then
+    if self.initOfflineMarket ~= nil then
         self:initOfflineMarket()
 
         -- Subscribe to hourly simulation
@@ -174,12 +166,8 @@ function GlobalMarket:loadMap(name)
     -- =========================================================
     -- ONLINE MARKET (External sync via .exe)
     -- =========================================================
-    if GlobalMarket.config.useSync and self.initSync ~= nil then
+    if self.initSync ~= nil then
         self:initSync()
-        -- Request initial data if the current instance is a client
-        if g_client ~= nil and not g_currentMission:getIsServer() and InitOfflineMarketEvent ~= nil then
-            g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
-        end
     end
 
     -- self:dumpFillTypeData()
@@ -197,7 +185,7 @@ function GlobalMarket:update(dt)
         self.debugManager:update(dt)
     end
 
-    if GlobalMarket.config.useSync and self.runSyncUpdateLogic ~= nil then
+    if self.runSyncUpdateLogic ~= nil then
         self:runSyncUpdateLogic(dt)
     end
 end
@@ -205,7 +193,7 @@ end
 -- Triggered right after the map finishes loading, before the player can move.
 -- Used to safely inject our custom UI into the native Game Menu without crashes.
 local function onFinishedLoading(mission)
-    if GlobalMarket.config.useUI and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
         if GlobalMarketUI ~= nil then
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:info("Injecting GlobalMarket UI into native game menu...")
@@ -230,6 +218,18 @@ local function onFinishedLoading(mission)
                 GlobalMarket.debugManager:error("UI Injection failed! GlobalMarketUI class is nil.")
             end
         end
+    end
+
+    -- =========================================================
+    -- INITIAL NETWORK SYNC (Dedicated Server Fix)
+    -- =========================================================
+    -- Request initial offline market data from the server AFTER the UI is fully built.
+    -- This prevents the 100% loading screen freeze caused by premature UI updates.
+    if g_client ~= nil and not g_currentMission:getIsServer() and InitOfflineMarketEvent ~= nil then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("Network (Client): Game fully loaded. Requesting initial market sync from server.")
+        end
+        g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
     end
 end
 FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, onFinishedLoading)
@@ -317,7 +317,7 @@ end
 
 -- Triggered via the custom input binding to open/close the market
 function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAnalog, isMouse, deviceCategory, binding)
-    if inputValue > 0 and GlobalMarket.config.useUI then
+    if inputValue > 0 then
         if GlobalMarket.debugManager ~= nil then
             GlobalMarket.debugManager:trace("Hotkey pressed: Toggling GlobalMarket Menu.")
         end
@@ -335,7 +335,7 @@ function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAn
 end
 
 local function registerGlobalPlayerActionEvents(playerInputComponent, contextName)
-    if GlobalMarket.config.useUI and playerInputComponent.player ~= nil and playerInputComponent.player.isOwner then
+    if playerInputComponent.player ~= nil and playerInputComponent.player.isOwner then
         local currentContextName = g_inputBinding:getContextName()
         local newContextName = contextName or currentContextName
 
