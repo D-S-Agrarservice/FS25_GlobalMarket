@@ -88,7 +88,7 @@ function SellBuySiloGlobalMarketEvent:readStream(streamId, connection)
         self.storage = self.targetPlaceable.spec_silo.storages[self.storageIndex]
     end
 
-    self:run(connection)
+   -- self:run(connection)
 end
 
 -- Executes the core event logic based on network authority (Server vs. Client)
