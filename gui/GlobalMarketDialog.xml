@@ -106,6 +106,7 @@
             <width value="580px" />
             <position value="0px -330px" />
             <textAlignment value="center" />
+            <textWrap value="true" />
         </Profile>
     </GUIProfiles>
 </GUI>
