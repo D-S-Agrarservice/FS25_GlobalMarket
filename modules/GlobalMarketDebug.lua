@@ -156,7 +156,7 @@ end
 function GlobalMarketDebug:error(text, ...)
     if not self.isActive then return end
     print(string.format("[%s - ERROR]: %s", self.modName, formatMessage(text, ...)))
-    print(debug.traceback("", 2))
+    printCallstack()
 end
 
 -- TEXT ONLY Deep Logs
