@@ -77,14 +77,20 @@ end
 function GlobalMarketDebug:enableDeepLogging(durationHours)
     local hours = durationHours or 1
     self.deepLogActive = true
-    self.deepLogEndTime = g_currentMission.environment.dayTime + (hours * 60 * 60 * 1000)
 
-    self:info("Deep logging activated for %d hour(s).", hours)
+    -- FIX: Use a simple real-world countdown timer in milliseconds
+    -- instead of the easily breakable in-game dayTime.
+    self.deepLogTimerLeft = hours * 60 * 60 * 1000
+
+    self:info("Deep logging activated for %d hour(s) real-time.", hours)
 end
 
 function GlobalMarketDebug:update(dt)
-    if self.deepLogActive and g_currentMission and g_currentMission.environment then
-        if g_currentMission.environment.dayTime > self.deepLogEndTime then
+    if self.deepLogActive then
+        -- Subtract the real-world milliseconds passed since the last frame
+        self.deepLogTimerLeft = self.deepLogTimerLeft - dt
+
+        if self.deepLogTimerLeft <= 0 then
             self.deepLogActive = false
             self:warning("Deep logging duration expired. Reverting to standard INFO level.")
             if self.currentLogFile then
