@@ -99,7 +99,7 @@ function GlobalMarket:runOfflineSimulation()
     self:updateOfflinePrices()
 
     -- Sync new offline state to clients
-    if g_server ~= nil then
+    if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
         g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         if self.debugManager ~= nil then
             self.debugManager:debug("Offline market simulation finished and synced to clients.")
