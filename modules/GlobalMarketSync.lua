@@ -20,7 +20,7 @@ function GlobalMarket:initSync()
 
     self.needExeVersion = 1
 
-    local settingsPath = getUserProfileAppPath() .. "modSettings/FS25_GlobalMarket/"
+    local settingsPath = getUserProfileAppPath() .. "modSettings/" .. GlobalMarket.modName .. "/"
     self.isOnlineFile = getUserProfileAppPath() .. "globalMarketOnline.xml"
     self.readFolder = settingsPath .. "read/"
     self.writeFolder = settingsPath .. "write/"
@@ -117,19 +117,30 @@ end
 
 -- Parses the incoming XML data from the EXE into the local Lua table
 function GlobalMarket:parseMarketData(xmlFile)
-    self.fillTypes = {}
+    local updatedCount = 0
+
     xmlFile:iterate("gmDataSync.fillTypes.fillType", function (_, baseKey)
-        table.insert(self.fillTypes, {
-            fillType = xmlFile:getString(baseKey .. "#fillType"),
-            fillLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0,
-            price = xmlFile:getFloat(baseKey .. "#price") or 0,
-            isSilo = xmlFile:getBool(baseKey .. "#isSilo") or false,
-            isObject = xmlFile:getBool(baseKey .. "#isObject") or false,
-        })
+        local incomingFillTypeName = xmlFile:getString(baseKey .. "#fillType")
+        local incomingFillLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0
+        local incomingPrice = xmlFile:getFloat(baseKey .. "#price") or 0
+
+        -- Find the existing entry in our single-source-of-truth table and update it
+        if self.offlineMarketFillTypes ~= nil then
+            for _, ft in pairs(self.offlineMarketFillTypes) do
+                if ft.fillType == incomingFillTypeName then
+                    ft.fillLevel = incomingFillLevel
+                    ft.price = incomingPrice
+                    -- ft.isSilo = isSilo 
+                    -- ft.isObject = isObject
+                    updatedCount = updatedCount + 1
+                    break
+                end
+            end
+        end
     end)
 
     if self.debugManager ~= nil then
-        self.debugManager:debug("Sync: Successfully parsed market data. Found %d items.", #self.fillTypes)
-        self.debugManager:traceTable("Sync: Dump of updated online market data", self.fillTypes)
+        self.debugManager:debug("Sync: Successfully merged online market data. Updated %d items.", updatedCount)
+        self.debugManager:traceTable("Sync: Dump of merged market data", self.offlineMarketFillTypes)
     end
 end
