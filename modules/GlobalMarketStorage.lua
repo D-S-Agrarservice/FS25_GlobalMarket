@@ -376,15 +376,15 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         end
 
         if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
-        if GlobalMarket.config.useSync and SynchOfflineMarketEvent ~= nil then
+        if SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
     else
         -- CLIENT SEND EVENT (Bulk)
-        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP 
+        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP
         -- even if the external sync tool is disabled or currently unavailable.
         if SellBuyOfflineMarketEvent ~= nil then
-            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, level, targetStorage, 0, false, playerFarmId))
+            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, level, targetStorageObj, 0, false, playerFarmId))
         end
     end
 end
@@ -673,15 +673,15 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         end
 
         if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
-        if GlobalMarket.config.useSync and SynchOfflineMarketEvent ~= nil then
+        if SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
     else
         -- CLIENT SEND EVENT (Objects)
-        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP 
+        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP
         -- even if the external sync tool is disabled or currently unavailable.
         if SellBuyOfflineMarketEvent ~= nil then
-            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceable, requestedLiters, true, playerFarmId, formatXml, capacityPerObject))
+            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceableObj, requestedLiters, true, playerFarmId, formatXml, capacityPerObject))
         end
     end
 end
