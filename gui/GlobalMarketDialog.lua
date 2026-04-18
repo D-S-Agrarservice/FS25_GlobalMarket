@@ -7,6 +7,9 @@
 GlobalMarketDialog = {}
 local GlobalMarketDialog_mt = Class(GlobalMarketDialog, YesNoDialog)
 
+-- SAFETY CAP: Maximum physical objects per transaction to prevent engine crashes
+GlobalMarketDialog.MAX_OBJECTS_PER_TX = 50
+
 function GlobalMarketDialog.new(target, custom_mt)
     local self = YesNoDialog.new(target, custom_mt or GlobalMarketDialog_mt)
 
@@ -37,8 +40,8 @@ function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle
         GlobalMarket.debugManager:trace("Dialog opened: %s %s (Price: %.2f). Available Storages: %d", actionType, tostring(fillTypeName), price, #self.storageLocations)
     end
 
-    -- Hijack block removed. We completely rely on the custom GM dialog
-    -- to handle both bulk and object storages seamlessly via liter inputs.
+    -- We completely rely on the custom GM dialog to handle both bulk
+    -- and object storages seamlessly via liter/piece inputs.
     g_gui:showDialog("GlobalMarketDialog")
 end
 
@@ -71,10 +74,8 @@ end
 -- Callback receiver for the native Giants Dialog
 function GlobalMarketDialog:onNativeObjectStorageCallback(selectedInfoIndex, amount)
     if selectedInfoIndex ~= nil and amount ~= nil and amount > 0 then
-        -- Native dialog returns amount of objects. We need to calculate the total liters for the backend.
-        -- Note: This is a simplified calculation, assuming standard capacities per object.
+        -- Native dialog returns amount of objects. Total liters must be calculated by the backend.
         if self.callbackFunc ~= nil then
-            -- We pass the count as "amount" and the backend must handle it if storage.isObjectStorage is true
             self.callbackFunc(self.target, amount, self.storageLocations[1].id, self.actionType, self.fillTypeName)
         end
     end
@@ -97,7 +98,7 @@ function GlobalMarketDialog:onOpen()
     local titlePrefix = self.actionType == "SELL" and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderStorage") .. ": ") or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderMarket") .. ": ")
     self.dialogTitleElement:setText(titlePrefix .. tostring(self.fillTypeTitle))
 
-    local actionText = self.actionType == "SELL" and (g_i18n:getText("ui_btn_sell") or "SELL") or (g_i18n:getText("ui_btn_buy") or "BUY")
+    local actionText = self.actionType == "SELL" and g_i18n:getText("ui_btn_sell") or g_i18n:getText("ui_btn_buy")
     if self.yesButton ~= nil then
         self.yesButton:setText(actionText)
     end
@@ -167,7 +168,7 @@ function GlobalMarketDialog:onClickStorage(state)
                             end
                         end
                     -- NATIVE PALLET BRIDGE (FS25 WAY):
-                    -- Bypass strict isPalletType check. If a palletFilename exists, 
+                    -- Bypass strict isPalletType check. If a palletFilename exists,
                     -- the UI must offer it as a valid purchase format.
                     elseif selectedSilo.supportsPallets and (fillType.isPalletType or (fillType.palletFilename ~= nil and fillType.palletFilename ~= "")) then
                         local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
@@ -201,7 +202,7 @@ function GlobalMarketDialog:onClickStorage(state)
                             -- Only count non-fermenting objects of the selected fillType
                             if objFillType == fillType.index and objXml ~= nil and not isFermenting then
                                 if formatTracker[objXml] == nil then
-                                    local title = "Object"
+                                    local title = g_i18n:getText("ui_gm_unit_piece")
                                     local unitKey = "ui_gm_unit_piece"
 
                                     if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
@@ -221,7 +222,7 @@ function GlobalMarketDialog:onClickStorage(state)
                                         xml = objXml,
                                         capacity = objCapacity,
                                         unitKey = unitKey,
-                                        actualCount = objectInfo.numObjects -- Store the physical count directly from engine
+                                        actualCount = objectInfo.numObjects -- Store physical count
                                     }
                                 else
                                     -- Add up amounts if there are multiple stacks of the exact same XML format
@@ -288,8 +289,6 @@ function GlobalMarketDialog:onClickFormat(state)
             else
                 -- BUYING: Maximum is determined by free slots and market stock
                 local spec = selectedSilo.storage.spec_objectStorage
-
-                -- Safely get capacity with Giants default fallback of 250 if not defined in XML
                 local maxCapacity = spec.capacity or 250
                 local numStored = spec.numStoredObjects or 0
                 local freeSlots = math.max(0, maxCapacity - numStored)
@@ -308,26 +307,18 @@ function GlobalMarketDialog:onClickFormat(state)
                 end
 
                 local maxPiecesFromMarket = math.floor(marketStock / self.currentCountFactor)
-
-                -- The absolute maximum pieces is the lower of the two limits
                 maxPieces = math.min(freeSlots, maxPiecesFromMarket)
             end
         end
 
-        -- Store the calculated max pieces so onAmountChanged can use it
         self.currentMaxPieces = maxPieces
 
         if GlobalMarket.debugManager ~= nil then
             GlobalMarket.debugManager:debug("Dialog: Format selected '%s' (Capacity: %d, MaxPieces: %d)", selectedFormat.title, self.currentCountFactor, self.currentMaxPieces)
         end
 
-        -- Update info text using translation system with a safe fallback
-        local l10nString = g_i18n:getText("ui_gm_format_info")
-        if l10nString == nil or l10nString == "ui_gm_format_info" then
-            l10nString = "Format: %s | Max: %d | 1 = %d L"
-        end
-
-        local infoText = string.format(l10nString, selectedFormat.title, self.currentMaxPieces, self.currentCountFactor)
+        -- Update info text using strict translation system
+        local infoText = string.format(g_i18n:getText("ui_gm_format_info"), selectedFormat.title, self.currentMaxPieces, self.currentCountFactor)
         self.dialogInfoTextElement:setText(infoText)
 
         -- Reset input field and trigger calculation
@@ -345,6 +336,11 @@ function GlobalMarketDialog:onClickMaxAmount()
     -- If we are in object mode, default fillAmount is the max pieces
     if self.currentCountFactor > 1 and self.currentMaxPieces ~= nil then
         fillAmount = self.currentMaxPieces
+
+        -- SAFETY CAP: Prevent Engine Crash / Spawn Lag
+        if fillAmount > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
+            fillAmount = GlobalMarketDialog.MAX_OBJECTS_PER_TX
+        end
     end
 
     if self.actionType == "BUY" then
@@ -353,18 +349,16 @@ function GlobalMarketDialog:onClickMaxAmount()
         if currentMoney <= 0 then
             fillAmount = 0
         elseif self.pricePer1000 > 0 then
-            -- Safely calculate how many liters we can afford to prevent division by zero
+            -- Safely calculate how many liters we can afford
             local maxAffordableLiters = (currentMoney / self.pricePer1000) * 1000
 
             if self.currentCountFactor > 1 then
-                -- Convert affordable liters to pieces
                 local maxAffordablePieces = math.floor(maxAffordableLiters / self.currentCountFactor)
                 fillAmount = math.min(fillAmount, maxAffordablePieces)
             else
                 fillAmount = math.min(fillAmount, maxAffordableLiters)
             end
         end
-        -- If price is exactly 0, we do not restrict the fillAmount by money
     end
 
     -- Update the input field and trigger the calculation logic
@@ -379,12 +373,16 @@ function GlobalMarketDialog:onAmountChanged()
     local text = self.amountInput:getText()
     local amount = tonumber(text) or 0
 
-    -- Cap the input to the maximum allowed value (Default is maxAmount for Bulk)
     local effectiveMax = self.maxAmount
 
     -- If we are in object mode, use the exactly calculated maxPieces limit
     if self.currentCountFactor > 1 and self.currentMaxPieces ~= nil then
         effectiveMax = self.currentMaxPieces
+
+        -- SAFETY CAP: Prevent Engine Crash / Spawn Lag
+        if effectiveMax > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
+            effectiveMax = GlobalMarketDialog.MAX_OBJECTS_PER_TX
+        end
     end
 
     if amount > effectiveMax then
@@ -425,13 +423,22 @@ function GlobalMarketDialog:updateTotalValue()
     else
         local totalValueHeader = self.actionType == "SELL" and g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderSellPrice") or g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderBuyPrice")
 
-        -- Display header, money, and total liters dynamically
-        self.totalValueText:setText(string.format("%s %s (%s L)",
+        local baseText = string.format("%s %s (%s L)",
             totalValueHeader,
             g_i18n:formatMoney(total, 0, true, true),
-            g_i18n:formatVolume(totalLiters, 0)))
+            g_i18n:formatVolume(totalLiters, 0))
 
-        self.totalValueText:setTextColor(1, 1, 1, 1) -- Reset to white
+        -- CRITICAL UX FEATURE: Show Engine Limit Warning
+        if self.currentCountFactor > 1 and self.currentAmount == GlobalMarketDialog.MAX_OBJECTS_PER_TX and self.currentMaxPieces > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
+            local limitWarning = string.format(g_i18n:getText("ui_gm_warning_engineLimit"), GlobalMarketDialog.MAX_OBJECTS_PER_TX)
+
+            self.totalValueText:setText(baseText .. limitWarning)
+            self.totalValueText:setTextColor(0.9, 0.6, 0.1, 1) -- Turn text Orange/Yellow
+        else
+            self.totalValueText:setText(baseText)
+            self.totalValueText:setTextColor(1, 1, 1, 1) -- Reset to white
+        end
+
         self.yesButton:setDisabled(self.currentAmount <= 0)
     end
 end
@@ -452,7 +459,6 @@ function GlobalMarketDialog:onClickOk()
         end
 
         -- Pass the calculated liters to the main UI callback
-        -- Signature: target, amount, storageId, actionType, fillTypeName, isObjectStorage, formatXml, capacityPerObject
         self.callbackFunc(self.target, litersToProcess, selectedStorage.id, self.actionType, self.fillTypeName, selectedStorage.isObjectStorage, self.currentFormatXml, self.currentCountFactor)
     end
 
