@@ -46,6 +46,7 @@
         <e k="ui_gm_unit_bale"                                     v="Bales" />
         <e k="ui_gm_unit_liter"                                    v="Liters" />
         <e k="ui_gm_unit_pallet"                                   v="Pallets" />
+        <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s objects per transaction (Performance)" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Available Amount" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Count" />

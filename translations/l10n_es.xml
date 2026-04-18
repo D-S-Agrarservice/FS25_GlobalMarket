@@ -46,6 +46,7 @@
         <e k="ui_gm_unit_bale"                                     v="Pacas" />
         <e k="ui_gm_unit_liter"                                    v="Litros" />
         <e k="ui_gm_unit_pallet"                                   v="Palets" />
+        <e k="ui_gm_warning_engineLimit"                           v=" | Máx. %s objetos por transacción (Rendimiento)" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Cantidad disponible" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Cantidad" />
