@@ -130,8 +130,11 @@ function GlobalMarketUI:update(dt)
     -- Handle the delayed refresh to prevent race conditions with engine updates
     if self.refreshCountdown > 0 then
         self.refreshCountdown = self.refreshCountdown - dt
+
+        -- Trigger exactly ONCE when the countdown hits zero or falls slightly below
         if self.refreshCountdown <= 0 then
-            self.refreshCountdown = 0
+            -- Set to a permanent negative value to prevent the loop from refiring every frame
+            self.refreshCountdown = -1 
             self:updateContent()
         end
     end
