@@ -345,6 +345,18 @@ function GlobalMarketSettings.refreshMenuState()
     end
 end
 
+function GlobalMarketSettings:broadcastChanges()
+    if SyncGlobalMarketSettingsEvent == nil then return end
+
+    local c = self.current
+    if g_server ~= nil then
+        self:saveToXML()
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex))
+    else
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex))
+    end
+end
+
 -- ============================================================================
 -- Callbacks
 -- ============================================================================
@@ -352,19 +364,19 @@ end
 function GlobalMarketSettings:onBaseCostChanged(state)
     self.current.deliveryBaseIndex = state
     GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[state]
-    self:saveToXML()
+    self:broadcastChanges()
 end
 
 function GlobalMarketSettings:onLiterCostChanged(state)
     self.current.deliveryLiterIndex = state
     GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[state]
-    self:saveToXML()
+    self:broadcastChanges()
 end
 
 function GlobalMarketSettings:onDetailedFinanceChanged(state)
     -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
     self.current.isDetailedFinance = (state == 2)
-    self:saveToXML()
+    self:broadcastChanges()
     self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
 end
 
@@ -372,21 +384,21 @@ function GlobalMarketSettings:onDebugModeChanged(state)
     -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
     self.current.isDebugActive = (state == 2)
     self:applyDebugSettings()
-    self:saveToXML()
+    self:broadcastChanges()
     self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
 end
 
 function GlobalMarketSettings:onDebugLevelChanged(state)
     self.current.debugLevelIndex = state
     self:applyDebugSettings()
-    self:saveToXML()
+    self:broadcastChanges()
     self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
 end
 
 function GlobalMarketSettings:onDebugDurationChanged(state)
     self.current.debugDurationIndex = state
     self:applyDebugSettings()
-    self:saveToXML()
+    self:broadcastChanges()
 end
 
 -- ============================================================================

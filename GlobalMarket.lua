@@ -98,6 +98,7 @@ source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
+source(GlobalMarket.dir .. "events/SyncGlobalMarketSettingsEvent.lua")
 
 -- External Sync Module
 source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
