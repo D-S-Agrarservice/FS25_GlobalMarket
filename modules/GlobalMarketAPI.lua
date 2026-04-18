@@ -46,7 +46,7 @@ function GlobalMarketAPI.loadBasegameDefaults()
     -- Basegame Blacklist: Strictly forbidden from the market
     local basegameBlacklist = {
         "AIR", "WEED", "SNOW", "ELECTRICCHARGE", "TARP", "MEADOW", "FORAGE_MIXING",
-        "WHEAT_CUT", "BARLEY_CUT", "OAT_CUT", "CANOLA_CUT", "SOYBEAN_CUT, ROADSALT"
+        "WHEAT_CUT", "BARLEY_CUT", "OAT_CUT", "CANOLA_CUT", "SOYBEAN_CUT", "ROADSALT"
     }
     for _, fillType in ipairs(basegameBlacklist) do
         GlobalMarketAPI.registerToBlacklist(fillType, true)
