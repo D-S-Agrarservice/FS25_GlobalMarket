@@ -804,3 +804,40 @@ if baleClass ~= nil and baleClass.getIsIdentical ~= nil then
         return true
     end
 end
+
+-- 3. Patch the Sorting to be 100% deterministic for Multiplayer Sync
+local oldUpdateObjectInfos = PlaceableObjectStorage.updateObjectStorageObjectInfos
+PlaceableObjectStorage.updateObjectStorageObjectInfos = function(self)
+    -- Let Giants do the grouping and the initial width-based sorting
+    oldUpdateObjectInfos(self)
+
+    local spec = self.spec_objectStorage
+    if spec.objectInfos ~= nil then
+        table.sort(spec.objectInfos, function(a, b)
+            local objA = a.objects[1]
+            local objB = b.objects[1]
+
+            local _, _, _, widthA = objA:getSpawnInfo()
+            local _, _, _, widthB = objB:getSpawnInfo()
+
+            -- 1. Sort by Width (Native Giants logic)
+            if math.abs(widthA - widthB) > 0.001 then
+                return widthA < widthB
+            end
+
+            -- 2. Sort by FarmId (Ensures MP client and server align perfectly)
+            local farmA = (objA.palletAttributes ~= nil and objA.palletAttributes.ownerFarmId) or (objA.baleAttributes ~= nil and objA.baleAttributes.farmId) or (objA.baleObject ~= nil and objA.baleObject.ownerFarmId) or 0
+            local farmB = (objB.palletAttributes ~= nil and objB.palletAttributes.ownerFarmId) or (objB.baleAttributes ~= nil and objB.baleAttributes.farmId) or (objB.baleObject ~= nil and objB.baleObject.ownerFarmId) or 0
+
+            if farmA ~= farmB then
+                return farmA < farmB
+            end
+
+            -- 3. Sort by XML Filename (Separates different FillTypes of the same width)
+            local xmlA = objA:getXMLFilename() or ""
+            local xmlB = objB:getXMLFilename() or ""
+
+            return xmlA < xmlB
+        end)
+    end
+end
