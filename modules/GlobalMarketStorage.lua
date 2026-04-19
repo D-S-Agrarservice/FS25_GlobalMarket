@@ -754,7 +754,7 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
             end
         end
 
-        if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
+if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
             GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to Silo and child storages.")
         end
     end
@@ -773,12 +773,12 @@ if palletClass ~= nil and palletClass.getIsIdentical ~= nil then
     palletClass.getIsIdentical = function(self, otherAbstractObject)
         -- Keep native basegame checks
         if not oldPalletIdentical(self, otherAbstractObject) then return false end
-        
+
         -- GM Strict Ownership Check
-        if self.palletAttributes.ownerFarmId ~= otherAbstractObject.palletAttributes.ownerFarmId then 
-            return false 
+        if self.palletAttributes.ownerFarmId ~= otherAbstractObject.palletAttributes.ownerFarmId then
+            return false
         end
-        
+
         return true
     end
 end
@@ -790,15 +790,15 @@ if baleClass ~= nil and baleClass.getIsIdentical ~= nil then
     baleClass.getIsIdentical = function(self, otherAbstractObject)
         -- Keep native basegame checks
         if not oldBaleIdentical(self, otherAbstractObject) then return false end
-        
+
         -- GM Strict Ownership Check
         local myFarmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId) or (self.baleAttributes ~= nil and self.baleAttributes.farmId)
         local otherFarmId = (otherAbstractObject.baleObject ~= nil and otherAbstractObject.baleObject.ownerFarmId) or (otherAbstractObject.baleAttributes ~= nil and otherAbstractObject.baleAttributes.farmId)
-        
-        if myFarmId ~= otherFarmId then 
-            return false 
+
+        if myFarmId ~= otherFarmId then
+            return false
         end
-        
+
         return true
     end
 end
