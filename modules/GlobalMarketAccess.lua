@@ -202,54 +202,78 @@ function GlobalMarketAccess.init()
     -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
     -- =========================================================================
 
-    local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
+    local function updateInfoHook(self, superFunc, infoTable)
         -- Check if it's a GM Market
         local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
 
-        if not isGmMarket then
-            return superFunc(self, engineSuperFunc, infoTable)
+        if not isGmMarket or infoTable == nil then
+            return superFunc(self, infoTable)
         end
 
         local spec = self.spec_objectStorage
-        local originalObjectInfos = spec.objectInfos
+        if spec == nil then
+            return superFunc(self, infoTable)
+        end
 
-        -- Split the data
+        -- 1. Force the update NOW, before we read and mask the data
+        if self.updateDirtyObjectStorageObjectInfos ~= nil then
+            self:updateDirtyObjectStorageObjectInfos()
+        end
+
+        local originalObjectInfos = spec.objectInfos
+        if originalObjectInfos == nil then
+            return superFunc(self, infoTable)
+        end
+
+        -- 2. Split the data
         local playerFarmId = g_currentMission:getFarmId()
         local myInfos = {}
         local foreignCount = 0
 
-        if originalObjectInfos ~= nil then
-            for i = 1, #originalObjectInfos do
-                local objectInfo = originalObjectInfos[i]
-                if objectInfo.objects ~= nil and objectInfo.objects[1] ~= nil then
-                    local obj = objectInfo.objects[1]
-                    local objFarmId = FarmManager.SPECTATOR_FARM_ID
+        for i = 1, #originalObjectInfos do
+            local objectInfo = originalObjectInfos[i]
+            if objectInfo.objects ~= nil and objectInfo.objects[1] ~= nil then
+                local obj = objectInfo.objects[1]
+                local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
-                    if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                        objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
-                    elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                        objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
-                    end
+                if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                    objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                    objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
+                end
 
-                    if objFarmId == playerFarmId then
-                        table.insert(myInfos, objectInfo)
-                    else
-                        foreignCount = foreignCount + objectInfo.numObjects
-                    end
+                if objFarmId == playerFarmId then
+                    table.insert(myInfos, objectInfo)
+                else
+                    foreignCount = foreignCount + objectInfo.numObjects
                 end
             end
         end
 
-        -- Temporarily mask the objectInfos for the base game function
+        -- 3. Mask the data
         spec.objectInfos = myInfos
 
-        -- Run base function: It will print accurate total capacity, but only list the player's items
-        superFunc(self, engineSuperFunc, infoTable)
+        -- 4. CRITICAL FIX: Block the engine from rebuilding the list during the UI generation
+        local originalUpdateDirty = self.updateDirtyObjectStorageObjectInfos
+        if originalUpdateDirty ~= nil then
+            self.updateDirtyObjectStorageObjectInfos = function() end
+        end
 
-        -- Restore original data immediately to not break game logic
+        -- 5. Run base game UI generation securely
+        local status, result = pcall(superFunc, self, infoTable)
+
+        -- 6. Restore EVERYTHING immediately
+        if originalUpdateDirty ~= nil then
+            self.updateDirtyObjectStorageObjectInfos = originalUpdateDirty
+        end
         spec.objectInfos = originalObjectInfos
 
-        -- Append foreign goods summary at the bottom
+        -- Log any errors securely without crashing the game
+        if not status and GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:error("GlobalMarketAccess: Error in updateInfo superFunc: %s", tostring(result))
+        end
+
+        -- 7. Add our custom foreign goods line
         if foreignCount > 0 then
             local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
             table.insert(infoTable, { title = foreignTitle, text = tostring(foreignCount) })
