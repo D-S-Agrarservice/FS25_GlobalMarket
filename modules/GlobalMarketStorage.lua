@@ -465,8 +465,24 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                 if objFillType == fillTypeIndex and not isFermenting and objFarmId == targetFarmId then
                     local isFormatMatch = true
 
-                    if formatXml ~= nil and objXml ~= nil and objXml ~= formatXml then
-                        isFormatMatch = false
+                    if formatXml ~= nil and objXml ~= nil then
+                        -- Extract the filename from the absolute path to ensure compatibility with custom mod maps
+                        local function getFileName(path)
+                            return string.match(path, "([^/\\]+)$") or path
+                        end
+                        
+                        local cleanObjXml = string.lower(getFileName(objXml))
+                        local cleanFormatXml = string.lower(getFileName(formatXml))
+
+                        if cleanObjXml ~= cleanFormatXml then
+                            isFormatMatch = false
+                        end
+                        
+                        -- Bypass strict XML matching for generic engine pallets (e.g., fillablePallet)
+                        -- as they dynamically hold different fillTypes like apples, tomatoes, etc.
+                        if string.find(cleanObjXml, "fillablepallet") or string.find(cleanFormatXml, "fillablepallet") then
+                            isFormatMatch = true
+                        end
                     end
 
                     if isFormatMatch then
