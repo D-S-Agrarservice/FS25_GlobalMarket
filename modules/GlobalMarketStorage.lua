@@ -195,33 +195,39 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         if placeable.spec_objectStorage ~= nil and (placeable:getOwnerFarmId() == farmId or isGM) then
             local spec = placeable.spec_objectStorage
             for _, objectInfo in ipairs(spec.objectInfos) do
-                local obj = objectInfo.objects[1]
-                local objFillType, objLevel = nil, 0
-                local isFermenting = false
-                local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
-                if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                    objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
-                    objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
-                    objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                -- GM FIX: Iterate through ALL objects in the mixed group to ensure we only count the player's property
+                if objectInfo.objects ~= nil then
+                    for _, obj in ipairs(objectInfo.objects) do
+                        local objFillType, objLevel = nil, 0
+                        local isFermenting = false
+                        local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
-                    if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
-                    if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
-                elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                    objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
-                    objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
-                    objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
-                end
+                        if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                            objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
+                            objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+                            objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
 
-                -- FIX: Strictly filter by the object's farmId, not the building's farmId
-                if objFillType ~= nil and not isFermenting and objFarmId == farmId then
-                    initFillType(objFillType)
-                    local totalVol = objLevel * objectInfo.numObjects
-                    fillTypeTotals[objFillType].total = fillTypeTotals[objFillType].total + totalVol
-                    if isGM then
-                        fillTypeTotals[objFillType].gm = fillTypeTotals[objFillType].gm + totalVol
-                    else
-                        fillTypeTotals[objFillType].private = fillTypeTotals[objFillType].private + totalVol
+                            if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
+                            if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
+                        elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                            objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
+                            objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                            objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
+                        end
+
+                        -- Strictly filter by the object's farmId, not the building's farmId
+                        if objFillType ~= nil and not isFermenting and objFarmId == farmId then
+                            initFillType(objFillType)
+                            -- Note: Do NOT multiply by objectInfo.numObjects here, as we iterate per object
+                            local totalVol = objLevel
+                            fillTypeTotals[objFillType].total = fillTypeTotals[objFillType].total + totalVol
+                            if isGM then
+                                fillTypeTotals[objFillType].gm = fillTypeTotals[objFillType].gm + totalVol
+                            else
+                                fillTypeTotals[objFillType].private = fillTypeTotals[objFillType].private + totalVol
+                            end
+                        end
                     end
                 end
             end
@@ -722,43 +728,6 @@ PlaceableObjectStorage.onReadUpdateStream = Utils.appendedFunction(PlaceableObje
 
 function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
     superFunc(self, savegame)
-
-    -- =====================================================================
-    -- INJECT DETERMINISTIC SORT DIRECTLY INTO THE INSTANCE
-    -- Forces the engine to sort perfectly by Width -> FarmId -> XML
-    -- =====================================================================
-    if self.updateObjectStorageObjectInfos ~= nil then
-        local oldUpdateObjectInfos = self.updateObjectStorageObjectInfos
-        self.updateObjectStorageObjectInfos = function(instance)
-            -- Let Giants do the grouping and unstable sorting first
-            oldUpdateObjectInfos(instance)
-
-            local spec = instance.spec_objectStorage
-            if spec.objectInfos ~= nil then
-                table.sort(spec.objectInfos, function(a, b)
-                    local objA = a.objects[1]
-                    local objB = b.objects[1]
-
-                    local _, _, _, widthA = objA:getSpawnInfo()
-                    local _, _, _, widthB = objB:getSpawnInfo()
-
-                    -- Priority 1: Width
-                    if math.abs(widthA - widthB) > 0.001 then return widthA < widthB end
-
-                    -- Priority 2: FarmId
-                    local farmA = (objA.palletAttributes ~= nil and objA.palletAttributes.ownerFarmId) or (objA.baleAttributes ~= nil and objA.baleAttributes.farmId) or (objA.baleObject ~= nil and objA.baleObject.ownerFarmId) or 0
-                    local farmB = (objB.palletAttributes ~= nil and objB.palletAttributes.ownerFarmId) or (objB.baleAttributes ~= nil and objB.baleAttributes.farmId) or (objB.baleObject ~= nil and objB.baleObject.ownerFarmId) or 0
-                    if farmA ~= farmB then return farmA < farmB end
-
-                    -- Priority 3: XML
-                    local xmlA = objA:getXMLFilename() or ""
-                    local xmlB = objB:getXMLFilename() or ""
-                    return xmlA < xmlB
-                end)
-            end
-        end
-    end
-
     local spec = self.spec_objectStorage
     if spec ~= nil and self.xmlFile ~= nil then
         -- Using getBool instead of getValue to skip schema validation
@@ -791,81 +760,77 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
             end
         end
 
-if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
+        if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
             GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to Silo and child storages.")
         end
     end
 end
 PlaceableSilo.onLoad = Utils.overwrittenFunction(PlaceableSilo.onLoad, GlobalMarket.PlaceableSilo_onLoad)
 
-
 -- =========================================================================
--- FS25 ENGINE FIX: ObjectStorage MP Sync & FarmId Awareness
+-- FS25 ENGINE FIX: The "Bouncer" Anti-Theft Patch for ObjectStorages
 -- =========================================================================
+-- Instead of fighting the engine's networking desyncs, we allow mixed groups.
+-- Right before the basegame blindly spawns the first object in a group,
+-- the server sorts the player's property to the front of the array.
 
-local palletClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME["Vehicle"]
-local baleClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME["Bale"]
+local oldRemoveObjects = PlaceableObjectStorage.removeAbstractObjectsFromStorage
+if oldRemoveObjects ~= nil then
+    PlaceableObjectStorage.removeAbstractObjectsFromStorage = function(self, objectInfoIndex, amount, connection)
+        -- Only the server handles physical spawning logic
+        if g_server ~= nil then
+            local spec = self.spec_objectStorage
+            if spec ~= nil and spec.objectInfos ~= nil then
+                local objectInfo = spec.objectInfos[objectInfoIndex]
 
--- -------------------------------------------------------------------------
--- 1. IDENTICAL CHECKS (Separate groups by FarmId)
--- -------------------------------------------------------------------------
-if palletClass ~= nil and palletClass.getIsIdentical ~= nil then
-    local oldPalletIdentical = palletClass.getIsIdentical
-    palletClass.getIsIdentical = function(self, otherAbstractObject)
-        if not oldPalletIdentical(self, otherAbstractObject) then return false end
-        if self.palletAttributes.ownerFarmId ~= otherAbstractObject.palletAttributes.ownerFarmId then return false end
-        return true
-    end
-end
+                if objectInfo ~= nil and objectInfo.objects ~= nil then
+                    -- 1. Identify which farm requested the physical spawn
+                    local requestFarmId = FarmManager.SPECTATOR_FARM_ID
+                    if connection ~= nil then
+                        local user = g_currentMission.userManager:getUserByConnection(connection)
+                        if user ~= nil then
+                            requestFarmId = user:getFarmId()
+                        end
+                    else
+                        -- Fallback for local host triggering the action
+                        requestFarmId = g_currentMission:getFarmId()
+                    end
 
-if baleClass ~= nil and baleClass.getIsIdentical ~= nil then
-    local oldBaleIdentical = baleClass.getIsIdentical
-    baleClass.getIsIdentical = function(self, otherAbstractObject)
-        if not oldBaleIdentical(self, otherAbstractObject) then return false end
-        local myFarmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId) or (self.baleAttributes ~= nil and self.baleAttributes.farmId) or 0
-        local otherFarmId = (otherAbstractObject.baleObject ~= nil and otherAbstractObject.baleObject.ownerFarmId) or (otherAbstractObject.baleAttributes ~= nil and otherAbstractObject.baleAttributes.farmId) or 0
-        if myFarmId ~= otherFarmId then return false end
-        return true
-    end
-end
+                    -- 2. Sort the array: Player's items first, everyone else's items behind
+                    local playerObjects = {}
+                    local otherObjects = {}
 
--- -------------------------------------------------------------------------
--- 2. NETWORK STREAMS (Sync FarmId to Clients)
--- -------------------------------------------------------------------------
-if palletClass ~= nil and palletClass.writeStream ~= nil then
-    local oldPalletWrite = palletClass.writeStream
-    palletClass.writeStream = function(self, streamId, connection)
-        oldPalletWrite(self, streamId, connection)
-        local fId = (self.palletAttributes ~= nil and self.palletAttributes.ownerFarmId) or 0
-        streamWriteUIntN(streamId, fId, 8)
-    end
+                    for _, obj in ipairs(objectInfo.objects) do
+                        local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
-    local oldPalletRead = palletClass.readStream
-    palletClass.readStream = function(streamId, connection)
-        local self = oldPalletRead(streamId, connection)
-        if self.palletAttributes ~= nil then
-            self.palletAttributes.ownerFarmId = streamReadUIntN(streamId, 8)
+                        if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                            objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                        elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                            objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
+                        end
+
+                        if objFarmId == requestFarmId then
+                            table.insert(playerObjects, obj)
+                        else
+                            table.insert(otherObjects, obj)
+                        end
+                    end
+
+                    -- Rebuild the array seamlessly
+                    local sortedObjects = {}
+                    for _, obj in ipairs(playerObjects) do table.insert(sortedObjects, obj) end
+                    for _, obj in ipairs(otherObjects) do table.insert(sortedObjects, obj) end
+
+                    objectInfo.objects = sortedObjects
+
+                    if GlobalMarket ~= nil and GlobalMarket.debugManager ~= nil then
+                        GlobalMarket.debugManager:trace("GM Bouncer: Reordered array prior to spawning for FarmId %d.", requestFarmId)
+                    end
+                end
+            end
         end
-        return self
-    end
-end
 
-if baleClass ~= nil and baleClass.writeStream ~= nil then
-    local oldBaleWrite = baleClass.writeStream
-    baleClass.writeStream = function(self, streamId, connection)
-        oldBaleWrite(self, streamId, connection)
-        local fId = 0
-        if self.baleObject ~= nil then fId = self.baleObject.ownerFarmId or 0
-        elseif self.baleAttributes ~= nil then fId = self.baleAttributes.farmId or 0 end
-        streamWriteUIntN(streamId, fId, 8)
-    end
-
-    local oldBaleRead = baleClass.readStream
-    baleClass.readStream = function(streamId, connection)
-        local self = oldBaleRead(streamId, connection)
-        if self.baleAttributes ~= nil then
-            self.baleAttributes.farmId = streamReadUIntN(streamId, 8)
-        end
-        return self
+        -- Let the native Giants logic execute with our manipulated array
+        oldRemoveObjects(self, objectInfoIndex, amount, connection)
     end
 end
