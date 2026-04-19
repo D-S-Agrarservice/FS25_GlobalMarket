@@ -470,14 +470,14 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                         local function getFileName(path)
                             return string.match(path, "([^/\\]+)$") or path
                         end
-                        
+
                         local cleanObjXml = string.lower(getFileName(objXml))
                         local cleanFormatXml = string.lower(getFileName(formatXml))
 
                         if cleanObjXml ~= cleanFormatXml then
                             isFormatMatch = false
                         end
-                        
+
                         -- Bypass strict XML matching for generic engine pallets (e.g., fillablePallet)
                         -- as they dynamically hold different fillTypes like apples, tomatoes, etc.
                         if string.find(cleanObjXml, "fillablepallet") or string.find(cleanFormatXml, "fillablepallet") then
