@@ -789,7 +789,9 @@ if baleClass ~= nil and baleClass.getIsIdentical ~= nil then
     local oldBaleIdentical = baleClass.getIsIdentical
     baleClass.getIsIdentical = function(self, otherAbstractObject)
         -- Keep native basegame checks
-        if not oldBaleIdentical(self, otherAbstractObject) then return false end
+        if not oldBaleIdentical(self, otherAbstractObject) then
+            return false
+        end
 
         -- GM Strict Ownership Check
         local myFarmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId) or (self.baleAttributes ~= nil and self.baleAttributes.farmId)
