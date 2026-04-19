@@ -139,56 +139,65 @@ function GlobalMarketAccess.init()
     end
 
 -- =========================================================================
-    -- Hook 4: Object Storage UI Filter
-    -- Overwrites the Activatable run logic to only display objects belonging to the current player
-    -- =========================================================================
+-- Hook 4: Object Storage UI Filter (Index Mapped)
+-- Overwrites the Activatable run logic to only display objects belonging to the current player,
+-- and maps the UI index back to the real server index to prevent spawning wrong items.
+-- =========================================================================
 
-    local function objectStorageActivatableRunHook(self, superFunc)
-        self.objectStorage:updateDirtyObjectStorageObjectInfos()
-        local allObjectInfos = self.objectStorage:getObjectStorageObjectInfos()
+local function objectStorageActivatableRunHook(self, superFunc)
+    self.objectStorage:updateDirtyObjectStorageObjectInfos()
+    local allObjectInfos = self.objectStorage:getObjectStorageObjectInfos()
 
-        if allObjectInfos ~= nil and #allObjectInfos > 0 then
-            local filteredInfos = {}
-            local playerFarmId = g_currentMission:getFarmId()
+    if allObjectInfos ~= nil and #allObjectInfos > 0 then
+        local filteredInfos = {}
+        local playerFarmId = g_currentMission:getFarmId()
 
-            -- Filter objectInfos dynamically based on the requesting player's farmId
-            for _, objectInfo in ipairs(allObjectInfos) do
-                local obj = objectInfo.objects[1]
-                local objFarmId = FarmManager.SPECTATOR_FARM_ID
+        -- Filter objectInfos dynamically based on the requesting player's farmId
+        for originalIndex, objectInfo in ipairs(allObjectInfos) do
+            local obj = objectInfo.objects[1]
+            local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
-                if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                    objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
-                elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                    objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
-                end
-
-                if objFarmId == playerFarmId then
-                    table.insert(filteredInfos, objectInfo)
-                end
+            if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+            elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
             end
 
-            if GlobalMarket.debugManager ~= nil then
-                GlobalMarket.debugManager:trace("ObjectStorage UI opened: Filtered %d total entries down to %d entries for Farm %d.", #allObjectInfos, #filteredInfos, playerFarmId)
-            end
-
-            -- If filtered list has items, show dialog. Otherwise, show warning.
-            if #filteredInfos > 0 then
-                ObjectStorageDialog.show(self.onObjectInfoSelected, self, self.objectStorage:getName(), filteredInfos, self.objectStorage.spec_objectStorage.maxUnloadAmount)
-                return
+            if objFarmId == playerFarmId then
+                -- FIX: Store the true original index so the server knows exactly what to spawn
+                objectInfo.gmOriginalIndex = originalIndex
+                table.insert(filteredInfos, objectInfo)
             end
         end
 
-        -- Show standard warning if storage is empty for this specific farm
-        g_currentMission:showBlinkingWarning(string.format(self.warningText, self.objectStorage:getName()), 2000)
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:trace("ObjectStorage UI opened: Filtered %d total entries down to %d entries for Farm %d.", #allObjectInfos, #filteredInfos, playerFarmId)
+        end
+
+        -- If filtered list has items, show dialog. Otherwise, show warning.
+        if #filteredInfos > 0 then
+            -- FIX: Wrap the callback to intercept the filtered index and translate it back to the real engine index
+            local originalCallback = self.onObjectInfoSelected
+            local function customCallback(target, selectedFilteredIndex, ...)
+                if selectedFilteredIndex ~= nil and filteredInfos[selectedFilteredIndex] ~= nil then
+                    local realIndex = filteredInfos[selectedFilteredIndex].gmOriginalIndex
+                    originalCallback(target, realIndex, ...)
+                else
+                    originalCallback(target, selectedFilteredIndex, ...)
+                end
+            end
+
+            ObjectStorageDialog.show(customCallback, self, self.objectStorage:getName(), filteredInfos, self.objectStorage.spec_objectStorage.maxUnloadAmount)
+            return
+        end
     end
 
-    if PlaceableObjectStorageActivatable ~= nil then
-        PlaceableObjectStorageActivatable.run = Utils.overwrittenFunction(PlaceableObjectStorageActivatable.run, objectStorageActivatableRunHook)
-    end
+    -- Show standard warning if storage is empty for this specific farm
+    g_currentMission:showBlinkingWarning(string.format(self.warningText, self.objectStorage:getName()), 2000)
+end
 
-    if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
-    end
+if PlaceableObjectStorageActivatable ~= nil then
+    PlaceableObjectStorageActivatable.run = Utils.overwrittenFunction(PlaceableObjectStorageActivatable.run, objectStorageActivatableRunHook)
 end
 
 -- =========================================================================
@@ -255,4 +264,41 @@ end
 
 if PlaceableObjectStorage ~= nil then
     PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
+end
+
+-- =========================================================================
+-- Hook 6: Deterministic Sorting for ObjectStorage
+-- Replaces unstable width-based sorting with a strict Width -> FarmId -> XML sort
+-- Ensures Client and Server arrays match exactly to prevent MP Desyncs before UI filtering
+-- =========================================================================
+
+local oldUpdateObjectInfos = PlaceableObjectStorage.updateObjectStorageObjectInfos
+if oldUpdateObjectInfos ~= nil then
+    PlaceableObjectStorage.updateObjectStorageObjectInfos = function(self)
+        oldUpdateObjectInfos(self)
+
+        local spec = self.spec_objectStorage
+        if spec.objectInfos ~= nil then
+            table.sort(spec.objectInfos, function(a, b)
+                local objA = a.objects[1]
+                local objB = b.objects[1]
+
+                local _, _, _, widthA = objA:getSpawnInfo()
+                local _, _, _, widthB = objB:getSpawnInfo()
+
+                -- Priority 1: Width
+                if math.abs(widthA - widthB) > 0.001 then return widthA < widthB end
+
+                -- Priority 2: FarmId
+                local farmA = (objA.palletAttributes ~= nil and objA.palletAttributes.ownerFarmId) or (objA.baleAttributes ~= nil and objA.baleAttributes.farmId) or (objA.baleObject ~= nil and objA.baleObject.ownerFarmId) or 0
+                local farmB = (objB.palletAttributes ~= nil and objB.palletAttributes.ownerFarmId) or (objB.baleAttributes ~= nil and objB.baleAttributes.farmId) or (objB.baleObject ~= nil and objB.baleObject.ownerFarmId) or 0
+                if farmA ~= farmB then return farmA < farmB end
+
+                -- Priority 3: XML Filename
+                local xmlA = objA:getXMLFilename() or ""
+                local xmlB = objB:getXMLFilename() or ""
+                return xmlA < xmlB
+            end)
+        end
+    end
 end
