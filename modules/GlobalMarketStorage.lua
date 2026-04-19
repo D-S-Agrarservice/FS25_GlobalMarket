@@ -760,3 +760,45 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
     end
 end
 PlaceableSilo.onLoad = Utils.overwrittenFunction(PlaceableSilo.onLoad, GlobalMarket.PlaceableSilo_onLoad)
+
+
+-- =========================================================================
+-- FS25 ENGINE FIX: ObjectStorage Identical Check (FarmId Awareness)
+-- =========================================================================
+
+-- 1. Patch AbstractPalletObject to respect ownerFarmId
+local palletClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME["Vehicle"]
+if palletClass ~= nil and palletClass.getIsIdentical ~= nil then
+    local oldPalletIdentical = palletClass.getIsIdentical
+    palletClass.getIsIdentical = function(self, otherAbstractObject)
+        -- Keep native basegame checks
+        if not oldPalletIdentical(self, otherAbstractObject) then return false end
+        
+        -- GM Strict Ownership Check
+        if self.palletAttributes.ownerFarmId ~= otherAbstractObject.palletAttributes.ownerFarmId then 
+            return false 
+        end
+        
+        return true
+    end
+end
+
+-- 2. Patch AbstractBaleObject to respect farmId/ownerFarmId
+local baleClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME["Bale"]
+if baleClass ~= nil and baleClass.getIsIdentical ~= nil then
+    local oldBaleIdentical = baleClass.getIsIdentical
+    baleClass.getIsIdentical = function(self, otherAbstractObject)
+        -- Keep native basegame checks
+        if not oldBaleIdentical(self, otherAbstractObject) then return false end
+        
+        -- GM Strict Ownership Check
+        local myFarmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId) or (self.baleAttributes ~= nil and self.baleAttributes.farmId)
+        local otherFarmId = (otherAbstractObject.baleObject ~= nil and otherAbstractObject.baleObject.ownerFarmId) or (otherAbstractObject.baleAttributes ~= nil and otherAbstractObject.baleAttributes.farmId)
+        
+        if myFarmId ~= otherFarmId then 
+            return false 
+        end
+        
+        return true
+    end
+end
