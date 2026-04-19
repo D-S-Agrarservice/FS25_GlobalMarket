@@ -789,11 +789,20 @@ if oldRemoveObjects ~= nil then
                     if connection ~= nil then
                         local user = g_currentMission.userManager:getUserByConnection(connection)
                         if user ~= nil then
-                            requestFarmId = user:getFarmId()
+                            -- SAFE CHECK: Check if it's a function or a simple property
+                            if type(user.getFarmId) == "function" then
+                                requestFarmId = user:getFarmId()
+                            else
+                                requestFarmId = user.farmId or FarmManager.SPECTATOR_FARM_ID
+                            end
                         end
                     else
                         -- Fallback for local host triggering the action
-                        requestFarmId = g_currentMission:getFarmId()
+                        if type(g_currentMission.getFarmId) == "function" then
+                            requestFarmId = g_currentMission:getFarmId()
+                        elseif g_currentMission.player ~= nil then
+                            requestFarmId = g_currentMission.player.farmId or FarmManager.SPECTATOR_FARM_ID
+                        end
                     end
 
                     -- 2. Sort the array: Player's items first, everyone else's items behind
