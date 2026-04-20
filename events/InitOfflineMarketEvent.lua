@@ -25,7 +25,7 @@ end
 
 -- Reads data from the network stream
 function InitOfflineMarketEvent:readStream(streamId, connection)
-   -- self:run(connection)
+    self:run(connection)
 end
 
 -- Executes the event logic

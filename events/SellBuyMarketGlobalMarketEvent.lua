@@ -53,7 +53,7 @@ function SellBuyMarketGlobalMarketEvent:readStream(streamId, connection)
     self.storage = NetworkUtil.readNodeObject(streamId)
     self.playerUserId = streamReadInt16(streamId)
 
-   -- self:run(connection)
+    self:run(connection)
 end
 
 -- Executes the core event logic based on network authority (Server vs. Client)

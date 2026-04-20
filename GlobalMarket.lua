@@ -220,18 +220,6 @@ local function onFinishedLoading(mission)
             end
         end
     end
-
-    -- =========================================================
-    -- INITIAL NETWORK SYNC (Dedicated Server Fix)
-    -- =========================================================
-    -- Request initial offline market data from the server AFTER the UI is fully built.
-    -- This prevents the 100% loading screen freeze caused by premature UI updates.
-    if g_client ~= nil and not g_currentMission:getIsServer() and InitOfflineMarketEvent ~= nil then
-        if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:info("Network (Client): Game fully loaded. Requesting initial market sync from server.")
-        end
-        g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
-    end
 end
 FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, onFinishedLoading)
 
@@ -407,6 +395,28 @@ function GlobalMarket:dumpFillTypeData()
     print("[GM Debug] MASSIVE FILLTYPE DUMP COMPLETE!")
     print("==============================================================")
 end
+
+-- =========================================================================
+-- SAFE NETWORK INITIALIZATION
+-- =========================================================================
+
+-- This hook is called when the player is actually in the game
+-- and the network synchronization is guaranteed to be finished.
+local function onStartMission(mission)
+    if g_client ~= nil and not g_currentMission:getIsServer() then
+        if InitOfflineMarketEvent ~= nil then
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:info("Network (Client): Handshake complete. Safely requesting initial market sync.")
+            end
+
+            -- Firing the event now is safe because IDs are fully synchronized
+            g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
+        end
+    end
+end
+
+-- Appending to onStartMission ensures the 'Invalid event id' error is avoided
+FSBaseMission.onStartMission = Utils.appendedFunction(FSBaseMission.onStartMission, onStartMission)
 
 -- Register the mod with the engine
 addModEventListener(GlobalMarket)

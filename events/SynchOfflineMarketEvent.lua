@@ -68,7 +68,7 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
     end
 
     -- Proceed to execute the logic and apply the read data
-    -- self:run(connection)
+     self:run(connection)
 end
 
 -- Executes the core synchronization logic based on network authority
