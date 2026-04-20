@@ -99,6 +99,8 @@ function GlobalMarketAccess.init()
     end
 
     -- Bale Stream Hook Read (Static Constructor: Class.readStream)
+    -- FIX: For static functions, Utils.overwrittenFunction passes the first original argument (streamId)
+    -- before the superFunc. Signature adjusted to (streamId, superFunc, connection).
     local function baleReadStreamHook(streamId, superFunc, connection)
         local self = superFunc(streamId, connection)
         self.baleAttributes.farmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS)
@@ -122,6 +124,7 @@ function GlobalMarketAccess.init()
     end
 
     -- Pallet Stream Hook Read (Static Constructor: Class.readStream)
+    -- FIX: Same static signature adjustment as baleReadStreamHook.
     local function palletReadStreamHook(streamId, superFunc, connection)
         local self = superFunc(streamId, connection)
         if self.palletAttributes ~= nil then
@@ -136,9 +139,9 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 4: Object Storage UI Filter (Index Mapped)
-    -- Overwrites Activatable run logic to only display objects of the current player,
-    -- and maps the UI index back to the real server index to prevent spawning wrong items.
+    -- Hook 4: Object Storage UI Filter (Index Mapped for Desync-Prevention)
+    -- Overwrites the Activatable run logic to only display objects belonging to
+    -- the current player. Maps the UI index back to the real server index.
     -- =========================================================================
 
     local function objectStorageActivatableRunHook(self, superFunc)
@@ -161,7 +164,7 @@ function GlobalMarketAccess.init()
                 end
 
                 if objFarmId == playerFarmId then
-                    -- Save the true original index so the server knows exactly what to spawn
+                    -- Save the original index so the server knows exactly what to spawn later
                     objectInfo.gmOriginalIndex = originalIndex
                     table.insert(filteredInfos, objectInfo)
                 end
@@ -171,9 +174,9 @@ function GlobalMarketAccess.init()
                 GlobalMarket.debugManager:trace("ObjectStorage UI opened: Filtered %d total entries down to %d entries for Farm %d.", #allObjectInfos, #filteredInfos, playerFarmId)
             end
 
-            -- If filtered list has items, show dialog.
             if #filteredInfos > 0 then
-                -- Wrap the callback to intercept the filtered index and translate it back to the real engine index
+                -- Wrap the callback to intercept the filtered index and translate it back
+                -- to the real engine index before the event is sent to the server.
                 local originalCallback = self.onObjectInfoSelected
                 local function customCallback(target, selectedFilteredIndex, ...)
                     if selectedFilteredIndex ~= nil and filteredInfos[selectedFilteredIndex] ~= nil then
@@ -197,39 +200,40 @@ function GlobalMarketAccess.init()
         PlaceableObjectStorageActivatable.run = Utils.overwrittenFunction(PlaceableObjectStorageActivatable.run, objectStorageActivatableRunHook)
     end
 
-    -- =========================================================================
-    -- Hook 5: InfoTrigger UI Split (owned goods vs. foreign goods)
-    -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
-    -- =========================================================================
+    if GlobalMarket.debugManager ~= nil then
+        GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
+    end
+end
 
-    local function updateInfoHook(self, superFunc, infoTable)
-        -- Check if it's a GM Market
-        local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
+-- =========================================================================
+-- Hook 5: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
+-- =========================================================================
 
-        if not isGmMarket or infoTable == nil then
-            return superFunc(self, infoTable)
-        end
+-- FIX: Adjusted signature to account for Specialization superFunc chaining
+local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
+    -- Check if it's a GM Market
+    local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
 
-        local spec = self.spec_objectStorage
-        if spec == nil then
-            return superFunc(self, infoTable)
-        end
+    if not isGmMarket then
+        -- Not a GM Terminal, run default behavior
+        return superFunc(self, engineSuperFunc, infoTable)
+    end
 
-        -- 1. Force the update NOW, before we read and mask the data
-        if self.updateDirtyObjectStorageObjectInfos ~= nil then
-            self:updateDirtyObjectStorageObjectInfos()
-        end
+    -- Force engine to update its list BEFORE we mask it
+    if self.updateDirtyObjectStorageObjectInfos ~= nil then
+        self:updateDirtyObjectStorageObjectInfos()
+    end
 
-        local originalObjectInfos = spec.objectInfos
-        if originalObjectInfos == nil then
-            return superFunc(self, infoTable)
-        end
+    local spec = self.spec_objectStorage
+    local originalObjectInfos = spec.objectInfos
 
-        -- 2. Split the data
-        local playerFarmId = g_currentMission:getFarmId()
-        local myInfos = {}
-        local foreignCount = 0
+    -- Split the data
+    local playerFarmId = g_currentMission:getFarmId()
+    local myInfos = {}
+    local foreignCount = 0
 
+    if originalObjectInfos ~= nil then
         for i = 1, #originalObjectInfos do
             local objectInfo = originalObjectInfos[i]
             if objectInfo.objects ~= nil and objectInfo.objects[1] ~= nil then
@@ -249,79 +253,29 @@ function GlobalMarketAccess.init()
                 end
             end
         end
-
-        -- 3. Mask the data
-        spec.objectInfos = myInfos
-
-        -- 4. CRITICAL FIX: Block the engine from rebuilding the list during the UI generation
-        local originalUpdateDirty = self.updateDirtyObjectStorageObjectInfos
-        if originalUpdateDirty ~= nil then
-            self.updateDirtyObjectStorageObjectInfos = function() end
-        end
-
-        -- 5. Run base game UI generation securely
-        local status, result = pcall(superFunc, self, infoTable)
-
-        -- 6. Restore EVERYTHING immediately
-        if originalUpdateDirty ~= nil then
-            self.updateDirtyObjectStorageObjectInfos = originalUpdateDirty
-        end
-        spec.objectInfos = originalObjectInfos
-
-        -- Log any errors securely without crashing the game
-        if not status and GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:error("GlobalMarketAccess: Error in updateInfo superFunc: %s", tostring(result))
-        end
-
-        -- 7. Add our custom foreign goods line
-        if foreignCount > 0 then
-            local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-            table.insert(infoTable, { title = foreignTitle, text = tostring(foreignCount) })
-        end
     end
 
-    if PlaceableObjectStorage ~= nil then
-        PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
+    -- Temporarily mask the objectInfos for the base game function
+    spec.objectInfos = myInfos
+
+    -- Run base function: It will print accurate total capacity, but only list the player's items
+    superFunc(self, engineSuperFunc, infoTable)
+
+    -- Restore original data immediately to not break game logic
+    spec.objectInfos = originalObjectInfos
+
+    -- Append foreign goods summary at the bottom
+    if foreignCount > 0 then
+        -- Checks if modder provided a translation, otherwise defaults to "Foreign Goods"
+        local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+        table.insert(infoTable, { title = foreignTitle, text = tostring(foreignCount) })
     end
+end
 
-    -- =========================================================================
-    -- Hook 6: Deterministic Sorting for ObjectStorage
-    -- Ensures Client and Server arrays match exactly to prevent MP Desyncs
-    -- before UI filtering takes place. Sorts by Width -> FarmId -> XML.
-    -- =========================================================================
+if PlaceableObjectStorage ~= nil then
+    PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
+end
 
-    local oldUpdateObjectInfos = PlaceableObjectStorage.updateObjectStorageObjectInfos
-    if oldUpdateObjectInfos ~= nil then
-        PlaceableObjectStorage.updateObjectStorageObjectInfos = function(self)
-            oldUpdateObjectInfos(self)
-
-            local spec = self.spec_objectStorage
-            if spec.objectInfos ~= nil then
-                table.sort(spec.objectInfos, function(a, b)
-                    local objA = a.objects[1]
-                    local objB = b.objects[1]
-
-                    local _, _, _, widthA = objA:getSpawnInfo()
-                    local _, _, _, widthB = objB:getSpawnInfo()
-
-                    -- Priority 1: Width
-                    if math.abs(widthA - widthB) > 0.001 then return widthA < widthB end
-
-                    -- Priority 2: FarmId
-                    local farmA = (objA.palletAttributes ~= nil and objA.palletAttributes.ownerFarmId) or (objA.baleAttributes ~= nil and objA.baleAttributes.farmId) or (objA.baleObject ~= nil and objA.baleObject.ownerFarmId) or 0
-                    local farmB = (objB.palletAttributes ~= nil and objB.palletAttributes.ownerFarmId) or (objB.baleAttributes ~= nil and objB.baleAttributes.farmId) or (objB.baleObject ~= nil and objB.baleObject.ownerFarmId) or 0
-                    if farmA ~= farmB then return farmA < farmB end
-
-                    -- Priority 3: XML Filename
-                    local xmlA = objA:getXMLFilename() or ""
-                    local xmlB = objB:getXMLFilename() or ""
-                    return xmlA < xmlB
-                end)
-            end
-        end
-    end
-
-    if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
-    end
+if GlobalMarket.debugManager ~= nil then
+    GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
 end
