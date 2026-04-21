@@ -49,17 +49,25 @@ end
 -- Calculates the price considering Season Factors and Market Saturation.
 function GlobalMarket:updateOfflinePrices()
     local currentPeriod = 1
-    if g_currentMission ~= nil and g_currentMission.environment ~= nil then
-        currentPeriod = g_currentMission.environment.period
+    local periodAlpha = 0.5 -- Fallback for the middle of the month
+
+    if g_currentMission ~= nil and g_currentMission.environment ~= nil and g_currentMission.environment.getPeriodAndAlphaIntoPeriod ~= nil then
+        -- FS25 Native: Fetch the exact period and the time progression (alpha) within that period
+        currentPeriod, periodAlpha = g_currentMission.environment:getPeriodAndAlphaIntoPeriod()
     end
 
     for _, data in pairs(self.offlineMarketFillTypes) do
         local fillType = g_fillTypeManager:getFillTypeByIndex(data.fillTypeIndex)
         local seasonFactor = 1.0
 
-        -- Fetch the engine's season factor for the current month
-        if fillType ~= nil and fillType.economy ~= nil and fillType.economy.factors ~= nil then
-            seasonFactor = fillType.economy.factors[currentPeriod] or 1.0
+        if fillType ~= nil then
+            -- FS25 Native: Ask the EconomyManager to calculate the Catmull-Rom interpolated seasonal factor
+            if g_economyManager ~= nil and g_economyManager.getFillTypeSeasonalFactor ~= nil then
+                seasonFactor = g_economyManager:getFillTypeSeasonalFactor(fillType, currentPeriod, periodAlpha)
+            elseif fillType.economy ~= nil and fillType.economy.factors ~= nil then
+                -- Fallback for hardcoded mods or if EconomyManager fails
+                seasonFactor = fillType.economy.factors[currentPeriod] or 1.0
+            end
         end
 
         -- Calculate Saturation Factor (Supply & Demand). More stock = lower price.
