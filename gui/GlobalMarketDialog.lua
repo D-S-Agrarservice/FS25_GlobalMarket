@@ -186,21 +186,27 @@ function GlobalMarketDialog:onClickStorage(state)
                             local obj = objectInfo.objects[1]
                             local objFillType, objXml, objCapacity = nil, nil, 0
                             local isFermenting = false
+                            local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
                             if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
                                 objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
                                 objCapacity = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
                                 objXml = (obj.baleObject ~= nil) and obj.baleObject.xmlFilename or (obj.baleAttributes ~= nil and obj.baleAttributes.xmlFilename)
+                                objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+
                                 if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
                                 if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
                             elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
                                 objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
                                 objCapacity = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
                                 objXml = obj.palletAttributes ~= nil and obj.palletAttributes.configFileName
+                                objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
                             end
 
-                            -- Only count non-fermenting objects of the selected fillType
-                            if objFillType == fillType.index and objXml ~= nil and not isFermenting then
+                            local playerFarmId = g_currentMission:getFarmId()
+
+                            -- Only count non-fermenting objects of the selected fillType that belong to the player
+                            if objFillType == fillType.index and objXml ~= nil and not isFermenting and objFarmId == playerFarmId then
                                 if formatTracker[objXml] == nil then
                                     local title = g_i18n:getText("ui_gm_unit_piece")
                                     local unitKey = "ui_gm_unit_piece"
