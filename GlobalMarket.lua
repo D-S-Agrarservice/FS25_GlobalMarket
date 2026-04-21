@@ -93,12 +93,13 @@ source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAccess.lua")
 
 -- Events
-source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
+source(GlobalMarket.dir .. "events/InitGlobalMarketSettingsEvent.lua")
+source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
+source(GlobalMarket.dir .. "events/SyncGlobalMarketSettingsEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
-source(GlobalMarket.dir .. "events/SyncGlobalMarketSettingsEvent.lua")
 
 -- External Sync Module
 source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
@@ -405,12 +406,10 @@ end
 local function onStartMission(mission)
     if g_client ~= nil and not g_currentMission:getIsServer() then
         if InitOfflineMarketEvent ~= nil then
-            if GlobalMarket.debugManager ~= nil then
-                GlobalMarket.debugManager:info("Network (Client): Handshake complete. Safely requesting initial market sync.")
-            end
-
-            -- Firing the event now is safe because IDs are fully synchronized
             g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
+        end
+        if InitGlobalMarketSettingsEvent ~= nil then
+            g_client:getServerConnection():sendEvent(InitGlobalMarketSettingsEvent.new())
         end
     end
 end

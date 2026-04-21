@@ -70,7 +70,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     end
 
     if GlobalMarketSettings.refreshMenuState ~= nil then
-        GlobalMarketSettings.refreshMenuState()
+        GlobalMarketSettings:refreshMenuState()
     end
 
     -- If we are the Server and just received this from an Admin, save to XML and broadcast to all others
