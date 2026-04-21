@@ -196,9 +196,15 @@ function GlobalMarket:getAggregatedStorageData(farmId)
             local spec = placeable.spec_objectStorage
             for _, objectInfo in ipairs(spec.objectInfos) do
 
-                -- GM FIX: Iterate through ALL objects in the mixed group to ensure we only count the player's property
-                if objectInfo.objects ~= nil then
-                    for _, obj in ipairs(objectInfo.objects) do
+                if objectInfo.objects ~= nil and #objectInfo.objects > 0 then
+                    -- HYBRID LOGIC: Detect if we are a Dedi-Client (array is truncated) or SP/Host (full array)
+                    local isDediClient = (#objectInfo.objects < objectInfo.numObjects)
+
+                    -- If Dedi, only process the template. If SP, iterate through all physical items.
+                    local loopMax = isDediClient and 1 or #objectInfo.objects
+
+                    for i = 1, loopMax do
+                        local obj = objectInfo.objects[i]
                         local objFillType, objLevel = nil, 0
                         local isFermenting = false
                         local objFarmId = FarmManager.SPECTATOR_FARM_ID
@@ -219,8 +225,11 @@ function GlobalMarket:getAggregatedStorageData(farmId)
                         -- Strictly filter by the object's farmId, not the building's farmId
                         if objFillType ~= nil and not isFermenting and objFarmId == farmId then
                             initFillType(objFillType)
-                            -- Note: Do NOT multiply by objectInfo.numObjects here, as we iterate per object
-                            local totalVol = objLevel
+
+                            -- The Magic Multiplier: If Dedi, multiply template by total network count. If SP, multiply by 1 (since we iterate).
+                            local multiplier = isDediClient and objectInfo.numObjects or 1
+                            local totalVol = objLevel * multiplier
+
                             fillTypeTotals[objFillType].total = fillTypeTotals[objFillType].total + totalVol
                             if isGM then
                                 fillTypeTotals[objFillType].gm = fillTypeTotals[objFillType].gm + totalVol
