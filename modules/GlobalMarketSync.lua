@@ -18,7 +18,7 @@ function GlobalMarket:initSync()
     self.intervalStatusOff = 2000 -- Check if EXE started every 2s
     self.intervalStatusOn = 10000 -- Heartbeat check every 10s when online
 
-    self.needExeVersion = 1.0.0.0
+    self.needExeVersion = 1
 
     local settingsPath = getUserProfileAppPath() .. "modSettings/" .. GlobalMarket.modName .. "/"
     self.isOnlineFile = getUserProfileAppPath() .. "globalMarketOnline.xml"
