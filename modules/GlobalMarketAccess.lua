@@ -200,13 +200,43 @@ function GlobalMarketAccess.init()
         PlaceableObjectStorageActivatable.run = Utils.overwrittenFunction(PlaceableObjectStorageActivatable.run, objectStorageActivatableRunHook)
     end
 
+    -- =========================================================================
+    -- Hook 5: Silo Station Access Bypass (Loading & Unloading)
+    -- Bypasses the strict access checks for GM flagged Silo stations.
+    -- =========================================================================
+    local function stationHasFarmAccessHook(self, superFunc, farmId, storage)
+        local isGmMarket = self.isGmMarket
+
+        if not isGmMarket and self.owningPlaceable ~= nil then
+            isGmMarket = self.owningPlaceable.isGmMarket
+        end
+
+        if not isGmMarket and storage ~= nil then
+            isGmMarket = storage.isGmMarket
+        end
+
+        if isGmMarket then
+            return true
+        end
+
+        return superFunc(self, farmId, storage)
+    end
+
+    if UnloadingStation ~= nil then
+        UnloadingStation.hasFarmAccessToStorage = Utils.overwrittenFunction(UnloadingStation.hasFarmAccessToStorage, stationHasFarmAccessHook)
+    end
+
+    if LoadingStation ~= nil then
+        LoadingStation.hasFarmAccessToStorage = Utils.overwrittenFunction(LoadingStation.hasFarmAccessToStorage, stationHasFarmAccessHook)
+    end
+
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
     end
 end
 
 -- =========================================================================
--- Hook 5: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Hook 6: InfoTrigger UI Split (owned goods vs. foreign goods)
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 
