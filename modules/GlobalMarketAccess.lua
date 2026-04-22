@@ -200,13 +200,173 @@ function GlobalMarketAccess.init()
         PlaceableObjectStorageActivatable.run = Utils.overwrittenFunction(PlaceableObjectStorageActivatable.run, objectStorageActivatableRunHook)
     end
 
+    -- =========================================================================
+    -- Hook 5: Station UI Access Bypass (Silo/Liquid Icons)
+    -- Forces LoadingStation and UnloadingStation to allow UI access for GM Markets
+    -- =========================================================================
+    local function stationHasFarmAccessHook(self, superFunc, farmId, storage)
+        if storage ~= nil and storage.owningPlaceable ~= nil and storage.owningPlaceable.isGmMarket then
+            return true
+        end
+        return superFunc(self, farmId, storage)
+    end
+
+    if LoadingStation ~= nil then
+        LoadingStation.hasFarmAccessToStorage = Utils.overwrittenFunction(LoadingStation.hasFarmAccessToStorage, stationHasFarmAccessHook)
+    end
+    if UnloadingStation ~= nil then
+        UnloadingStation.hasFarmAccessToStorage = Utils.overwrittenFunction(UnloadingStation.hasFarmAccessToStorage, stationHasFarmAccessHook)
+    end
+
+    -- =========================================================================
+    -- Hook 6: Farm ID Injector for Physical Transactions
+    -- Injects the farmId temporarily into target storages so setFillLevel knows
+    -- which farm triggered the physical addition/removal.
+    -- =========================================================================
+
+    local function unloadingStationAddFillLevelHook(self, superFunc, farmId, deltaFillLevel, fillType, fillInfo, toolType, extraAttributes)
+        local actualFarmId = farmId or FarmManager.SPECTATOR_FARM_ID
+        if self.targetStorages ~= nil then
+            for _, storage in pairs(self.targetStorages) do
+                storage.gmTempFarmId = actualFarmId
+            end
+        end
+
+        local movedFillLevel = superFunc(self, farmId, deltaFillLevel, fillType, fillInfo, toolType, extraAttributes)
+
+        -- Clean up immediately
+        if self.targetStorages ~= nil then
+            for _, storage in pairs(self.targetStorages) do
+                storage.gmTempFarmId = nil
+            end
+        end
+
+        return movedFillLevel
+    end
+
+    local function loadingStationRemoveFillLevelHook(self, superFunc, fillTypeIndex, fillDelta, farmId)
+        local actualFarmId = farmId or FarmManager.SPECTATOR_FARM_ID
+        if self.sourceStorages ~= nil then
+            for _, storage in pairs(self.sourceStorages) do
+                storage.gmTempFarmId = actualFarmId
+            end
+        end
+
+        local remainingDelta = superFunc(self, fillTypeIndex, fillDelta, farmId)
+
+        -- Clean up immediately
+        if self.sourceStorages ~= nil then
+            for _, storage in pairs(self.sourceStorages) do
+                storage.gmTempFarmId = nil
+            end
+        end
+
+        return remainingDelta
+    end
+
+    if UnloadingStation ~= nil then
+        UnloadingStation.addFillLevelFromTool = Utils.overwrittenFunction(UnloadingStation.addFillLevelFromTool, unloadingStationAddFillLevelHook)
+    end
+    if LoadingStation ~= nil then
+        LoadingStation.removeFillLevel = Utils.overwrittenFunction(LoadingStation.removeFillLevel, loadingStationRemoveFillLevelHook)
+    end
+
+    -- =========================================================================
+    -- Hook 7: Shadow Array Logic (Storage split per farm)
+    -- Intercepts setFillLevel. If a GM Market receives a change and a temp 
+    -- farmId is present, the change is mapped to the shadow array.
+    -- =========================================================================
+
+    local function storageSetFillLevelHook(self, superFunc, fillLevel, fillType, fillInfo)
+        local isGmMarket = self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket
+        local oldFillLevel = self.fillLevels[fillType] or 0
+
+        -- Run native function to physically add/remove goods
+        superFunc(self, fillLevel, fillType, fillInfo)
+
+        -- If the transaction was initiated by our Hook 7 (or later GM UI)
+        if isGmMarket and self.gmTempFarmId ~= nil then
+            local newFillLevel = self.fillLevels[fillType] or 0
+            local delta = newFillLevel - oldFillLevel
+
+            if delta ~= 0 then
+                if self.gmFarmFillLevels == nil then self.gmFarmFillLevels = {} end
+                if self.gmFarmFillLevels[self.gmTempFarmId] == nil then self.gmFarmFillLevels[self.gmTempFarmId] = {} end
+
+                local currentFarmLevel = self.gmFarmFillLevels[self.gmTempFarmId][fillType] or 0
+                self.gmFarmFillLevels[self.gmTempFarmId][fillType] = math.max(0, currentFarmLevel + delta)
+            end
+        end
+    end
+
+    if Storage ~= nil then
+        Storage.setFillLevel = Utils.overwrittenFunction(Storage.setFillLevel, storageSetFillLevelHook)
+    end
+
+    -- =========================================================================
+    -- Hook 8: Loading Station UI Visual Fix
+    -- Ensures the player only sees their own fill levels when opening the 
+    -- loading menu [R], despite the silo physically containing everything.
+    -- =========================================================================
+
+    local function loadingStationGetFillLevelHook(self, superFunc, fillType, farmId)
+        local fillLevel = 0
+        local isAnyGmMarket = false
+
+        for _, sourceStorage in pairs(self.sourceStorages) do
+            if self:hasFarmAccessToStorage(farmId, sourceStorage) then
+                if sourceStorage.owningPlaceable ~= nil and sourceStorage.owningPlaceable.isGmMarket then
+                    isAnyGmMarket = true
+                    if sourceStorage.gmFarmFillLevels ~= nil and sourceStorage.gmFarmFillLevels[farmId] ~= nil then
+                        fillLevel = fillLevel + (sourceStorage.gmFarmFillLevels[farmId][fillType] or 0)
+                    end
+                else
+                    fillLevel = fillLevel + sourceStorage:getFillLevel(fillType)
+                end
+            end
+        end
+
+        if isAnyGmMarket then return fillLevel end
+        return superFunc(self, fillType, farmId)
+    end
+
+    local function loadingStationGetAllFillLevelsHook(self, superFunc, farmId)
+        local fillLevels = {}
+        local isAnyGmMarket = false
+
+        for _, sourceStorage in pairs(self.sourceStorages) do
+            if self:hasFarmAccessToStorage(farmId, sourceStorage) then
+                if sourceStorage.owningPlaceable ~= nil and sourceStorage.owningPlaceable.isGmMarket then
+                    isAnyGmMarket = true
+                    if sourceStorage.gmFarmFillLevels ~= nil and sourceStorage.gmFarmFillLevels[farmId] ~= nil then
+                        for fillType, level in pairs(sourceStorage.gmFarmFillLevels[farmId]) do
+                            fillLevels[fillType] = Utils.getNoNil(fillLevels[fillType], 0) + level
+                        end
+                    end
+                else
+                    for fillType, level in pairs(sourceStorage:getFillLevels()) do
+                        fillLevels[fillType] = Utils.getNoNil(fillLevels[fillType], 0) + level
+                    end
+                end
+            end
+        end
+
+        if isAnyGmMarket then return fillLevels end
+        return superFunc(self, farmId)
+    end
+
+    if LoadingStation ~= nil then
+        LoadingStation.getFillLevel = Utils.overwrittenFunction(LoadingStation.getFillLevel, loadingStationGetFillLevelHook)
+        LoadingStation.getAllFillLevels = Utils.overwrittenFunction(LoadingStation.getAllFillLevels, loadingStationGetAllFillLevelsHook)
+    end
+
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
     end
 end
 
 -- =========================================================================
--- Hook 5: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Hook 9: InfoTrigger UI Split (owned goods vs. foreign goods)
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 
@@ -274,8 +434,4 @@ end
 
 if PlaceableObjectStorage ~= nil then
     PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
-end
-
-if GlobalMarket.debugManager ~= nil then
-    GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
 end
