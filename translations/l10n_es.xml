@@ -25,6 +25,9 @@
         <e k="ui_gm_format_pallet"                                 v="Palé" />
         <e k="ui_gm_format_roundbale"                              v="Paca redonda" />
         <e k="ui_gm_format_squarebale"                             v="Paca cuadrada" />
+        <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: ¡Costes de envío actualizados! (Las estadísticas financieras requieren reiniciar el juego)" />
+        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket: ¡Estadísticas financieras actualizadas! (Requiere reiniciar el juego)" />
+        <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: ¡Los costes de envío han sido actualizados!" />
         <e k="ui_gm_settings_baseCost"                             v="Gastos de envío: Tarifa base" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Establece la tarifa base fija para las entregas de mercancías hacia o desde el silo privado de la granja." />
         <e k="ui_gm_settings_debugDuration"                        v="Duración del registro profundo" />

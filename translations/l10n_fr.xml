@@ -25,6 +25,9 @@
         <e k="ui_gm_format_pallet"                                 v="Palette" />
         <e k="ui_gm_format_roundbale"                              v="Balle ronde" />
         <e k="ui_gm_format_squarebale"                             v="Balle carrée" />
+        <e k="ui_gm_notification_settings_both"                    v="GlobalMarket : Frais de livraison mis à jour ! (Les statistiques financières nécessitent un redémarrage)" />
+        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket : Statistiques financières mises à jour ! (Nécessite un redémarrage du jeu)" />
+        <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket : Les frais de livraison ont été mis à jour !" />
         <e k="ui_gm_settings_baseCost"                             v="Frais de livraison : Frais de base" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Définit les frais de base fixes pour les livraisons de fret vers ou depuis le silo privé de la ferme." />
         <e k="ui_gm_settings_debugDuration"                        v="Durée de la journalisation approfondie" />

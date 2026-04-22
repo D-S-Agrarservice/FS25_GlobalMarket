@@ -53,7 +53,17 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         end
     end
 
-    -- Apply settings locally
+    -- 1. DETECT CHANGES BEFORE APPLYING
+    -- Check what exactly the Admin changed to trigger the correct on-screen broadcast
+    local financeChanged = false
+    local deliveryChanged = false
+
+    if GlobalMarketSettings.current ~= nil then
+        financeChanged = (GlobalMarketSettings.current.isDetailedFinance ~= self.isDetailed)
+        deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex)
+    end
+
+    -- 2. APPLY SETTINGS LOCALLY
     GlobalMarketSettings.current.deliveryBaseIndex = self.baseIndex
     GlobalMarketSettings.current.deliveryLiterIndex = self.literIndex
     GlobalMarketSettings.current.isDetailedFinance = self.isDetailed
@@ -65,6 +75,11 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
     GlobalMarket.DELIVER_COST_PERLITER = GlobalMarketSettings.OPTIONS.DELIVERY_LITER[self.literIndex]
 
+    -- Update Finance Module Cache immediately to ensure the next transaction uses the correct MoneyType
+    if GlobalMarketFinance ~= nil then
+        GlobalMarketFinance.isDetailedCached = self.isDetailed
+    end
+
     if GlobalMarketSettings.applyDebugSettings ~= nil then
         GlobalMarketSettings:applyDebugSettings()
     end
@@ -73,11 +88,44 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         GlobalMarketSettings:refreshMenuState()
     end
 
-    -- If we are the Server and just received this from an Admin, save to XML and broadcast to all others
+    -- 3. NETWORK & BROADCAST LOGIC
     if not connection:getIsServer() then
+        -- SERVER SIDE: Save to XML and broadcast to all others
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
         g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur), nil, connection, nil)
+    else
+        -- CLIENT SIDE: We received the broadcast from the server.
+
+        -- Save settings to the local disk persistently using the existing save function.
+        if GlobalMarketSettings.saveToXML ~= nil then
+            GlobalMarketSettings:saveToXML()
+        end
+
+        -- Trigger specific On-Screen Broadcast based on what actually changed
+        if g_currentMission ~= nil then
+            if financeChanged and deliveryChanged then
+                local msg = g_i18n:getText("ui_gm_notification_settings_both")
+                if msg == nil or msg == "ui_gm_notification_settings_both" then
+                    msg = "GlobalMarket: Delivery costs updated. (Finance stats require restart!)"
+                end
+                g_currentMission:showBlinkingWarning(msg, 6000)
+
+            elseif financeChanged then
+                local msg = g_i18n:getText("ui_gm_notification_settings_finance")
+                if msg == nil or msg == "ui_gm_notification_settings_finance" then
+                    msg = "GlobalMarket: Finance stats updated! (Requires game restart)"
+                end
+                g_currentMission:showBlinkingWarning(msg, 5000)
+
+            elseif deliveryChanged then
+                local msg = g_i18n:getText("ui_gm_notification_settings_delivery")
+                if msg == nil or msg == "ui_gm_notification_settings_delivery" then
+                    msg = "GlobalMarket: Delivery costs have been updated!"
+                end
+                g_currentMission:showBlinkingWarning(msg, 5000)
+            end
+        end
     end
 end
