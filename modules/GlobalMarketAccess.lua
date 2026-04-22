@@ -201,25 +201,7 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 5: Station UI Access Bypass (Silo/Liquid Icons)
-    -- Forces LoadingStation and UnloadingStation to allow UI access for GM Markets
-    -- =========================================================================
-    local function stationHasFarmAccessHook(self, superFunc, farmId, storage)
-        if storage ~= nil and storage.owningPlaceable ~= nil and storage.owningPlaceable.isGmMarket then
-            return true
-        end
-        return superFunc(self, farmId, storage)
-    end
-
-    if LoadingStation ~= nil then
-        LoadingStation.hasFarmAccessToStorage = Utils.overwrittenFunction(LoadingStation.hasFarmAccessToStorage, stationHasFarmAccessHook)
-    end
-    if UnloadingStation ~= nil then
-        UnloadingStation.hasFarmAccessToStorage = Utils.overwrittenFunction(UnloadingStation.hasFarmAccessToStorage, stationHasFarmAccessHook)
-    end
-
-    -- =========================================================================
-    -- Hook 6: Farm ID Injector for Physical Transactions
+    -- Hook 5: Farm ID Injector for Physical Transactions
     -- Injects the farmId temporarily into target storages so setFillLevel knows
     -- which farm triggered the physical addition/removal.
     -- =========================================================================
@@ -272,7 +254,7 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 7: Shadow Array Logic (Storage split per farm)
+    -- Hook 6: Shadow Array Logic (Storage split per farm)
     -- Intercepts setFillLevel. If a GM Market receives a change and a temp 
     -- farmId is present, the change is mapped to the shadow array.
     -- =========================================================================
@@ -304,7 +286,7 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 8: Loading Station UI Visual Fix
+    -- Hook 7: Loading Station UI Visual Fix
     -- Ensures the player only sees their own fill levels when opening the 
     -- loading menu [R], despite the silo physically containing everything.
     -- =========================================================================
@@ -366,7 +348,7 @@ function GlobalMarketAccess.init()
 end
 
 -- =========================================================================
--- Hook 9: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Hook 8: InfoTrigger UI Split (owned goods vs. foreign goods)
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 

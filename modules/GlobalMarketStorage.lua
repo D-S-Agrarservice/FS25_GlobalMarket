@@ -762,6 +762,8 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
         -- Using getBool instead of getValue to skip schema validation
         spec.isGmMarket = self.xmlFile:getBool("placeable.silo#isGmMarket", false)
 
+        self.isGmMarket = spec.isGmMarket
+
         -- Pass the flag down to all child storages so the existing getAvailableStorages loop works flawlessly
         if spec.storages ~= nil then
             for _, storage in ipairs(spec.storages) do
