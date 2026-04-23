@@ -606,8 +606,8 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
         end
     end
 
-    -- Insert Capacity info at the top (Position 1)
-    local capTitle = g_i18n:hasText("ui_totalCapacity") and g_i18n:getText("ui_totalCapacity") or "Total Capacity"
+    -- Insert Capacity info at the top (Position 1) using GIANTS native key
+    local capTitle = g_i18n:getText("ui_silos_totalCapacity")
     local capText = string.format("%s / %s", g_i18n:formatVolume(totalVolume, 0), g_i18n:formatVolume(totalCapacity, 0))
     table.insert(infoTable, 1, {
         title = capTitle,
@@ -625,7 +625,5 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
 end
 
 if PlaceableSilo ~= nil then
-    -- Using appendedFunction ensures we receive the exact same parameters as the specialization,
-    -- avoiding the parameter-shift crash caused by overwrittenFunction.
     PlaceableSilo.updateInfo = Utils.appendedFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
 end
