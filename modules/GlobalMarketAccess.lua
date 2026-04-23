@@ -99,8 +99,6 @@ function GlobalMarketAccess.init()
     end
 
     -- Bale Stream Hook Read (Static Constructor: Class.readStream)
-    -- FIX: For static functions, Utils.overwrittenFunction passes the first original argument (streamId)
-    -- before the superFunc. Signature adjusted to (streamId, superFunc, connection).
     local function baleReadStreamHook(streamId, superFunc, connection)
         local self = superFunc(streamId, connection)
         self.baleAttributes.farmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS)
@@ -124,7 +122,6 @@ function GlobalMarketAccess.init()
     end
 
     -- Pallet Stream Hook Read (Static Constructor: Class.readStream)
-    -- FIX: Same static signature adjustment as baleReadStreamHook.
     local function palletReadStreamHook(streamId, superFunc, connection)
         local self = superFunc(streamId, connection)
         if self.palletAttributes ~= nil then
@@ -176,7 +173,6 @@ function GlobalMarketAccess.init()
 
             if #filteredInfos > 0 then
                 -- Wrap the callback to intercept the filtered index and translate it back
-                -- to the real engine index before the event is sent to the server.
                 local originalCallback = self.onObjectInfoSelected
                 local function customCallback(target, selectedFilteredIndex, ...)
                     if selectedFilteredIndex ~= nil and filteredInfos[selectedFilteredIndex] ~= nil then
@@ -201,7 +197,7 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 5: Farm ID Injector for Physical Transactions
+    -- Hook 6: Farm ID Injector for Physical Transactions
     -- Injects the farmId temporarily into target storages so setFillLevel knows
     -- which farm triggered the physical addition/removal.
     -- =========================================================================
@@ -258,29 +254,32 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 6: Shadow Array Logic (Storage split per farm)
-    -- Intercepts setFillLevel. If a GM Market receives a change and a temp 
-    -- farmId is present, the change is mapped to the shadow array.
+    -- Hook 7: Shadow Array Logic (Storage split per farm)
+    -- Intercepts setFillLevel. Maps volume deltas to specific farms dynamically.
     -- =========================================================================
 
     local function storageSetFillLevelHook(self, superFunc, fillLevel, fillType, fillInfo)
-        local isGmMarket = self.isGmMarket -- FIX: Direktes Flag statt owningPlaceable
+        local isGmMarket = self.isGmMarket
         local oldFillLevel = self.fillLevels[fillType] or 0
 
         -- Run native function to physically add/remove goods
         superFunc(self, fillLevel, fillType, fillInfo)
 
-        -- If the transaction was initiated by our Hook 7 (or later GM UI)
+        -- If the transaction was initiated by our Hook 6 (or later GM UI)
         if isGmMarket and self.gmTempFarmId ~= nil then
             local newFillLevel = self.fillLevels[fillType] or 0
             local delta = newFillLevel - oldFillLevel
 
             if delta ~= 0 then
-                if self.gmFarmFillLevels == nil then self.gmFarmFillLevels = {} end
-                if self.gmFarmFillLevels[self.gmTempFarmId] == nil then self.gmFarmFillLevels[self.gmTempFarmId] = {} end
+                self.gmFarmFillLevels = self.gmFarmFillLevels or {}
+                self.gmFarmFillLevels[self.gmTempFarmId] = self.gmFarmFillLevels[self.gmTempFarmId] or {}
 
                 local currentFarmLevel = self.gmFarmFillLevels[self.gmTempFarmId][fillType] or 0
                 self.gmFarmFillLevels[self.gmTempFarmId][fillType] = math.max(0, currentFarmLevel + delta)
+
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:trace("Storage Tracker: Farm %s | FillType: %d | Delta: %.2f | New Owned Total: %.2f", tostring(self.gmTempFarmId), fillType, delta, self.gmFarmFillLevels[self.gmTempFarmId][fillType])
+                end
             end
         end
     end
@@ -290,7 +289,9 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 7: Loading Station UI Visual Fix
+    -- Hook 8: Loading Station UI Visual Fix
+    -- Ensures the player only sees their own fill levels when opening the
+    -- loading menu [R], despite the silo physically containing everything.
     -- =========================================================================
 
     local function loadingStationGetFillLevelHook(self, superFunc, fillType, farmId)
@@ -345,26 +346,30 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 8: Physical Vehicle Loading Limit (Shadow Array Cap)
+    -- Hook 9: Physical Vehicle Loading Limit (Shadow Array Cap)
+    -- Prevents vehicles from pulling more goods than the farm actually owns.
     -- =========================================================================
     local function loadingStationAddFillLevelToFillableHook(self, superFunc, fillableObject, fillUnitIndex, fillTypeIndex, fillDelta, fillInfo, toolType)
         local isGmMarket = false
         for _, storage in pairs(self.sourceStorages) do
-            if storage.isGmMarket then -- FIX: Direktes Flag
+            if storage.isGmMarket then
                 isGmMarket = true
                 break
             end
         end
 
+        -- If not a GM Terminal, let base game handle it normally
         if not isGmMarket then
             return superFunc(self, fillableObject, fillUnitIndex, fillTypeIndex, fillDelta, fillInfo, toolType)
         end
 
+        -- Determine which farm is trying to load
         local farmId = fillableObject:getOwnerFarmId()
         if fillableObject.getActiveFarm ~= nil then
             farmId = fillableObject:getActiveFarm() or farmId
         end
 
+        -- Calculate max allowed amount specifically from our Shadow Array
         local maxAvailableForFarm = 0
         for _, storage in pairs(self.sourceStorages) do
             if storage.isGmMarket then
@@ -374,13 +379,28 @@ function GlobalMarketAccess.init()
             end
         end
 
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:trace("Extraction Auth: Vehicle FarmID: %s | Requested: %.2f | Owned in ShadowArray: %.2f", tostring(farmId), fillDelta, maxAvailableForFarm)
+        end
+
+        -- Cap the requested amount to the farm's actual ownership
         fillDelta = math.min(fillDelta, maxAvailableForFarm)
 
+        -- If the farm owns nothing, abort the physical load process completely
         if fillDelta <= 0 then
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:trace("Extraction aborted: Farm owns 0 or requested amount capped to 0.")
+            end
             return 0
         end
 
-        return superFunc(self, fillableObject, fillUnitIndex, fillTypeIndex, fillDelta, fillInfo, toolType)
+        local loadedAmount = superFunc(self, fillableObject, fillUnitIndex, fillTypeIndex, fillDelta, fillInfo, toolType)
+
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:trace("Extraction Success: Loaded %.2f into vehicle.", loadedAmount)
+        end
+
+        return loadedAmount
     end
 
     if LoadingStation ~= nil then
@@ -393,7 +413,7 @@ function GlobalMarketAccess.init()
 end
 
 -- =========================================================================
--- Hook 9: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Hook 5: InfoTrigger UI Split (owned goods vs. foreign goods)
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 
