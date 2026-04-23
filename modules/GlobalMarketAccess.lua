@@ -407,13 +407,101 @@ function GlobalMarketAccess.init()
         LoadingStation.addFillLevelToFillableObject = Utils.overwrittenFunction(LoadingStation.addFillLevelToFillableObject, loadingStationAddFillLevelToFillableHook)
     end
 
+    -- =========================================================================
+    -- Hook 9: Network Synchronization for Shadow Array (Multiplayer Dedi Sync)
+    -- Syncs gmFarmFillLevels dynamically when a client joins the server.
+    -- =========================================================================
+
+    local function storageWriteStreamHook(self, superFunc, streamId, connection)
+        -- First, let the base game write its physical fillLevels
+        superFunc(self, streamId, connection)
+
+        -- Write a boolean so the client knows if it should expect shadow array data
+        local isGmMarket = self.isGmMarket or false
+        streamWriteBool(streamId, isGmMarket)
+
+        if isGmMarket then
+            local numFarms = 0
+            if self.gmFarmFillLevels ~= nil then
+                for _, _ in pairs(self.gmFarmFillLevels) do
+                    numFarms = numFarms + 1
+                end
+            end
+
+            -- Write number of farms that own goods in this specific silo
+            streamWriteUIntN(streamId, numFarms, 8) -- 8 bits allows up to 255 farms (very safe)
+
+            if numFarms > 0 then
+                for farmId, fillLevels in pairs(self.gmFarmFillLevels) do
+                    -- Write FarmID
+                    streamWriteUIntN(streamId, farmId, FarmManager.FARM_ID_SEND_NUM_BITS)
+
+                    local numFillTypes = 0
+                    for _, level in pairs(fillLevels) do
+                        if level > 0.01 then numFillTypes = numFillTypes + 1 end
+                    end
+
+                    -- Write amount of fillTypes this farm owns
+                    streamWriteUIntN(streamId, numFillTypes, 8)
+
+                    -- Write actual FillType Indexes and their Levels
+                    for fillTypeIndex, level in pairs(fillLevels) do
+                        if level > 0.01 then
+                            streamWriteUIntN(streamId, fillTypeIndex, 10) -- 10 bits allows up to 1024 fillTypes
+                            streamWriteFloat32(streamId, level)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local function storageReadStreamHook(self, superFunc, streamId, connection)
+        -- First, let the base game read its physical fillLevels
+        local state = superFunc(self, streamId, connection)
+
+        -- Read our GM flag
+        local isGmMarket = streamReadBool(streamId)
+        self.isGmMarket = isGmMarket
+
+        if isGmMarket then
+            self.gmFarmFillLevels = {}
+            local numFarms = streamReadUIntN(streamId, 8)
+
+            for i = 1, numFarms do
+                local farmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS)
+                self.gmFarmFillLevels[farmId] = {}
+
+                local numFillTypes = streamReadUIntN(streamId, 8)
+                for j = 1, numFillTypes do
+                    local fillTypeIndex = streamReadUIntN(streamId, 10)
+                    local level = streamReadFloat32(streamId)
+
+                    self.gmFarmFillLevels[farmId][fillTypeIndex] = level
+                end
+            end
+
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:trace("Client Initial Sync: Shadow Array reconstructed for GM Storage. Farms synced: %d", numFarms)
+            end
+        end
+
+        -- Always return the state from the superFunc just in case the engine expects it
+        return state
+    end
+
+    if Storage ~= nil then
+        Storage.writeStream = Utils.overwrittenFunction(Storage.writeStream, storageWriteStreamHook)
+        Storage.readStream = Utils.overwrittenFunction(Storage.readStream, storageReadStreamHook)
+    end
+
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
     end
 end
 
 -- =========================================================================
--- Hook 9: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Hook 10: InfoTrigger UI Split (owned goods vs. foreign goods)
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 
