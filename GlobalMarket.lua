@@ -159,10 +159,6 @@ function GlobalMarket:loadMap(name)
 
         -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
-
-        if g_currentMission:getIsServer() and self.loadFromXMLFile ~= nil then
-            self:loadFromXMLFile()
-        end
     end
 
     -- =========================================================
@@ -219,6 +215,14 @@ local function onFinishedLoading(mission)
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:error("UI Injection failed! GlobalMarketUI class is nil.")
             end
+        end
+
+        -- LOAD SAVEGAME DATA HERE: At this point, the entire map and all placeables are fully spawned.
+        if g_currentMission:getIsServer() and g_currentMission.globalMarket.loadFromXMLFile ~= nil then
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:info("Map fully loaded. Injecting GM Savegame data into placeables...")
+            end
+            g_currentMission.globalMarket:loadFromXMLFile()
         end
     end
 end
