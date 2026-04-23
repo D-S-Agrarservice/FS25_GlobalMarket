@@ -2,7 +2,7 @@
 -- FS25 - GlobalMarket (Savegame Module)
 --
 
--- Saves the current offline market fill levels to the active savegame directory.
+-- Saves the current offline market fill levels and silo shadow arrays to the active savegame directory.
 function GlobalMarket:saveToXmlFile()
     if not g_currentMission:getIsServer() then
         return
@@ -31,11 +31,56 @@ function GlobalMarket:saveToXmlFile()
 
         -- Note: Future online save data hooks (e.g., server IP, credentials) go here.
 
+        -- Save siloStorages (Shadow Array for multi-farm logic) using Giants' native uniqueId
+        local siloIndex = 0
+        for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+            if placeable.isGmMarket and placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
+                local uid = placeable.uniqueId
+
+                if uid ~= nil then
+                    local siloKey = string.format("globalMarket.siloStorages.silo(%d)", siloIndex)
+                    xmlFile:setString(siloKey .. "#uniqueId", uid)
+
+                    local savedAtLeastOneStorage = false
+                    for sIndex, storage in ipairs(placeable.spec_silo.storages) do
+                        if storage.gmFarmFillLevels ~= nil then
+                            local storageKey = string.format("%s.storage(%d)", siloKey, sIndex - 1)
+                            local fIndex = 0
+
+                            for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                                local farmKey = string.format("%s.farm(%d)", storageKey, fIndex)
+                                xmlFile:setInt(farmKey .. "#farmId", farmId)
+
+                                local ftIndex = 0
+                                for fillTypeIndex, level in pairs(fillLevels) do
+                                    if level > 0.01 then
+                                        local ftKey = string.format("%s.fillType(%d)", farmKey, ftIndex)
+                                        local fillTypeName = g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex)
+                                        if fillTypeName ~= nil then
+                                            xmlFile:setString(ftKey .. "#name", fillTypeName)
+                                            xmlFile:setFloat(ftKey .. "#level", level)
+                                            ftIndex = ftIndex + 1
+                                            savedAtLeastOneStorage = true
+                                        end
+                                    end
+                                end
+                                fIndex = fIndex + 1
+                            end
+                        end
+                    end
+
+                    if savedAtLeastOneStorage then
+                        siloIndex = siloIndex + 1
+                    end
+                end
+            end
+        end
+
         xmlFile:save()
         xmlFile:delete()
 
         if self.debugManager ~= nil then
-            self.debugManager:info("Savegame successfully written.")
+            self.debugManager:info("Savegame successfully written. Saved %d GM Silos.", siloIndex)
         end
     end
 end
@@ -73,6 +118,55 @@ function GlobalMarket:loadFromXMLFile()
                     end
                 end
             end)
+
+            -- Load siloStorages (Shadow Array for multi-farm logic) via uniqueId
+            local loadedSilos = 0
+            xmlFile:iterate("globalMarket.siloStorages.silo", function(_, siloKey)
+                local uid = xmlFile:getString(siloKey .. "#uniqueId")
+
+                if uid ~= nil then
+                    local targetPlaceable = nil
+                    for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+                        if placeable.uniqueId == uid then
+                            targetPlaceable = placeable
+                            break
+                        end
+                    end
+
+                    if targetPlaceable ~= nil and targetPlaceable.spec_silo ~= nil and targetPlaceable.spec_silo.storages ~= nil then
+                        xmlFile:iterate(siloKey .. ".storage", function(sIndex, storageKey)
+                            local storage = targetPlaceable.spec_silo.storages[sIndex]
+                            if storage ~= nil then
+                                storage.gmFarmFillLevels = storage.gmFarmFillLevels or {}
+
+                                xmlFile:iterate(storageKey .. ".farm", function(_, farmKey)
+                                    local farmId = xmlFile:getInt(farmKey .. "#farmId")
+                                    if farmId ~= nil then
+                                        storage.gmFarmFillLevels[farmId] = storage.gmFarmFillLevels[farmId] or {}
+
+                                        xmlFile:iterate(farmKey .. ".fillType", function(_, ftKey)
+                                            local ftName = xmlFile:getString(ftKey .. "#name")
+                                            local level = xmlFile:getFloat(ftKey .. "#level")
+                                            if ftName ~= nil and level ~= nil then
+                                                local fillTypeDesc = g_fillTypeManager:getFillTypeByName(ftName)
+                                                if fillTypeDesc ~= nil then
+                                                    storage.gmFarmFillLevels[farmId][fillTypeDesc.index] = level
+                                                end
+                                            end
+                                        end)
+                                    end
+                                end)
+                            end
+                        end)
+                        loadedSilos = loadedSilos + 1
+                    else
+                        if self.debugManager ~= nil then
+                            self.debugManager:warning("Failed to map saved GM Silo with uniqueId '%s' to a physical placeable. It might have been removed.", uid)
+                        end
+                    end
+                end
+            end)
+
             xmlFile:delete()
 
             -- Recalculate all prices once after all levels are loaded
@@ -81,12 +175,12 @@ function GlobalMarket:loadFromXMLFile()
             end
 
             if self.debugManager ~= nil then
-                self.debugManager:info("Savegame loading completed.")
+                self.debugManager:info("Savegame loading completed. Reconstructed arrays for %d GM Silos.", loadedSilos)
             end
         end
     else
         if self.debugManager ~= nil then
-            self.debugManager:info("No savegame file found. Using randomized start levels.")
+            self.debugManager:info("No savegame file found. Using randomized start levels and empty storages.")
         end
     end
 end
