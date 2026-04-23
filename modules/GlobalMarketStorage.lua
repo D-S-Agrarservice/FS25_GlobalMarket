@@ -26,9 +26,22 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
 
     -- 1. Scan regular bulk storages (Silos, Extensions)
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        if storage.ownerFarmId == farmId and storage:getIsFillTypeSupported(fillTypeIndex) then
-            local level = storage:getFillLevel(fillTypeIndex)
+        local isGmMarket = storage.isGmMarket or false
+
+        -- Bypass the hardcoded owner check if it is a GM Market
+        if (storage.ownerFarmId == farmId or isGmMarket) and storage:getIsFillTypeSupported(fillTypeIndex) then
+            local level = 0
             local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
+
+            if isGmMarket then
+                -- Extract strictly from the Shadow Array for the requesting farm
+                level = (storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil) and (storage.gmFarmFillLevels[farmId][fillTypeIndex] or 0) or 0
+            else
+                -- Native behavior
+                if storage.ownerFarmId == farmId then
+                    level = storage:getFillLevel(fillTypeIndex)
+                end
+            end
 
             -- MATCHING LOGIC: Since FS25 does not assign owningPlaceable to Storage objects directly,
             -- we match the storage object against the placeables to extract the custom building name.
@@ -50,18 +63,19 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
 
             local displayTitle = storageName
 
-            if storage.isGmMarket then
+            if isGmMarket then
                 displayTitle = storageName .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
             end
 
-            if (isSelling and level > 0.1) or (not isSelling and freeCapacity > 0.1) then
+            -- Only insert if the farm actually has stock (or if buying, has free capacity)
+            if (isSelling and level > 0.01) or (not isSelling and freeCapacity > 0.01 and (isGmMarket or storage.ownerFarmId == farmId)) then
                 table.insert(availableStorages, {
                     storage = storage,
-                    id = storage, -- FIX: Pass the actual table reference, not the rootNode
+                    id = storage,
                     title = displayTitle,
                     level = level,
                     freeCapacity = freeCapacity,
-                    isGmMarket = storage.isGmMarket or false,
+                    isGmMarket = isGmMarket,
                     isObjectStorage = false
                 })
             end
@@ -72,7 +86,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
         local isGmMarket = placeable.isGmMarket or false
 
-        -- FIX: Allow access if the player owns the building OR if it is a GM Terminal
         if placeable.spec_objectStorage ~= nil and (placeable:getOwnerFarmId() == farmId or isGmMarket) then
             local spec = placeable.spec_objectStorage
 
@@ -82,7 +95,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
             if placeable:getObjectStorageSupportsFillType(fillTypeIndex) then
                 local totalFillLevel = 0
 
-                -- Count existing objects for selling
                 for _, objectInfo in ipairs(spec.objectInfos) do
                     local obj = objectInfo.objects[1]
                     local objFillType, objLevel = nil, 0
@@ -106,7 +118,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
                 local approximatedFreeCapacity = freeSlots * 1000
 
-                -- Dynamic Filter Logic for Buying based on native fillType flags
                 local isValidForBuying = true
                 if not isSelling then
                     local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
@@ -114,9 +125,6 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                         local canBeBale = fillType.isBaleType or false
                         local canBePallet = fillType.isPalletType or false
 
-                        -- NATIVE PALLET BRIDGE (FS25 WAY):
-                        -- Allow anything that has a valid pallet XML defined by the engine,
-                        -- including liquids (IBCs) and bulk (fillable pallets like wooden boxes).
                         if fillType.palletFilename ~= nil and fillType.palletFilename ~= "" then
                             canBePallet = true
                         end
@@ -135,7 +143,7 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 if (isSelling and totalFillLevel > 0.1) or (not isSelling and approximatedFreeCapacity > 0.1 and isValidForBuying) then
                     table.insert(availableStorages, {
                         storage = placeable,
-                        id = placeable, -- FIX: Pass the actual table reference, not the rootNode
+                        id = placeable,
                         title = displayTitle,
                         level = totalFillLevel,
                         freeCapacity = approximatedFreeCapacity,
@@ -156,6 +164,7 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
     return availableStorages
 end
 
+
 -- Gets aggregated fill levels for all valid player storages to display in the UI list
 -- Separates private farm storages and GM terminals for UI detail view.
 function GlobalMarket:getAggregatedStorageData(farmId)
@@ -171,16 +180,29 @@ function GlobalMarket:getAggregatedStorageData(farmId)
 
     -- 1. Bulk Storages (Silos & GM Terminals)
     for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        if storage.ownerFarmId == farmId then
-            local isGM = storage.isGmMarket or false
-            for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
-                if fillLevel > 0.1 then
-                    initFillType(fillTypeIndex)
-                    fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
-                    if isGM then
-                        fillTypeTotals[fillTypeIndex].gm = fillTypeTotals[fillTypeIndex].gm + fillLevel
-                    else
-                        fillTypeTotals[fillTypeIndex].private = fillTypeTotals[fillTypeIndex].private + fillLevel
+        local isGM = storage.isGmMarket or false
+
+        if storage.ownerFarmId == farmId or isGM then
+            if isGM then
+                -- Only extract values from the shadow array for the requesting farm
+                if storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil then
+                    for fillTypeIndex, fillLevel in pairs(storage.gmFarmFillLevels[farmId]) do
+                        if fillLevel > 0.01 then
+                            initFillType(fillTypeIndex)
+                            fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
+                            fillTypeTotals[fillTypeIndex].gm = fillTypeTotals[fillTypeIndex].gm + fillLevel
+                        end
+                    end
+                end
+            else
+                -- Native behavior for private silos
+                if storage.ownerFarmId == farmId then
+                    for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
+                        if fillLevel > 0.01 then
+                            initFillType(fillTypeIndex)
+                            fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
+                            fillTypeTotals[fillTypeIndex].private = fillTypeTotals[fillTypeIndex].private + fillLevel
+                        end
                     end
                 end
             end
@@ -191,16 +213,12 @@ function GlobalMarket:getAggregatedStorageData(farmId)
     for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
         local isGM = placeable.isGmMarket or false
 
-        -- Process if the player owns the building OR if it's a communal GM terminal
         if placeable.spec_objectStorage ~= nil and (placeable:getOwnerFarmId() == farmId or isGM) then
             local spec = placeable.spec_objectStorage
             for _, objectInfo in ipairs(spec.objectInfos) do
 
                 if objectInfo.objects ~= nil and #objectInfo.objects > 0 then
-                    -- HYBRID LOGIC: Detect if we are a Dedi-Client (array is truncated) or SP/Host (full array)
                     local isDediClient = (#objectInfo.objects < objectInfo.numObjects)
-
-                    -- If Dedi, only process the template. If SP, iterate through all physical items.
                     local loopMax = isDediClient and 1 or #objectInfo.objects
 
                     for i = 1, loopMax do
@@ -222,11 +240,9 @@ function GlobalMarket:getAggregatedStorageData(farmId)
                             objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
                         end
 
-                        -- Strictly filter by the object's farmId, not the building's farmId
                         if objFillType ~= nil and not isFermenting and objFarmId == farmId then
                             initFillType(objFillType)
 
-                            -- The Magic Multiplier: If Dedi, multiply template by total network count. If SP, multiply by 1 (since we iterate).
                             local multiplier = isDediClient and objectInfo.numObjects or 1
                             local totalVol = objLevel * multiplier
 
@@ -296,7 +312,6 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         return
     end
 
-    -- FIX: Use the directly passed object reference instead of iterating over rootNodes
     local targetStorage = targetStorageObj
 
     if targetStorage == nil or type(targetStorage) ~= "table" then
@@ -312,7 +327,6 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
 
     if g_server ~= nil then
         local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
-
         local marketItem = nil
         for _, ft in pairs(self.offlineMarketFillTypes) do
             if ft.fillType == filltypeName then
@@ -326,14 +340,21 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         -- =======================================================
         -- SERVER-SIDE SECURITY VALIDATION
         -- =======================================================
-        local currentSiloLevel = targetStorage:getFillLevel(fillTypeIndex)
-        local freeSiloCapacity = targetStorage:getFreeCapacity(fillTypeIndex)
+        local isGmMarket = targetStorage.isGmMarket or false
+        local physicalSiloLevel = targetStorage:getFillLevel(fillTypeIndex)
+        local availableForFarm = physicalSiloLevel
+
+        -- If GM Market, validate strictly against the Shadow Array
+        if isGmMarket then
+            availableForFarm = (targetStorage.gmFarmFillLevels ~= nil and targetStorage.gmFarmFillLevels[playerFarmId] ~= nil) and (targetStorage.gmFarmFillLevels[playerFarmId][fillTypeIndex] or 0) or 0
+        end
 
         if mode == 1 then
-            -- SELLING: Player cannot sell more than what is physically in the silo
-            level = math.min(level, currentSiloLevel)
+            -- SELLING: Player cannot sell more than what they own
+            level = math.min(level, availableForFarm)
         elseif mode == 2 then
-            -- BUYING: Player cannot buy more than what fits in the silo OR what the market has
+            -- BUYING: Shared global free capacity
+            local freeSiloCapacity = targetStorage:getFreeCapacity(fillTypeIndex)
             level = math.min(level, freeSiloCapacity)
             level = math.min(level, marketItem.fillLevel)
         end
@@ -343,23 +364,17 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
             return
         end
 
-        -- FIX: Use the identical price resolving function as the UI
         local marketPricePerUnit = self:getOfflinePriceByFillType(filltypeName) / 1000
         local totalPrice = marketPricePerUnit * level
-
         local deliveryCosts = 0
-        if not (targetStorage.isGmMarket or false) then
+
+        if not isGmMarket then
             deliveryCosts = (GlobalMarket.DELIVER_COST + GlobalMarket.DELIVER_COST_PERLITER * level) * EconomyManager.getCostMultiplier()
         end
 
         if mode == 2 then
             local farm = g_farmManager:getFarmById(targetFarmId)
             local totalCost = totalPrice + deliveryCosts
-
-            if self.debugManager ~= nil then
-                local currentFarmMoney = farm ~= nil and farm.money or -1
-                self.debugManager:trace("Validation Check -> targetFarmId: %s | Farm Money: %.2f | Cost (totalCost): %.2f", tostring(targetFarmId), currentFarmMoney, totalCost)
-            end
 
             if farm == nil or farm.money < totalCost then
                 if self.debugManager ~= nil then self.debugManager:warning("Bulk Transaction aborted: Insufficient funds.") end
@@ -380,8 +395,18 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
             g_currentMission:addMoney(deliveryCosts * -1, targetFarmId, MoneyType.GM_FEE, true, true)
         end
 
-        local newSiloLevel = (mode == 2) and (currentSiloLevel + level) or (currentSiloLevel - level)
+        local newSiloLevel = (mode == 2) and (physicalSiloLevel + level) or (physicalSiloLevel - level)
+
+        -- Inject tempFarmId to force Hook 7 (access.lua) to update the Shadow Array
+        if isGmMarket then
+            targetStorage.gmTempFarmId = playerFarmId
+        end
+
         targetStorage:setFillLevel(newSiloLevel, fillTypeIndex, nil)
+
+        if isGmMarket then
+            targetStorage.gmTempFarmId = nil
+        end
 
         local marketChange = (mode == 2) and (level * -1) or level
         marketItem.fillLevel = math.max(marketItem.fillLevel + marketChange, 0)
@@ -396,8 +421,6 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         end
     else
         -- CLIENT SEND EVENT (Bulk)
-        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP
-        -- even if the external sync tool is disabled or currently unavailable.
         if SellBuyOfflineMarketEvent ~= nil then
             g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, level, targetStorageObj, 0, false, playerFarmId))
         end
