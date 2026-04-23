@@ -570,3 +570,67 @@ end
 if PlaceableObjectStorage ~= nil then
     PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
 end
+
+-- =========================================================================
+-- Hook 11: PlaceableSilo InfoTrigger UI Fix
+-- Adds Capacity (Used/Total) and Foreign Goods line to Bulk Storages.
+-- =========================================================================
+local function siloUpdateInfoHook(self, superFunc, infoTable)
+    -- Check if it's a GM Market
+    local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
+
+    if not isGmMarket then
+        return superFunc(self, infoTable)
+    end
+
+    local playerFarmId = g_currentMission:getFarmId()
+    local totalVolume = 0
+    local totalCapacity = 0
+    local foreignLiters = 0
+
+    -- Calculate physical totals and foreign goods from shadow array
+    if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+        for _, storage in ipairs(self.spec_silo.storages) do
+            totalCapacity = totalCapacity + storage:getCapacity()
+
+            -- Get physical total fill level for the capacity bar
+            for _, level in pairs(storage:getFillLevels()) do
+                totalVolume = totalVolume + level
+            end
+
+            -- Sum up goods belonging to other farms
+            if storage.gmFarmFillLevels ~= nil then
+                for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                    if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
+                        for _, level in pairs(fillLevels) do
+                            foreignLiters = foreignLiters + level
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Run original function to get the player's own fill levels (Hook 8 filters these)
+    superFunc(self, infoTable)
+
+    -- FIX: Insert Capacity info at the top (Position 1) to match Pallet Storage UI
+    local capText = string.format("%s / %s", g_i18n:formatVolume(totalVolume, 0), g_i18n:formatVolume(totalCapacity, 0))
+    table.insert(infoTable, 1, {
+        title = g_i18n:getText("ui_totalCapacity"),
+        text = capText
+    })
+
+    -- Append foreign goods summary at the bottom
+    if foreignLiters > 0.1 then
+        local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+        table.insert(infoTable, {
+            title = foreignTitle,
+            text = g_i18n:formatVolume(foreignLiters, 0)
+        })
+    end
+end
+
+if PlaceableSilo ~= nil then
+    PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
+end
