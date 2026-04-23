@@ -636,31 +636,26 @@ local function unloadingStationAddFillLevelFromToolHook(self, superFunc, farmId,
     local isGmMarket = self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket
     local beforeLevels = {}
 
-    -- 1. Record fill levels BEFORE the dumping process occurs
     if isGmMarket and self.targetStorages ~= nil then
         for _, storage in pairs(self.targetStorages) do
             beforeLevels[storage] = storage:getFillLevel(fillType)
         end
     end
 
-    -- 2. Let the GIANTS Engine handle the physical filling of the storage
     local movedFillLevel = superFunc(self, farmId, deltaFillLevel, fillType, fillInfo, toolType, extraAttributes)
 
-    -- 3. Calculate the difference and credit it to the shadow array
     if movedFillLevel > 0 and isGmMarket and self.targetStorages ~= nil then
         for _, storage in pairs(self.targetStorages) do
-            local oldLevel = beforeLevels[storage] or 0
-            local newLevel = storage:getFillLevel(fillType)
-            local diff = newLevel - oldLevel
+            local diff = storage:getFillLevel(fillType) - (beforeLevels[storage] or 0)
 
-            -- If this specific storage received the fill type
             if diff > 0.001 then
                 storage.gmFarmFillLevels = storage.gmFarmFillLevels or {}
                 storage.gmFarmFillLevels[farmId] = storage.gmFarmFillLevels[farmId] or {}
                 storage.gmFarmFillLevels[farmId][fillType] = (storage.gmFarmFillLevels[farmId][fillType] or 0) + diff
 
-                if GlobalMarket.debugManager ~= nil then
-                    GlobalMarket.debugManager:trace("UnloadingStation: Added %.2f of fillType %d to Farm %d in Shadow-Array.", diff, fillType, farmId)
+                -- NEW: Broadcast the updated level to all clients instantly
+                if g_server ~= nil then
+                    g_server:broadcastEvent(SyncGmSiloEvent.new(storage, farmId, fillType, storage.gmFarmFillLevels[farmId][fillType]))
                 end
             end
         end
@@ -681,31 +676,25 @@ local function loadingStationRemoveFillLevelHook(self, superFunc, fillTypeIndex,
     local isGmMarket = self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket
     local beforeLevels = {}
 
-    -- 1. Record fill levels BEFORE the loading process occurs
     if isGmMarket and self.sourceStorages ~= nil then
         for _, storage in pairs(self.sourceStorages) do
             beforeLevels[storage] = storage:getFillLevel(fillTypeIndex)
         end
     end
 
-    -- 2. Let the GIANTS Engine handle the physical removal from the storage
     local remainingDelta = superFunc(self, fillTypeIndex, fillDelta, farmId)
 
-    -- 3. Calculate the difference and deduct it from the shadow array
     if isGmMarket and self.sourceStorages ~= nil then
         for _, storage in pairs(self.sourceStorages) do
-            local oldLevel = beforeLevels[storage] or 0
-            local newLevel = storage:getFillLevel(fillTypeIndex)
-            local diff = oldLevel - newLevel
+            local diff = (beforeLevels[storage] or 0) - storage:getFillLevel(fillTypeIndex)
 
-            -- If this specific storage provided the fill type
             if diff > 0.001 then
                 if storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil and storage.gmFarmFillLevels[farmId][fillTypeIndex] ~= nil then
-                    -- Deduct the amount, ensuring it never drops below 0
                     storage.gmFarmFillLevels[farmId][fillTypeIndex] = math.max(0, storage.gmFarmFillLevels[farmId][fillTypeIndex] - diff)
 
-                    if GlobalMarket.debugManager ~= nil then
-                        GlobalMarket.debugManager:trace("LoadingStation: Removed %.2f of fillType %d from Farm %d in Shadow-Array.", diff, fillTypeIndex, farmId)
+                    -- NEW: Broadcast the updated level to all clients instantly
+                    if g_server ~= nil then
+                        g_server:broadcastEvent(SyncGmSiloEvent.new(storage, farmId, fillTypeIndex, storage.gmFarmFillLevels[farmId][fillTypeIndex]))
                     end
                 end
             end
