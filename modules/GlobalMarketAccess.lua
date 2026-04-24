@@ -521,20 +521,31 @@ function GlobalMarketAccess.init()
 end
 
 -- =========================================================================
--- Hook 10: InfoTrigger UI Split (owned goods vs. foreign goods)
--- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
+-- Hook 10: InfoTrigger UI Master Hook (PlaceableObjectStorage)
+-- Handles UI masking for objects (Pallets/Bales) AND appends bulk foreign goods.
+-- Since FS25, this specialization manages the green capacity block at the bottom.
 -- =========================================================================
 
--- FIX: Adjusted signature to account for Specialization superFunc chaining
 local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     -- Check if it's a GM Market
-    local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
+    local isGmMarket = self.isGmMarket == true
+
+    -- Fallback check: Also verify storages in case the flag on the main placeable is missing
+    if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+        for _, storage in ipairs(self.spec_silo.storages) do
+            if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
+                isGmMarket = true
+                break
+            end
+        end
+    end
 
     if not isGmMarket then
         -- Not a GM Terminal, run default behavior
         return superFunc(self, engineSuperFunc, infoTable)
     end
 
+    -- 1. OBJECT STORAGE MASKING (Pallets/Bales)
     -- Force engine to update its list BEFORE we mask it
     if self.updateDirtyObjectStorageObjectInfos ~= nil then
         self:updateDirtyObjectStorageObjectInfos()
@@ -542,11 +553,9 @@ local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
 
     local spec = self.spec_objectStorage
     local originalObjectInfos = spec.objectInfos
-
-    -- Split the data
     local playerFarmId = g_currentMission:getFarmId()
     local myInfos = {}
-    local foreignCount = 0
+    local foreignObjectsCount = 0
 
     if originalObjectInfos ~= nil then
         for i = 1, #originalObjectInfos do
@@ -564,7 +573,7 @@ local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
                 if objFarmId == playerFarmId then
                     table.insert(myInfos, objectInfo)
                 else
-                    foreignCount = foreignCount + objectInfo.numObjects
+                    foreignObjectsCount = foreignObjectsCount + objectInfo.numObjects
                 end
             end
         end
@@ -573,73 +582,22 @@ local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     -- Temporarily mask the objectInfos for the base game function
     spec.objectInfos = myInfos
 
+    -- 2. EXECUTE VANILLA LOGIC
     -- Run base function: It will print accurate total capacity, but only list the player's items
     superFunc(self, engineSuperFunc, infoTable)
 
     -- Restore original data immediately to not break game logic
     spec.objectInfos = originalObjectInfos
 
-    -- Append foreign goods summary at the bottom
-    if foreignCount > 0 then
-        -- Checks if modder provided a translation, otherwise defaults to "Foreign Goods"
-        local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-        table.insert(infoTable, { title = foreignTitle, text = tostring(foreignCount) })
-    end
-end
-
-if PlaceableObjectStorage ~= nil then
-    PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
-end
-
--- =========================================================================
--- Hook 11: PlaceableSilo InfoTrigger UI Fix (FS25 Adjusted)
--- Adds Capacity (Used/Total) and Foreign Goods summary.
--- Relies on Hook 7 to natively filter the player's owned goods.
--- =========================================================================
-local function siloUpdateInfoHook(self, superFunc, engineSuperFunc, infoTable)
-    local isGmMarket = self.isGmMarket == true
-
-    -- Aggressive Fallback: Check storages for the flag or shadow array existence
-    if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-        for _, storage in ipairs(self.spec_silo.storages) do
-            if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
-                isGmMarket = true
-                break
-            end
-        end
-    end
-
-    -- If it's strictly not our market, run vanilla and exit
-    if not isGmMarket then
-        return superFunc(self, engineSuperFunc, infoTable)
-    end
-
-    -- 1. Run base function FIRST.
-    -- In FS25, this natively calls LoadingStation:getAllFillLevels(),
-    -- which is already filtered to the player's goods by our GM Hook 7!
-    superFunc(self, engineSuperFunc, infoTable)
-
-    -- 2. Calculate our GM specific data
-    local playerFarmId = g_currentMission:getFarmId()
-    local totalVolume = 0
-    local totalCapacity = 0
-    local foreignLiters = 0
-
+    -- 3. CALCULATE FOREIGN BULK GOODS
+    local foreignBulkLiters = 0
     if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
-            totalCapacity = totalCapacity + storage:getCapacity()
-
-            -- Calculate total physical volume for the capacity bar
-            for _, level in pairs(storage:getFillLevels()) do
-                totalVolume = totalVolume + level
-            end
-
-            -- Calculate foreign liters
             if storage.gmFarmFillLevels ~= nil then
                 for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
                     if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
                         for _, level in pairs(fillLevels) do
-                            foreignLiters = foreignLiters + level
+                            foreignBulkLiters = foreignBulkLiters + level
                         end
                     end
                 end
@@ -647,24 +605,20 @@ local function siloUpdateInfoHook(self, superFunc, engineSuperFunc, infoTable)
         end
     end
 
-    -- 3. Insert Capacity info at the top (Position 1)
-    local capTitle = g_i18n:getText("ui_silos_totalCapacity")
-    local capText = string.format("%s / %s", g_i18n:formatVolume(totalVolume, 0), g_i18n:formatVolume(totalCapacity, 0))
-    table.insert(infoTable, 1, {
-        title = capTitle,
-        text = capText
-    })
+    -- 4. APPEND GM ENTRIES AT THE BOTTOM
+    -- Append foreign pallets/bales summary
+    if foreignObjectsCount > 0 then
+        local objTitle = g_i18n:hasText("info_gmForeignObjects") and g_i18n:getText("info_gmForeignObjects") or "Foreign Objects"
+        table.insert(infoTable, { title = objTitle, text = tostring(foreignObjectsCount) })
+    end
 
-    -- 4. Append foreign goods summary at the bottom
-    if foreignLiters > 0.1 then
-        local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-        table.insert(infoTable, {
-            title = foreignTitle,
-            text = g_i18n:formatVolume(foreignLiters, 0)
-        })
+    -- Append foreign bulk goods summary
+    if foreignBulkLiters > 0.1 then
+        local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods (Bulk)"
+        table.insert(infoTable, { title = bulkTitle, text = g_i18n:formatVolume(foreignBulkLiters, 0) })
     end
 end
 
-if PlaceableSilo ~= nil then
-    PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
+if PlaceableObjectStorage ~= nil then
+    PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
 end
