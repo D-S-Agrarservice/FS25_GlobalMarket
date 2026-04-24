@@ -281,9 +281,18 @@ function GlobalMarketAccess.init()
                     GlobalMarket.debugManager:trace("Storage Tracker: Farm %s | FillType: %d | Delta: %.2f | New Owned Total: %.2f", tostring(self.gmTempFarmId), fillType, delta, self.gmFarmFillLevels[self.gmTempFarmId][fillType])
                 end
 
-                -- NEW: Broadcast the updated shadow array level to all clients instantly
+                -- NEW: Broadcast with Network Debounce (Prevents Dedi Spam during tipping)
                 if g_server ~= nil and SyncGmSiloEvent ~= nil then
-                    g_server:broadcastEvent(SyncGmSiloEvent.new(self, self.gmTempFarmId, fillType, self.gmFarmFillLevels[self.gmTempFarmId][fillType]))
+                    self.gmSyncTimer = self.gmSyncTimer or 0
+                    self.gmSyncAccumulator = (self.gmSyncAccumulator or 0) + math.abs(delta)
+
+                    local currentTime = g_currentMission.time
+                    -- Sync instantly if it's a large bulk transaction (> 100L) or 1 second has passed
+                    if self.gmSyncAccumulator >= 100 or currentTime > (self.gmSyncTimer + 1000) then
+                        g_server:broadcastEvent(SyncGmSiloEvent.new(self, self.gmTempFarmId, fillType, self.gmFarmFillLevels[self.gmTempFarmId][fillType]))
+                        self.gmSyncTimer = currentTime
+                        self.gmSyncAccumulator = 0
+                    end
                 end
             end
         end
@@ -581,7 +590,19 @@ end
 -- Adds Capacity (Used/Total) and Foreign Goods line to Bulk Storages.
 -- =========================================================================
 local function siloUpdateInfoHook(self, superFunc, infoTable)
-    local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
+    local isGmMarket = self.isGmMarket
+
+    -- Client-Side Fallback: The Placeable doesn't read the savegame XML on clients,
+    -- so we dynamically check if any attached storage has the synced GM flag.
+    if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+        for _, storage in ipairs(self.spec_silo.storages) do
+            if storage.isGmMarket then
+                isGmMarket = true
+                break
+            end
+        end
+    end
+
     if not isGmMarket then return end
 
     local playerFarmId = g_currentMission:getFarmId()
