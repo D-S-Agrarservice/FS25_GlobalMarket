@@ -87,7 +87,8 @@ function SyncGmSiloEvent:writeStream(streamId, connection)
 end
 
 function SyncGmSiloEvent:run(connection)
-    if not connection:getIsServer() then
+    -- Execute only on clients. g_server is false on dedicated clients.
+    if not g_server then
         if self.storage ~= nil then
             self.storage.gmFarmFillLevels = self.storage.gmFarmFillLevels or {}
             self.storage.gmFarmFillLevels[self.farmId] = self.storage.gmFarmFillLevels[self.farmId] or {}
@@ -97,7 +98,7 @@ function SyncGmSiloEvent:run(connection)
                 GlobalMarket.debugManager:trace("Network (Client): Received live silo sync for Farm %d. New Level: %.2f", self.farmId, self.newFillLevel)
             end
 
-            -- Force UI update immediately if open (FIXED REFERENCE to gm.lua mapping)
+            -- Force UI update immediately if open
             if g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.ui ~= nil then
                 g_currentMission.globalMarket.ui:updateContent()
             end

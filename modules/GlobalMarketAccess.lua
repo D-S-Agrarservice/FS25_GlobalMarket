@@ -286,12 +286,18 @@ function GlobalMarketAccess.init()
                     self.gmSyncTimer = self.gmSyncTimer or 0
                     self.gmSyncAccumulator = (self.gmSyncAccumulator or 0) + math.abs(delta)
 
-                    local currentTime = g_currentMission.time
-                    -- Sync instantly if it's a large bulk transaction (> 100L) or 1 second has passed
+                    -- FIX: Use g_time (real engine uptime ms) for reliable network debouncing instead of mission time
+                    local currentTime = g_time
                     if self.gmSyncAccumulator >= 100 or currentTime > (self.gmSyncTimer + 1000) then
                         g_server:broadcastEvent(SyncGmSiloEvent.new(self, self.gmTempFarmId, fillType, self.gmFarmFillLevels[self.gmTempFarmId][fillType]))
                         self.gmSyncTimer = currentTime
                         self.gmSyncAccumulator = 0
+
+                        -- FIX: Local Multiplayer Host UI Update
+                        -- The host broadcasts to clients but doesn't receive the event back. Update local UI directly.
+                        if not g_dedicatedServer and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.ui ~= nil then
+                            g_currentMission.globalMarket.ui:updateContent()
+                        end
                     end
                 end
             end
@@ -587,13 +593,12 @@ end
 
 -- =========================================================================
 -- Hook 11: PlaceableSilo InfoTrigger UI Fix
--- Adds Capacity (Used/Total) and Foreign Goods line to Bulk Storages.
+-- Adds Capacity (Used/Total), masks foreign goods, and adds Foreign Goods summary.
 -- =========================================================================
 local function siloUpdateInfoHook(self, superFunc, infoTable)
     local isGmMarket = self.isGmMarket
 
-    -- Client-Side Fallback: The Placeable doesn't read the savegame XML on clients,
-    -- so we dynamically check if any attached storage has the synced GM flag.
+    -- Client-Side Fallback: Check if any attached storage has the synced GM flag
     if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
             if storage.isGmMarket then
@@ -603,33 +608,61 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
         end
     end
 
-    if not isGmMarket then return end
+    -- Not a GM terminal, run default and exit
+    if not isGmMarket then
+        return superFunc(self, infoTable)
+    end
 
     local playerFarmId = g_currentMission:getFarmId()
     local totalVolume = 0
     local totalCapacity = 0
     local foreignLiters = 0
+    local originalFillLevels = {}
 
+    -- Masking & Calculation Phase
     if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
             totalCapacity = totalCapacity + storage:getCapacity()
 
-            -- Get physical total fill level for the capacity bar
+            -- Calculate total physical volume for the capacity bar
             for _, level in pairs(storage:getFillLevels()) do
                 totalVolume = totalVolume + level
             end
 
-            -- Sum up goods belonging to other farms
-            if storage.gmFarmFillLevels ~= nil then
-                for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
-                    if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
-                        for _, level in pairs(fillLevels) do
-                            foreignLiters = foreignLiters + level
+            -- Calculate foreign liters and prepare masking
+            if storage.isGmMarket then
+                -- Save original pointer to restore later
+                originalFillLevels[storage] = storage.fillLevels
+                local myFillLevels = {}
+
+                if storage.gmFarmFillLevels ~= nil then
+                    for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                        if farmId == playerFarmId then
+                            -- Assign ONLY player goods to the mask
+                            for fillType, level in pairs(fillLevels) do
+                                myFillLevels[fillType] = level
+                            end
+                        elseif farmId ~= FarmManager.SPECTATOR_FARM_ID then
+                            -- Sum up foreign goods
+                            for _, level in pairs(fillLevels) do
+                                foreignLiters = foreignLiters + level
+                            end
                         end
                     end
                 end
+
+                -- Apply mask for vanilla UI engine
+                storage.fillLevels = myFillLevels
             end
         end
+    end
+
+    -- Run base function: Vanilla engine will now only read the masked (player-owned) fillLevels
+    superFunc(self, infoTable)
+
+    -- Restore Phase: Immediately restore the original table pointers to not break physics
+    for storage, origLevels in pairs(originalFillLevels) do
+        storage.fillLevels = origLevels
     end
 
     -- Insert Capacity info at the top (Position 1) using GIANTS native key
@@ -651,5 +684,6 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
 end
 
 if PlaceableSilo ~= nil then
-    PlaceableSilo.updateInfo = Utils.appendedFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
+    -- FIX: Changed from appendedFunction to overwrittenFunction to allow pre-execution masking
+    PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
 end
