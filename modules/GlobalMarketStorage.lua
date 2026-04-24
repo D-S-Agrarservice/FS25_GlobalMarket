@@ -319,11 +319,8 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         return
     end
 
-    -- Security for MP: If storage has no valid farm owner, use the requesting player's farm ID
-    local targetFarmId = targetStorage.ownerFarmId
-    if targetFarmId == nil or targetFarmId == FarmManager.SPECTATOR_FARM_ID then
-        targetFarmId = playerFarmId
-    end
+    -- FIX: Money and Ownership MUST strictly belong to the acting player, regardless of who owns the physical silo building.
+    local targetFarmId = playerFarmId
 
     if g_server ~= nil then
         local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
@@ -397,9 +394,9 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
 
         local newSiloLevel = (mode == 2) and (physicalSiloLevel + level) or (physicalSiloLevel - level)
 
-        -- Inject tempFarmId to force Hook 7 (access.lua) to update the Shadow Array
+        -- Inject tempFarmId to force Hook 6 (access.lua) to update the Shadow Array for the BUYING/SELLING farm
         if isGmMarket then
-            targetStorage.gmTempFarmId = playerFarmId
+            targetStorage.gmTempFarmId = targetFarmId
         end
 
         targetStorage:setFillLevel(newSiloLevel, fillTypeIndex, nil)

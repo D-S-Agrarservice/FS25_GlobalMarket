@@ -265,7 +265,7 @@ function GlobalMarketAccess.init()
         -- Run native function to physically add/remove goods
         superFunc(self, fillLevel, fillType, fillInfo)
 
-        -- If the transaction was initiated by our Hook 6 (or later GM UI)
+        -- If the transaction was initiated by our Hook 5 (or later GM UI)
         if isGmMarket and self.gmTempFarmId ~= nil then
             local newFillLevel = self.fillLevels[fillType] or 0
             local delta = newFillLevel - oldFillLevel
@@ -279,6 +279,11 @@ function GlobalMarketAccess.init()
 
                 if GlobalMarket.debugManager ~= nil then
                     GlobalMarket.debugManager:trace("Storage Tracker: Farm %s | FillType: %d | Delta: %.2f | New Owned Total: %.2f", tostring(self.gmTempFarmId), fillType, delta, self.gmFarmFillLevels[self.gmTempFarmId][fillType])
+                end
+
+                -- NEW: Broadcast the updated shadow array level to all clients instantly
+                if g_server ~= nil and SyncGmSiloEvent ~= nil then
+                    g_server:broadcastEvent(SyncGmSiloEvent.new(self, self.gmTempFarmId, fillType, self.gmFarmFillLevels[self.gmTempFarmId][fillType]))
                 end
             end
         end
@@ -626,84 +631,4 @@ end
 
 if PlaceableSilo ~= nil then
     PlaceableSilo.updateInfo = Utils.appendedFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
-end
-
--- =========================================================================
--- Hook 12: UnloadingStation (Dumping / Storing)
--- Intercepts the physical dumping process and records the amount to the farm's shadow array.
--- =========================================================================
-local function unloadingStationAddFillLevelFromToolHook(self, superFunc, farmId, deltaFillLevel, fillType, fillInfo, toolType, extraAttributes)
-    local isGmMarket = self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket
-    local beforeLevels = {}
-
-    if isGmMarket and self.targetStorages ~= nil then
-        for _, storage in pairs(self.targetStorages) do
-            beforeLevels[storage] = storage:getFillLevel(fillType)
-        end
-    end
-
-    local movedFillLevel = superFunc(self, farmId, deltaFillLevel, fillType, fillInfo, toolType, extraAttributes)
-
-    if movedFillLevel > 0 and isGmMarket and self.targetStorages ~= nil then
-        for _, storage in pairs(self.targetStorages) do
-            local diff = storage:getFillLevel(fillType) - (beforeLevels[storage] or 0)
-
-            if diff > 0.001 then
-                storage.gmFarmFillLevels = storage.gmFarmFillLevels or {}
-                storage.gmFarmFillLevels[farmId] = storage.gmFarmFillLevels[farmId] or {}
-                storage.gmFarmFillLevels[farmId][fillType] = (storage.gmFarmFillLevels[farmId][fillType] or 0) + diff
-
-                -- NEW: Broadcast the updated level to all clients instantly
-                if g_server ~= nil then
-                    g_server:broadcastEvent(SyncGmSiloEvent.new(storage, farmId, fillType, storage.gmFarmFillLevels[farmId][fillType]))
-                end
-            end
-        end
-    end
-
-    return movedFillLevel
-end
-
-if UnloadingStation ~= nil then
-    UnloadingStation.addFillLevelFromTool = Utils.overwrittenFunction(UnloadingStation.addFillLevelFromTool, unloadingStationAddFillLevelFromToolHook)
-end
-
--- =========================================================================
--- Hook 13: LoadingStation (Loading / Withdrawing)
--- Intercepts the physical loading process and deducts the amount from the farm's shadow array.
--- =========================================================================
-local function loadingStationRemoveFillLevelHook(self, superFunc, fillTypeIndex, fillDelta, farmId)
-    local isGmMarket = self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket
-    local beforeLevels = {}
-
-    if isGmMarket and self.sourceStorages ~= nil then
-        for _, storage in pairs(self.sourceStorages) do
-            beforeLevels[storage] = storage:getFillLevel(fillTypeIndex)
-        end
-    end
-
-    local remainingDelta = superFunc(self, fillTypeIndex, fillDelta, farmId)
-
-    if isGmMarket and self.sourceStorages ~= nil then
-        for _, storage in pairs(self.sourceStorages) do
-            local diff = (beforeLevels[storage] or 0) - storage:getFillLevel(fillTypeIndex)
-
-            if diff > 0.001 then
-                if storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil and storage.gmFarmFillLevels[farmId][fillTypeIndex] ~= nil then
-                    storage.gmFarmFillLevels[farmId][fillTypeIndex] = math.max(0, storage.gmFarmFillLevels[farmId][fillTypeIndex] - diff)
-
-                    -- NEW: Broadcast the updated level to all clients instantly
-                    if g_server ~= nil then
-                        g_server:broadcastEvent(SyncGmSiloEvent.new(storage, farmId, fillTypeIndex, storage.gmFarmFillLevels[farmId][fillTypeIndex]))
-                    end
-                end
-            end
-        end
-    end
-
-    return remainingDelta
-end
-
-if LoadingStation ~= nil then
-    LoadingStation.removeFillLevel = Utils.overwrittenFunction(LoadingStation.removeFillLevel, loadingStationRemoveFillLevelHook)
 end
