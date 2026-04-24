@@ -592,14 +592,14 @@ if PlaceableObjectStorage ~= nil then
 end
 
 -- =========================================================================
--- Hook 11: PlaceableSilo InfoTrigger UI Fix
--- Adds Capacity (Used/Total), masks foreign goods, and adds Foreign Goods summary.
+-- Hook 11: PlaceableSilo InfoTrigger UI Fix (FS25 Adjusted)
+-- Adds Capacity (Used/Total) and Foreign Goods summary.
+-- Relies on Hook 7 to natively filter the player's owned goods.
 -- =========================================================================
-local function siloUpdateInfoHook(self, superFunc, infoTable)
+local function siloUpdateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     local isGmMarket = self.isGmMarket == true
 
-    -- Aggressive Client-Fallback: The boolean flag might be lost on the Placeable root,
-    -- so we check the storages for the flag OR the physical existence of our shadow array.
+    -- Aggressive Fallback: Check storages for the flag or shadow array existence
     if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
             if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
@@ -611,16 +611,20 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
 
     -- If it's strictly not our market, run vanilla and exit
     if not isGmMarket then
-        return superFunc(self, infoTable)
+        return superFunc(self, engineSuperFunc, infoTable)
     end
 
+    -- 1. Run base function FIRST.
+    -- In FS25, this natively calls LoadingStation:getAllFillLevels(),
+    -- which is already filtered to the player's goods by our GM Hook 7!
+    superFunc(self, engineSuperFunc, infoTable)
+
+    -- 2. Calculate our GM specific data
     local playerFarmId = g_currentMission:getFarmId()
     local totalVolume = 0
     local totalCapacity = 0
     local foreignLiters = 0
-    local originalFillLevels = {}
 
-    -- Masking & Calculation Phase
     if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
             totalCapacity = totalCapacity + storage:getCapacity()
@@ -630,40 +634,20 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
                 totalVolume = totalVolume + level
             end
 
-            -- Prepare masking for vanilla UI engine
-            originalFillLevels[storage] = storage.fillLevels
-            local myFillLevels = {}
-
+            -- Calculate foreign liters
             if storage.gmFarmFillLevels ~= nil then
                 for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
-                    if farmId == playerFarmId then
-                        -- Assign ONLY player goods to the mask
-                        for fillType, level in pairs(fillLevels) do
-                            myFillLevels[fillType] = level
-                        end
-                    elseif farmId ~= FarmManager.SPECTATOR_FARM_ID then
-                        -- Sum up foreign goods
+                    if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
                         for _, level in pairs(fillLevels) do
                             foreignLiters = foreignLiters + level
                         end
                     end
                 end
             end
-
-            -- Apply mask
-            storage.fillLevels = myFillLevels
         end
     end
 
-    -- Run base function: Vanilla engine will now only read the masked (player-owned) fillLevels
-    superFunc(self, infoTable)
-
-    -- Restore Phase: Immediately restore the original table pointers to not break physics
-    for storage, origLevels in pairs(originalFillLevels) do
-        storage.fillLevels = origLevels
-    end
-
-    -- Insert Capacity info at the top (Position 1) using GIANTS native key
+    -- 3. Insert Capacity info at the top (Position 1)
     local capTitle = g_i18n:getText("ui_silos_totalCapacity")
     local capText = string.format("%s / %s", g_i18n:formatVolume(totalVolume, 0), g_i18n:formatVolume(totalCapacity, 0))
     table.insert(infoTable, 1, {
@@ -671,7 +655,7 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
         text = capText
     })
 
-    -- Append foreign goods summary at the bottom
+    -- 4. Append foreign goods summary at the bottom
     if foreignLiters > 0.1 then
         local foreignTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
         table.insert(infoTable, {
