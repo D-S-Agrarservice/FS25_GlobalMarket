@@ -596,19 +596,20 @@ end
 -- Adds Capacity (Used/Total), masks foreign goods, and adds Foreign Goods summary.
 -- =========================================================================
 local function siloUpdateInfoHook(self, superFunc, infoTable)
-    local isGmMarket = self.isGmMarket
+    local isGmMarket = self.isGmMarket == true
 
-    -- Client-Side Fallback: Check if any attached storage has the synced GM flag
+    -- Aggressive Client-Fallback: The boolean flag might be lost on the Placeable root,
+    -- so we check the storages for the flag OR the physical existence of our shadow array.
     if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
-            if storage.isGmMarket then
+            if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
                 isGmMarket = true
                 break
             end
         end
     end
 
-    -- Not a GM terminal, run default and exit
+    -- If it's strictly not our market, run vanilla and exit
     if not isGmMarket then
         return superFunc(self, infoTable)
     end
@@ -629,31 +630,28 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
                 totalVolume = totalVolume + level
             end
 
-            -- Calculate foreign liters and prepare masking
-            if storage.isGmMarket then
-                -- Save original pointer to restore later
-                originalFillLevels[storage] = storage.fillLevels
-                local myFillLevels = {}
+            -- Prepare masking for vanilla UI engine
+            originalFillLevels[storage] = storage.fillLevels
+            local myFillLevels = {}
 
-                if storage.gmFarmFillLevels ~= nil then
-                    for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
-                        if farmId == playerFarmId then
-                            -- Assign ONLY player goods to the mask
-                            for fillType, level in pairs(fillLevels) do
-                                myFillLevels[fillType] = level
-                            end
-                        elseif farmId ~= FarmManager.SPECTATOR_FARM_ID then
-                            -- Sum up foreign goods
-                            for _, level in pairs(fillLevels) do
-                                foreignLiters = foreignLiters + level
-                            end
+            if storage.gmFarmFillLevels ~= nil then
+                for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                    if farmId == playerFarmId then
+                        -- Assign ONLY player goods to the mask
+                        for fillType, level in pairs(fillLevels) do
+                            myFillLevels[fillType] = level
+                        end
+                    elseif farmId ~= FarmManager.SPECTATOR_FARM_ID then
+                        -- Sum up foreign goods
+                        for _, level in pairs(fillLevels) do
+                            foreignLiters = foreignLiters + level
                         end
                     end
                 end
-
-                -- Apply mask for vanilla UI engine
-                storage.fillLevels = myFillLevels
             end
+
+            -- Apply mask
+            storage.fillLevels = myFillLevels
         end
     end
 
@@ -684,6 +682,5 @@ local function siloUpdateInfoHook(self, superFunc, infoTable)
 end
 
 if PlaceableSilo ~= nil then
-    -- FIX: Changed from appendedFunction to overwrittenFunction to allow pre-execution masking
     PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
 end
