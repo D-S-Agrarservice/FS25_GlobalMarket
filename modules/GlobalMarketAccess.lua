@@ -599,120 +599,101 @@ if PlaceableObjectStorage ~= nil then
 end
 
 -- =========================================================================
-    -- Hook 11: The "Judo" UI Hook & Achimobil Blocker (FSBaseMission)
-    -- Defeats Mod Load Order by hijacking InfoDisplayExtension's own function
-    -- table AFTER all mods have loaded (via FSBaseMission.onFinishedLoading).
-    -- We block his UI injection for GM silos, allowing our own UI to run.
-    -- =========================================================================
+-- Hook 11: The "Late Wrap" UI Hook (Triggered via gm.lua)
+-- Defeats Mod Load Order by injecting our UI Master Hook after all mods
+-- are loaded, wrapping over InfoDisplayExtension's closure.
+-- =========================================================================
 
-    -- 1. OUR CLEAN GM UI (Runs undisturbed because Achimobil gets blocked)
-    local function updateInfoSiloHook(self, superFunc, infoTable)
-        -- Execute whatever is left in the chain (Vanilla)
-        superFunc(self, infoTable)
+local function updateInfoSiloHook(self, superFunc, infoTable)
+    -- 1. Execute the entire engine chain AND all other mods first
+    superFunc(self, infoTable)
 
-        local isGmMarket = self.isGmMarket == true
-        if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-            for _, storage in ipairs(self.spec_silo.storages) do
-                if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
-                    isGmMarket = true
-                    break
-                end
+    local isGmMarket = self.isGmMarket == true
+    if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+        for _, storage in ipairs(self.spec_silo.storages) do
+            if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
+                isGmMarket = true
+                break
+            end
+        end
+    end
+
+    -- 2. Only apply this override to pure GM Bulk Silos
+    if isGmMarket and self.spec_objectStorage == nil then
+
+        local wipeTitles = {
+            ["Storage Capacity"] = true,
+            ["Used Capacity"] = true,
+            ["Total Capacity"] = true,
+            ["Lagerkapazität"] = true,
+            ["Genutzte Kapazität"] = true,
+            ["Gesamtkapazität"] = true
+        }
+
+        -- Dynamic translations from InfoDisplayExtension
+        if g_i18n:hasText("infoDisplayExtension_TOTAL_CAPACITY_TITLE") then wipeTitles[g_i18n:getText("infoDisplayExtension_TOTAL_CAPACITY_TITLE")] = true end
+        if g_i18n:hasText("infoDisplayExtension_USED_CAPACITY") then wipeTitles[g_i18n:getText("infoDisplayExtension_USED_CAPACITY")] = true end
+        if g_i18n:hasText("infoDisplayExtension_TOTAL_CAPACITY") then wipeTitles[g_i18n:getText("infoDisplayExtension_TOTAL_CAPACITY")] = true end
+        if g_i18n:hasText("ui_silos_totalCapacity") then wipeTitles[g_i18n:getText("ui_silos_totalCapacity")] = true end
+
+        -- Loop backwards to safely remove elements before onDraw clears them
+        for i = #infoTable, 1, -1 do
+            if infoTable[i] ~= nil and wipeTitles[infoTable[i].title] then
+                table.remove(infoTable, i)
             end
         end
 
-        if isGmMarket and self.spec_objectStorage == nil then
-            -- Clean out Vanilla total capacity string
-            local vanillaTotal = g_i18n:hasText("ui_silos_totalCapacity") and g_i18n:getText("ui_silos_totalCapacity") or "Total Capacity"
+        -- 3. Calculate GM actuals for bulk silo
+        local playerFarmId = g_currentMission:getFarmId()
+        local foreignBulkLiters = 0
+        local totalPhysicalCapacity = 0
+        local totalPhysicalUsed = 0
 
-            -- Loop backwards to safely remove elements before onDraw clears them
-            for i = #infoTable, 1, -1 do
-                if infoTable[i] ~= nil and (infoTable[i].title == vanillaTotal or infoTable[i].title == "Gesamtkapazität") then
-                    table.remove(infoTable, i)
-                end
-            end
+        if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+            for _, storage in ipairs(self.spec_silo.storages) do
+                totalPhysicalCapacity = totalPhysicalCapacity + (storage.capacity or 0)
 
-            -- Calculate GM Actuals
-            local playerFarmId = g_currentMission:getFarmId()
-            local foreignBulkLiters = 0
-            local totalPhysicalCapacity = 0
-            local totalPhysicalUsed = 0
-
-            if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-                for _, storage in ipairs(self.spec_silo.storages) do
-                    totalPhysicalCapacity = totalPhysicalCapacity + (storage.capacity or 0)
-
-                    if storage.fillLevels ~= nil then
-                        for _, level in pairs(storage.fillLevels) do
-                            totalPhysicalUsed = totalPhysicalUsed + level
-                        end
+                if storage.fillLevels ~= nil then
+                    for _, level in pairs(storage.fillLevels) do
+                        totalPhysicalUsed = totalPhysicalUsed + level
                     end
+                end
 
-                    if storage.gmFarmFillLevels ~= nil then
-                        for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
-                            if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
-                                for _, level in pairs(fillLevels) do
-                                    foreignBulkLiters = foreignBulkLiters + level
-                                end
+                if storage.gmFarmFillLevels ~= nil then
+                    for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                        if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
+                            for _, level in pairs(fillLevels) do
+                                foreignBulkLiters = foreignBulkLiters + level
                             end
                         end
                     end
                 end
             end
-
-            -- Build our UI
-            if foreignBulkLiters > 0.1 then
-                local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-                table.insert(infoTable, { title = bulkTitle, text = g_i18n:formatVolume(foreignBulkLiters, 0) })
-            end
-
-            local outUsed = (g_i18n:hasText("info_gmUsedCapacity") and g_i18n:getText("info_gmUsedCapacity") or "Used Capacity") .. " "
-            local outTotal = (g_i18n:hasText("ui_silos_totalCapacity") and g_i18n:getText("ui_silos_totalCapacity") or "Total Capacity") .. " "
-
-            table.insert(infoTable, { title = outUsed, text = g_i18n:formatVolume(totalPhysicalUsed, 0) })
-            table.insert(infoTable, { title = outTotal, text = g_i18n:formatVolume(totalPhysicalCapacity, 0) })
         end
-    end
 
-    if PlaceableSilo ~= nil then
+        -- 4. Build custom GM UI
+        if foreignBulkLiters > 0.1 then
+            local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+            table.insert(infoTable, { title = bulkTitle, text = g_i18n:formatVolume(foreignBulkLiters, 0) })
+        end
+
+        -- Add clean capacity lines with a trailing space
+        local outUsed = (g_i18n:hasText("info_gmUsedCapacity") and g_i18n:getText("info_gmUsedCapacity") or "Used Capacity") .. " "
+        local outTotal = (g_i18n:hasText("ui_silos_totalCapacity") and g_i18n:getText("ui_silos_totalCapacity") or "Total Capacity") .. " "
+
+        table.insert(infoTable, { title = outUsed, text = g_i18n:formatVolume(totalPhysicalUsed, 0) })
+        table.insert(infoTable, { title = outTotal, text = g_i18n:formatVolume(totalPhysicalCapacity, 0) })
+    end
+end
+
+-- Function waits patiently to be triggered by gm.lua
+function GlobalMarket_InjectLateUIHook()
+    if PlaceableSilo ~= nil and not GlobalMarket_SiloHookInjected then
         PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, updateInfoSiloHook)
-    end
+        GlobalMarket_SiloHookInjected = true
 
-
-    -- 2. THE ACHIMOBIL ASSASSIN (Injected at FSBaseMission.onFinishedLoading)
-    local function injectAchimobilBlocker()
-        if InfoDisplayExtension ~= nil and InfoDisplayExtension.updateInfoPlaceableSilo ~= nil then
-            -- Save his original function
-            local originalAchimHook = InfoDisplayExtension.updateInfoPlaceableSilo
-
-            -- Overwrite his global table function
-            InfoDisplayExtension.updateInfoPlaceableSilo = function(self, superFunc, infoTable)
-                local isGmMarket = self.isGmMarket == true
-                if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-                    for _, storage in ipairs(self.spec_silo.storages) do
-                        if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
-                            isGmMarket = true
-                            break
-                        end
-                    end
-                end
-
-                if isGmMarket and self.spec_objectStorage == nil then
-                    -- IT'S A GM SILO! BLOCK ACHIMOBIL!
-                    -- We just pass the call to the next function in his chain and return early.
-                    superFunc(self, infoTable)
-                    return
-                end
-
-                -- Not a GM Silo? Let Achimobil do his normal thing
-                originalAchimHook(self, superFunc, infoTable)
-            end
-
-            if GlobalMarket and GlobalMarket.debugManager then
-                GlobalMarket.debugManager:info("InfoDisplayExtension detected. GM Blocker injected successfully.")
-            end
+        if GlobalMarket and GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("GM UI Hook 11 injected late - We are the final wrapper!")
         end
     end
-
-    if FSBaseMission ~= nil then
-        FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, injectAchimobilBlocker)
-    end
+end

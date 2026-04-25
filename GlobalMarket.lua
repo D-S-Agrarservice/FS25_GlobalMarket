@@ -225,6 +225,11 @@ local function onFinishedLoading(mission)
             end
             g_currentMission.globalMarket:loadFromXMLFile()
         end
+
+        -- TRIGGER THE LATE UI HOOK HERE
+        if GlobalMarket_InjectLateUIHook ~= nil then
+            GlobalMarket_InjectLateUIHook()
+        end
     end
 end
 FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, onFinishedLoading)
