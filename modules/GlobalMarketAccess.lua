@@ -599,60 +599,104 @@ if PlaceableObjectStorage ~= nil then
 end
 
 -- =========================================================================
--- Hook 11: InfoTrigger UI Master Hook (Post-Process)
--- Handles final UI assembly for Bulk Silos (PlaceableSilo) to ensure 
--- "Foreign Goods" are appended AFTER the vanilla capacity block.
--- =========================================================================
+    -- Hook 11: InfoTrigger UI Master Hook (Post-Process for pure Bulk Silos)
+    -- Overwrites PlaceableSilo.updateInfo. This ensures we run at the same
+    -- spec level as InfoDisplayExtension, allowing us to safely wipe their
+    -- capacity blocks and append the GM summary via standard table manipulation.
+    -- =========================================================================
 
-local function updateInfoTriggerHook(self, superFunc, infoTable)
-    -- Execute original
-    superFunc(self, infoTable)
+    local function updateInfoSiloHook(self, superFunc, infoTable)
+        -- 1. Execute vanilla and other mods (like Achimobil) FIRST
+        superFunc(self, infoTable)
 
-    -- Check if this placeable is a GM Market
-    local isGmMarket = self.isGmMarket == true
-    
-    -- Safety check via storages if main flag is missing
-    if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-        for _, storage in ipairs(self.spec_silo.storages) do
-            if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
-                isGmMarket = true
-                break
+        -- 2. Check if this is a GM Market
+        local isGmMarket = self.isGmMarket == true
+        if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+            for _, storage in ipairs(self.spec_silo.storages) do
+                if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
+                    isGmMarket = true
+                    break
+                end
             end
         end
-    end
 
-    -- Only proceed for GM and non-ObjectStorage (to avoid duplicate summary entries)
-    if isGmMarket and self.spec_objectStorage == nil then
-        local playerFarmId = g_currentMission:getFarmId()
-        local foreignBulkLiters = 0
+        -- 3. If it's a GM market AND NOT an ObjectStorage (Hook 10 handles those)
+        if isGmMarket and self.spec_objectStorage == nil then
+            -- ASSASSINATE ACHIMOBIL & VANILLA CAPACITY BLOCKS
+            local achimTitle = g_i18n:hasText("infoDisplayExtension_TOTAL_CAPACITY_TITLE") and g_i18n:getText("infoDisplayExtension_TOTAL_CAPACITY_TITLE") or "Storage Capacity"
+            local achimUsed  = g_i18n:hasText("infoDisplayExtension_USED_CAPACITY") and g_i18n:getText("infoDisplayExtension_USED_CAPACITY") or "Used Capacity"
+            local achimTotal = g_i18n:hasText("infoDisplayExtension_TOTAL_CAPACITY") and g_i18n:getText("infoDisplayExtension_TOTAL_CAPACITY") or "Total Capacity"
 
-        -- Calculate foreign bulk goods from shadow array
-        if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-            for _, storage in ipairs(self.spec_silo.storages) do
-                if storage.gmFarmFillLevels ~= nil then
-                    for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
-                        if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
-                            for _, level in pairs(fillLevels) do
-                                foreignBulkLiters = foreignBulkLiters + level
+            local vanillaTotal = g_i18n:hasText("ui_silos_totalCapacity") and g_i18n:getText("ui_silos_totalCapacity") or "Total Capacity"
+
+            local wipeTitles = {
+                [achimTitle] = true,
+                [achimUsed] = true,
+                [achimTotal] = true,
+                [vanillaTotal] = true,
+                -- Hardcoded catchers
+                ["Lagerkapazität"] = true,
+                ["Genutzte Kapazität"] = true,
+                ["Gesamtkapazität"] = true,
+                ["Storage Capacity"] = true,
+                ["Used Capacity"] = true,
+                ["Total Capacity"] = true
+            }
+
+            -- Loop backwards to safely remove elements without breaking the table index
+            for i = #infoTable, 1, -1 do
+                local t = infoTable[i].title
+                if wipeTitles[t] then
+                    table.remove(infoTable, i)
+                end
+            end
+
+            -- CALCULATE GM ACTUALS FOR BULK SILO
+            local playerFarmId = g_currentMission:getFarmId()
+            local foreignBulkLiters = 0
+            local totalPhysicalCapacity = 0
+            local totalPhysicalUsed = 0
+
+            if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+                for _, storage in ipairs(self.spec_silo.storages) do
+                    totalPhysicalCapacity = totalPhysicalCapacity + (storage.capacity or 0)
+
+                    if storage.fillLevels ~= nil then
+                        for _, level in pairs(storage.fillLevels) do
+                            totalPhysicalUsed = totalPhysicalUsed + level
+                        end
+                    end
+
+                    if storage.gmFarmFillLevels ~= nil then
+                        for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                            if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
+                                for _, level in pairs(fillLevels) do
+                                    foreignBulkLiters = foreignBulkLiters + level
+                                end
                             end
                         end
                     end
                 end
             end
-        end
 
-        -- Append foreign bulk goods summary
-        if foreignBulkLiters > 0.1 then
-            local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-            table.insert(infoTable, { 
-                title = bulkTitle, 
-                text = g_i18n:formatVolume(foreignBulkLiters, 0),
-                accentuate = false 
-            })
+            -- BUILD CUSTOM GM UI FOR BULK
+            if foreignBulkLiters > 0.1 then
+                local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+                table.insert(infoTable, {
+                    title = bulkTitle,
+                    text = g_i18n:formatVolume(foreignBulkLiters, 0)
+                })
+            end
+
+            -- Add clean capacity lines with a trailing space to dodge any other UI mods
+            local outUsed = (g_i18n:hasText("info_gmUsedCapacity") and g_i18n:getText("info_gmUsedCapacity") or "Used Capacity") .. " "
+            local outTotal = (g_i18n:hasText("ui_silos_totalCapacity") and g_i18n:getText("ui_silos_totalCapacity") or "Total Capacity") .. " "
+
+            table.insert(infoTable, { title = outUsed, text = g_i18n:formatVolume(totalPhysicalUsed, 0) })
+            table.insert(infoTable, { title = outTotal, text = g_i18n:formatVolume(totalPhysicalCapacity, 0) })
         end
     end
-end
 
-if PlaceableInfoTrigger ~= nil then
-    PlaceableInfoTrigger.updateInfo = Utils.overwrittenFunction(PlaceableInfoTrigger.updateInfo, updateInfoTriggerHook)
-end
+    if PlaceableSilo ~= nil then
+        PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, updateInfoSiloHook)
+    end
