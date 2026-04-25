@@ -520,17 +520,17 @@ function GlobalMarketAccess.init()
     end
 end
 
-    -- =========================================================================
-    -- Hook 10: InfoTrigger UI Object Hook (PlaceableObjectStorage)
-    -- Handles UI masking for objects (Pallets/Bales) and foreign summary.
-    -- Since FS25, this specialization manages the green capacity block.
-    -- =========================================================================
+-- =========================================================================
+-- Hook 10: InfoTrigger UI Master Hook (PlaceableObjectStorage)
+-- Handles UI masking for objects (Pallets/Bales) AND appends bulk foreign goods.
+-- Since FS25, this specialization manages the green capacity block at the bottom.
+-- =========================================================================
 
 local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     -- Check if it's a GM Market
     local isGmMarket = self.isGmMarket == true
 
-    -- Fallback check: Also verify storages
+    -- Fallback check: Also verify storages in case the flag on the main placeable is missing
     if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
             if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
@@ -546,6 +546,7 @@ local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     end
 
     -- 1. OBJECT STORAGE MASKING (Pallets/Bales)
+    -- Force engine to update its list BEFORE we mask it
     if self.updateDirtyObjectStorageObjectInfos ~= nil then
         self:updateDirtyObjectStorageObjectInfos()
     end
@@ -582,77 +583,42 @@ local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     spec.objectInfos = myInfos
 
     -- 2. EXECUTE VANILLA LOGIC
+    -- Run base function: It will print accurate total capacity, but only list the player's items
     superFunc(self, engineSuperFunc, infoTable)
 
-    -- Restore original data immediately
+    -- Restore original data immediately to not break game logic
     spec.objectInfos = originalObjectInfos
 
-    -- 3. APPEND FOREIGN OBJECT SUMMARY
-    if foreignObjectsCount > 0 then
-        local objTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-        table.insert(infoTable, { title = objTitle, text = tostring(foreignObjectsCount) })
-    end
-end
-
-if PlaceableObjectStorage ~= nil then
-    PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
-end
-
--- =========================================================================
--- Hook 11: InfoTrigger UI Master Hook (Post-Process)
--- Handles final UI assembly for Bulk Silos (PlaceableSilo) to ensure 
--- "Foreign Goods" are appended AFTER the vanilla capacity block.
--- =========================================================================
-
-local function updateInfoTriggerHook(self, superFunc, infoTable)
-    -- Execute original
-    superFunc(self, infoTable)
-
-    -- Check if this placeable is a GM Market
-    local isGmMarket = self.isGmMarket == true
-    
-    -- Safety check via storages if main flag is missing
-    if not isGmMarket and self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
+    -- 3. CALCULATE FOREIGN BULK GOODS
+    local foreignBulkLiters = 0
+    if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
         for _, storage in ipairs(self.spec_silo.storages) do
-            if storage.isGmMarket == true or storage.gmFarmFillLevels ~= nil then
-                isGmMarket = true
-                break
-            end
-        end
-    end
-
-    -- Only proceed for GM and non-ObjectStorage (to avoid duplicate summary entries)
-    if isGmMarket and self.spec_objectStorage == nil then
-        local playerFarmId = g_currentMission:getFarmId()
-        local foreignBulkLiters = 0
-
-        -- Calculate foreign bulk goods from shadow array
-        if self.spec_silo ~= nil and self.spec_silo.storages ~= nil then
-            for _, storage in ipairs(self.spec_silo.storages) do
-                if storage.gmFarmFillLevels ~= nil then
-                    for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
-                        if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
-                            for _, level in pairs(fillLevels) do
-                                foreignBulkLiters = foreignBulkLiters + level
-                            end
+            if storage.gmFarmFillLevels ~= nil then
+                for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
+                    if farmId ~= playerFarmId and farmId ~= FarmManager.SPECTATOR_FARM_ID then
+                        for _, level in pairs(fillLevels) do
+                            foreignBulkLiters = foreignBulkLiters + level
                         end
                     end
                 end
             end
         end
+    end
 
-        -- Append foreign bulk goods summary
-        if foreignBulkLiters > 0.1 then
-            local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
-            table.insert(infoTable, { 
-                title = bulkTitle, 
-                text = g_i18n:formatVolume(foreignBulkLiters, 0),
-                accentuate = false 
-            })
-        end
+    -- 4. APPEND GM ENTRIES AT THE BOTTOM
+    -- Append foreign pallets/bales summary
+    if foreignObjectsCount > 0 then
+        local objTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+        table.insert(infoTable, { title = objTitle, text = tostring(foreignObjectsCount) })
+    end
+
+    -- Append foreign bulk goods summary
+    if foreignBulkLiters > 0.1 then
+        local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+        table.insert(infoTable, { title = bulkTitle, text = g_i18n:formatVolume(foreignBulkLiters, 0) })
     end
 end
 
-if PlaceableInfoTrigger ~= nil then
-    PlaceableInfoTrigger.updateInfo = Utils.overwrittenFunction(PlaceableInfoTrigger.updateInfo, updateInfoTriggerHook)
+if PlaceableObjectStorage ~= nil then
+    PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
 end
