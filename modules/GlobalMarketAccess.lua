@@ -608,13 +608,13 @@ local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     -- 4. APPEND GM ENTRIES AT THE BOTTOM
     -- Append foreign pallets/bales summary
     if foreignObjectsCount > 0 then
-        local objTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+        local objTitle = g_i18n:hasText("info_gmForeignObjects") and g_i18n:getText("info_gmForeignObjects") or "Foreign Objects"
         table.insert(infoTable, { title = objTitle, text = tostring(foreignObjectsCount) })
     end
 
     -- Append foreign bulk goods summary
     if foreignBulkLiters > 0.1 then
-        local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods"
+        local bulkTitle = g_i18n:hasText("info_gmForeignGoods") and g_i18n:getText("info_gmForeignGoods") or "Foreign Goods (Bulk)"
         table.insert(infoTable, { title = bulkTitle, text = g_i18n:formatVolume(foreignBulkLiters, 0) })
     end
 end
