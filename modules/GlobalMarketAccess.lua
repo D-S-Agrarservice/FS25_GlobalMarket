@@ -600,13 +600,12 @@ end
 
 -- =========================================================================
     -- Hook 11: InfoTrigger UI Master Hook (Post-Process for pure Bulk Silos)
-    -- Overwrites PlaceableSilo.updateInfo. This ensures we run at the same
-    -- spec level as InfoDisplayExtension, allowing us to safely wipe their
-    -- capacity blocks and append the GM summary via standard table manipulation.
+    -- Overwrites PlaceableSilo.updateInfo. Uses Delayed Injection to ensure
+    -- we ALWAYS load after InfoDisplayExtension, regardless of Mod Load Order.
     -- =========================================================================
 
     local function updateInfoSiloHook(self, superFunc, infoTable)
-        -- 1. Execute vanilla and other mods (like Achimobil) FIRST
+        -- 1. Execute vanilla AND Achimobil FIRST
         superFunc(self, infoTable)
 
         -- 2. Check if this is a GM Market
@@ -620,7 +619,7 @@ end
             end
         end
 
-        -- 3. If it's a GM market AND NOT an ObjectStorage (Hook 10 handles those)
+        -- 3. If it's a GM market AND NOT an ObjectStorage
         if isGmMarket and self.spec_objectStorage == nil then
             -- ASSASSINATE ACHIMOBIL & VANILLA CAPACITY BLOCKS
             local achimTitle = g_i18n:hasText("infoDisplayExtension_TOTAL_CAPACITY_TITLE") and g_i18n:getText("infoDisplayExtension_TOTAL_CAPACITY_TITLE") or "Storage Capacity"
@@ -643,7 +642,7 @@ end
                 ["Total Capacity"] = true
             }
 
-            -- Loop backwards to safely remove elements without breaking the table index
+            -- Loop backwards to safely remove elements
             for i = #infoTable, 1, -1 do
                 local t = infoTable[i].title
                 if wipeTitles[t] then
@@ -688,7 +687,7 @@ end
                 })
             end
 
-            -- Add clean capacity lines with a trailing space to dodge any other UI mods
+            -- Add clean capacity lines with a trailing space
             local outUsed = (g_i18n:hasText("info_gmUsedCapacity") and g_i18n:getText("info_gmUsedCapacity") or "Used Capacity") .. " "
             local outTotal = (g_i18n:hasText("ui_silos_totalCapacity") and g_i18n:getText("ui_silos_totalCapacity") or "Total Capacity") .. " "
 
@@ -697,6 +696,20 @@ end
         end
     end
 
-    if PlaceableSilo ~= nil then
-        PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, updateInfoSiloHook)
+    -- Delayed Hook Injection:
+    -- By appending to Mission00.load, we guarantee our hook is registered AFTER
+    -- InfoDisplayExtension has already registered theirs. We get the final say.
+    local function injectGlobalMarketHooksLate()
+        if PlaceableSilo ~= nil and not GlobalMarket_SiloHookInjected then
+            PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, updateInfoSiloHook)
+            GlobalMarket_SiloHookInjected = true
+
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:info("GM Hook 11 injected late to bypass UI Mods.")
+            end
+        end
+    end
+
+    if Mission00 ~= nil then
+        Mission00.load = Utils.appendedFunction(Mission00.load, injectGlobalMarketHooksLate)
     end
