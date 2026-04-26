@@ -1,6 +1,7 @@
 --
 -- FS25 - GlobalMarket Compatibility Manager
 -- Description: Handles dynamic conflict resolution via an updatable XML in the modSettings folder.
+-- Includes dynamic firewalls for invasive third-party mods.
 --
 
 GMCompatibilityManager = {}
@@ -29,15 +30,39 @@ function GMCompatibilityManager.new(customMt)
     return self
 end
 
+--- Generates a default compatibility.xml with instructional comments and base fixes.
+function GMCompatibilityManager:generateDefaultXML()
+    createFolder(self.directory)
+
+    -- Open file for writing natively to preserve formatting and comments
+    local file = io.open(self.filePath, "w")
+    if file ~= nil then
+        local template = [[<?xml version="1.0" encoding="utf-8"?>
+<compatibility version="1.0.0">
+    <mod name="FS25_InfoDisplayExtension" action="disable_silo_ui" />
+</compatibility>]]
+
+        file:write(template)
+        file:close()
+
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("[Compatibility] Generated default template with IDE fix at: %s", self.filePath)
+        end
+    else
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:error("[Compatibility] Failed to generate default XML. Permission denied at: %s", self.filePath)
+        end
+    end
+end
+
 --- Loads the compatibility definitions from the local modSettings XML file.
 function GMCompatibilityManager:loadFromXML()
+    -- If the file doesn't exist, create our commented template first
     if not fileExists(self.filePath) then
-        if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:info("[Compatibility] No local compatibility.xml found. Using empty baseline.")
-        end
-        return false
+        self:generateDefaultXML()
     end
 
+    -- Now proceed to load the (newly created or existing) file normally
     local xmlFile = XMLFile.load("GMCompatXML", self.filePath)
     if xmlFile == nil then
         return false
@@ -112,41 +137,6 @@ function GMCompatibilityManager:applyMitigation(modName, action)
     -- Add more actions here as the mod grows
 end
 
---- Utility: Returns the amount of parsed conflicts
-function GMCompatibilityManager:getConflictCount()
-    local count = 0
-    for _ in pairs(self.conflicts) do
-        count = count + 1
-    end
-    return count
-end
-
---- Saves the current compatibility definitions to the local modSettings XML file.
--- Triggered on the Dedi-Server when receiving an update from an Admin.
-function GMCompatibilityManager:saveToXML()
-    createFolder(self.directory)
-
-    local xmlFile = XMLFile.create("GMCompatXML", self.filePath, "compatibility")
-    if xmlFile ~= nil then
-        xmlFile:setValue("compatibility#version", self.version)
-
-        local index = 0
-        for modName, data in pairs(self.conflicts) do
-            local key = string.format("compatibility.mod(%d)", index)
-            xmlFile:setValue(key .. "#name", modName)
-            xmlFile:setValue(key .. "#action", data.action)
-            index = index + 1
-        end
-
-        xmlFile:save()
-        xmlFile:delete()
-
-        if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:info("[Compatibility] Saved updated list to server's modSettings XML.")
-        end
-    end
-end
-
 --- Installs dynamic firewalls to protect GM components from invasive mods
 -- This wraps the wrappers of other mods, allowing us to selectively block them based on GM flags.
 function GMCompatibilityManager:installFirewalls()
@@ -218,4 +208,39 @@ function GMCompatibilityManager:installFirewalls()
             end
         end
     end
+end
+
+--- Saves the current compatibility definitions to the local modSettings XML file.
+-- Triggered on the Dedi-Server when receiving an update from an Admin.
+function GMCompatibilityManager:saveToXML()
+    createFolder(self.directory)
+
+    local xmlFile = XMLFile.create("GMCompatXML", self.filePath, "compatibility")
+    if xmlFile ~= nil then
+        xmlFile:setValue("compatibility#version", self.version)
+
+        local index = 0
+        for modName, data in pairs(self.conflicts) do
+            local key = string.format("compatibility.mod(%d)", index)
+            xmlFile:setValue(key .. "#name", modName)
+            xmlFile:setValue(key .. "#action", data.action)
+            index = index + 1
+        end
+
+        xmlFile:save()
+        xmlFile:delete()
+
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("[Compatibility] Saved updated list to server's modSettings XML.")
+        end
+    end
+end
+
+--- Utility: Returns the amount of parsed conflicts
+function GMCompatibilityManager:getConflictCount()
+    local count = 0
+    for _ in pairs(self.conflicts) do
+        count = count + 1
+    end
+    return count
 end
