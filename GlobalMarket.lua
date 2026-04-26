@@ -7,9 +7,6 @@ GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
 
--- REMOVED: Feature toggles (GlobalMarket.config) have been removed to enable seamless
--- "Plug & Play" functionality for both offline simulation and online sync.
-
 -- Static delivery costs for logistics calculation
 GlobalMarket.DELIVER_COST = 50
 GlobalMarket.DELIVER_COST_PERLITER = 0.05
@@ -92,6 +89,9 @@ source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
 -- Load Access Module to inject terminal permissions
 source(GlobalMarket.dir .. "modules/GlobalMarketAccess.lua")
 
+-- Compatibility Management
+source(GlobalMarket.dir .. "modules/GlobalMarketCompatibilityManager.lua")
+
 -- Events
 source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/InitGlobalMarketSettingsEvent.lua")
@@ -101,6 +101,9 @@ source(GlobalMarket.dir .. "events/SyncGmSiloEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
+
+-- Compatibility Sync Events
+source(GlobalMarket.dir .. "events/SyncGlobalMarketCompatibilityEvent.lua")
 
 -- External Sync Module
 source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
@@ -140,6 +143,12 @@ function GlobalMarket:loadMap(name)
     -- 2. Load settings first so states are available!
     if GlobalMarketSettings ~= nil and GlobalMarketSettings.loadFromXML ~= nil then
         GlobalMarketSettings:loadFromXML()
+    end
+
+    -- 2.5 Initialize Compatibility Manager and load local/server XML
+    if GlobalMarketCompatibilityManager ~= nil then
+        self.compatibilityManager = GlobalMarketCompatibilityManager.new()
+        self.compatibilityManager:loadFromXML()
     end
 
     -- 3. Initialize Finance system with loaded settings
@@ -193,6 +202,12 @@ end
 -- Used to safely inject our custom UI into the native Game Menu without crashes.
 local function onFinishedLoading(mission)
     if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
+
+        -- Run dynamic compatibility check before UI initialization to set mitigation flags
+        if g_currentMission.globalMarket.compatibilityManager ~= nil then
+            g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
+        end
+
         if GlobalMarketUI ~= nil then
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:info("Injecting GlobalMarket UI into native game menu...")
@@ -415,6 +430,17 @@ local function onStartMission(mission)
         end
         if InitGlobalMarketSettingsEvent ~= nil then
             g_client:getServerConnection():sendEvent(InitGlobalMarketSettingsEvent.new())
+        end
+
+        -- Sync compatibility XML if the joining client is an Admin/MasterUser
+        if g_currentMission.isMasterUser and g_currentMission.globalMarket ~= nil then
+            local compMgr = g_currentMission.globalMarket.compatibilityManager
+            if compMgr ~= nil then
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:info("Admin login detected. Synchronizing Compatibility XML version %s with Server...", compMgr.version)
+                end
+                g_client:getServerConnection():sendEvent(SyncGlobalMarketCompatibilityEvent.new(compMgr.version, compMgr.conflicts))
+            end
         end
     end
 end
