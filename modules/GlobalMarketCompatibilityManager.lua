@@ -90,6 +90,9 @@ function GMCompatibilityManager:checkActiveMods()
         end
     end
 
+    -- Deploy hardcoded dynamic firewalls after checking XML conflicts
+    self:installFirewalls()
+
     return hasActiveConflicts
 end
 
@@ -140,6 +143,79 @@ function GMCompatibilityManager:saveToXML()
 
         if GlobalMarket.debugManager ~= nil then
             GlobalMarket.debugManager:info("[Compatibility] Saved updated list to server's modSettings XML.")
+        end
+    end
+end
+
+--- Installs dynamic firewalls to protect GM components from invasive mods
+-- This wraps the wrappers of other mods, allowing us to selectively block them based on GM flags.
+function GMCompatibilityManager:installFirewalls()
+
+    -- ========================================================
+    -- FIREWALL: InfoDisplayExtension (IDE)
+    -- ========================================================
+    if g_modIsLoaded["FS25_InfoDisplayExtension"] then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:warning("[Compatibility] InfoDisplayExtension detected. Installing strict UI firewall for GM objects.")
+        end
+
+        -- 1. Protect PlaceableSilo (InfoTrigger)
+        if PlaceableSilo ~= nil and type(PlaceableSilo.updateInfo) == "function" then
+            local ideSiloUpdateInfo = PlaceableSilo.updateInfo
+
+            PlaceableSilo.updateInfo = function(self, infoTable)
+                -- Check if this specific silo is flagged as a Global Market storage
+                if self.isGmMarket then
+
+                    -- Reconstruct basic vanilla fill level display to prevent empty info triggers.
+                    local spec = self.spec_silo
+                    if spec ~= nil and spec.loadingStation ~= nil then
+                        local farmId = self:getOwnerFarmId()
+
+                        for fillType, fillLevel in pairs(spec.loadingStation:getAllFillLevels(farmId)) do
+                            if fillLevel > 0.1 then
+                                local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillType)
+                                if fillTypeDesc ~= nil then
+                                    table.insert(infoTable, {
+                                        title = fillTypeDesc.title,
+                                        text = g_i18n:formatVolume(fillLevel, 0)
+                                    })
+                                end
+                            end
+                        end
+                    end
+
+                    -- Abort the chain to block IDE
+                    return
+                end
+
+                -- Non-GM Storage: Let IDE do its normal job
+                ideSiloUpdateInfo(self, infoTable)
+            end
+        end
+
+        -- 2. Protect ProductionPoint
+        if ProductionPoint ~= nil and type(ProductionPoint.updateInfo) == "function" then
+            local ideProdUpdateInfo = ProductionPoint.updateInfo
+
+            ProductionPoint.updateInfo = function(self, infoTable)
+                if self.isGmMarket then
+                    return
+                end
+                ideProdUpdateInfo(self, infoTable)
+            end
+        end
+
+        -- 3. Protect ObjectStorage (e.g., Pallet/Bale Storages)
+        if ObjectStorage ~= nil and type(ObjectStorage.updateInfo) == "function" then
+            local ideObjStorageUpdateInfo = ObjectStorage.updateInfo
+
+            ObjectStorage.updateInfo = function(self, infoTable)
+                if self.isGmMarket then
+                    return
+                end
+                ideObjStorageUpdateInfo(self, infoTable)
+            end
         end
     end
 end
