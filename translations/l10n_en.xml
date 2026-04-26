@@ -30,6 +30,8 @@
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Delivery costs have been updated!" />
         <e k="ui_gm_settings_baseCost"                             v="Delivery Costs: Base Fee" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Sets the fixed base fee for freight deliveries to or from the private farm silo." />
+        <e k="ui_gm_settings_compatMode"                           v="Compatibility Mode" />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Defines how GlobalMarket handles known conflicting mods. Ignore: Do nothing. Warn Only: Log warnings only. Strict: Blocks invasive elements from third-party mods (Recommended)." />
         <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Duration" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Safety limit for extremely detailed logging (Trace/Debug) to prevent performance drops and excessively large text files." />
         <e k="ui_gm_settings_debugLevel"                           v="Debug Level" />
@@ -41,6 +43,7 @@
         <e k="ui_gm_settings_header"                               v="GLOBAL MARKET" />
         <e k="ui_gm_settings_literCost"                            v="Delivery Costs: Price per Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Sets the additional transport costs per traded liter." />
+        <e k="ui_gm_settings_system_header"                        v="System &amp; Compatibility" />
         <e k="ui_gm_storage_only"                                  v="(GM only)" />
         <e k="ui_gm_storage_split"                                 v="(Farm: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />

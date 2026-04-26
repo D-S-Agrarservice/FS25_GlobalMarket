@@ -30,6 +30,8 @@
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: ¡Los costes de envío han sido actualizados!" />
         <e k="ui_gm_settings_baseCost"                             v="Gastos de envío: Tarifa base" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Establece la tarifa base fija para las entregas de mercancías hacia o desde el silo privado de la granja." />
+        <e k="ui_gm_settings_compatMode"                           v="Modo de compatibilidad" />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Define cómo GlobalMarket maneja los mods conflictivos conocidos. Ignore: No hacer nada. Warn Only: Solo advertencia en el registro. Strict: Bloquea elementos invasivos de mods de terceros (Recomendado)." />
         <e k="ui_gm_settings_debugDuration"                        v="Duración del registro profundo" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Límite de seguridad para registros extremadamente detallados (Trace/Debug) para evitar caídas de rendimiento y archivos de texto demasiado grandes." />
         <e k="ui_gm_settings_debugLevel"                           v="Nivel de depuración" />
@@ -41,6 +43,7 @@
         <e k="ui_gm_settings_header"                               v="MERCADO GLOBAL" />
         <e k="ui_gm_settings_literCost"                            v="Gastos de envío: Precio por litro" />
         <e k="ui_gm_settings_literCost_desc"                       v="Establece los costes de transporte adicionales por litro comerciado." />
+        <e k="ui_gm_settings_system_header"                        v="Sistema y Compatibilidad" />
         <e k="ui_gm_storage_only"                                  v="(Solo GM)" />
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />

@@ -14,7 +14,9 @@ GlobalMarketSettings.OPTIONS = {
     DELIVERY_LITER = {0.0, 0.01, 0.02, 0.05, 0.10, 0.20},
     -- Reordered array: Starts with Info on the far left
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
-    DEBUG_DURATION = {"1 Hour", "3 Hours"}
+    DEBUG_DURATION = {"1 Hour", "3 Hours"},
+    -- NEW: Compatibility Mode Options
+    COMPAT_MODE = {"Ignore", "Warn Only", "Strict"}
 }
 
 -- Default values
@@ -24,7 +26,8 @@ GlobalMarketSettings.current = {
     isDebugActive = false, -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,   -- Default: Info
     debugDurationIndex = 1, -- Default: 1 Hour
-    isDetailedFinance = false -- Default: Off (Simple Finance)
+    isDetailedFinance = false, -- Default: Off (Simple Finance)
+    compatModeIndex = 3    -- Default: Strict (Auto-resolve known conflicts)
 }
 
 -- Gets default indices based on the game's economic difficulty
@@ -92,6 +95,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
         self.current.debugDurationIndex = 1
+        self.current.compatModeIndex = 3
 
         self:saveToXML()
         self:applyDebugSettings()
@@ -113,6 +117,9 @@ function GlobalMarketSettings:loadFromXML()
         self.current.isDebugActive = xmlFile:getBool("globalMarketSettings.debug#isActive", false)
         self.current.debugLevelIndex = xmlFile:getInt("globalMarketSettings.debug#levelIndex", 1)
         self.current.debugDurationIndex = xmlFile:getInt("globalMarketSettings.debug#durationIndex", 1)
+
+        -- Load Compatibility Setting
+        self.current.compatModeIndex = xmlFile:getInt("globalMarketSettings.compatibility#modeIndex", 3)
 
         -- Apply to active global variables and modules
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
@@ -144,6 +151,9 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt("globalMarketSettings.debug#levelIndex", self.current.debugLevelIndex)
         xmlFile:setInt("globalMarketSettings.debug#durationIndex", self.current.debugDurationIndex)
 
+        -- Save Compatibility Setting
+        xmlFile:setInt("globalMarketSettings.compatibility#modeIndex", self.current.compatModeIndex)
+
         xmlFile:save()
         xmlFile:delete()
 
@@ -157,13 +167,13 @@ end
 -- UI Menu Injection (Dynamic Element Instantiation)
 -- ============================================================================
 
-function GlobalMarketSettings:addSectionHeader(settingsFrame)
+function GlobalMarketSettings:addSectionHeader(settingsFrame, titleKey)
     local textElement = TextElement.new()
     local textElementProfile = g_gui:getProfile("fs25_settingsSectionHeader")
 
     textElement.name = "sectionHeader"
     textElement:loadProfile(textElementProfile, true)
-    textElement:setText(g_i18n:getText("ui_gm_settings_header") or "GLOBAL MARKET SETTINGS")
+    textElement:setText(g_i18n:getText(titleKey) or titleKey)
 
     settingsFrame.gameSettingsLayout:addElement(textElement)
     textElement:onGuiSetupFinished()
@@ -207,7 +217,6 @@ function GlobalMarketSettings:addMultiOption(settingsFrame, controlId, titleKey,
     return multiTextOption, bitMap
 end
 
--- Re-engineered function for the native FS25 Binary Option (Yes/No | On/Off toggle)
 function GlobalMarketSettings:addBinaryOption(settingsFrame, controlId, titleKey, tooltipKey, callbackName)
     local bitMap = BitmapElement.new()
     local bitMapProfile = g_gui:getProfile("fs25_multiTextOptionContainer")
@@ -247,7 +256,7 @@ end
 
 function GlobalMarketSettings.onFrameOpen(settingsFrame)
     if not GlobalMarketSettings.isMenuInjected then
-        GlobalMarketSettings:addSectionHeader(settingsFrame)
+        GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_header")
 
         -- Format texts for UI display
         local baseTexts = {}
@@ -256,22 +265,18 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         local literTexts = {}
         for _, val in ipairs(GlobalMarketSettings.OPTIONS.DELIVERY_LITER) do table.insert(literTexts, tostring(val) .. " € / L") end
 
-        -- =========================================================
         -- 1. DELIVERY COSTS
-        -- =========================================================
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsBaseCost", "ui_gm_settings_baseCost", "ui_gm_settings_baseCost_desc", baseTexts, "onBaseCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsLiterCost", "ui_gm_settings_literCost", "ui_gm_settings_literCost_desc", literTexts, "onLiterCostChanged")
 
-        -- =========================================================
         -- 2. FINANCE SETTINGS
-        -- =========================================================
-        -- Inject Detailed Finance Toggle
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
 
-        -- =========================================================
-        -- 3. DEBUG MODE
-        -- =========================================================
-        -- Inject New Debug Options (Using the accurate FS25 binary option for master switch)
+        -- 3. COMPATIBILITY SETTINGS
+        GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_system_header")
+        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode", "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged")
+
+        -- 4. DEBUG MODE
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
@@ -314,18 +319,23 @@ function GlobalMarketSettings.refreshMenuState()
     -- Finance Controls
     local financeControl = GlobalMarketSettings.CONTROLS["gmSettingsDetailedFinance"]
     if financeControl ~= nil then
-        -- BinaryOptions in FS25 use states (1 = Off, 2 = On)
         financeControl:setState(GlobalMarketSettings.current.isDetailedFinance and 2 or 1)
         financeControl:setDisabled(not isAdmin)
     end
 
-    -- Debug Controls and Dependency Logic (Method A: Disabled States)
+    -- Compatibility Controls
+    local compatControl = GlobalMarketSettings.CONTROLS["gmSettingsCompatMode"]
+    if compatControl ~= nil then
+        compatControl:setState(GlobalMarketSettings.current.compatModeIndex)
+        compatControl:setDisabled(not isAdmin)
+    end
+
+    -- Debug Controls
     local isDebugOn = GlobalMarketSettings.current.isDebugActive
     local isDeepLoggingLevel = (GlobalMarketSettings.current.debugLevelIndex >= 4)
 
     local modeControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugMode"]
     if modeControl ~= nil then
-        -- BinaryOptions in FS25 use states (1 = Off, 2 = On) instead of setIsChecked
         modeControl:setState(isDebugOn and 2 or 1)
         modeControl:setDisabled(not isAdmin)
     end
@@ -333,14 +343,12 @@ function GlobalMarketSettings.refreshMenuState()
     local levelControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugLevel"]
     if levelControl ~= nil then
         levelControl:setState(GlobalMarketSettings.current.debugLevelIndex)
-        -- Disable if not admin or master switch is OFF
         levelControl:setDisabled(not isAdmin or not isDebugOn)
     end
 
     local durationControl = GlobalMarketSettings.CONTROLS["gmSettingsDebugDuration"]
     if durationControl ~= nil then
         durationControl:setState(GlobalMarketSettings.current.debugDurationIndex)
-        -- Disable if not admin, master switch is OFF, or level is below 'Debug'
         durationControl:setDisabled(not isAdmin or not isDebugOn or not isDeepLoggingLevel)
     end
 end
@@ -351,9 +359,10 @@ function GlobalMarketSettings:broadcastChanges()
     local c = self.current
     if g_server ~= nil then
         self:saveToXML()
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex))
+        -- IMPORTANT: Added c.compatModeIndex to the broadcast payload!
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex))
     else
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex))
     end
 end
 
@@ -374,25 +383,33 @@ function GlobalMarketSettings:onLiterCostChanged(state)
 end
 
 function GlobalMarketSettings:onDetailedFinanceChanged(state)
-    -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
     self.current.isDetailedFinance = (state == 2)
     self:broadcastChanges()
-    self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
+    self.refreshMenuState()
+end
+
+function GlobalMarketSettings:onCompatModeChanged(state)
+    self.current.compatModeIndex = state
+    self:broadcastChanges()
+
+    -- Dynamically notify the compatibility manager to re-evaluate current mods
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.compatibilityManager ~= nil then
+        g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
+    end
 end
 
 function GlobalMarketSettings:onDebugModeChanged(state)
-    -- The callback returns an integer (1 = Off, 2 = On). We convert it to a boolean.
     self.current.isDebugActive = (state == 2)
     self:applyDebugSettings()
     self:broadcastChanges()
-    self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
+    self.refreshMenuState()
 end
 
 function GlobalMarketSettings:onDebugLevelChanged(state)
     self.current.debugLevelIndex = state
     self:applyDebugSettings()
     self:broadcastChanges()
-    self.refreshMenuState() -- Force UI refresh to update disabled states dynamically
+    self.refreshMenuState()
 end
 
 function GlobalMarketSettings:onDebugDurationChanged(state)

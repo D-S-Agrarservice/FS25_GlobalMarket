@@ -108,15 +108,38 @@ function GMCompatibilityManager:checkActiveMods()
         return false
     end
 
+    -- Get current compatibility mode from settings (Default to 3: Strict)
+    local compatMode = 3
+    if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
+        compatMode = GlobalMarketSettings.current.compatModeIndex
+    end
+
+    -- Mode 1: Ignore. Do absolutely nothing.
+    if compatMode == 1 then
+        return false
+    end
+
     for modName, data in pairs(self.conflicts) do
         if g_modIsLoaded[modName] then
-            self:applyMitigation(modName, data.action)
+
+            if compatMode == 2 then
+                -- Mode 2: Warn Only
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:warning("[Compatibility] Conflict detected with %s, but mode is 'Warn Only'. No mitigations applied.", modName)
+                end
+            elseif compatMode == 3 then
+                -- Mode 3: Strict
+                self:applyMitigation(modName, data.action)
+            end
+
             hasActiveConflicts = true
         end
     end
 
-    -- Deploy hardcoded dynamic firewalls after checking XML conflicts
-    self:installFirewalls()
+    -- Deploy hardcoded dynamic firewalls ONLY if in Strict mode
+    if compatMode == 3 then
+        self:installFirewalls()
+    end
 
     return hasActiveConflicts
 end

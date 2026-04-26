@@ -11,7 +11,7 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur)
+function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -19,6 +19,7 @@ function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, is
     self.isDebug = isDebug
     self.debugLevel = debugLevel
     self.debugDur = debugDur
+    self.compatModeIndex = compatModeIndex or 3 -- Default to Strict if nil
     return self
 end
 
@@ -29,6 +30,7 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteBool(streamId, self.isDebug)
     streamWriteInt8(streamId, self.debugLevel)
     streamWriteInt8(streamId, self.debugDur)
+    streamWriteInt8(streamId, self.compatModeIndex)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -38,6 +40,7 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.isDebug = streamReadBool(streamId)
     self.debugLevel = streamReadInt8(streamId)
     self.debugDur = streamReadInt8(streamId)
+    self.compatModeIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -57,10 +60,12 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     -- Check what exactly the Admin changed to trigger the correct on-screen broadcast
     local financeChanged = false
     local deliveryChanged = false
+    local compatChanged = false
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = (GlobalMarketSettings.current.isDetailedFinance ~= self.isDetailed)
         deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex)
+        compatChanged = (GlobalMarketSettings.current.compatModeIndex ~= self.compatModeIndex)
     end
 
     -- 2. APPLY SETTINGS LOCALLY
@@ -70,6 +75,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.isDebugActive = self.isDebug
     GlobalMarketSettings.current.debugLevelIndex = self.debugLevel
     GlobalMarketSettings.current.debugDurationIndex = self.debugDur
+    GlobalMarketSettings.current.compatModeIndex = self.compatModeIndex
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
@@ -88,13 +94,18 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         GlobalMarketSettings:refreshMenuState()
     end
 
+    -- Dynamically notify the compatibility manager to re-evaluate current mods if the setting changed
+    if compatChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.compatibilityManager ~= nil then
+        g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
+    end
+
     -- 3. NETWORK & BROADCAST LOGIC
     if not connection:getIsServer() then
         -- SERVER SIDE: Save to XML and broadcast to all others
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur), nil, connection, nil)
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex), nil, connection, nil)
     else
         -- CLIENT SIDE: We received the broadcast from the server.
 
@@ -126,6 +137,9 @@ function SyncGlobalMarketSettingsEvent:run(connection)
                 end
                 g_currentMission:showBlinkingWarning(msg, 5000)
             end
+
+            -- Optional: We don't necessarily need a blinking warning for Compatibility changes,
+            -- as it's an admin backend setting, but the logic is here if you want to add one.
         end
     end
 end

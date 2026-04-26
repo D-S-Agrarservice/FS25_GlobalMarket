@@ -30,6 +30,8 @@
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Lieferkosten wurden aktualisiert!" />
         <e k="ui_gm_settings_baseCost"                             v="Lieferkosten: Grundgebühr" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Legt die feste Grundgebühr für Speditionslieferungen zum oder vom privaten Hof-Silo fest." />
+        <e k="ui_gm_settings_compatMode"                           v="Kompatibilitätsmodus" />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Legt fest, wie GlobalMarket mit bekannten Fremd-Mods umgeht. Ignore: Keine Aktion. Warn Only: Nur Warnung in der Log. Strict: Blockiert störende Elemente von Fremd-Mods (Empfohlen)." />
         <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Dauer" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Sicherheitslimit für extrem detailliertes Logging (Trace/Debug), um Performance-Einbrüche und extrem große Textdateien zu verhindern." />
         <e k="ui_gm_settings_debugLevel"                           v="Debug-Level" />
@@ -41,6 +43,7 @@
         <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_literCost"                            v="Lieferkosten: Preis pro Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Legt die zusätzlichen Transportkosten pro gehandeltem Liter fest." />
+        <e k="ui_gm_settings_system_header"                        v="System &amp; Kompatibilität" />
         <e k="ui_gm_storage_only"                                  v="(nur GM)" />
         <e k="ui_gm_storage_split"                                 v="(Hof: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />
