@@ -69,19 +69,19 @@ function GMCompatibilityManager:loadFromXML()
         return false
     end
 
-    -- Read root version parameter
-    self.version = xmlFile:getValue("compatibility#version", "1.0.0")
+    -- Read root version parameter (Using getString bypasses schema validation)
+    self.version = xmlFile:getString("compatibility#version", "1.0.0")
 
     -- Clear existing list before parsing
     self.conflicts = {}
 
     -- Iterate over all defined mods
     for _, modKey in xmlFile:iterator("compatibility.mod") do
-        local modName = xmlFile:getValue(modKey .. "#name")
+        local modName = xmlFile:getString(modKey .. "#name")
 
         if modName ~= nil and modName ~= "" then
             self.conflicts[modName] = {
-                action = xmlFile:getValue(modKey .. "#action", "log_only")
+                action = xmlFile:getString(modKey .. "#action", "log_only")
             }
         end
     end
@@ -215,15 +215,19 @@ function GMCompatibilityManager:installFirewalls()
                 -- We override the instance to intercept the UI call
                 placeable.updateInfo = function(self, infoTable)
 
-                    -- Instead of letting IDE run, we bypass it completely and call our saved, clean GM->Vanilla chain!
+                    -- A dummy function to satisfy the engine's internal superFunc chain
+                    -- without accidentally triggering other UI mods again.
+                    local dummySuperFunc = function(s, t) end
+
+                    -- Bypass IDE entirely and call our saved, clean GM->Vanilla chain.
                     if self.spec_silo ~= nil and GlobalMarketAccess.cleanSiloUpdateInfo ~= nil then
-                        GlobalMarketAccess.cleanSiloUpdateInfo(self, nil, nil, infoTable)
+                        GlobalMarketAccess.cleanSiloUpdateInfo(self, dummySuperFunc, infoTable)
 
                     elseif self.spec_objectStorage ~= nil and GlobalMarketAccess.cleanObjectStorageUpdateInfo ~= nil then
-                        GlobalMarketAccess.cleanObjectStorageUpdateInfo(self, nil, nil, infoTable)
+                        GlobalMarketAccess.cleanObjectStorageUpdateInfo(self, dummySuperFunc, infoTable)
 
                     else
-                        -- Fallback for non-standard GM storages: Let IDE do its thing
+                        -- Fallback for non-standard GM storages: Let the current chain (including IDE) run
                         if originalUpdateInfo ~= nil then
                             originalUpdateInfo(self, infoTable)
                         end
@@ -271,13 +275,14 @@ function GMCompatibilityManager:saveToXML()
 
     local xmlFile = XMLFile.create("GMCompatXML", self.filePath, "compatibility")
     if xmlFile ~= nil then
-        xmlFile:setValue("compatibility#version", self.version)
+        -- Using setString bypasses schema validation for saving
+        xmlFile:setString("compatibility#version", self.version)
 
         local index = 0
         for modName, data in pairs(self.conflicts) do
             local key = string.format("compatibility.mod(%d)", index)
-            xmlFile:setValue(key .. "#name", modName)
-            xmlFile:setValue(key .. "#action", data.action)
+            xmlFile:setString(key .. "#name", modName)
+            xmlFile:setString(key .. "#action", data.action)
             index = index + 1
         end
 
