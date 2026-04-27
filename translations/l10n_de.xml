@@ -31,7 +31,7 @@
         <e k="ui_gm_settings_baseCost"                             v="Lieferkosten: Grundgebühr" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Legt die feste Grundgebühr für Speditionslieferungen zum oder vom privaten Hof-Silo fest." />
         <e k="ui_gm_settings_compatMode"                           v="Kompatibilitätsmodus" />
-        <e k="ui_gm_settings_compatMode_desc"                      v="Legt fest, wie GlobalMarket mit bekannten Fremd-Mods umgeht. Ignore: Keine Aktion. Warn Only: Nur Warnung in der Log. Strict: Blockiert störende Elemente von Fremd-Mods (Empfohlen)." />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Legt fest, wie GM mit Fremd-Mods umgeht. 1 (Ignore): Keine Aktion. 2 (Warn Only): Nur Log-Warnung. 3 (Smart): Nutzt Firewalls, verhindert Kicks (Empfohlen*). 4 (Paranoia): Führt Kicks bei schweren Konflikten gnadenlos aus*. (* Erfordert Savegame-Neustart!)" />
         <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Dauer" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Sicherheitslimit für extrem detailliertes Logging (Trace/Debug), um Performance-Einbrüche und extrem große Textdateien zu verhindern." />
         <e k="ui_gm_settings_debugLevel"                           v="Debug-Level" />
@@ -53,6 +53,8 @@
         <e k="ui_gm_unit_liter"                                    v="Liter" />
         <e k="ui_gm_unit_pallet"                                   v="Paletten" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s Objekte pro Transaktion (Performance)" />
+        <e k="ui_gm_warning_fatal_conflict"                        v="FATALER KONFLIKT: Mod '%s' ist inkompatibel. Das Spiel wird blockiert, um Spielstände zu schützen." />
+        <e k="ui_gm_warning_smart_conflict"                        v="GlobalMarket Warnung: Mod '%s' könnte Konflikte verursachen!" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Verfügbare Menge" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Anzahl" />

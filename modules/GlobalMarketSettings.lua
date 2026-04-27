@@ -15,8 +15,8 @@ GlobalMarketSettings.OPTIONS = {
     -- Reordered array: Starts with Info on the far left
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
-    -- NEW: Compatibility Mode Options
-    COMPAT_MODE = {"Ignore", "Warn Only", "Strict"}
+    -- 1=Ignore, 2=Warn Only, 3=Smart (Default), 4=Paranoia
+    COMPAT_MODE = {"1: Ignore", "2: Warn Only", "3: Smart (Default*)", "4: Paranoia*"}
 }
 
 -- Default values

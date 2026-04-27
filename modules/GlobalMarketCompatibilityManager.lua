@@ -96,7 +96,7 @@ function GMCompatibilityManager:loadFromXML()
 end
 
 --- Validates currently loaded mods against the conflict list.
--- @return boolean true if at least one conflicting mod is active (useful for restart warnings)
+-- @return boolean true if at least one conflicting mod is active
 function GMCompatibilityManager:checkActiveMods()
     local hasActiveConflicts = false
 
@@ -110,43 +110,65 @@ function GMCompatibilityManager:checkActiveMods()
         return false
     end
 
-    -- Get current compatibility mode from settings (Default to 3: Strict)
+    -- 1: Ignore | 2: Warn Only | 3: Smart | 4: Paranoia
     local compatMode = 3
     if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
         compatMode = GlobalMarketSettings.current.compatModeIndex
     end
 
-    -- Mode 1: Ignore. Do absolutely nothing.
+    -- Mode 1: Ignore completely
     if compatMode == 1 then
         return false
     end
 
     for modName, data in pairs(self.conflicts) do
         if g_modIsLoaded[modName] then
+            hasActiveConflicts = true
+            local action = data.action
 
-            -- Bypass for mods with hardcoded firewalls
+            -- Bypass for mods with known, hardcoded firewalls (e.g., IDE)
             if modName == "FS25_InfoDisplayExtension" then
                 if GlobalMarket.debugManager ~= nil then
-                    GlobalMarket.debugManager:info("[Compatibility] IDE detected. Bypassing fatal stop, relying on Firewall.")
+                    GlobalMarket.debugManager:info("[Compatibility] IDE detected. Bypassing XML action, handled by native GM Firewall.")
                 end
             else
+                -- Handle unknown or other conflicting mods based on mode
                 if compatMode == 2 then
-                    -- Mode 2: Warn Only
+                    -- Mode 2: Warn Only (Console Log)
                     if GlobalMarket.debugManager ~= nil then
-                        GlobalMarket.debugManager:warning("[Compatibility] Conflict detected with %s, but mode is 'Warn Only'. No mitigations applied.", modName)
+                        GlobalMarket.debugManager:warning("[Compatibility] Conflict ignored: %s (Action: %s)", modName, action)
                     end
-                elseif compatMode == 3 then
-                    -- Mode 3: Strict
-                    self:applyMitigation(modName, data.action)
-                end
 
-                hasActiveConflicts = true
+                elseif compatMode == 3 then
+                    -- Mode 3: Smart Mode (Downgrade fatal blocks to prevent lockouts)
+                    if action == "block_game" then
+                        if GlobalMarket.debugManager ~= nil then
+                            GlobalMarket.debugManager:warning("[Compatibility] SMART MODE: Prevented fatal kick for '%s'. Mod might cause UI issues.", modName)
+                        end
+                        -- DYNAMIC WARNING: Push a blinking warning to the player in-game using l10n
+                        if g_currentMission ~= nil then
+                            -- Fallback text just in case the l10n key is missing
+                            local fallbackText = "GlobalMarket Warning: Mod '%s' might cause conflicts!"
+                            local l10nText = g_i18n:hasText("ui_gm_warning_smart_conflict") and g_i18n:getText("ui_gm_warning_smart_conflict") or fallbackText
+
+                            local warnText = string.format(l10nText, modName)
+                            g_currentMission:showBlinkingWarning(warnText, 5000)
+                        end
+                    else
+                        -- Apply safe mitigations (like disable_silo_ui)
+                        self:applyMitigation(modName, action)
+                    end
+
+                elseif compatMode == 4 then
+                    -- Mode 4: Paranoia (Execute exactly as the XML dictates)
+                    self:applyMitigation(modName, action)
+                end
             end
         end
     end
 
-    -- Deploy hardcoded dynamic firewalls ONLY if in Strict mode
-    if compatMode == 3 then
+    -- Deploy native firewalls ONLY in Smart (3) or Paranoia (4) mode
+    if compatMode >= 3 then
         self:installFirewalls()
     end
 
@@ -174,24 +196,29 @@ function GMCompatibilityManager:applyMitigation(modName, action)
     -- Add more actions here as the mod grows
 end
 
---- Wirft den Spieler mit einem nativen UI-Dialog zurück ins Hauptmenü
+--- Kicks the player back to the main menu with a native UI dialog
 function GMCompatibilityManager:triggerFatalStop()
     if self.states.fatalConflictMod ~= nil then
         local modName = self.states.fatalConflictMod
 
-        -- Text aus der l10n holen und den Modnamen einfügen
-        local text = string.format(g_i18n:getText("ui_gm_warning_fatal_conflict"), modName)
+        -- Fetch text from l10n and insert the mod name
+        local fallbackText = "FATAL CONFLICT: Mod '%s' is incompatible. Game will be blocked to prevent corruption."
+        local l10nText = g_i18n:hasText("ui_gm_warning_fatal_conflict") and g_i18n:getText("ui_gm_warning_fatal_conflict") or fallbackText
+        local text = string.format(l10nText, modName)
 
-        -- Native Engine Dialog mit Callback zum Hauptmenü
-        g_gui:showInfoDialog({
-            text = text,
-            dialogType = DialogElement.TYPE_WARNING,
-            target = self,
-            callback = function()
-                -- Dies ist der Engine-Befehl, der das Spiel verlässt (Kick to Menu)
-                g_currentMission:onLeaveGame()
-            end
-        })
+        -- Native Engine Dialog with callback to the main menu
+        if g_gui ~= nil then
+            g_gui:showDialog("MessageDialog", nil, nil, {
+                text = text,
+                title = g_i18n:getText("ui_warning") or "Warning",
+                dialogType = DialogElement.TYPE_WARNING,
+                buttonTexts = { g_i18n:getText("button_ok") or "OK" },
+                callback = function()
+                    -- This is the native engine command that handles the disconnect/leave (Kick to Menu)
+                    g_currentMission:onLeaveGame()
+                end
+            })
+        end
     end
 end
 
@@ -203,11 +230,17 @@ function GMCompatibilityManager:installFirewalls()
     -- ========================================================
     if g_modIsLoaded["FS25_InfoDisplayExtension"] then
         if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:warning("[Compatibility] InfoDisplayExtension detected. Installing instance-level UI firewall for GM objects.")
+            GlobalMarket.debugManager:info("[Compatibility] InfoDisplayExtension detected. Installing instance-level UI firewall for GM objects.")
         end
 
         local function applyInstanceFirewall(placeable)
             if placeable.isGmMarket and placeable.updateInfo ~= nil then
+
+                -- Prevent double-hooking if the user toggles settings multiple times
+                if placeable.hasGmFirewall then
+                    return
+                end
+                placeable.hasGmFirewall = true
 
                 -- We save the original chain (which is currently infected by IDE)
                 local originalUpdateInfo = placeable.updateInfo

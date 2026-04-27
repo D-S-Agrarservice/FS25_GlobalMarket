@@ -31,7 +31,7 @@
         <e k="ui_gm_settings_baseCost"                             v="Koszty dostawy: Opłata podstawowa" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Ustala stałą opłatę podstawową za dostawy do lub z prywatnego silosu na farmie." />
         <e k="ui_gm_settings_compatMode"                           v="Tryb kompatybilności" />
-        <e k="ui_gm_settings_compatMode_desc"                      v="Określa, jak GlobalMarket radzi sobie ze znanymi konfliktowymi modami. Ignore: Brak akcji. Warn Only: Tylko ostrzeżenia w logu. Strict: Blokuje inwazyjne elementy z modów innych twórców (Zalecane)." />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Określa, jak GM radzi sobie z innymi modami. 1 (Ignore): Brak akcji. 2 (Warn Only): Ostrzeżenie w logu. 3 (Smart): Używa zapór, blokuje wyrzucanie (Zalecane*). 4 (Paranoia): Wyrzuca z gry przy poważnych konfliktach*. (* Wymaga restartu zapisu gry!)" />
         <e k="ui_gm_settings_debugDuration"                        v="Czas głębokiego logowania" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Limit bezpieczeństwa dla bardzo szczegółowego logowania (Trace/Debug), aby zapobiec spadkom wydajności i tworzeniu ogromnych plików tekstowych." />
         <e k="ui_gm_settings_debugLevel"                           v="Poziom debugowania" />
@@ -53,6 +53,8 @@
         <e k="ui_gm_unit_liter"                                    v="Litry" />
         <e k="ui_gm_unit_pallet"                                   v="Palety" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Maks. %s obiektów na transakcję (Wydajność)" />
+        <e k="ui_gm_warning_fatal_conflict"                        v="KRYTYCZNY KONFLIKT: Mod '%s' jest niekompatybilny. Gra zostanie zablokowana, aby chronić zapis gry." />
+        <e k="ui_gm_warning_smart_conflict"                        v="Ostrzeżenie GlobalMarket: Mod '%s' może powodować konflikty!" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Dostępna ilość" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Ilość" />

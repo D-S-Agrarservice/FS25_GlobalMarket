@@ -31,7 +31,7 @@
         <e k="ui_gm_settings_baseCost"                             v="Delivery Costs: Base Fee" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Sets the fixed base fee for freight deliveries to or from the private farm silo." />
         <e k="ui_gm_settings_compatMode"                           v="Compatibility Mode" />
-        <e k="ui_gm_settings_compatMode_desc"                      v="Defines how GlobalMarket handles known conflicting mods. Ignore: Do nothing. Warn Only: Log warnings only. Strict: Blocks invasive elements from third-party mods (Recommended)." />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Defines how GM handles 3rd party mods. 1 (Ignore): No action. 2 (Warn Only): Log warning only. 3 (Smart): Uses firewalls, blocks kicks (Recommended*). 4 (Paranoia): Strictly executes kicks on severe conflicts*. (* Requires savegame restart!)" />
         <e k="ui_gm_settings_debugDuration"                        v="Deep-Logging Duration" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Safety limit for extremely detailed logging (Trace/Debug) to prevent performance drops and excessively large text files." />
         <e k="ui_gm_settings_debugLevel"                           v="Debug Level" />
@@ -53,6 +53,8 @@
         <e k="ui_gm_unit_liter"                                    v="Liters" />
         <e k="ui_gm_unit_pallet"                                   v="Pallets" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s objects per transaction (Performance)" />
+        <e k="ui_gm_warning_fatal_conflict"                        v="FATAL CONFLICT: Mod '%s' is incompatible. Game will be blocked to prevent corruption." />
+        <e k="ui_gm_warning_smart_conflict"                        v="GlobalMarket Warning: Mod '%s' might cause conflicts!" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Available Amount" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Count" />

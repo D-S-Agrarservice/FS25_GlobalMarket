@@ -31,7 +31,7 @@
         <e k="ui_gm_settings_baseCost"                             v="Frais de livraison : Frais de base" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Définit les frais de base fixes pour les livraisons de fret vers ou depuis le silo privé de la ferme." />
         <e k="ui_gm_settings_compatMode"                           v="Mode de compatibilité" />
-        <e k="ui_gm_settings_compatMode_desc"                      v="Définit comment GlobalMarket gère les mods conflictuels connus. Ignore : Ne rien faire. Warn Only : Avertissements dans le journal uniquement. Strict : Bloque les éléments invasifs des mods tiers (Recommandé)." />
+        <e k="ui_gm_settings_compatMode_desc"                      v="Définit la gestion des mods tiers. 1 (Ignore): Aucune action. 2 (Warn Only): Avertissement log. 3 (Smart): Utilise des pare-feux, bloque les expulsions (Recommandé*). 4 (Paranoia): Expulse strictement en cas de conflits graves*. (* Nécessite un redémarrage du jeu !)" />
         <e k="ui_gm_settings_debugDuration"                        v="Durée de la journalisation approfondie" />
         <e k="ui_gm_settings_debugDuration_desc"                   v="Limite de sécurité pour la journalisation extrêmement détaillée (Trace/Debug) afin d'éviter les baisses de performances et les fichiers texte trop volumineux." />
         <e k="ui_gm_settings_debugLevel"                           v="Niveau de débogage" />
@@ -53,6 +53,8 @@
         <e k="ui_gm_unit_liter"                                    v="Litres" />
         <e k="ui_gm_unit_pallet"                                   v="Palettes" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s objets par transaction (Performance)" />
+        <e k="ui_gm_warning_fatal_conflict"                        v="CONFLIT FATAL : Le mod '%s' est incompatible. Le jeu sera bloqué pour éviter toute corruption." />
+        <e k="ui_gm_warning_smart_conflict"                        v="Avertissement GlobalMarket : Le mod '%s' pourrait causer des conflits !" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Quantité disponible" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Nombre" />
