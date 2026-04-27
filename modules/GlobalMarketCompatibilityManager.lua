@@ -19,7 +19,8 @@ function GMCompatibilityManager.new(customMt)
     -- Internal states that other GM modules will read to adjust their behavior
     self.states = {
         isSiloUiDisabled = false,
-        isEconomyHookDisabled = false
+        isEconomyHookDisabled = false,
+        fatalConflictMod = nil -- Stores the name of the incompatible mod for the Strict-Mode kick
     }
 
     -- Set up directory paths (same logic as GlobalMarketSettings)
@@ -39,7 +40,7 @@ function GMCompatibilityManager:generateDefaultXML()
     if file ~= nil then
         local template = [[<?xml version="1.0" encoding="utf-8"?>
 <compatibility version="1.0.0">
-    <mod name="FS25_InfoDisplayExtension" action="disable_silo_ui" />
+    <mod name="FS25_InfoDisplayExtension" action="block_game" />
 </compatibility>]]
 
         file:write(template)
@@ -102,6 +103,7 @@ function GMCompatibilityManager:checkActiveMods()
     -- Reset states to default before evaluation
     self.states.isSiloUiDisabled = false
     self.states.isEconomyHookDisabled = false
+    self.states.fatalConflictMod = nil
 
     -- Safety check for Giants ModManager table
     if g_modIsLoaded == nil then
@@ -122,17 +124,24 @@ function GMCompatibilityManager:checkActiveMods()
     for modName, data in pairs(self.conflicts) do
         if g_modIsLoaded[modName] then
 
-            if compatMode == 2 then
-                -- Mode 2: Warn Only
+            -- Bypass for mods with hardcoded firewalls
+            if modName == "FS25_InfoDisplayExtension" then
                 if GlobalMarket.debugManager ~= nil then
-                    GlobalMarket.debugManager:warning("[Compatibility] Conflict detected with %s, but mode is 'Warn Only'. No mitigations applied.", modName)
+                    GlobalMarket.debugManager:info("[Compatibility] IDE detected. Bypassing fatal stop, relying on Firewall.")
                 end
-            elseif compatMode == 3 then
-                -- Mode 3: Strict
-                self:applyMitigation(modName, data.action)
-            end
+            else
+                if compatMode == 2 then
+                    -- Mode 2: Warn Only
+                    if GlobalMarket.debugManager ~= nil then
+                        GlobalMarket.debugManager:warning("[Compatibility] Conflict detected with %s, but mode is 'Warn Only'. No mitigations applied.", modName)
+                    end
+                elseif compatMode == 3 then
+                    -- Mode 3: Strict
+                    self:applyMitigation(modName, data.action)
+                end
 
-            hasActiveConflicts = true
+                hasActiveConflicts = true
+            end
         end
     end
 
@@ -156,8 +165,34 @@ function GMCompatibilityManager:applyMitigation(modName, action)
         self.states.isSiloUiDisabled = true
     elseif action == "disable_economy_hook" then
         self.states.isEconomyHookDisabled = true
+    elseif action == "block_game" then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:error("[Compatibility] FATAL CONFLICT: %s. Game will be blocked.", modName)
+        end
+        self.states.fatalConflictMod = modName
     end
     -- Add more actions here as the mod grows
+end
+
+--- Wirft den Spieler mit einem nativen UI-Dialog zurück ins Hauptmenü
+function GMCompatibilityManager:triggerFatalStop()
+    if self.states.fatalConflictMod ~= nil then
+        local modName = self.states.fatalConflictMod
+
+        -- Text aus der l10n holen und den Modnamen einfügen
+        local text = string.format(g_i18n:getText("ui_gm_warning_fatal_conflict"), modName)
+
+        -- Native Engine Dialog mit Callback zum Hauptmenü
+        g_gui:showInfoDialog({
+            text = text,
+            dialogType = DialogElement.TYPE_WARNING,
+            target = self,
+            callback = function()
+                -- Dies ist der Engine-Befehl, der das Spiel verlässt (Kick to Menu)
+                g_currentMission:onLeaveGame()
+            end
+        })
+    end
 end
 
 --- Installs dynamic firewalls to protect GM components from invasive mods
