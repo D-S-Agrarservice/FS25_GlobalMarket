@@ -206,60 +206,60 @@ function GMCompatibilityManager:installFirewalls()
             GlobalMarket.debugManager:warning("[Compatibility] InfoDisplayExtension detected. Installing instance-level UI firewall for GM objects.")
         end
 
-        -- This function applies the ninja firewall to a specific building instance
         local function applyInstanceFirewall(placeable)
-            -- Check if the building is flagged as GM and the updateInfo function exists
             if placeable.isGmMarket and placeable.updateInfo ~= nil then
 
-                -- 1. Store the original class function (including IDE hooks)
+                -- We save the original chain (which is currently infected by IDE)
                 local originalUpdateInfo = placeable.updateInfo
 
-                -- 2. Overwrite the function ONLY for THIS SINGLE building instance
+                -- We override the instance to intercept the UI call
                 placeable.updateInfo = function(self, infoTable)
 
-                    -- 3. Let IDE and Vanilla run first
-                    if originalUpdateInfo ~= nil then
-                        originalUpdateInfo(self, infoTable)
-                    end
+                    -- Instead of letting IDE run, we bypass it completely and call our saved, clean GM->Vanilla chain!
+                    if self.spec_silo ~= nil and GlobalMarketAccess.cleanSiloUpdateInfo ~= nil then
+                        GlobalMarketAccess.cleanSiloUpdateInfo(self, nil, nil, infoTable)
 
-                    -- 4. Clear the table! Everything written by IDE/Vanilla gets removed.
-                    for i = #infoTable, 1, -1 do
-                        infoTable[i] = nil
-                    end
+                    elseif self.spec_objectStorage ~= nil and GlobalMarketAccess.cleanObjectStorageUpdateInfo ~= nil then
+                        GlobalMarketAccess.cleanObjectStorageUpdateInfo(self, nil, nil, infoTable)
 
-                    -- 5. Rebuild the GM display cleanly
-                    if self.spec_silo ~= nil and self.spec_silo.loadingStation ~= nil then
-                        local farmId = self:getOwnerFarmId()
-                        for fillType, fillLevel in pairs(self.spec_silo.loadingStation:getAllFillLevels(farmId)) do
-                            if fillLevel > 0.1 then
-                                local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillType)
-                                if fillTypeDesc ~= nil then
-                                    table.insert(infoTable, {
-                                        title = fillTypeDesc.title,
-                                        text = g_i18n:formatVolume(fillLevel, 0)
-                                    })
-                                end
-                            end
+                    else
+                        -- Fallback for non-standard GM storages: Let IDE do its thing
+                        if originalUpdateInfo ~= nil then
+                            originalUpdateInfo(self, infoTable)
                         end
                     end
                 end
             end
         end
 
-        -- STEP A: Apply firewall to all ALREADY LOADED buildings on the map
-        -- Since we are in onFinishedLoading, the silos are already spawned in the world.
+        -- 1. Protect PlaceableSilo (InfoTrigger) & 3. Protect ObjectStorage
+        -- We apply the firewall dynamically to all already loaded placeables
         if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
             for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
                 applyInstanceFirewall(placeable)
             end
         end
 
-        -- STEP B: Apply firewall to all NEWLY PLACED buildings (during the session)
-        -- If the player buys a new GM storage in the shop, we intercept it here.
+        -- Catch newly placed buildings during the session
         if Placeable.onFinalizePlacement ~= nil then
             Placeable.onFinalizePlacement = Utils.appendedFunction(Placeable.onFinalizePlacement, function(placeable)
                 applyInstanceFirewall(placeable)
             end)
+        end
+
+        -- 2. Protect ProductionPoint
+        if ProductionPoint ~= nil and type(ProductionPoint.updateInfo) == "function" then
+            local function gmProdUpdateInfo(self, superFunc, infoTable)
+                if self.isGmMarket then
+                    return
+                end
+
+                if superFunc ~= nil then
+                    superFunc(self, infoTable)
+                end
+            end
+
+            ProductionPoint.updateInfo = Utils.overwrittenFunction(ProductionPoint.updateInfo, gmProdUpdateInfo)
         end
     end
 end

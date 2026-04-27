@@ -589,6 +589,9 @@ end
 
 if PlaceableObjectStorage ~= nil then
     PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
+    -- NEW: Save a pointer to the clean GM -> Vanilla hook chain BEFORE IDE overwrites it!
+    -- This allows the GMCompatibilityManager to bypass the IDE UI injection entirely.
+    GlobalMarketAccess.cleanObjectStorageUpdateInfo = PlaceableObjectStorage.updateInfo
 end
 
 -- =========================================================================
@@ -667,4 +670,7 @@ end
 
 if PlaceableSilo ~= nil then
     PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
+    -- NEW: Save a pointer to the clean GM -> Vanilla hook chain BEFORE IDE overwrites it!
+    -- This allows the GMCompatibilityManager to bypass the IDE UI injection entirely.
+    GlobalMarketAccess.cleanSiloUpdateInfo = PlaceableSilo.updateInfo
 end
