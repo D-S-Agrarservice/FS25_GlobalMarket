@@ -43,7 +43,7 @@
         <e k="ui_gm_settings_header"                               v="RYNEK GLOBALNY" />
         <e k="ui_gm_settings_literCost"                            v="Koszty dostawy: Cena za litr" />
         <e k="ui_gm_settings_literCost_desc"                       v="Ustala dodatkowe koszty transportu za każdy sprzedany litr." />
-        <e k="ui_gm_settings_system_header"                        v="System &amp; Kompatybilność" />
+        <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatybilność" />
         <e k="ui_gm_storage_only"                                  v="(Tylko GM)" />
         <e k="ui_gm_storage_split"                                 v="(Gosp.: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centrum Logistyczne GM - bez opłat)" />

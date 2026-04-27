@@ -43,7 +43,7 @@
         <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_literCost"                            v="Lieferkosten: Preis pro Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Legt die zusätzlichen Transportkosten pro gehandeltem Liter fest." />
-        <e k="ui_gm_settings_system_header"                        v="System &amp; Kompatibilität" />
+        <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatibilität" />
         <e k="ui_gm_storage_only"                                  v="(nur GM)" />
         <e k="ui_gm_storage_split"                                 v="(Hof: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />

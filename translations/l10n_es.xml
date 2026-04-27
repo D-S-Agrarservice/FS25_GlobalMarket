@@ -43,7 +43,7 @@
         <e k="ui_gm_settings_header"                               v="MERCADO GLOBAL" />
         <e k="ui_gm_settings_literCost"                            v="Gastos de envío: Precio por litro" />
         <e k="ui_gm_settings_literCost_desc"                       v="Establece los costes de transporte adicionales por litro comerciado." />
-        <e k="ui_gm_settings_system_header"                        v="Sistema y Compatibilidad" />
+        <e k="ui_gm_settings_system_header"                        v="GM Sistema y Compatibilidad" />
         <e k="ui_gm_storage_only"                                  v="(Solo GM)" />
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />
