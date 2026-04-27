@@ -209,9 +209,7 @@ function GMCompatibilityManager:installFirewalls()
 
         -- 1. Protect PlaceableSilo (InfoTrigger)
         if PlaceableSilo ~= nil and type(PlaceableSilo.updateInfo) == "function" then
-            local ideSiloUpdateInfo = PlaceableSilo.updateInfo
-
-            PlaceableSilo.updateInfo = function(self, infoTable)
+            local function gmSiloUpdateInfo(self, superFunc, infoTable)
                 -- Check if this specific silo is flagged as a Global Market storage
                 if self.isGmMarket then
 
@@ -237,33 +235,44 @@ function GMCompatibilityManager:installFirewalls()
                     return
                 end
 
-                -- Non-GM Storage: Let IDE do its normal job
-                ideSiloUpdateInfo(self, infoTable)
+                -- Non-GM Storage: Let the chain (including IDE) do its normal job
+                if superFunc ~= nil then
+                    superFunc(self, infoTable)
+                end
             end
+
+            -- Inject our function as the outermost wrapper
+            PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, gmSiloUpdateInfo)
         end
 
         -- 2. Protect ProductionPoint
         if ProductionPoint ~= nil and type(ProductionPoint.updateInfo) == "function" then
-            local ideProdUpdateInfo = ProductionPoint.updateInfo
-
-            ProductionPoint.updateInfo = function(self, infoTable)
+            local function gmProdUpdateInfo(self, superFunc, infoTable)
                 if self.isGmMarket then
                     return
                 end
-                ideProdUpdateInfo(self, infoTable)
+
+                if superFunc ~= nil then
+                    superFunc(self, infoTable)
+                end
             end
+
+            ProductionPoint.updateInfo = Utils.overwrittenFunction(ProductionPoint.updateInfo, gmProdUpdateInfo)
         end
 
         -- 3. Protect ObjectStorage (e.g., Pallet/Bale Storages)
         if ObjectStorage ~= nil and type(ObjectStorage.updateInfo) == "function" then
-            local ideObjStorageUpdateInfo = ObjectStorage.updateInfo
-
-            ObjectStorage.updateInfo = function(self, infoTable)
+            local function gmObjStorageUpdateInfo(self, superFunc, infoTable)
                 if self.isGmMarket then
                     return
                 end
-                ideObjStorageUpdateInfo(self, infoTable)
+
+                if superFunc ~= nil then
+                    superFunc(self, infoTable)
+                end
             end
+
+            ObjectStorage.updateInfo = Utils.overwrittenFunction(ObjectStorage.updateInfo, gmObjStorageUpdateInfo)
         end
     end
 end
