@@ -146,7 +146,7 @@ function GlobalMarket:loadMap(name)
     end
 
     -- 2.5 Initialize Compatibility Manager and load local/server XML
-    if GlobalMarketCompatibilityManager ~= nil then
+    if GMCompatibilityManager ~= nil then
         self.compatibilityManager = GMCompatibilityManager.new()
         self.compatibilityManager:loadFromXML()
     end
