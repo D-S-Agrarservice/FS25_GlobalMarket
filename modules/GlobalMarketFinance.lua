@@ -40,7 +40,17 @@ local function setupFinanceSystemEarly()
     if fileExists(savePath) then
         local xmlFile = XMLFile.load("GMSettingsEarly", savePath)
         if xmlFile ~= nil then
-            isDetailed = xmlFile:getBool("globalMarketSettings#isDetailedFinance", false)
+
+            -- Helper to determine the current environment profile early in the boot sequence
+            local prefix = "globalMarketSettings.profiles.sp"
+            if g_dedicatedServerInfo ~= nil then
+                prefix = "globalMarketSettings.profiles.dedi"
+            elseif g_currentMission ~= nil and g_currentMission.missionDynamicInfo ~= nil and g_currentMission.missionDynamicInfo.isMultiplayer then
+                prefix = "globalMarketSettings.profiles.mp"
+            end
+
+            -- Load the specific detailed finance setting from the correct profile
+            isDetailed = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
             xmlFile:delete()
         end
     end

@@ -75,20 +75,35 @@ function GlobalMarketSettings:applyDebugSettings()
 end
 
 -- ============================================================================
--- XML Storage Manager
+-- XML Storage Manager (Multi-Profile Edition)
 -- ============================================================================
 
+-- Ensure the settings directory exists, fallback to standard modSettings folder
 local settingsDirectory = g_currentModSettingsDirectory
 if settingsDirectory == nil or settingsDirectory == "" then
     settingsDirectory = string.format("%smodSettings/%s/", getUserProfileAppPath(), GlobalMarketSettings.MOD_NAME)
 end
 
+-- Helper: Determines the correct XML Node prefix based on the environment.
+-- This allows us to keep SP, MP, and Dedi settings completely separated inside a single XML file.
+function GlobalMarketSettings:getEnvPrefix()
+    if g_dedicatedServerInfo ~= nil then
+        return "globalMarketSettings.profiles.dedi"
+    elseif g_currentMission ~= nil and g_currentMission.missionDynamicInfo.isMultiplayer then
+        return "globalMarketSettings.profiles.mp"
+    else
+        return "globalMarketSettings.profiles.sp"
+    end
+end
+
 function GlobalMarketSettings:loadFromXML()
     local savePath = settingsDirectory .. "settings.xml"
+    local prefix = self:getEnvPrefix()
 
-    -- Fetch dynamic defaults based on game difficulty
+    -- Fetch dynamic defaults based on game difficulty (used as fallback for new profiles)
     local defaultBase, defaultLiter = self:getDefaultIndices()
 
+    -- If the entire file doesn't exist yet, apply defaults, save the initial XML, and exit
     if not fileExists(savePath) then
         self.current.deliveryBaseIndex = defaultBase
         self.current.deliveryLiterIndex = defaultLiter
@@ -107,29 +122,36 @@ function GlobalMarketSettings:loadFromXML()
 
     local xmlFile = XMLFile.load("GlobalMarketSettingsXML", savePath)
     if xmlFile ~= nil then
-        self.current.deliveryBaseIndex = xmlFile:getInt("globalMarketSettings#deliveryBaseIndex", defaultBase)
-        self.current.deliveryLiterIndex = xmlFile:getInt("globalMarketSettings#deliveryLiterIndex", defaultLiter)
+        -- Load values dynamically from the current environment profile.
+        -- If a specific profile (e.g., 'dedi') doesn't exist yet, it gracefully falls back to 'defaultBase/Liter'.
+
+        -- Load Delivery Costs
+        self.current.deliveryBaseIndex = xmlFile:getInt(prefix .. "#deliveryBaseIndex", defaultBase)
+        self.current.deliveryLiterIndex = xmlFile:getInt(prefix .. "#deliveryLiterIndex", defaultLiter)
 
         -- Load Detailed Finance Setting
-        self.current.isDetailedFinance = xmlFile:getBool("globalMarketSettings#isDetailedFinance", false)
+        self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
 
         -- Load Debug Settings
-        self.current.isDebugActive = xmlFile:getBool("globalMarketSettings.debug#isActive", false)
-        self.current.debugLevelIndex = xmlFile:getInt("globalMarketSettings.debug#levelIndex", 1)
-        self.current.debugDurationIndex = xmlFile:getInt("globalMarketSettings.debug#durationIndex", 1)
+        self.current.isDebugActive = xmlFile:getBool(prefix .. ".debug#isActive", false)
+        self.current.debugLevelIndex = xmlFile:getInt(prefix .. ".debug#levelIndex", 1)
+        self.current.debugDurationIndex = xmlFile:getInt(prefix .. ".debug#durationIndex", 1)
 
         -- Load Compatibility Setting
-        self.current.compatModeIndex = xmlFile:getInt("globalMarketSettings.compatibility#modeIndex", 3)
+        self.current.compatModeIndex = xmlFile:getInt(prefix .. ".compatibility#modeIndex", 3)
 
-        -- Apply to active global variables and modules
+        -- Apply loaded values to active global variables
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
 
+        -- Synchronize debug module states
         self:applyDebugSettings()
 
+        -- Cleanup
         xmlFile:delete()
+
         if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:info("Settings: Loaded from XML.")
+            GlobalMarket.debugManager:info("Settings: Loaded profile '%s' from XML.", prefix)
         end
     end
 end
@@ -137,28 +159,39 @@ end
 function GlobalMarketSettings:saveToXML()
     createFolder(settingsDirectory)
     local savePath = settingsDirectory .. "settings.xml"
+    local prefix = self:getEnvPrefix()
 
-    local xmlFile = XMLFile.create("GlobalMarketSettingsXML", savePath, "globalMarketSettings")
+    local xmlFile
+    -- CRITICAL: If the file already exists, we must LOAD it to append or overwrite our specific profile.
+    -- If we use XMLFile.create on an existing file, it would wipe out all other environment profiles!
+    if fileExists(savePath) then
+        xmlFile = XMLFile.load("GlobalMarketSettingsXML", savePath)
+    else
+        xmlFile = XMLFile.create("GlobalMarketSettingsXML", savePath, "globalMarketSettings")
+    end
+
     if xmlFile ~= nil then
-        xmlFile:setInt("globalMarketSettings#deliveryBaseIndex", self.current.deliveryBaseIndex)
-        xmlFile:setInt("globalMarketSettings#deliveryLiterIndex", self.current.deliveryLiterIndex)
+        -- Save Delivery Costs
+        xmlFile:setInt(prefix .. "#deliveryBaseIndex", self.current.deliveryBaseIndex)
+        xmlFile:setInt(prefix .. "#deliveryLiterIndex", self.current.deliveryLiterIndex)
 
         -- Save Detailed Finance Setting
-        xmlFile:setBool("globalMarketSettings#isDetailedFinance", self.current.isDetailedFinance)
+        xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
         -- Save Debug Settings
-        xmlFile:setBool("globalMarketSettings.debug#isActive", self.current.isDebugActive)
-        xmlFile:setInt("globalMarketSettings.debug#levelIndex", self.current.debugLevelIndex)
-        xmlFile:setInt("globalMarketSettings.debug#durationIndex", self.current.debugDurationIndex)
+        xmlFile:setBool(prefix .. ".debug#isActive", self.current.isDebugActive)
+        xmlFile:setInt(prefix .. ".debug#levelIndex", self.current.debugLevelIndex)
+        xmlFile:setInt(prefix .. ".debug#durationIndex", self.current.debugDurationIndex)
 
         -- Save Compatibility Setting
-        xmlFile:setInt("globalMarketSettings.compatibility#modeIndex", self.current.compatModeIndex)
+        xmlFile:setInt(prefix .. ".compatibility#modeIndex", self.current.compatModeIndex)
 
+        -- Write to disk and cleanup
         xmlFile:save()
         xmlFile:delete()
 
         if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:info("Settings: Saved to XML.")
+            GlobalMarket.debugManager:info("Settings: Saved profile '%s' to XML.", prefix)
         end
     end
 end

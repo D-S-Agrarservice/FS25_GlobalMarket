@@ -7,13 +7,18 @@ GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
 GlobalMarket.modName = g_currentModName
 
--- Static delivery costs for logistics calculation
-GlobalMarket.DELIVER_COST = 50
-GlobalMarket.DELIVER_COST_PERLITER = 0.05
+-- =========================================================================
+-- SYSTEM VARIABLES
+-- =========================================================================
+-- Delivery costs are dynamically managed by GlobalMarketSettings.lua based on environment.
+-- We initialize them as 0 here to catch loading errors.
+GlobalMarket.DELIVER_COST = 0
+GlobalMarket.DELIVER_COST_PERLITER = 0
 
 -- =========================================================================
 -- DEBUG MANAGER INITIALIZATION (Highest Priority)
 -- =========================================================================
+
 -- Source Core Debug Module first so it is available globally BEFORE any other code runs
 source(GlobalMarket.dir .. "modules/GlobalMarketDebug.lua")
 
