@@ -517,8 +517,9 @@ function GlobalMarketAccess.init()
 
     -- =========================================================================
     -- Hook 10: AnimatedObject Hybrid Trigger (The Elegant Bypass)
-    -- Instead of global TypeManager overrides, we sweep the map for our GM Terminals.
-    -- We then overwrite the specific placeable instance function that the doors query.
+    -- We target our GM Terminals specifically and overwrite the instance function.
+    -- To ensure Dedi-Server clients are caught AFTER network synchronization,
+    -- we trigger the sweep via onStartMission instead of onFinishedLoading.
     -- =========================================================================
 
     local function applyGmHybridDoorHook(placeable)
@@ -536,20 +537,20 @@ function GlobalMarketAccess.init()
                 placeable.hasGmDoorBypass = true
 
                 if GlobalMarket.debugManager ~= nil then
-                    GlobalMarket.debugManager:info("Access Hook: Hybrid VIP Pass applied to GM Terminal instance.")
+                    GlobalMarket.debugManager:info("Access Hook: Elegant VIP Pass applied to GM Terminal instance.")
                 end
             end
         end
     end
 
-    -- 1. Catch newly placed buildings purchased during the active session
+    -- 1. Catch newly placed buildings purchased mid-game by any player
     if Placeable ~= nil and Placeable.onFinalizePlacement ~= nil then
         Placeable.onFinalizePlacement = Utils.appendedFunction(Placeable.onFinalizePlacement, function(placeable)
             applyGmHybridDoorHook(placeable)
         end)
     end
 
-    -- 2. Retroactively tag ALL existing buildings loaded from the Savegame
+    -- 2. Retroactively sweep the map exactly when network sync is 100% complete
     local function retroactiveGmDoorSweep(mission)
         if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
             for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
@@ -557,7 +558,8 @@ function GlobalMarketAccess.init()
             end
         end
     end
-    FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, retroactiveGmDoorSweep)
+    -- Crucial fix for Dedi Servers: onStartMission fires after stream reading!
+    FSBaseMission.onStartMission = Utils.appendedFunction(FSBaseMission.onStartMission, retroactiveGmDoorSweep)
 
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
