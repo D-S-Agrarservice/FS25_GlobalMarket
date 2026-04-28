@@ -424,6 +424,7 @@ end
 -- This hook is called when the player is actually in the game
 -- and the network synchronization is guaranteed to be finished.
 local function onStartMission(mission)
+    -- 1. Network events for Multiplayer Clients
     if g_client ~= nil and not g_currentMission:getIsServer() then
         if InitOfflineMarketEvent ~= nil then
             g_client:getServerConnection():sendEvent(InitOfflineMarketEvent.new())
@@ -441,6 +442,14 @@ local function onStartMission(mission)
                 end
                 g_client:getServerConnection():sendEvent(SyncGlobalMarketCompatibilityEvent.new(compMgr.version, compMgr.conflicts))
             end
+        end
+    end
+
+    -- 2. FIREWALL START (For ALL players: SP, MP-Host and MP-Clients)
+    -- At this exact point, all placeables are 100% loaded and synchronized!
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
+        if g_currentMission.globalMarket.compatibilityManager ~= nil then
+            g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
         end
     end
 end

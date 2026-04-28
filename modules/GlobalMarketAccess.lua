@@ -281,7 +281,7 @@ function GlobalMarketAccess.init()
                     GlobalMarket.debugManager:trace("Storage Tracker: Farm %s | FillType: %d | Delta: %.2f | New Owned Total: %.2f", tostring(self.gmTempFarmId), fillType, delta, self.gmFarmFillLevels[self.gmTempFarmId][fillType])
                 end
 
-                -- NEW: Broadcast with Network Debounce (Prevents Dedi Spam during tipping)
+                -- Broadcast with Network Debounce (Prevents Dedi Spam during tipping)
                 if g_server ~= nil and SyncGmSiloEvent ~= nil then
                     self.gmSyncTimer = self.gmSyncTimer or 0
                     self.gmSyncAccumulator = (self.gmSyncAccumulator or 0) + math.abs(delta)
@@ -515,13 +515,57 @@ function GlobalMarketAccess.init()
         Storage.readStream = Utils.overwrittenFunction(Storage.readStream, storageReadStreamHook)
     end
 
+    -- =========================================================================
+    -- Hook 10: AnimatedObject Hybrid Trigger (The Elegant Bypass)
+    -- Instead of global TypeManager overrides, we sweep the map for our GM Terminals.
+    -- We then overwrite the specific placeable instance function that the doors query.
+    -- =========================================================================
+
+    local function applyGmHybridDoorHook(placeable)
+        -- Only target our GM Terminals that have the door check function
+        if placeable.isGmMarket and placeable.getCanTriggerAnimatedObject ~= nil then
+
+            -- Prevent double hooking
+            if not placeable.hasGmDoorBypass then
+                local function gmInstanceTriggerHook(self, superFunc, animatedObject)
+                    -- 'self' is our GM Market building. We always greenlight its doors.
+                    return true
+                end
+
+                placeable.getCanTriggerAnimatedObject = Utils.overwrittenFunction(placeable.getCanTriggerAnimatedObject, gmInstanceTriggerHook)
+                placeable.hasGmDoorBypass = true
+
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:info("Access Hook: Hybrid VIP Pass applied to GM Terminal instance.")
+                end
+            end
+        end
+    end
+
+    -- 1. Catch newly placed buildings purchased during the active session
+    if Placeable ~= nil and Placeable.onFinalizePlacement ~= nil then
+        Placeable.onFinalizePlacement = Utils.appendedFunction(Placeable.onFinalizePlacement, function(placeable)
+            applyGmHybridDoorHook(placeable)
+        end)
+    end
+
+    -- 2. Retroactively tag ALL existing buildings loaded from the Savegame
+    local function retroactiveGmDoorSweep(mission)
+        if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
+            for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+                applyGmHybridDoorHook(placeable)
+            end
+        end
+    end
+    FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, retroactiveGmDoorSweep)
+
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:info("GlobalMarket Access Hooks successfully injected.")
     end
 end
 
 -- =========================================================================
--- Hook 10: InfoTrigger UI Split (owned goods vs. foreign goods)
+-- Hook 11: InfoTrigger UI Split (owned goods vs. foreign goods)
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 
@@ -589,13 +633,13 @@ end
 
 if PlaceableObjectStorage ~= nil then
     PlaceableObjectStorage.updateInfo = Utils.overwrittenFunction(PlaceableObjectStorage.updateInfo, updateInfoHook)
-    -- NEW: Save a pointer to the clean GM -> Vanilla hook chain BEFORE IDE overwrites it!
+    -- Save a pointer to the clean GM -> Vanilla hook chain BEFORE IDE overwrites it!
     -- This allows the GMCompatibilityManager to bypass the IDE UI injection entirely.
     GlobalMarketAccess.cleanObjectStorageUpdateInfo = PlaceableObjectStorage.updateInfo
 end
 
 -- =========================================================================
--- Hook 11: PlaceableSilo InfoTrigger UI Fix (FS25 Adjusted)
+-- Hook 12: PlaceableSilo InfoTrigger UI Fix (FS25 Adjusted)
 -- Adds Capacity (Used/Total) and Foreign Goods summary.
 -- Relies on Hook 7 to natively filter the player's owned goods.
 -- =========================================================================
@@ -670,7 +714,7 @@ end
 
 if PlaceableSilo ~= nil then
     PlaceableSilo.updateInfo = Utils.overwrittenFunction(PlaceableSilo.updateInfo, siloUpdateInfoHook)
-    -- NEW: Save a pointer to the clean GM -> Vanilla hook chain BEFORE IDE overwrites it!
+    -- Save a pointer to the clean GM -> Vanilla hook chain BEFORE IDE overwrites it!
     -- This allows the GMCompatibilityManager to bypass the IDE UI injection entirely.
     GlobalMarketAccess.cleanSiloUpdateInfo = PlaceableSilo.updateInfo
 end
