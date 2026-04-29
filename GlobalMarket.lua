@@ -110,6 +110,9 @@ source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
 -- Compatibility Sync Events
 source(GlobalMarket.dir .. "events/SyncGlobalMarketCompatibilityEvent.lua")
 
+--Collect storeData Module
+source(GlobalMarket.dir .. "modules/GlobalMarketStoreCache.lua")
+
 -- External Sync Module
 source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 
@@ -238,6 +241,11 @@ local function onFinishedLoading(mission)
             end
         end
 
+        -- Init store cache for global available buy/sell list
+        if GlobalMarketStoreCache ~= nil and GlobalMarketStoreCache.init ~= nil then
+            GlobalMarketStoreCache.init()
+        end
+
         -- LOAD SAVEGAME DATA HERE: At this point, the entire map and all placeables are fully spawned.
         if g_currentMission:getIsServer() and g_currentMission.globalMarket.loadFromXMLFile ~= nil then
             if GlobalMarket.debugManager ~= nil then
@@ -246,6 +254,7 @@ local function onFinishedLoading(mission)
             g_currentMission.globalMarket:loadFromXMLFile()
         end
     end
+    -- GlobalMarket.dumpShopItems()
 end
 FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, onFinishedLoading)
 
@@ -420,6 +429,55 @@ function GlobalMarket:dumpFillTypeData()
     print("==============================================================")
     print("[GM Debug] MASSIVE FILLTYPE DUMP COMPLETE!")
     print("==============================================================")
+end
+
+-- ============================================================================
+-- DEV-TOOL: Analyze Shop Items (BigBags & Pallets)
+-- ============================================================================
+function GlobalMarket.dumpShopItems()
+    if g_storeManager ~= nil and g_storeManager.items ~= nil then
+        print("================== START GM MEGA DUMP (PALLETS & BIGBAGS) ==================")
+
+        local count = 0
+        for _, item in ipairs(g_storeManager:getItems()) do
+            local cat = item.categoryName and string.lower(item.categoryName) or ""
+            local xmlLower = item.xmlFilename and string.lower(item.xmlFilename) or ""
+
+            -- Catch everything in relevant categories OR containing "bag"/"pallet" in the xml path
+            if cat == "bigbags" or cat == "pallets" or cat == "bigbagpallets" or string.find(xmlLower, "bag") or string.find(xmlLower, "pallet") then
+                count = count + 1
+                print("--------------------------------------------------")
+                print("Item Name:     " .. tostring(item.name))
+                print("XML Path:      " .. tostring(item.xmlFilename))
+                print("Category:      " .. tostring(item.categoryName))
+                print("showInStore:   " .. tostring(item.showInStore))
+
+                -- Ruthlessly dig through all specs
+                if item.specs ~= nil then
+                    print("SPECS found:")
+                    for specName, specValue in pairs(item.specs) do
+                        print("  -> " .. tostring(specName) .. ": " .. tostring(specValue))
+                    end
+                else
+                    print("No specs found in item table.")
+                end
+
+                -- Output functions (sometimes hidden info is stored here)
+                if item.functions ~= nil and #item.functions > 0 then
+                    print("FUNCTIONS found:")
+                    for i, func in ipairs(item.functions) do
+                        print("  -> F" .. i .. ": " .. tostring(func))
+                    end
+                else
+                    print("No functions found.")
+                end
+            end
+        end
+        print("--- DUMP END --- (Total items analyzed: " .. count .. ")")
+        print("============================================================================")
+    else
+        print("[GM-DUMP] Error: g_storeManager is not initialized!")
+    end
 end
 
 -- =========================================================================
