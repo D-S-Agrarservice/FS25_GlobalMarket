@@ -186,7 +186,7 @@ function GlobalMarket:loadMap(name)
         self:initSync()
     end
 
-    -- self:dumpFillTypeData()
+   -- self:dumpFillTypeData()
 end
 
 -- Used by the UI to check if the external EXE is currently connected
