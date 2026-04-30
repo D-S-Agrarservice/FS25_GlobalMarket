@@ -1,7 +1,7 @@
 --
 -- FS25 - GlobalMarketAPI
 -- Description: Central API module acting as the single source of truth for external data.
--- Handles custom liquid categories, market whitelists, and blacklists.
+-- Handles custom liquid categories, market whitelists, blacklists, and container restrictions.
 -- Priority: 1. Basegame (Hardcode) -> 2. Mods (gm_customs.xml) -> 3. Player Fallback (gm_fallback.xml)
 --
 
@@ -9,6 +9,7 @@ GlobalMarketAPI = {}
 GlobalMarketAPI.liquidCategories = {}
 GlobalMarketAPI.marketWhitelist = {}
 GlobalMarketAPI.marketBlacklist = {}
+GlobalMarketAPI.containerRestrictions = {}
 
 -- Main initialization function
 function GlobalMarketAPI.init()
@@ -17,6 +18,7 @@ function GlobalMarketAPI.init()
     GlobalMarketAPI.liquidCategories = {}
     GlobalMarketAPI.marketWhitelist = {}
     GlobalMarketAPI.marketBlacklist = {}
+    GlobalMarketAPI.containerRestrictions = {}
 
     GlobalMarketAPI.loadBasegameDefaults()
     GlobalMarketAPI.loadExternalModExtensions()
@@ -105,6 +107,10 @@ function GlobalMarketAPI.registerSchemaElements(schema)
     schema:register(XMLValueType.STRING, "globalMarket.finance.liquidCategories.category(?)#name", "Name of the custom liquid category")
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#name", "Name of the fillType to whitelist")
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.blacklist.fillType(?)#name", "Name of the fillType to blacklist")
+
+    -- New schema elements for container restrictions
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.containerRestrictions.restriction(?)#fillType", "Name of the fillType to restrict")
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.containerRestrictions.restriction(?).allow(?)#unitKey", "Allowed UI unit key (e.g., ui_gm_unit_ibc)")
 end
 
 function GlobalMarketAPI.parseXMLToAPI(xmlFile, isPriority)
@@ -126,6 +132,19 @@ function GlobalMarketAPI.parseXMLToAPI(xmlFile, isPriority)
         local fillTypeName = xmlFile:getValue(key .. "#name")
         if fillTypeName ~= nil then
             GlobalMarketAPI.registerToBlacklist(fillTypeName, isPriority)
+        end
+    end)
+
+    -- Parse container restrictions
+    xmlFile:iterate("globalMarket.marketRegistration.containerRestrictions.restriction", function(_, key)
+        local fillTypeName = xmlFile:getValue(key .. "#fillType")
+        if fillTypeName ~= nil then
+            xmlFile:iterate(key .. ".allow", function(_, allowKey)
+                local unitKey = xmlFile:getValue(allowKey .. "#unitKey")
+                if unitKey ~= nil then
+                    GlobalMarketAPI.registerContainerRestriction(fillTypeName, unitKey, isPriority)
+                end
+            end)
         end
     end)
 end
@@ -167,6 +186,25 @@ function GlobalMarketAPI.registerToBlacklist(fillTypeName, isPriority)
     end
 end
 
+function GlobalMarketAPI.registerContainerRestriction(fillTypeName, unitKey, isPriority)
+    local upperName = string.upper(fillTypeName)
+    local upperUnitKey = string.upper(unitKey)
+
+    -- Priority Check: If Fallback tries to write, but Mod/Basegame already locked it -> Block!
+    if not isPriority and GlobalMarketAPI.containerRestrictions[upperName] ~= nil then
+        return
+    end
+
+    -- Initialize table for this fillType if it doesn't exist
+    if GlobalMarketAPI.containerRestrictions[upperName] == nil then
+        GlobalMarketAPI.containerRestrictions[upperName] = {}
+    end
+
+    if not table.hasElement(GlobalMarketAPI.containerRestrictions[upperName], upperUnitKey) then
+        table.insert(GlobalMarketAPI.containerRestrictions[upperName], upperUnitKey)
+    end
+end
+
 -- =========================================================================
 -- PUBLIC GETTER API FOR CORE MODULES
 -- =========================================================================
@@ -194,6 +232,25 @@ function GlobalMarketAPI.getIsFillTypeAllowed(fillType)
 
     -- 3. Fallback to native Engine visibility flag
     return fillType.showOnPriceTable == true
+end
+
+function GlobalMarketAPI.getIsContainerAllowedForFillType(fillType, unitKey)
+    if fillType == nil or fillType.name == nil or unitKey == nil then
+        return false
+    end
+
+    local upperName = string.upper(fillType.name)
+    local upperUnitKey = string.upper(unitKey)
+
+    local allowedContainers = GlobalMarketAPI.containerRestrictions[upperName]
+
+    -- If no restriction is defined, default to allowing all containers (Basegame behavior)
+    if allowedContainers == nil or #allowedContainers == 0 then
+        return true
+    end
+
+    -- If restrictions exist, strictly check if the unitKey is permitted
+    return table.hasElement(allowedContainers, upperUnitKey)
 end
 
 -- Self-execution fallback (call this from your main init logic)
