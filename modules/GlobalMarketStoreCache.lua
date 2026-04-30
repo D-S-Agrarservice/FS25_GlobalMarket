@@ -4,8 +4,8 @@
 -- 1. Evaluates relevant store categories with fuzzy matching.
 -- 2. Uses strict XML reading (getString/getFloat) to bypass schema requirements.
 -- 3. Identifies MultipleItemPurchases and normalizes paths to prevent duplicates.
--- 4. Generates contextual Display Titles for Aliases (e.g., ChickenFood under Wheat).
--- 5. Queries the GlobalMarketAPI strictly for FillType economic validation.
+-- 4. Generates contextual Display Titles for Aliases.
+-- 5. Queries the GlobalMarketAPI strictly for FillType economic validation AND container restrictions.
 --
 
 GlobalMarketStoreCache = {}
@@ -13,7 +13,6 @@ GlobalMarketStoreCache.cache = {}
 GlobalMarketStoreCache.isInitialized = false
 
 -- ALIAS INTERCEPTOR: Maps filename keywords to custom Global Market identities.
--- Prevents specific packaged goods from vanishing under generic engine FillTypes.
 local INTERCEPTOR_ALIASES = {
     ["chickenfood"] = "CHICKENFOOD",
     ["horsefood"]   = "HORSEFOOD",
@@ -21,7 +20,6 @@ local INTERCEPTOR_ALIASES = {
     ["roadsalt"]    = "ROADSALT"
 }
 
--- Checks if the xml filename contains a known alias keyword
 local function getInterceptorAlias(xmlPathLower)
     for keyword, alias in pairs(INTERCEPTOR_ALIASES) do
         if string.find(xmlPathLower, keyword) then
@@ -31,10 +29,11 @@ local function getInterceptorAlias(xmlPathLower)
     return nil
 end
 
--- Normalizes paths to ensure our duplicate check catches $data vs data mismatches
+-- Enhanced path normalizer to fix engine slash mixing
 local function normalizePath(path)
     if path == nil then return "" end
     local p = string.lower(path)
+    p = string.gsub(p, "\\", "/") -- Standardize slashes for absolute paths
     p = string.gsub(p, "^%$data/", "data/")
     return p
 end
@@ -61,7 +60,7 @@ function GlobalMarketStoreCache.init()
         local unitKey = "ui_gm_unit_pallet"
         local formatSuffix = " (Palette)"
 
-        -- STEP 1: Filter by relevant packaging categories (Fuzzy matching to catch multi-categories like "bigbags palletanimals")
+        -- STEP 1: Filter by relevant packaging categories (Fuzzy matching)
         if string.find(catLower, "bigbags") then
             isRelevant = true
             unitKey = "ui_gm_unit_bigbag"
@@ -80,18 +79,15 @@ function GlobalMarketStoreCache.init()
             formatSuffix = " (Palette)"
         end
 
-        -- Note: No VETO here. Generic fillablePallets and bigBags are allowed as valid containers.
-
         -- STEP 2: Process the relevant items
         if isRelevant then
-            -- Use strict XML load without schema validation requirements
             local xmlFile = XMLFile.load("GMCacheItem", xmlPath)
             if xmlFile ~= nil then
                 local capacity = 0
                 local engineFillTypeStr = ""
                 local targetFormatXml = normPath
 
-                -- Extract capacity and fillTypes strictly using getString/getFloat to prevent schema errors
+                -- Extract capacity and fillTypes safely
                 local fillUnitRoot = "vehicle.fillUnit.fillUnitConfigurations.fillUnitConfiguration(0).fillUnits.fillUnit(0)"
                 capacity = xmlFile:getFloat(fillUnitRoot .. "#capacity") or 0
                 engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#fillTypes")
@@ -100,47 +96,42 @@ function GlobalMarketStoreCache.init()
                     engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#startFillType") or ""
                 end
 
-                -- MultipleItemPurchase Check: Redirect UI to the single physical item XML
+                -- MultipleItemPurchase Check: Redirect UI to the single physical item XML using absolute path
                 local multiPurchaseXml = xmlFile:getString("vehicle.multipleItemPurchase#filename")
                 if multiPurchaseXml ~= nil and multiPurchaseXml ~= "" then
-                    targetFormatXml = normalizePath(multiPurchaseXml)
+                    local absolutePath = Utils.getFilename(multiPurchaseXml, item.baseDir)
+                    targetFormatXml = normalizePath(absolutePath)
                 end
 
                 xmlFile:delete()
 
-                -- Default fallback for capacities that might be hidden deeply
+                -- Default fallback for capacities
                 if capacity <= 0 then capacity = 1000 end
 
                 -- STEP 3: Validate and Map to Global Market
                 if engineFillTypeStr ~= "" then
-                    -- Get the first fillType defined (pallets usually only have one relevant)
                     local primaryFillType = string.match(engineFillTypeStr, "%S+")
                     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(primaryFillType)
 
-                    -- THE GATEKEEPER: Let the API decide based on the economic Engine FillType
+                    -- THE GATEKEEPER 1: Is the FillType allowed at all?
                     if fillTypeDesc ~= nil and GlobalMarketAPI ~= nil and GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
 
-                        -- The GM Market Key is STRICTLY the Engine FillType
-                        local gmMarketKey = string.upper(fillTypeDesc.name)
-
-                        if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
-                            GlobalMarketStoreCache.cache[gmMarketKey] = {}
+                        -- THE GATEKEEPER 2: Is THIS specific container format allowed for this FillType?
+                        local isContainerAllowed = true
+                        if GlobalMarketAPI.getIsContainerAllowedForFillType ~= nil then
+                            isContainerAllowed = GlobalMarketAPI.getIsContainerAllowedForFillType(fillTypeDesc, unitKey)
                         end
 
-                        -- STEP 4: Deduplication (Prevents UI Spam caused by MultiPurchase vs SingleItem pathing)
-                        local alreadyExists = false
-                        for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
-                            if existing.xml == targetFormatXml then
-                                alreadyExists = true
-                                break
+                        if isContainerAllowed then
+                            local gmMarketKey = string.upper(fillTypeDesc.name)
+
+                            if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
+                                GlobalMarketStoreCache.cache[gmMarketKey] = {}
                             end
-                        end
 
-                        if not alreadyExists then
-                            -- STEP 5: Generate contextual display title based on alias keywords
+                            -- Generate contextual display title based on alias keywords
                             local baseName = item.name
 
-                            -- Alias Overrides for specific goods hiding under generic FillTypes
                             if string.find(targetFormatXml, "chickenfood") then
                                 baseName = g_i18n:getText("fillType_chickenFood") or "Hühnerfutter"
                             elseif string.find(targetFormatXml, "horsefood") then
@@ -171,17 +162,40 @@ function GlobalMarketStoreCache.init()
 
                             local displayTitle = baseName .. formatSuffix .. brandSuffix
 
-                            -- Store into Cache
-                            table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
-                                title = displayTitle,
-                                xml = targetFormatXml,
-                                capacity = capacity,
-                                unitKey = unitKey
-                            })
-                            itemCount = itemCount + 1
+                            -- STEP 4: Deduplication & Title Upgrade Strategy
+                            local existingEntry = nil
+                            for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
+                                if existing.xml == targetFormatXml then
+                                    existingEntry = existing
+                                    break
+                                end
+                            end
 
-                            if GlobalMarket.debugManager ~= nil then
-                                GlobalMarket.debugManager:trace("StoreCache: Added '%s' (%.0f L) to Market Key %s [EngineType: %s]", displayTitle, capacity, gmMarketKey, fillTypeDesc.name)
+                            if existingEntry ~= nil then
+                                -- UPGRADE CHECK: If the new item is visible in the shop (Parent/MultiPurchase)
+                                -- and the cached one is hidden (Child), we upgrade the cache entry to the better name!
+                                if item.showInStore and not existingEntry.showInStore then
+                                    existingEntry.title = displayTitle
+                                    existingEntry.showInStore = true
+
+                                    if GlobalMarket.debugManager ~= nil then
+                                        GlobalMarket.debugManager:trace("StoreCache: Upgraded hidden entry to visible Parent '%s'", displayTitle)
+                                    end
+                                end
+                            else
+                                -- Store new into Cache
+                                table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
+                                    title = displayTitle,
+                                    xml = targetFormatXml,
+                                    capacity = capacity,
+                                    unitKey = unitKey,
+                                    showInStore = item.showInStore
+                                })
+                                itemCount = itemCount + 1
+
+                                if GlobalMarket.debugManager ~= nil then
+                                    GlobalMarket.debugManager:trace("StoreCache: Added '%s' (%.0f L) to Market Key %s [EngineType: %s]", displayTitle, capacity, gmMarketKey, fillTypeDesc.name)
+                                end
                             end
                         end
                     end
