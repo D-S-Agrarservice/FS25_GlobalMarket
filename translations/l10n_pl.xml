@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <l10n>
     <elements>
+        <e k="fillType_chickenFood"                                v="Pokarm dla kur" />
+        <e k="fillType_horseFood"                                  v="Pokarm dla koni" />
+
         <e k="finance_gmBuy"                                       v="Zakupy GM (Suma)" />
         <e k="finance_gmBuyBale"                                   v="Zakup GM: Bele" />
         <e k="finance_gmBuyBulk"                                   v="Zakup GM: Luzem" />
@@ -50,8 +53,12 @@
         <e k="ui_gm_total_storage"                                 v="CAŁKOWITY ZAPAS:" />
         <e k="ui_gm_trend"                                         v="Trend" />
         <e k="ui_gm_unit_bale"                                     v="Bele" />
+        <e k="ui_gm_unit_bigbag"                                   v="Bigbag" />
+        <e k="ui_gm_unit_bigbagpallet"                             v="Paleta Bigbag" />
+        <e k="ui_gm_unit_ibc"                                      v="IBC" />
         <e k="ui_gm_unit_liter"                                    v="Litry" />
         <e k="ui_gm_unit_pallet"                                   v="Palety" />
+        <e k="ui_gm_unit_piece"                                    v="Sztuka" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Maks. %s obiektów na transakcję (Wydajność)" />
         <e k="ui_gm_warning_fatal_conflict"                        v="KRYTYCZNY KONFLIKT: Mod '%s' jest niekompatybilny. Gra zostanie zablokowana, aby chronić zapis gry." />
         <e k="ui_gm_warning_smart_conflict"                        v="Ostrzeżenie GlobalMarket: Mod '%s' może powodować konflikty!" />

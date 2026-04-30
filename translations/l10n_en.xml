@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <l10n>
     <elements>
+        <e k="fillType_chickenFood"                                v="Chicken Food" />
+        <e k="fillType_horseFood"                                  v="Horse Food" />
+
         <e k="finance_gmBuy"                                       v="GM Purchases (Total)" />
         <e k="finance_gmBuyBale"                                   v="GM Purchase: Bales" />
         <e k="finance_gmBuyBulk"                                   v="GM Purchase: Bulk" />
@@ -50,8 +53,12 @@
         <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
         <e k="ui_gm_trend"                                         v="Trend" />
         <e k="ui_gm_unit_bale"                                     v="Bales" />
+        <e k="ui_gm_unit_bigbag"                                   v="Bigbag" />
+        <e k="ui_gm_unit_bigbagpallet"                             v="Bigbag Pallet" />
+        <e k="ui_gm_unit_ibc"                                      v="IBC" />
         <e k="ui_gm_unit_liter"                                    v="Liters" />
         <e k="ui_gm_unit_pallet"                                   v="Pallets" />
+        <e k="ui_gm_unit_piece"                                    v="Piece" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s objects per transaction (Performance)" />
         <e k="ui_gm_warning_fatal_conflict"                        v="FATAL CONFLICT: Mod '%s' is incompatible. Game will be blocked to prevent corruption." />
         <e k="ui_gm_warning_smart_conflict"                        v="GlobalMarket Warning: Mod '%s' might cause conflicts!" />
