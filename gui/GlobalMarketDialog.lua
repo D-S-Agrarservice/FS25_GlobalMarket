@@ -167,38 +167,14 @@ function GlobalMarketDialog:onClickStorage(state)
                                 end
                             end
                         end
-                    -- NATIVE PALLET BRIDGE (FS25 WAY):
-                    -- Bypass strict isPalletType check. If a palletFilename exists,
-                    -- the UI must offer it as a valid purchase format.
-                    -- elseif selectedSilo.supportsPallets and (fillType.isPalletType or (fillType.palletFilename ~= nil and fillType.palletFilename ~= "")) then
-                        -- local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
-                        -- local palletTitle = storeItem ~= nil and storeItem.name or g_i18n:getText("ui_gm_format_pallet")
-                        -- table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = 1000, unitKey = "ui_gm_unit_pallet"})
-                    -- end
-
                     -- GM STORE CACHE BRIDGE:
-                    -- Fetches all dynamically parsed formats (Pallets, BigBags, IBCs) 
-                    -- associated with this fillType from our RAM dictionary.
+                    -- Strictly fetches dynamically parsed formats (Pallets, BigBags, IBCs)
+                    -- from our RAM dictionary. Fallback to native engine logic is removed.
                     elseif selectedSilo.supportsPallets then
-                        -- 1. Get items from our custom Cache
                         if GlobalMarketStoreCache ~= nil then
                             local cachedFormats = GlobalMarketStoreCache.getFormatsForFillType(self.fillTypeName)
                             for _, formatData in ipairs(cachedFormats) do
                                 table.insert(self.availableFormats, formatData)
-                            end
-                        end
-
-                        -- 2. Absolute Fallback: Engine Default Pallet (if somehow missing in cache)
-                        if fillType.palletFilename ~= nil and fillType.palletFilename ~= "" then
-                            local alreadyAdded = false
-                            for _, existingFormat in ipairs(self.availableFormats) do
-                                if existingFormat.xml == fillType.palletFilename then alreadyAdded = true; break; end
-                            end
-
-                            if not alreadyAdded then
-                                local storeItem = g_storeManager:getItemByXMLFilename(fillType.palletFilename)
-                                local palletTitle = storeItem ~= nil and storeItem.name or g_i18n:getText("ui_gm_format_pallet")
-                                table.insert(self.availableFormats, {title = palletTitle, xml = fillType.palletFilename, capacity = 1000, unitKey = "ui_gm_unit_pallet"})
                             end
                         end
                     end
