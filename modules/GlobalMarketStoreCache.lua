@@ -9,23 +9,6 @@ GlobalMarketStoreCache = {}
 GlobalMarketStoreCache.cache = {}
 GlobalMarketStoreCache.isInitialized = false
 
--- DISPLAY INTERCEPTOR: Maps filename keywords to custom UI display titles.
--- Only used to fix misleading native L10n store names (e.g., preventing Chickenfood from showing as "Wheat-Bigbag").
-local INTERCEPTOR_ALIASES = {
-    ["chickenfood"] = "CHICKENFOOD",
-    ["horsefood"]   = "HORSEFOOD"
-}
-
--- Checks if the xml filename contains a known alias keyword
-local function getInterceptorAlias(xmlPathLower)
-    for keyword, alias in pairs(INTERCEPTOR_ALIASES) do
-        if string.find(xmlPathLower, keyword) then
-            return alias
-        end
-    end
-    return nil
-end
-
 -- Enhanced path normalizer to fix engine slash mixing
 local function normalizePath(path)
     if path == nil then return "" end
@@ -41,6 +24,19 @@ local function getLocalizedText(key, fallback)
         return g_i18n:getText(key)
     end
     return fallback
+end
+
+-- Safely generates the localized format suffix (e.g. " (Bigbag)")
+local function getFormatSuffix(unitKey)
+    if unitKey == "ui_gm_unit_bigbag" then
+        return " (" .. getLocalizedText("ui_gm_unit_bigbag", "Bigbag") .. ")"
+    elseif unitKey == "ui_gm_unit_bigbagpallet" then
+        return " (" .. getLocalizedText("ui_gm_unit_bigbagpallet", "Bigbag Pallet") .. ")"
+    elseif unitKey == "ui_gm_unit_ibc" then
+        return " (" .. getLocalizedText("ui_gm_unit_ibc", "IBC") .. ")"
+    else
+        return " (" .. getLocalizedText("ui_gm_unit_pallet", "Pallet") .. ")"
+    end
 end
 
 -- Checks if the native store item name is too generic for a standalone UI dropdown entry
@@ -71,50 +67,60 @@ function GlobalMarketStoreCache.init()
         local normPath = normalizePath(xmlPath)
         local catLower = item.categoryName and string.lower(item.categoryName) or ""
 
+        -- STRICT BLOCK: Ignore generic engine dummy templates that default to WHEAT
+        local isTemplate = (normPath == "data/objects/bigbag/bigbag.xml" or normPath == "data/objects/bigbagpallet/bigbagpallet.xml")
+
         local isRelevant = false
         local unitKey = "ui_gm_unit_pallet"
-        local formatSuffix = " (Pallet)"
 
-        -- Filter by relevant packaging categories (Fuzzy matching)
+        -- Filter by relevant packaging categories
         if string.find(catLower, "bigbags") then
             isRelevant = true
             unitKey = "ui_gm_unit_bigbag"
-            formatSuffix = " (Bigbag)"
         elseif string.find(catLower, "bigbagpallets") then
             isRelevant = true
             unitKey = "ui_gm_unit_bigbagpallet"
-            formatSuffix = " (Bigbag Pallet)"
         elseif string.find(catLower, "ibc") or string.find(catLower, "fertilizerherbicide") then
             isRelevant = true
             unitKey = "ui_gm_unit_ibc"
-            formatSuffix = " (IBC)"
         elseif string.find(catLower, "pallets") or string.find(catLower, "animals") then
             isRelevant = true
             unitKey = "ui_gm_unit_pallet"
-            formatSuffix = " (Pallet)"
         end
 
-        if isRelevant then
+        if isRelevant and not isTemplate then
             local xmlFile = XMLFile.load("GMCacheItem", xmlPath)
             if xmlFile ~= nil then
                 local capacity = 0
                 local engineFillTypeStr = ""
                 local targetFormatXml = normPath
 
-                -- Extract capacity and fillTypes safely
-                local fillUnitRoot = "vehicle.fillUnit.fillUnitConfigurations.fillUnitConfiguration(0).fillUnits.fillUnit(0)"
-                capacity = xmlFile:getFloat(fillUnitRoot .. "#capacity") or 0
-                engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#fillTypes")
-
-                if engineFillTypeStr == nil or engineFillTypeStr == "" then
-                    engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#startFillType") or ""
-                end
-
-                -- MultipleItemPurchase Check: Redirect UI to the single physical item XML using absolute path
                 local multiPurchaseXml = xmlFile:getString("vehicle.multipleItemPurchase#filename")
+
+                -- MULTI-PURCHASE LOGIC: Extract fillTypes from the linked Single XML because Multi-XMLs have no fillUnit
                 if multiPurchaseXml ~= nil and multiPurchaseXml ~= "" then
                     local absolutePath = Utils.getFilename(multiPurchaseXml, item.baseDir)
                     targetFormatXml = normalizePath(absolutePath)
+
+                    local singleXml = XMLFile.load("GMSingleItem", absolutePath)
+                    if singleXml ~= nil then
+                        local fillUnitRoot = "vehicle.fillUnit.fillUnitConfigurations.fillUnitConfiguration(0).fillUnits.fillUnit(0)"
+                        capacity = singleXml:getFloat(fillUnitRoot .. "#capacity") or 0
+                        engineFillTypeStr = singleXml:getString(fillUnitRoot .. "#fillTypes")
+                        if engineFillTypeStr == nil or engineFillTypeStr == "" then
+                            engineFillTypeStr = singleXml:getString(fillUnitRoot .. "#startFillType") or ""
+                        end
+                        singleXml:delete()
+                    end
+                else
+                    -- SINGLE ITEM LOGIC
+                    local fillUnitRoot = "vehicle.fillUnit.fillUnitConfigurations.fillUnitConfiguration(0).fillUnits.fillUnit(0)"
+                    capacity = xmlFile:getFloat(fillUnitRoot .. "#capacity") or 0
+                    engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#fillTypes")
+
+                    if engineFillTypeStr == nil or engineFillTypeStr == "" then
+                        engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#startFillType") or ""
+                    end
                 end
 
                 xmlFile:delete()
@@ -133,25 +139,20 @@ function GlobalMarketStoreCache.init()
                         end
 
                         if isContainerAllowed then
-                            -- STRICT ROLLBACK: Market Key relies 100% on native engine FillType
                             local gmMarketKey = string.upper(fillTypeDesc.name)
 
                             if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
                                 GlobalMarketStoreCache.cache[gmMarketKey] = {}
                             end
 
-                            -- VISUAL OVERRIDE: Prevent native L10n issues for specific aliases
-                            local customAlias = getInterceptorAlias(targetFormatXml)
                             local baseName = item.name or ""
 
-                            if customAlias ~= nil then
-                                if customAlias == "CHICKENFOOD" then
-                                    baseName = getLocalizedText("fillType_chickenFood", "Chicken Food")
-                                elseif customAlias == "HORSEFOOD" then
-                                    baseName = getLocalizedText("fillType_horseFood", "Horse Food")
-                                end
+                            -- ABSOLUTE LOGIC OVERRIDE: Any Wheat/Oat Bigbag IS Animal Food (ignores Giants L10n "Weizen-Bigbag")
+                            if gmMarketKey == "WHEAT" and (unitKey == "ui_gm_unit_bigbag" or unitKey == "ui_gm_unit_bigbagpallet") then
+                                baseName = getLocalizedText("fillType_chickenFood", "Chicken Food")
+                            elseif gmMarketKey == "OAT" and (unitKey == "ui_gm_unit_bigbag" or unitKey == "ui_gm_unit_bigbagpallet") then
+                                baseName = getLocalizedText("fillType_horseFood", "Horse Food")
                             elseif isGenericItemName(baseName) then
-                                -- Rely on Engine FillType title for generic names
                                 baseName = fillTypeDesc.title
                             end
 
@@ -163,9 +164,8 @@ function GlobalMarketStoreCache.init()
                                 end
                             end
 
-                            local displayTitle = baseName .. formatSuffix .. brandSuffix
+                            local displayTitle = baseName .. getFormatSuffix(unitKey) .. brandSuffix
 
-                            -- Deduplication & Title Upgrade Strategy
                             local existingEntry = nil
                             for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
                                 if existing.xml == targetFormatXml then
@@ -213,48 +213,64 @@ function GlobalMarketStoreCache.init()
             if fillTypeDesc ~= nil and GlobalMarketAPI ~= nil and GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
                 if fillTypeDesc.palletFilename ~= nil and fillTypeDesc.palletFilename ~= "" then
 
-                    local isContainerAllowed = true
-                    if GlobalMarketAPI.getIsContainerAllowedForFillType ~= nil then
-                        isContainerAllowed = GlobalMarketAPI.getIsContainerAllowedForFillType(fillTypeDesc, "ui_gm_unit_pallet")
-                    end
+                    local targetFormatXml = normalizePath(fillTypeDesc.palletFilename)
 
-                    if isContainerAllowed then
-                        local gmMarketKey = string.upper(fillTypeDesc.name)
-                        local targetFormatXml = normalizePath(fillTypeDesc.palletFilename)
+                    -- STRICT BLOCK: Ignore generic engine dummy templates in fallback bridge
+                    local isTemplate = (targetFormatXml == "data/objects/bigbag/bigbag.xml" or targetFormatXml == "data/objects/bigbagpallet/bigbagpallet.xml")
 
-                        if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
-                            GlobalMarketStoreCache.cache[gmMarketKey] = {}
+                    if not isTemplate then
+                        local unitKey = "ui_gm_unit_pallet"
+                        if string.find(targetFormatXml, "bigbagpallet") then
+                            unitKey = "ui_gm_unit_bigbagpallet"
+                        elseif string.find(targetFormatXml, "bigbag") then
+                            unitKey = "ui_gm_unit_bigbag"
+                        elseif string.find(targetFormatXml, "ibc") or string.find(targetFormatXml, "liquidtank") then
+                            unitKey = "ui_gm_unit_ibc"
                         end
 
-                        local alreadyExists = false
-                        for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
-                            if existing.xml == targetFormatXml then
-                                alreadyExists = true
-                                break
+                        local isContainerAllowed = true
+                        if GlobalMarketAPI.getIsContainerAllowedForFillType ~= nil then
+                            isContainerAllowed = GlobalMarketAPI.getIsContainerAllowedForFillType(fillTypeDesc, unitKey)
+                        end
+
+                        if isContainerAllowed then
+                            local gmMarketKey = string.upper(fillTypeDesc.name)
+
+                            if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
+                                GlobalMarketStoreCache.cache[gmMarketKey] = {}
                             end
-                        end
 
-                        if not alreadyExists then
                             local storeItem = g_storeManager:getItemByXMLFilename(fillTypeDesc.palletFilename)
-                            local palletTitle = storeItem ~= nil and storeItem.name or ""
+                            local baseName = storeItem ~= nil and storeItem.name or ""
 
-                            if isGenericItemName(palletTitle) then
-                                palletTitle = fillTypeDesc.title .. " (Pallet)"
-                            else
-                                palletTitle = palletTitle .. " (Pallet)"
+                            -- ABSOLUTE LOGIC OVERRIDE for Phase 2
+                            if gmMarketKey == "WHEAT" and (unitKey == "ui_gm_unit_bigbag" or unitKey == "ui_gm_unit_bigbagpallet") then
+                                baseName = getLocalizedText("fillType_chickenFood", "Chicken Food")
+                            elseif gmMarketKey == "OAT" and (unitKey == "ui_gm_unit_bigbag" or unitKey == "ui_gm_unit_bigbagpallet") then
+                                baseName = getLocalizedText("fillType_horseFood", "Horse Food")
+                            elseif isGenericItemName(baseName) then
+                                baseName = fillTypeDesc.title
                             end
 
-                            table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
-                                title = palletTitle,
-                                xml = targetFormatXml,
-                                capacity = 1000,
-                                unitKey = "ui_gm_unit_pallet",
-                                showInStore = storeItem ~= nil and storeItem.showInStore or false
-                            })
-                            itemCount = itemCount + 1
+                            local palletTitle = baseName .. getFormatSuffix(unitKey)
 
-                            if GlobalMarket.debugManager ~= nil then
-                                GlobalMarket.debugManager:trace("StoreCache: Bridged engine pallet for %s to Market Key %s", palletTitle, gmMarketKey)
+                            local alreadyExists = false
+                            for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
+                                if existing.xml == targetFormatXml or existing.title == palletTitle then
+                                    alreadyExists = true
+                                    break
+                                end
+                            end
+
+                            if not alreadyExists then
+                                table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
+                                    title = palletTitle,
+                                    xml = targetFormatXml,
+                                    capacity = 1000,
+                                    unitKey = unitKey,
+                                    showInStore = storeItem ~= nil and storeItem.showInStore or false
+                                })
+                                itemCount = itemCount + 1
                             end
                         end
                     end
