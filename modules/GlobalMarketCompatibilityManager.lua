@@ -1,215 +1,338 @@
 --
--- FS25 - GlobalMarketStoreCache
--- Description: Pre-caches available shop items (BigBags, Pallets, IBCs) at mission start.
--- 1. Evaluates relevant store categories with fuzzy matching.
--- 2. Uses strict XML reading (getString/getFloat) to bypass schema requirements.
--- 3. Identifies MultipleItemPurchases and normalizes paths to prevent duplicates.
--- 4. Generates contextual Display Titles for Aliases (e.g., ChickenFood under Wheat).
--- 5. Queries the GlobalMarketAPI strictly for FillType economic validation AND container restrictions.
+-- FS25 - GlobalMarket Compatibility Manager
+-- Description: Handles dynamic conflict resolution via an updatable XML in the modSettings folder.
+-- Includes dynamic firewalls for invasive third-party mods.
 --
 
-GlobalMarketStoreCache = {}
-GlobalMarketStoreCache.cache = {}
-GlobalMarketStoreCache.isInitialized = false
+GMCompatibilityManager = {}
+local GMCompatibilityManager_mt = Class(GMCompatibilityManager)
 
--- ALIAS INTERCEPTOR: Maps filename keywords to custom Global Market identities.
--- Prevents specific packaged goods from vanishing under generic engine FillTypes.
-local INTERCEPTOR_ALIASES = {
-    ["chickenfood"] = "CHICKENFOOD",
-    ["horsefood"]   = "HORSEFOOD",
-    ["pigfood"]     = "PIGFOOD",
-    ["roadsalt"]    = "ROADSALT"
-}
+function GMCompatibilityManager.new(customMt)
+    local self = setmetatable({}, customMt or GMCompatibilityManager_mt)
 
--- Checks if the xml filename contains a known alias keyword
-local function getInterceptorAlias(xmlPathLower)
-    for keyword, alias in pairs(INTERCEPTOR_ALIASES) do
-        if string.find(xmlPathLower, keyword) then
-            return alias
+    -- The current version of our conflict list (used for network sync)
+    self.version = "1.0.0"
+
+    -- Lookup table for parsed conflicts: modName -> action
+    self.conflicts = {}
+
+    -- Internal states that other GM modules will read to adjust their behavior
+    self.states = {
+        isSiloUiDisabled = false,
+        isEconomyHookDisabled = false,
+        fatalConflictMod = nil -- Stores the name of the incompatible mod for the Strict-Mode kick
+    }
+
+    -- Set up directory paths (same logic as GlobalMarketSettings)
+    self.modName = g_currentModName or "FS25_GlobalMarket"
+    self.directory = string.format("%smodSettings/%s/", getUserProfileAppPath(), self.modName)
+    self.filePath = self.directory .. "compatibility.xml"
+
+    return self
+end
+
+--- Generates a default compatibility.xml with instructional comments and base fixes.
+function GMCompatibilityManager:generateDefaultXML()
+    createFolder(self.directory)
+
+    -- Open file for writing natively to preserve formatting and comments
+    local file = io.open(self.filePath, "w")
+    if file ~= nil then
+        local template = [[<?xml version="1.0" encoding="utf-8"?>
+<compatibility version="1.0.0">
+    <mod name="FS25_InfoDisplayExtension" action="block_game" />
+</compatibility>]]
+
+        file:write(template)
+        file:close()
+
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("[Compatibility] Generated default template with IDE fix at: %s", self.filePath)
+        end
+    else
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:error("[Compatibility] Failed to generate default XML. Permission denied at: %s", self.filePath)
         end
     end
-    return nil
 end
 
--- Normalizes paths to ensure our duplicate check catches $data vs data mismatches
-local function normalizePath(path)
-    if path == nil then return "" end
-    local p = string.lower(path)
-    p = string.gsub(p, "^%$data/", "data/")
-    return p
-end
+--- Loads the compatibility definitions from the local modSettings XML file.
+function GMCompatibilityManager:loadFromXML()
+    -- If the file doesn't exist, create our commented template first
+    if not fileExists(self.filePath) then
+        self:generateDefaultXML()
+    end
 
--- Runs exactly ONCE during mission start
-function GlobalMarketStoreCache.init()
-    if GlobalMarketStoreCache.isInitialized then return end
-    if g_storeManager == nil or g_storeManager.items == nil then return end
+    -- Now proceed to load the (newly created or existing) file normally
+    local xmlFile = XMLFile.load("GMCompatXML", self.filePath)
+    if xmlFile == nil then
+        return false
+    end
 
-    GlobalMarketStoreCache.cache = {}
-    local itemCount = 0
+    -- Read root version parameter (Using getString bypasses schema validation)
+    self.version = xmlFile:getString("compatibility#version", "1.0.0")
+
+    -- Clear existing list before parsing
+    self.conflicts = {}
+
+    -- Iterate over all defined mods
+    for _, modKey in xmlFile:iterator("compatibility.mod") do
+        local modName = xmlFile:getString(modKey .. "#name")
+
+        if modName ~= nil and modName ~= "" then
+            self.conflicts[modName] = {
+                action = xmlFile:getString(modKey .. "#action", "log_only")
+            }
+        end
+    end
+
+    xmlFile:delete()
 
     if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:info("StoreCache: Initializing Global Market format dictionary...")
+        GlobalMarket.debugManager:info("[Compatibility] Loaded XML version %s with %d entries.", self.version, self:getConflictCount())
     end
 
-    -- Iterate over all store items
-    for _, item in ipairs(g_storeManager:getItems()) do
-        local xmlPath = item.xmlFilename or ""
-        local normPath = normalizePath(xmlPath)
-        local catLower = item.categoryName and string.lower(item.categoryName) or ""
+    return true
+end
 
-        local isRelevant = false
-        local unitKey = "ui_gm_unit_pallet"
-        local formatSuffix = " (Palette)"
+--- Validates currently loaded mods against the conflict list.
+-- @return boolean true if at least one conflicting mod is active
+function GMCompatibilityManager:checkActiveMods()
+    local hasActiveConflicts = false
 
-        -- STEP 1: Filter by relevant packaging categories (Fuzzy matching)
-        if string.find(catLower, "bigbags") then
-            isRelevant = true
-            unitKey = "ui_gm_unit_bigbag"
-            formatSuffix = " (Bigbag)"
-        elseif string.find(catLower, "bigbagpallets") then
-            isRelevant = true
-            unitKey = "ui_gm_unit_bigbagpallet"
-            formatSuffix = " (Bigbag-Palette)"
-        elseif string.find(catLower, "ibc") or string.find(catLower, "fertilizerherbicide") then
-            isRelevant = true
-            unitKey = "ui_gm_unit_ibc"
-            formatSuffix = " (IBC)"
-        elseif string.find(catLower, "pallets") or string.find(catLower, "animals") then
-            isRelevant = true
-            unitKey = "ui_gm_unit_pallet"
-            formatSuffix = " (Palette)"
-        end
+    -- Reset states to default before evaluation
+    self.states.isSiloUiDisabled = false
+    self.states.isEconomyHookDisabled = false
+    self.states.fatalConflictMod = nil
 
-        -- STEP 2: Process the relevant items
-        if isRelevant then
-            local xmlFile = XMLFile.load("GMCacheItem", xmlPath)
-            if xmlFile ~= nil then
-                local capacity = 0
-                local engineFillTypeStr = ""
-                local targetFormatXml = normPath
+    -- Safety check for Giants ModManager table
+    if g_modIsLoaded == nil then
+        return false
+    end
 
-                -- Extract capacity and fillTypes safely
-                local fillUnitRoot = "vehicle.fillUnit.fillUnitConfigurations.fillUnitConfiguration(0).fillUnits.fillUnit(0)"
-                capacity = xmlFile:getFloat(fillUnitRoot .. "#capacity") or 0
-                engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#fillTypes")
+    -- 1: Ignore | 2: Warn Only | 3: Smart | 4: Paranoia
+    local compatMode = 3
+    if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
+        compatMode = GlobalMarketSettings.current.compatModeIndex
+    end
 
-                if engineFillTypeStr == nil or engineFillTypeStr == "" then
-                    engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#startFillType") or ""
+    -- Mode 1: Ignore completely
+    if compatMode == 1 then
+        return false
+    end
+
+    for modName, data in pairs(self.conflicts) do
+        if g_modIsLoaded[modName] then
+            hasActiveConflicts = true
+            local action = data.action
+
+            -- Bypass for mods with known, hardcoded firewalls (e.g., IDE)
+            if modName == "FS25_InfoDisplayExtension" then
+                if GlobalMarket.debugManager ~= nil then
+                    GlobalMarket.debugManager:info("[Compatibility] IDE detected. Bypassing XML action, handled by native GM Firewall.")
                 end
-
-                -- MultipleItemPurchase Check: Redirect UI to the single physical item XML using absolute path
-                local multiPurchaseXml = xmlFile:getString("vehicle.multipleItemPurchase#filename")
-                if multiPurchaseXml ~= nil and multiPurchaseXml ~= "" then
-                    -- Resolve relative mod paths to absolute paths
-                    local absolutePath = Utils.getFilename(multiPurchaseXml, item.baseDir)
-                    targetFormatXml = normalizePath(absolutePath)
-                end
-
-                xmlFile:delete()
-
-                -- Default fallback for capacities
-                if capacity <= 0 then capacity = 1000 end
-
-                -- STEP 3: Validate and Map to Global Market
-                if engineFillTypeStr ~= "" then
-                    local primaryFillType = string.match(engineFillTypeStr, "%S+")
-                    local fillTypeDesc = g_fillTypeManager:getFillTypeByName(primaryFillType)
-
-                    -- THE GATEKEEPER 1: Is the FillType allowed at all?
-                    if fillTypeDesc ~= nil and GlobalMarketAPI ~= nil and GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
-
-                        -- THE GATEKEEPER 2: Is THIS specific container format allowed for this FillType?
-                        local isContainerAllowed = true
-                        if GlobalMarketAPI.getIsContainerAllowedForFillType ~= nil then
-                            isContainerAllowed = GlobalMarketAPI.getIsContainerAllowedForFillType(fillTypeDesc, unitKey)
-                        end
-
-                        if isContainerAllowed then
-                            -- The GM Market Key is STRICTLY the Engine FillType
-                            local gmMarketKey = string.upper(fillTypeDesc.name)
-
-                            if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
-                                GlobalMarketStoreCache.cache[gmMarketKey] = {}
-                            end
-
-                            -- STEP 4: Deduplication (Prevents UI Spam)
-                            local alreadyExists = false
-                            for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
-                                if existing.xml == targetFormatXml then
-                                    alreadyExists = true
-                                    break
-                                end
-                            end
-
-                            if not alreadyExists then
-                                -- STEP 5: Generate contextual display title based on alias keywords
-                                local baseName = item.name
-
-                                if string.find(targetFormatXml, "chickenfood") then
-                                    baseName = g_i18n:getText("fillType_chickenFood") or "Hühnerfutter"
-                                elseif string.find(targetFormatXml, "horsefood") then
-                                    baseName = g_i18n:getText("fillType_horseFood") or "Pferdefutter"
-                                elseif string.find(targetFormatXml, "pigfood") then
-                                    baseName = g_i18n:getText("fillType_pigFood") or "Schweinefutter"
-                                elseif string.find(targetFormatXml, "roadsalt") then
-                                    baseName = g_i18n:getText("fillType_roadSalt") or "Streusalz"
-                                elseif string.find(targetFormatXml, "seeds") then
-                                    baseName = g_i18n:getText("fillType_seeds") or "Saatgut"
-                                elseif string.find(targetFormatXml, "lime") then
-                                    baseName = g_i18n:getText("fillType_lime") or "Kalk"
-                                elseif string.find(targetFormatXml, "liquidfertilizer") then
-                                    baseName = g_i18n:getText("fillType_liquidFertilizer") or "Flüssigdünger"
-                                elseif string.find(targetFormatXml, "fertilizer") then
-                                    baseName = g_i18n:getText("fillType_fertilizer") or "Mineraldünger"
-                                elseif string.find(targetFormatXml, "herbicide") then
-                                    baseName = g_i18n:getText("fillType_herbicide") or "Herbizid"
-                                end
-
-                                local brandSuffix = ""
-                                if item.brandIndex ~= nil and item.brandIndex ~= 0 then
-                                    local brand = g_brandManager:getBrandByIndex(item.brandIndex)
-                                    if brand ~= nil and brand.name ~= "NONE" then
-                                        brandSuffix = " (" .. brand.title .. ")"
-                                    end
-                                end
-
-                                local displayTitle = baseName .. formatSuffix .. brandSuffix
-
-                                -- Store into Cache
-                                table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
-                                    title = displayTitle,
-                                    xml = targetFormatXml,
-                                    capacity = capacity,
-                                    unitKey = unitKey
-                                })
-                                itemCount = itemCount + 1
-
-                                if GlobalMarket.debugManager ~= nil then
-                                    GlobalMarket.debugManager:trace("StoreCache: Added '%s' (%.0f L) to Market Key %s [EngineType: %s]", displayTitle, capacity, gmMarketKey, fillTypeDesc.name)
-                                end
-                            end
-                        end
+            else
+                -- Handle unknown or other conflicting mods based on mode
+                if compatMode == 2 then
+                    -- Mode 2: Warn Only (Console Log)
+                    if GlobalMarket.debugManager ~= nil then
+                        GlobalMarket.debugManager:warning("[Compatibility] Conflict ignored: %s (Action: %s)", modName, action)
                     end
+
+                elseif compatMode == 3 then
+                    -- Mode 3: Smart Mode (Downgrade fatal blocks to prevent lockouts)
+                    if action == "block_game" then
+                        if GlobalMarket.debugManager ~= nil then
+                            GlobalMarket.debugManager:warning("[Compatibility] SMART MODE: Prevented fatal kick for '%s'. Mod might cause UI issues.", modName)
+                        end
+                        -- DYNAMIC WARNING: Push a blinking warning to the player in-game using l10n
+                        if g_currentMission ~= nil then
+                            -- Fallback text just in case the l10n key is missing
+                            local fallbackText = "GlobalMarket Warning: Mod '%s' might cause conflicts!"
+                            local l10nText = g_i18n:hasText("ui_gm_warning_smart_conflict") and g_i18n:getText("ui_gm_warning_smart_conflict") or fallbackText
+
+                            local warnText = string.format(l10nText, modName)
+                            g_currentMission:showBlinkingWarning(warnText, 5000)
+                        end
+                    else
+                        -- Apply safe mitigations (like disable_silo_ui)
+                        self:applyMitigation(modName, action)
+                    end
+
+                elseif compatMode == 4 then
+                    -- Mode 4: Paranoia (Execute exactly as the XML dictates)
+                    self:applyMitigation(modName, action)
                 end
             end
         end
     end
 
-    GlobalMarketStoreCache.isInitialized = true
+    -- Deploy native firewalls ONLY in Smart (3) or Paranoia (4) mode
+    if compatMode >= 3 then
+        self:installFirewalls()
+    end
+
+    return hasActiveConflicts
+end
+
+--- Executes the mitigation strategy by setting the internal state flags.
+-- @param string modName Name of the conflicting mod
+-- @param string action The mitigation action defined in the XML
+function GMCompatibilityManager:applyMitigation(modName, action)
     if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:info("StoreCache: Initialization complete. Cached %d format variations.", itemCount)
+        GlobalMarket.debugManager:warning("[Compatibility] Conflicting mod detected: %s. Applying mitigation: %s", modName, action)
+    end
+
+    if action == "disable_silo_ui" then
+        self.states.isSiloUiDisabled = true
+    elseif action == "disable_economy_hook" then
+        self.states.isEconomyHookDisabled = true
+    elseif action == "block_game" then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:error("[Compatibility] FATAL CONFLICT: %s. Game will be blocked.", modName)
+        end
+        self.states.fatalConflictMod = modName
+    end
+    -- Add more actions here as the mod grows
+end
+
+--- Kicks the player back to the main menu with a native UI dialog
+function GMCompatibilityManager:triggerFatalStop()
+    if self.states.fatalConflictMod ~= nil then
+        local modName = self.states.fatalConflictMod
+
+        -- Fetch text from l10n and insert the mod name
+        local fallbackText = "FATAL CONFLICT: Mod '%s' is incompatible. Game will be blocked to prevent corruption."
+        local l10nText = g_i18n:hasText("ui_gm_warning_fatal_conflict") and g_i18n:getText("ui_gm_warning_fatal_conflict") or fallbackText
+        local text = string.format(l10nText, modName)
+
+        -- Native Engine Dialog with callback to the main menu
+        if g_gui ~= nil then
+            g_gui:showDialog("MessageDialog", nil, nil, {
+                text = text,
+                title = g_i18n:getText("ui_warning") or "Warning",
+                dialogType = DialogElement.TYPE_WARNING,
+                buttonTexts = { g_i18n:getText("button_ok") or "OK" },
+                callback = function()
+                    -- This is the native engine command that handles the disconnect/leave (Kick to Menu)
+                    g_currentMission:onLeaveGame()
+                end
+            })
+        end
     end
 end
 
--- =========================================================================
--- API EXPORTS FOR UI
--- =========================================================================
+--- Installs dynamic firewalls to protect GM components from invasive mods
+function GMCompatibilityManager:installFirewalls()
 
--- Retrieves all available buying/selling formats (BigBags, Pallets, IBCs) for a specific Engine FillType
--- @param fillTypeName string: The Engine FillType Name (e.g., "WHEAT")
--- @return table: Array of formatData objects ready for the Dialog UI
-function GlobalMarketStoreCache.getFormatsForFillType(fillTypeName)
-    if fillTypeName == nil then return {} end
-    local upperName = string.upper(fillTypeName)
-    return GlobalMarketStoreCache.cache[upperName] or {}
+    -- ========================================================
+    -- FIREWALL: InfoDisplayExtension (IDE)
+    -- ========================================================
+    if g_modIsLoaded["FS25_InfoDisplayExtension"] then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("[Compatibility] InfoDisplayExtension detected. Installing instance-level UI firewall for GM objects.")
+        end
+
+        local function applyInstanceFirewall(placeable)
+            if placeable.isGmMarket and placeable.updateInfo ~= nil then
+
+                -- Prevent double-hooking if the user toggles settings multiple times
+                if placeable.hasGmFirewall then
+                    return
+                end
+                placeable.hasGmFirewall = true
+
+                -- We save the original chain (which is currently infected by IDE)
+                local originalUpdateInfo = placeable.updateInfo
+
+                -- We override the instance to intercept the UI call
+                placeable.updateInfo = function(self, infoTable)
+
+                    -- A dummy function to satisfy the engine's internal superFunc chain
+                    -- without accidentally triggering other UI mods again.
+                    local dummySuperFunc = function(s, t) end
+
+                    -- Bypass IDE entirely and call our saved, clean GM->Vanilla chain.
+                    if self.spec_silo ~= nil and GlobalMarketAccess.cleanSiloUpdateInfo ~= nil then
+                        GlobalMarketAccess.cleanSiloUpdateInfo(self, dummySuperFunc, infoTable)
+
+                    elseif self.spec_objectStorage ~= nil and GlobalMarketAccess.cleanObjectStorageUpdateInfo ~= nil then
+                        GlobalMarketAccess.cleanObjectStorageUpdateInfo(self, dummySuperFunc, infoTable)
+
+                    else
+                        -- Fallback for non-standard GM storages: Let the current chain (including IDE) run
+                        if originalUpdateInfo ~= nil then
+                            originalUpdateInfo(self, infoTable)
+                        end
+                    end
+                end
+            end
+        end
+
+        -- 1. Protect PlaceableSilo (InfoTrigger) & 3. Protect ObjectStorage
+        -- We apply the firewall dynamically to all already loaded placeables
+        if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
+            for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+                applyInstanceFirewall(placeable)
+            end
+        end
+
+        -- Catch newly placed buildings during the session
+        if Placeable.onFinalizePlacement ~= nil then
+            Placeable.onFinalizePlacement = Utils.appendedFunction(Placeable.onFinalizePlacement, function(placeable)
+                applyInstanceFirewall(placeable)
+            end)
+        end
+
+        -- 2. Protect ProductionPoint
+        if ProductionPoint ~= nil and type(ProductionPoint.updateInfo) == "function" then
+            local function gmProdUpdateInfo(self, superFunc, infoTable)
+                if self.isGmMarket then
+                    return
+                end
+
+                if superFunc ~= nil then
+                    superFunc(self, infoTable)
+                end
+            end
+
+            ProductionPoint.updateInfo = Utils.overwrittenFunction(ProductionPoint.updateInfo, gmProdUpdateInfo)
+        end
+    end
+end
+
+--- Saves the current compatibility definitions to the local modSettings XML file.
+-- Triggered on the Dedi-Server when receiving an update from an Admin.
+function GMCompatibilityManager:saveToXML()
+    createFolder(self.directory)
+
+    local xmlFile = XMLFile.create("GMCompatXML", self.filePath, "compatibility")
+    if xmlFile ~= nil then
+        -- Using setString bypasses schema validation for saving
+        xmlFile:setString("compatibility#version", self.version)
+
+        local index = 0
+        for modName, data in pairs(self.conflicts) do
+            local key = string.format("compatibility.mod(%d)", index)
+            xmlFile:setString(key .. "#name", modName)
+            xmlFile:setString(key .. "#action", data.action)
+            index = index + 1
+        end
+
+        xmlFile:save()
+        xmlFile:delete()
+
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("[Compatibility] Saved updated list to server's modSettings XML.")
+        end
+    end
+end
+
+--- Utility: Returns the amount of parsed conflicts
+function GMCompatibilityManager:getConflictCount()
+    local count = 0
+    for _ in pairs(self.conflicts) do
+        count = count + 1
+    end
+    return count
 end
