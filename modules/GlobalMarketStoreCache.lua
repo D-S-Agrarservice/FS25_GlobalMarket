@@ -10,7 +10,6 @@ GlobalMarketStoreCache.cache = {}
 GlobalMarketStoreCache.isInitialized = false
 
 -- ALIAS INTERCEPTOR: Maps filename keywords to custom Global Market identities.
--- Prevents packaged goods (like Chickenfood) from vanishing under generic engine FillTypes (like Wheat).
 local INTERCEPTOR_ALIASES = {
     ["chickenfood"] = "CHICKENFOOD",
     ["horsefood"]   = "HORSEFOOD",
@@ -18,7 +17,6 @@ local INTERCEPTOR_ALIASES = {
     ["roadsalt"]    = "ROADSALT"
 }
 
--- Checks if the xml filename contains a known alias keyword
 local function getInterceptorAlias(xmlPathLower)
     for keyword, alias in pairs(INTERCEPTOR_ALIASES) do
         if string.find(xmlPathLower, keyword) then
@@ -32,9 +30,25 @@ end
 local function normalizePath(path)
     if path == nil then return "" end
     local p = string.lower(path)
-    p = string.gsub(p, "\\", "/") -- Standardize slashes for absolute paths
+    p = string.gsub(p, "\\", "/")
     p = string.gsub(p, "^%$data/", "data/")
     return p
+end
+
+-- Safely fetches localized text to prevent "Missing '...'" UI bugs
+local function getLocalizedText(key, fallback)
+    if g_i18n ~= nil and g_i18n:hasText(key) then
+        return g_i18n:getText(key)
+    end
+    return fallback
+end
+
+-- Checks if the native store item name is too generic for a standalone UI dropdown entry
+local function isGenericItemName(name)
+    if name == nil or name == "" then return true end
+    local n = string.lower(name)
+    n = string.gsub(n, "[ %-]", "")
+    return n == "pallet" or n == "palette" or n == "bigbag" or n == "ibc" or n == "liquidtank"
 end
 
 -- Runs exactly ONCE during mission start
@@ -59,9 +73,8 @@ function GlobalMarketStoreCache.init()
 
         local isRelevant = false
         local unitKey = "ui_gm_unit_pallet"
-        local formatSuffix = " (Palette)"
+        local formatSuffix = " (Pallet)"
 
-        -- Filter by relevant packaging categories (Fuzzy matching)
         if string.find(catLower, "bigbags") then
             isRelevant = true
             unitKey = "ui_gm_unit_bigbag"
@@ -69,7 +82,7 @@ function GlobalMarketStoreCache.init()
         elseif string.find(catLower, "bigbagpallets") then
             isRelevant = true
             unitKey = "ui_gm_unit_bigbagpallet"
-            formatSuffix = " (Bigbag-Palette)"
+            formatSuffix = " (Bigbag Pallet)"
         elseif string.find(catLower, "ibc") or string.find(catLower, "fertilizerherbicide") then
             isRelevant = true
             unitKey = "ui_gm_unit_ibc"
@@ -77,7 +90,7 @@ function GlobalMarketStoreCache.init()
         elseif string.find(catLower, "pallets") or string.find(catLower, "animals") then
             isRelevant = true
             unitKey = "ui_gm_unit_pallet"
-            formatSuffix = " (Palette)"
+            formatSuffix = " (Pallet)"
         end
 
         if isRelevant then
@@ -87,7 +100,6 @@ function GlobalMarketStoreCache.init()
                 local engineFillTypeStr = ""
                 local targetFormatXml = normPath
 
-                -- Extract capacity and fillTypes safely
                 local fillUnitRoot = "vehicle.fillUnit.fillUnitConfigurations.fillUnitConfiguration(0).fillUnits.fillUnit(0)"
                 capacity = xmlFile:getFloat(fillUnitRoot .. "#capacity") or 0
                 engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#fillTypes")
@@ -96,7 +108,6 @@ function GlobalMarketStoreCache.init()
                     engineFillTypeStr = xmlFile:getString(fillUnitRoot .. "#startFillType") or ""
                 end
 
-                -- MultipleItemPurchase Check: Redirect UI to the single physical item XML using absolute path
                 local multiPurchaseXml = xmlFile:getString("vehicle.multipleItemPurchase#filename")
                 if multiPurchaseXml ~= nil and multiPurchaseXml ~= "" then
                     local absolutePath = Utils.getFilename(multiPurchaseXml, item.baseDir)
@@ -111,41 +122,37 @@ function GlobalMarketStoreCache.init()
                     local primaryFillType = string.match(engineFillTypeStr, "%S+")
                     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(primaryFillType)
 
-                    -- THE GATEKEEPER 1: Is the base Engine FillType allowed on the market?
                     if fillTypeDesc ~= nil and GlobalMarketAPI ~= nil and GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
 
-                        -- THE GATEKEEPER 2: Is THIS specific container format allowed for this FillType?
                         local isContainerAllowed = true
                         if GlobalMarketAPI.getIsContainerAllowedForFillType ~= nil then
                             isContainerAllowed = GlobalMarketAPI.getIsContainerAllowedForFillType(fillTypeDesc, unitKey)
                         end
 
                         if isContainerAllowed then
-                            -- Default GM Market Key is the Engine FillType (e.g., WHEAT)
                             local gmMarketKey = string.upper(fillTypeDesc.name)
-
-                            -- ALIAS INTERCEPTOR: Reroute specific formats to custom GM categories
                             local customAlias = getInterceptorAlias(targetFormatXml)
+                            local baseName = item.name or ""
+
+                            -- Override logic for intercepted aliases to bypass misleading engine L10n
                             if customAlias ~= nil then
                                 gmMarketKey = customAlias
+                                if customAlias == "CHICKENFOOD" then
+                                    baseName = getLocalizedText("fillType_chickenFood", "Chicken Food")
+                                elseif customAlias == "HORSEFOOD" then
+                                    baseName = getLocalizedText("fillType_horseFood", "Horse Food")
+                                elseif customAlias == "PIGFOOD" then
+                                    baseName = getLocalizedText("fillType_pigFood", "Pig Food")
+                                elseif customAlias == "ROADSALT" then
+                                    baseName = getLocalizedText("fillType_roadSalt", "Road Salt")
+                                end
+                            elseif isGenericItemName(baseName) then
+                                -- Rely on Engine FillType title for generic names
+                                baseName = fillTypeDesc.title
                             end
 
                             if GlobalMarketStoreCache.cache[gmMarketKey] == nil then
                                 GlobalMarketStoreCache.cache[gmMarketKey] = {}
-                            end
-
-                            -- Base UI name generation: Use native engine localization as default
-                            local baseName = fillTypeDesc.title
-
-                            -- Override native name ONLY for intercepted aliases (otherwise engine calls Chickenfood "Wheat")
-                            if gmMarketKey == "CHICKENFOOD" then
-                                baseName = g_i18n:getText("fillType_chickenFood") or "Hühnerfutter"
-                            elseif gmMarketKey == "HORSEFOOD" then
-                                baseName = g_i18n:getText("fillType_horseFood") or "Pferdefutter"
-                            elseif gmMarketKey == "PIGFOOD" then
-                                baseName = g_i18n:getText("fillType_pigFood") or "Schweinefutter"
-                            elseif gmMarketKey == "ROADSALT" then
-                                baseName = g_i18n:getText("fillType_roadSalt") or "Streusalz"
                             end
 
                             local brandSuffix = ""
@@ -158,7 +165,7 @@ function GlobalMarketStoreCache.init()
 
                             local displayTitle = baseName .. formatSuffix .. brandSuffix
 
-                            -- Deduplication & Title Upgrade Strategy
+                            -- Deduplication & Title Upgrade
                             local existingEntry = nil
                             for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
                                 if existing.xml == targetFormatXml then
@@ -168,18 +175,11 @@ function GlobalMarketStoreCache.init()
                             end
 
                             if existingEntry ~= nil then
-                                -- UPGRADE CHECK: If the new item is visible in the shop (Parent/MultiPurchase)
-                                -- and the cached one is hidden (Child), we upgrade the cache entry to the better name!
                                 if item.showInStore and not existingEntry.showInStore then
                                     existingEntry.title = displayTitle
                                     existingEntry.showInStore = true
-
-                                    if GlobalMarket.debugManager ~= nil then
-                                        GlobalMarket.debugManager:trace("StoreCache: Upgraded hidden entry to visible Parent '%s'", displayTitle)
-                                    end
                                 end
                             else
-                                -- Store new into Cache
                                 table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
                                     title = displayTitle,
                                     xml = targetFormatXml,
@@ -188,10 +188,6 @@ function GlobalMarketStoreCache.init()
                                     showInStore = item.showInStore
                                 })
                                 itemCount = itemCount + 1
-
-                                if GlobalMarket.debugManager ~= nil then
-                                    GlobalMarket.debugManager:trace("StoreCache: Added '%s' (%.0f L) to Market Key %s [EngineType: %s]", displayTitle, capacity, gmMarketKey, fillTypeDesc.name)
-                                end
                             end
                         end
                     end
@@ -206,13 +202,9 @@ function GlobalMarketStoreCache.init()
     if g_fillTypeManager ~= nil and g_fillTypeManager.fillTypes ~= nil then
         for _, fillTypeDesc in pairs(g_fillTypeManager.fillTypes) do
 
-            -- Only process if the fillType is allowed on the market
             if fillTypeDesc ~= nil and GlobalMarketAPI ~= nil and GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
-
-                -- Check if the engine defines a fallback pallet XML for this bulk/fillType
                 if fillTypeDesc.palletFilename ~= nil and fillTypeDesc.palletFilename ~= "" then
 
-                    -- API Gatekeeper: Is a generic pallet allowed for this specific fillType?
                     local isContainerAllowed = true
                     if GlobalMarketAPI.getIsContainerAllowedForFillType ~= nil then
                         isContainerAllowed = GlobalMarketAPI.getIsContainerAllowedForFillType(fillTypeDesc, "ui_gm_unit_pallet")
@@ -226,7 +218,6 @@ function GlobalMarketStoreCache.init()
                             GlobalMarketStoreCache.cache[gmMarketKey] = {}
                         end
 
-                        -- Ensure we don't duplicate if Phase 1 already caught it
                         local alreadyExists = false
                         for _, existing in ipairs(GlobalMarketStoreCache.cache[gmMarketKey]) do
                             if existing.xml == targetFormatXml then
@@ -237,20 +228,23 @@ function GlobalMarketStoreCache.init()
 
                         if not alreadyExists then
                             local storeItem = g_storeManager:getItemByXMLFilename(fillTypeDesc.palletFilename)
-                            local palletTitle = storeItem ~= nil and storeItem.name or (g_i18n:getText("ui_gm_format_pallet") or "Palette")
+                            local palletTitle = storeItem ~= nil and storeItem.name or ""
+
+                            -- Prefix generic generated pallets with their FillType
+                            if isGenericItemName(palletTitle) then
+                                palletTitle = fillTypeDesc.title .. " (Pallet)"
+                            else
+                                palletTitle = palletTitle .. " (Pallet)"
+                            end
 
                             table.insert(GlobalMarketStoreCache.cache[gmMarketKey], {
                                 title = palletTitle,
                                 xml = targetFormatXml,
-                                capacity = 1000, -- Default fallback for generated pallets
+                                capacity = 1000,
                                 unitKey = "ui_gm_unit_pallet",
                                 showInStore = storeItem ~= nil and storeItem.showInStore or false
                             })
                             itemCount = itemCount + 1
-
-                            if GlobalMarket.debugManager ~= nil then
-                                GlobalMarket.debugManager:trace("StoreCache: Bridged engine pallet for %s to Market Key %s", palletTitle, gmMarketKey)
-                            end
                         end
                     end
                 end
@@ -259,18 +253,9 @@ function GlobalMarketStoreCache.init()
     end
 
     GlobalMarketStoreCache.isInitialized = true
-    if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:info("StoreCache: Initialization complete. Cached %d format variations.", itemCount)
-    end
 end
 
--- =========================================================================
--- API EXPORTS FOR UI
--- =========================================================================
-
 -- Retrieves all available buying/selling formats (BigBags, Pallets, IBCs) for a specific Engine FillType
--- @param fillTypeName string: The GM Market Key (e.g., "WHEAT" or "CHICKENFOOD")
--- @return table: Array of formatData objects ready for the Dialog UI
 function GlobalMarketStoreCache.getFormatsForFillType(fillTypeName)
     if fillTypeName == nil then return {} end
     local upperName = string.upper(fillTypeName)
