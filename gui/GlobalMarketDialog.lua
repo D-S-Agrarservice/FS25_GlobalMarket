@@ -450,11 +450,6 @@ function GlobalMarketDialog:updateTotalValue()
         else
             self.deliveryCostText:setVisible(false)
         end
-
-        -- BUGFIX/ENGINE: Force the layout to recalculate its dimensions after a visibility state change
-        if self.totalsBox ~= nil then
-            self.totalsBox:invalidateLayout()
-        end
     end
 
     -- BUGFIX: Ensure liquidity validation considers total value AND delivery costs when buying

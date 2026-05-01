@@ -21,6 +21,7 @@
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
+            <!-- Reverted to absolute positioning to prevent engine layout glitches -->
             <GuiElement profile="globalMarketInputGroup" with="anchorTopCenter">
                 <GuiElement profile="emptyPanel" position="0px 0px" size="200px 40px" with="anchorMiddleLeft">
                     <Bitmap profile="fs25_textInputBg" size="100% 100%" />
@@ -32,11 +33,9 @@
                 <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
 
-            <!-- NEW: BoxLayout handles vertical stacking dynamically -->
-            <BoxLayout profile="globalMarketTotalsBoxLayout" id="totalsBox">
-                <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
-                <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
-            </BoxLayout>
+            <!-- Reverted to absolute positioning with enough vertical clearance -->
+            <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
+            <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
         </GuiElement>
 
         <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
@@ -48,7 +47,7 @@
 
     <GUIProfiles>
         <Profile name="globalMarketDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
-            <size value="620px 470px" />
+            <size value="620px 520px" />
         </Profile>
 
         <Profile name="fs25_siloDialogTitle" extends="fs25_dialogTitle">
@@ -99,34 +98,28 @@
         </Profile>
 
         <Profile name="globalMarketInputUnitText" extends="fs25_textDefault" with="anchorMiddleLeft">
-            <width value="90px" />
+            <!-- Dynamic width to prevent engine cutoff (e.g. for "Bigbag-Palette") -->
+            <textAutoWidth value="true" />
             <position value="300px 0px" />
             <textSize value="18px" />
             <textAlignment value="left" />
             <textColor value="$preset_colorWhite" />
         </Profile>
 
-        <!-- NEW: Box layout profile for dynamic vertical stacking -->
-        <Profile name="globalMarketTotalsBoxLayout" extends="emptyPanel" with="anchorTopCenter">
+        <Profile name="globalMarketTotalText" extends="fs25_dialogText" with="anchorTopCenter">
             <width value="580px" />
-            <position value="0px -320px" /> <!-- Base Y-position for the entire block -->
-            <flowType value="vertical" />
-            <itemMargins value="0px 5px" /> <!-- Adds a 5px gap between the text elements -->
-        </Profile>
-
-        <!-- MODIFIED: Removed absolute 'position' attribute, handled by BoxLayout -->
-        <Profile name="globalMarketTotalText" extends="fs25_dialogText">
-            <width value="580px" />
+            <position value="0px -330px" />
             <textAlignment value="center" />
             <textWrap value="true" />
         </Profile>
 
-        <!-- MODIFIED: Removed absolute 'position' attribute, handled by BoxLayout -->
-        <Profile name="globalMarketDeliveryText" extends="fs25_dialogText">
+        <!-- Static offset guarantees 50px clearance to the text above -->
+        <Profile name="globalMarketDeliveryText" extends="fs25_dialogText" with="anchorTopCenter">
             <width value="580px" />
+            <position value="0px -380px" />
             <textAlignment value="center" />
             <textWrap value="true" />
-            <textColor value="0.9 0.6 0.1 1" /> <!-- Soft orange to distinguish from total price -->
+            <textColor value="0.9 0.6 0.1 1" />
         </Profile>
     </GUIProfiles>
 </GUI>
