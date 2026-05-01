@@ -23,14 +23,23 @@
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
-            <SmoothList profile="emptyPanel" id="gmTableStorage" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
-                <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
-                    <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
-                    <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                    <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="250px 32px" name="name" />
-                    <Text profile="globalMarketRowCellRight" position="300px 0px" size="300px 32px" name="amount" />
-                </ListItem>
-            </SmoothList>
+            <!-- Wrapper container to constrain the list and provide an anchor point for the slider -->
+            <GuiElement position="0px 10px" size="650px 640px">
+                <!-- List takes full size of the wrapper (650px width) -->
+                <SmoothList profile="emptyPanel" id="gmTableStorage" size="100% 100%" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
+                    <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
+                        <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                        <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
+                        <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="250px 32px" name="name" />
+                        <Text profile="globalMarketRowCellRight" position="300px 0px" size="300px 32px" name="amount" />
+                    </ListItem>
+                </SmoothList>
+
+                <!-- FS25 native slider track. Automatically anchors to the right edge and offsets by 21px -->
+                <ThreePartBitmap profile="fs25_listSliderBox">
+                    <Slider profile="globalMarketListSlider" dataElementId="gmTableStorage" id="gmTableStorageSlider" />
+                </ThreePartBitmap>
+            </GuiElement>
         </GuiElement>
 
         <GuiElement size="650px 750px" position="700px 40px">
@@ -45,16 +54,25 @@
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
-            <SmoothList profile="emptyPanel" id="gmTableMarket" position="0px 10px" size="650px 640px" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
-                <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
-                    <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
-                    <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                    <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="200px 32px" name="name" />
-                    <Text profile="globalMarketRowCellRight" position="220px 0px" size="150px 32px" name="price" />
-                    <Bitmap profile="globalMarketRowCellArrow" position="400px 2px" name="trend" />
-                    <Text profile="globalMarketRowCellRight" position="440px 0px" size="180px 32px" name="amount" />
-                </ListItem>
-            </SmoothList>
+            <!-- Wrapper container to constrain the list and provide an anchor point for the slider -->
+            <GuiElement position="0px 10px" size="650px 640px">
+                <!-- List takes full size of the wrapper (650px width) -->
+                <SmoothList profile="emptyPanel" id="gmTableMarket" size="100% 100%" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
+                    <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
+                        <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                        <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
+                        <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="200px 32px" name="name" />
+                        <Text profile="globalMarketRowCellRight" position="220px 0px" size="150px 32px" name="price" />
+                        <Bitmap profile="globalMarketRowCellArrow" position="400px 2px" name="trend" />
+                        <Text profile="globalMarketRowCellRight" position="440px 0px" size="180px 32px" name="amount" />
+                    </ListItem>
+                </SmoothList>
+
+                <!-- FS25 native slider track. Automatically anchors to the right edge and offsets by 21px -->
+                <ThreePartBitmap profile="fs25_listSliderBox">
+                    <Slider profile="globalMarketListSlider" dataElementId="gmTableMarket" id="gmTableMarketSlider" />
+                </ThreePartBitmap>
+            </GuiElement>
         </GuiElement>
 
         <GuiElement profile="globalMarketFooterBox1">

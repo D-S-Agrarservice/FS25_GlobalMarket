@@ -131,4 +131,12 @@
     <Profile name="ingameMenuGlobalMarketSelectLoadingAnimation" extends="baseReference" with="anchorTopCenter" size="127px 127px" pivot="0.5 0.5" position="0px -100px" imageUVs="293px 495px 127px 127px" imageColor="$preset_colorMainUI" animationMode="rotate" animationSpeed="1000">
         <Variant name="mobile" size="60px 60px"/>
     </Profile>
+
+    <!-- FS25 - Global Market Custom Slider Profiles -->
+    <!-- Custom slider inheriting from FS25 vanilla, colored in green -->
+    <Profile name="globalMarketListSlider" extends="fs25_listSlider">
+        <Value name="sliderImageColor" value="$preset_fs25_colorMainHighlight"/>
+        <Value name="startImageColor" value="$preset_fs25_colorMainHighlight"/>
+        <Value name="endImageColor" value="$preset_fs25_colorMainHighlight"/>
+    </Profile>
 </GUIProfiles>
