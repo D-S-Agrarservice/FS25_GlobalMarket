@@ -106,6 +106,10 @@ source(GlobalMarket.dir .. "events/SyncGmSiloEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
+-- Online Events
+source(GlobalMarket.dir .. "events/ExeStatusEvent.lua")
+source(GlobalMarket.dir .. "events/SyncMarketWhitelistEvent.lua")
+source(GlobalMarket.dir .. "events/MarketDataSyncEvent.lua")
 
 -- Compatibility Sync Events
 source(GlobalMarket.dir .. "events/SyncGlobalMarketCompatibilityEvent.lua")
@@ -174,6 +178,11 @@ function GlobalMarket:loadMap(name)
     -- =========================================================
     if self.initOfflineMarket ~= nil then
         self:initOfflineMarket()
+
+        -- Build the Server Whitelist based on the fully evaluated offline market
+        if g_currentMission:getIsServer() and self.initServerWhitelist ~= nil then
+            self:initServerWhitelist()
+        end
 
         -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
@@ -447,10 +456,10 @@ function GlobalMarket.dumpShopItems()
             if cat == "bigbags" or cat == "pallets" or cat == "bigbagpallets" or string.find(xmlLower, "bag") or string.find(xmlLower, "pallet") then
                 count = count + 1
                 print("--------------------------------------------------")
-                print("Item Name:     " .. tostring(item.name))
-                print("XML Path:      " .. tostring(item.xmlFilename))
-                print("Category:      " .. tostring(item.categoryName))
-                print("showInStore:   " .. tostring(item.showInStore))
+                print("Item Name:      " .. tostring(item.name))
+                print("XML Path:       " .. tostring(item.xmlFilename))
+                print("Category:       " .. tostring(item.categoryName))
+                print("showInStore:    " .. tostring(item.showInStore))
 
                 -- Ruthlessly dig through all specs
                 if item.specs ~= nil then
@@ -519,6 +528,18 @@ end
 
 -- Appending to onStartMission ensures the 'Invalid event id' error is avoided
 FSBaseMission.onStartMission = Utils.appendedFunction(FSBaseMission.onStartMission, onStartMission)
+
+-- =========================================================================
+-- SAFETY HOOK: Free Token on Client Disconnect
+-- =========================================================================
+local function onConnectionClosed(mission, connection)
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
+        if g_currentMission.globalMarket.onClientDisconnected ~= nil then
+            g_currentMission.globalMarket:onClientDisconnected(connection)
+        end
+    end
+end
+FSBaseMission.onConnectionClosed = Utils.appendedFunction(FSBaseMission.onConnectionClosed, onConnectionClosed)
 
 -- Register the mod with the engine
 addModEventListener(GlobalMarket)

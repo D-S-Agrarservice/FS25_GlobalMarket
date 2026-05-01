@@ -61,6 +61,7 @@
         <e k="ui_gm_unit_pallet"                                   v="Palety" />
         <e k="ui_gm_unit_piece"                                    v="Sztuka" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Maks. %s obiektów na transakcję (Wydajność)" />
+        <e k="ui_gm_warning_exe_outdated"                          v="GlobalMarket: Zewnętrzny plik .exe jest nieaktualny! Zaktualizuj swoją wersję, aby móc handlować online." />
         <e k="ui_gm_warning_fatal_conflict"                        v="KRYTYCZNY KONFLIKT: Mod '%s' jest niekompatybilny. Gra zostanie zablokowana, aby chronić zapis gry." />
         <e k="ui_gm_warning_smart_conflict"                        v="Ostrzeżenie GlobalMarket: Mod '%s' może powodować konflikty!" />
 

@@ -61,6 +61,7 @@
         <e k="ui_gm_unit_pallet"                                   v="Paletten" />
         <e k="ui_gm_unit_piece"                                    v="Stück" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s Objekte pro Transaktion (Performance)" />
+        <e k="ui_gm_warning_exe_outdated"                          v="GlobalMarket: Die externe .exe ist veraltet! Bitte aktualisiere deine Version, um online handeln zu können." />
         <e k="ui_gm_warning_fatal_conflict"                        v="FATALER KONFLIKT: Mod '%s' ist inkompatibel. Das Spiel wird blockiert, um Spielstände zu schützen." />
         <e k="ui_gm_warning_smart_conflict"                        v="GlobalMarket Warnung: Mod '%s' könnte Konflikte verursachen!" />
 

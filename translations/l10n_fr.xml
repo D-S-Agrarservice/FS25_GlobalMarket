@@ -61,6 +61,7 @@
         <e k="ui_gm_unit_pallet"                                   v="Palettes" />
         <e k="ui_gm_unit_piece"                                    v="Pièce" />
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s objets par transaction (Performance)" />
+        <e k="ui_gm_warning_exe_outdated"                          v="GlobalMarket: L'exécutable externe est obsolète ! Veuillez mettre à jour votre version pour pouvoir trader en ligne." />
         <e k="ui_gm_warning_fatal_conflict"                        v="CONFLIT FATAL : Le mod '%s' est incompatible. Le jeu sera bloqué pour éviter toute corruption." />
         <e k="ui_gm_warning_smart_conflict"                        v="Avertissement GlobalMarket : Le mod '%s' pourrait causer des conflits !" />
 
