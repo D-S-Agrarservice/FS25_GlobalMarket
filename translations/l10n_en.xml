@@ -23,6 +23,7 @@
         <e k="ui_btn_buy"                                          v="Buy from Global Market" />
         <e k="ui_btn_sell"                                         v="Sell to Global Market" />
         <e k="ui_gm_balance"                                       v="BALANCE:" />
+        <e k="ui_gm_delivery_costs"                                v="Delivery costs" />
         <e k="ui_gm_format_bulk"                                   v="Bulk (Loose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Pcs | 1 Pc = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Pallet" />

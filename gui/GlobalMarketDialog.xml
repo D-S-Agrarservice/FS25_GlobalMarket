@@ -28,11 +28,13 @@
                 </GuiElement>
 
                 <Button profile="globalMarketMaxButton" text="MAX" onClick="onClickMaxAmount" />
-                
+
                 <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
 
             <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
+            <!-- NEW: Delivery cost UI element, hidden by default -->
+            <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
         </GuiElement>
 
         <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
@@ -83,7 +85,7 @@
             <size value="80px 40px" />
             <position value="210px 0px" />
             <textSize value="20px" />
-            <textBold value="true" /> 
+            <textBold value="true" />
             <textPadding value="10px 0px" />
             <textAlignment value="center" />
             <textColor value="$preset_colorWhite" />
@@ -107,6 +109,15 @@
             <position value="0px -330px" />
             <textAlignment value="center" />
             <textWrap value="true" />
+        </Profile>
+
+        <!-- NEW: Profile for the delivery cost text, positioned slightly below the total text -->
+        <Profile name="globalMarketDeliveryText" extends="fs25_dialogText" with="anchorTopCenter">
+            <width value="580px" />
+            <position value="0px -360px" />
+            <textAlignment value="center" />
+            <textWrap value="true" />
+            <textColor value="0.9 0.6 0.1 1" /> <!-- Soft orange to distinguish from total price -->
         </Profile>
     </GUIProfiles>
 </GUI>

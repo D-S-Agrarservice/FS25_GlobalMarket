@@ -23,6 +23,7 @@
         <e k="ui_btn_buy"                                          v="Comprar en el Mercado Global" />
         <e k="ui_btn_sell"                                         v="Vender al Mercado Global" />
         <e k="ui_gm_balance"                                       v="SALDO:" />
+        <e k="ui_gm_delivery_costs"                                v="Gastos de envío" />
         <e k="ui_gm_format_bulk"                                   v="A granel (Suelto)" />
         <e k="ui_gm_format_info"                                   v="Formato: %s | Máx: %d Uds | 1 Ud = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Palé" />

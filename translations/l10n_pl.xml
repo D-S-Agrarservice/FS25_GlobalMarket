@@ -23,6 +23,7 @@
         <e k="ui_btn_buy"                                          v="Kup z Rynku Globalnego" />
         <e k="ui_btn_sell"                                         v="Sprzedaj na Rynek Globalny" />
         <e k="ui_gm_balance"                                       v="STAN KONTA:" />
+        <e k="ui_gm_delivery_costs"                                v="Koszty dostawy" />
         <e k="ui_gm_format_bulk"                                   v="Luzem (Niespakowane)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Maks: %d Szt. | 1 Szt. = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Paleta" />

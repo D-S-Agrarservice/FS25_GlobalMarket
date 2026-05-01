@@ -354,12 +354,23 @@ function GlobalMarketDialog:onClickMaxAmount()
 
     if self.actionType == "BUY" then
         local currentMoney = g_currentMission:getMoney()
+        local selectedSilo = self.storageLocations[self.selectedStorageIndex]
+        local isGmMarket = selectedSilo ~= nil and selectedSilo.isGmMarket
 
         if currentMoney <= 0 then
             fillAmount = 0
-        elseif self.pricePer1000 > 0 then
-            -- Safely calculate how many liters we can afford
-            local maxAffordableLiters = (currentMoney / self.pricePer1000) * 1000
+        else
+            -- BUGFIX/QOL: Account for delivery costs in max calculation to avoid liquidity overshoot
+            local baseDeliveryFee = isGmMarket and 0 or ((GlobalMarket.DELIVER_COST or 0) * EconomyManager.getCostMultiplier())
+            local feePerLiter = isGmMarket and 0 or ((GlobalMarket.DELIVER_COST_PERLITER or 0) * EconomyManager.getCostMultiplier())
+
+            -- Combine commodity price and delivery fee to get total cost per liter
+            local costPerLiter = (self.pricePer1000 / 1000) + feePerLiter
+            local maxAffordableLiters = 0
+
+            if currentMoney > baseDeliveryFee and costPerLiter > 0 then
+                maxAffordableLiters = (currentMoney - baseDeliveryFee) / costPerLiter
+            end
 
             if self.currentCountFactor > 1 then
                 local maxAffordablePieces = math.floor(maxAffordableLiters / self.currentCountFactor)
@@ -419,10 +430,32 @@ function GlobalMarketDialog:updateTotalValue()
     local totalLiters = self.currentAmount * self.currentCountFactor
     local total = (totalLiters / 1000) * self.pricePer1000
 
-    -- Check funds when buying
+    -- QOL FEATURE: Real-time calculation of dynamic delivery costs
+    local deliveryCosts = 0
+    local selectedSilo = self.storageLocations[self.selectedStorageIndex]
+
+    if selectedSilo ~= nil and not selectedSilo.isGmMarket and totalLiters > 0 then
+        local baseCost = GlobalMarket.DELIVER_COST or 0
+        local costPerLiter = GlobalMarket.DELIVER_COST_PERLITER or 0
+        deliveryCosts = (baseCost + (costPerLiter * totalLiters)) * EconomyManager.getCostMultiplier()
+    end
+
+    -- Update the delivery cost text visually
+    if self.deliveryCostText ~= nil then
+        if deliveryCosts > 0 then
+            local deliveryLabel = g_i18n:getText("ui_gm_delivery_costs") or "Delivery"
+            local deliveryText = string.format("%s: %s", deliveryLabel, g_i18n:formatMoney(deliveryCosts, 0, true, true))
+            self.deliveryCostText:setText(deliveryText)
+            self.deliveryCostText:setVisible(true)
+        else
+            self.deliveryCostText:setVisible(false)
+        end
+    end
+
+    -- BUGFIX: Ensure liquidity validation considers total value AND delivery costs when buying
     local hasEnoughMoney = true
     if self.actionType == "BUY" then
-        hasEnoughMoney = g_currentMission:getMoney() >= total
+        hasEnoughMoney = g_currentMission:getMoney() >= (total + deliveryCosts)
     end
 
     if not hasEnoughMoney then
