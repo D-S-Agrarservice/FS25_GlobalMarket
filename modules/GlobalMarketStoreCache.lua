@@ -9,15 +9,6 @@ GlobalMarketStoreCache = {}
 GlobalMarketStoreCache.cache = {}
 GlobalMarketStoreCache.isInitialized = false
 
--- Enhanced path normalizer to fix engine slash mixing
-local function normalizePath(path)
-    if path == nil then return "" end
-    local p = string.lower(path)
-    p = string.gsub(p, "\\", "/")
-    p = string.gsub(p, "^%$data/", "data/")
-    return p
-end
-
 -- Safely fetches localized text to prevent "Missing '...'" UI bugs
 local function getLocalizedText(key, fallback)
     if g_i18n ~= nil and g_i18n:hasText(key) then
@@ -64,11 +55,17 @@ function GlobalMarketStoreCache.init()
     -- =========================================================================
     for _, item in ipairs(g_storeManager:getItems()) do
         local xmlPath = item.xmlFilename or ""
-        local normPath = normalizePath(xmlPath)
         local catLower = item.categoryName and string.lower(item.categoryName) or ""
 
         -- STRICT BLOCK: Ignore generic engine dummy templates that default to WHEAT
-        local isTemplate = (normPath == "data/objects/bigbag/bigbag.xml" or normPath == "data/objects/bigbagpallet/bigbagpallet.xml")
+        -- Note: Checking original paths now, as normalization is removed.
+        local isTemplate = false
+        if xmlPath ~= "" then
+            local pLower = string.lower(xmlPath)
+            if string.find(pLower, "data/objects/bigbag/bigbag.xml", 1, true) or string.find(pLower, "data/objects/bigbagpallet/bigbagpallet.xml", 1, true) then
+                 isTemplate = true
+            end
+        end
 
         local isRelevant = false
         local unitKey = "ui_gm_unit_pallet"
@@ -93,14 +90,14 @@ function GlobalMarketStoreCache.init()
             if xmlFile ~= nil then
                 local capacity = 0
                 local engineFillTypeStr = ""
-                local targetFormatXml = normPath
+                local targetFormatXml = xmlPath
 
                 local multiPurchaseXml = xmlFile:getString("vehicle.multipleItemPurchase#filename")
 
                 -- MULTI-PURCHASE LOGIC: Extract fillTypes from the linked Single XML because Multi-XMLs have no fillUnit
                 if multiPurchaseXml ~= nil and multiPurchaseXml ~= "" then
                     local absolutePath = Utils.getFilename(multiPurchaseXml, item.baseDir)
-                    targetFormatXml = normalizePath(absolutePath)
+                    targetFormatXml = absolutePath
 
                     local singleXml = XMLFile.load("GMSingleItem", absolutePath)
                     if singleXml ~= nil then
@@ -213,18 +210,22 @@ function GlobalMarketStoreCache.init()
             if fillTypeDesc ~= nil and GlobalMarketAPI ~= nil and GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
                 if fillTypeDesc.palletFilename ~= nil and fillTypeDesc.palletFilename ~= "" then
 
-                    local targetFormatXml = normalizePath(fillTypeDesc.palletFilename)
+                    local targetFormatXml = fillTypeDesc.palletFilename
+                    local pLower = string.lower(targetFormatXml)
 
                     -- STRICT BLOCK: Ignore generic engine dummy templates in fallback bridge
-                    local isTemplate = (targetFormatXml == "data/objects/bigbag/bigbag.xml" or targetFormatXml == "data/objects/bigbagpallet/bigbagpallet.xml")
+                    local isTemplate = false
+                    if string.find(pLower, "data/objects/bigbag/bigbag.xml", 1, true) or string.find(pLower, "data/objects/bigbagpallet/bigbagpallet.xml", 1, true) then
+                        isTemplate = true
+                    end
 
                     if not isTemplate then
                         local unitKey = "ui_gm_unit_pallet"
-                        if string.find(targetFormatXml, "bigbagpallet") then
+                        if string.find(pLower, "bigbagpallet") then
                             unitKey = "ui_gm_unit_bigbagpallet"
-                        elseif string.find(targetFormatXml, "bigbag") then
+                        elseif string.find(pLower, "bigbag") then
                             unitKey = "ui_gm_unit_bigbag"
-                        elseif string.find(targetFormatXml, "ibc") or string.find(targetFormatXml, "liquidtank") then
+                        elseif string.find(pLower, "ibc") or string.find(pLower, "liquidtank") then
                             unitKey = "ui_gm_unit_ibc"
                         end
 
