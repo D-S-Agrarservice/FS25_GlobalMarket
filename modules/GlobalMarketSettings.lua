@@ -87,7 +87,15 @@ end
 -- Helper: Determines the correct XML Node prefix based on the environment.
 -- This allows us to keep SP, MP, and Dedi settings completely separated inside a single XML file.
 function GlobalMarketSettings:getEnvPrefix()
-    if g_dedicatedServerInfo ~= nil then
+    -- Check if we are the Dedicated Server itself
+    local isDedi = (g_dedicatedServer ~= nil)
+
+    -- If we are not the server, check if we are a client connected to a Dedicated Server
+    if not isDedi and g_currentMission ~= nil then
+        isDedi = g_currentMission.connectedToDedicatedServer
+    end
+
+    if isDedi then
         return "globalMarketSettings.profiles.dedi"
     elseif g_currentMission ~= nil and g_currentMission.missionDynamicInfo.isMultiplayer then
         return "globalMarketSettings.profiles.mp"
