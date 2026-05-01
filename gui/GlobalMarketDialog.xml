@@ -32,9 +32,11 @@
                 <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
 
-            <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
-            <!-- NEW: Delivery cost UI element, hidden by default -->
-            <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
+            <!-- NEW: BoxLayout handles vertical stacking dynamically -->
+            <BoxLayout profile="globalMarketTotalsBoxLayout" id="totalsBox">
+                <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
+                <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
+            </BoxLayout>
         </GuiElement>
 
         <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
@@ -104,17 +106,24 @@
             <textColor value="$preset_colorWhite" />
         </Profile>
 
-        <Profile name="globalMarketTotalText" extends="fs25_dialogText" with="anchorTopCenter">
+        <!-- NEW: Box layout profile for dynamic vertical stacking -->
+        <Profile name="globalMarketTotalsBoxLayout" extends="emptyPanel" with="anchorTopCenter">
             <width value="580px" />
-            <position value="0px -330px" />
+            <position value="0px -320px" /> <!-- Base Y-position for the entire block -->
+            <flowType value="vertical" />
+            <itemMargins value="0px 5px" /> <!-- Adds a 5px gap between the text elements -->
+        </Profile>
+
+        <!-- MODIFIED: Removed absolute 'position' attribute, handled by BoxLayout -->
+        <Profile name="globalMarketTotalText" extends="fs25_dialogText">
+            <width value="580px" />
             <textAlignment value="center" />
             <textWrap value="true" />
         </Profile>
 
-        <!-- NEW: Profile for the delivery cost text, positioned slightly below the total text -->
-        <Profile name="globalMarketDeliveryText" extends="fs25_dialogText" with="anchorTopCenter">
+        <!-- MODIFIED: Removed absolute 'position' attribute, handled by BoxLayout -->
+        <Profile name="globalMarketDeliveryText" extends="fs25_dialogText">
             <width value="580px" />
-            <position value="0px -360px" />
             <textAlignment value="center" />
             <textWrap value="true" />
             <textColor value="0.9 0.6 0.1 1" /> <!-- Soft orange to distinguish from total price -->
