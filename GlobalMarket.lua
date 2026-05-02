@@ -125,20 +125,30 @@ source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 -- ENGINE HOOKS & LIFECYCLE
 -- =========================================================================
 
--- Triggered when the player successfully loads into a map (SP or MP Server)
+---Triggered when the player successfully loads into a map (SP or MP Server)
+---@param name string The name of the map being loaded
 function GlobalMarket:loadMap(name)
     if self.debugManager ~= nil then
         self.debugManager:info("Map loading detected. Initializing GlobalMarket core systems...")
     end
 
+    -- Initial state setup
     self.fillTypes = {}
     self.offlineMarketFillTypes = {}
     self.isOnline = false
     self.closeSelectLevelUi = 0
     self.syncModule = self
 
+    -- Register global reference
     g_currentMission.globalMarket = self
 
+    -- 1. MANDATORY: Initialize FileSystem Infrastructure first
+    -- This ensures all path variables (read/write/whitelist) are defined before logic modules access them.
+    if self.initFileSystem ~= nil then
+        self:initFileSystem()
+    end
+
+    -- Load GUI profiles
     if g_gui ~= nil then
         g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
     end
@@ -147,28 +157,28 @@ function GlobalMarket:loadMap(name)
     -- CORE MODULES
     -- =========================================================
 
-    -- 1. Initialize the Central API (Single Source of Truth)
+    -- 2. Initialize the Central API (Single Source of Truth)
     if GlobalMarketAPI ~= nil and GlobalMarketAPI.init ~= nil then
         GlobalMarketAPI.init()
     end
 
-    -- 2. Load settings first so states are available!
+    -- 3. Load settings so global states and costs are available
     if GlobalMarketSettings ~= nil and GlobalMarketSettings.loadFromXML ~= nil then
         GlobalMarketSettings:loadFromXML()
     end
 
-    -- 2.5 Initialize Compatibility Manager and load local/server XML
+    -- 4. Initialize Compatibility Manager and load local/server XML
     if GMCompatibilityManager ~= nil then
         self.compatibilityManager = GMCompatibilityManager.new()
         self.compatibilityManager:loadFromXML()
     end
 
-    -- 3. Initialize Finance system with loaded settings
+    -- 5. Initialize Finance system with loaded settings
     if GlobalMarketFinance ~= nil then
         GlobalMarketFinance.init()
     end
 
-    -- 4. Initialize Access & Permission Hooks
+    -- 6. Initialize Access & Permission Hooks
     if GlobalMarketAccess ~= nil and GlobalMarketAccess.init ~= nil then
         GlobalMarketAccess.init()
     end
@@ -176,10 +186,13 @@ function GlobalMarket:loadMap(name)
     -- =========================================================
     -- OFFLINE MARKET (Local simulation logic)
     -- =========================================================
+
+    -- Now safe to initialize as initFileSystem has provided the required paths
     if self.initOfflineMarket ~= nil then
         self:initOfflineMarket()
 
         -- Build the Server Whitelist based on the fully evaluated offline market
+        -- Requirement: getIsServer must be true to generate the external sync file
         if g_currentMission:getIsServer() and self.initServerWhitelist ~= nil then
             self:initServerWhitelist()
         end
@@ -191,6 +204,8 @@ function GlobalMarket:loadMap(name)
     -- =========================================================
     -- ONLINE MARKET (External sync via .exe)
     -- =========================================================
+
+    -- Initialize the network and polling logic
     if self.initSync ~= nil then
         self:initSync()
     end

@@ -135,8 +135,8 @@
     <!-- FS25 - Global Market Custom Slider Profiles -->
     <!-- Custom slider inheriting from FS25 vanilla, colored in green -->
     <Profile name="globalMarketListSlider" extends="fs25_listSlider">
-        <Value name="sliderImageColor" value="$preset_fs25_colorMainHighlight"/>
-        <Value name="startImageColor" value="$preset_fs25_colorMainHighlight"/>
-        <Value name="endImageColor" value="$preset_fs25_colorMainHighlight"/>
+        <sliderImageColor value="$preset_fs25_colorMainHighlight"/>
+        <startImageColor value="$preset_fs25_colorMainHighlight"/>
+        <endImageColor value="$preset_fs25_colorMainHighlight"/>
     </Profile>
 </GUIProfiles>
