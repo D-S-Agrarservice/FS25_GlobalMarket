@@ -2,7 +2,7 @@
 -- FS25 - GlobalMarket (Sync Module)
 -- Description: Handles dynamic token assignment for external EXE synchronization.
 -- Implements semantic version checking, enriched whitelist generation, and HUD status integration.
--- Enhanced: High-performance polling and event-driven HUD updates for dedicated servers.
+-- Enhanced: Force-Injection method to bypass FS25 HUD initialization timing issues.
 --
 
 function GlobalMarket:initFileSystem()
@@ -10,23 +10,19 @@ function GlobalMarket:initFileSystem()
         self.debugManager:info("Sync: Initializing FileSystem Paths & Directories...")
     end
 
-    -- Base directory for mod configuration
+    -- Base path for mod settings
     local settingsPath = getUserProfileAppPath() .. "modSettings/" .. GlobalMarket.modName .. "/"
 
-    -- Absolute path definitions
+    -- File definitions
     self.isOnlineFile = getUserProfileAppPath() .. "globalMarketOnline.xml"
     self.serverWhitelistFile = settingsPath .. "server_whitelist.xml"
     self.readFolder = settingsPath .. "read/"
     self.writeFolder = settingsPath .. "write/"
 
-    -- Ensure physical folder structure exists on local drive
+    -- Physical directory creation
     createFolder(settingsPath)
     createFolder(self.readFolder)
     createFolder(self.writeFolder)
-
-    if self.debugManager ~= nil then
-        self.debugManager:trace("Sync: FileSystem initialized. Paths: Read=%s, Write=%s", self.readFolder, self.writeFolder)
-    end
 end
 
 function GlobalMarket:initSync()
@@ -34,87 +30,97 @@ function GlobalMarket:initSync()
         self.debugManager:info("Sync: Initializing Dynamic Token System...")
     end
 
-    -- Safety check: Warn if filesystem was not initialized during loadMap
     if self.serverWhitelistFile == nil then
-        if self.debugManager ~= nil then
-            self.debugManager:warning("Sync: FileSystem not ready during initSync! Forcing late initialization...")
-        end
         self:initFileSystem()
     end
 
-    -- Synchronization and authority states
+    -- Network and EXE state tracking
     self.isExeRunningLocal = false
     self.isDataHost = false
     self.dataHostConnection = nil
     self.serverWhitelist = {}
 
-    -- Cycle management
+    -- Polling management
     self.timerData = 0
     self.timerStatus = 0
-    self.intervalData = 1000      -- Polling backend data every 1s
-    self.intervalStatus = 2000    -- Checking EXE heartbeat every 2s
+    self.intervalData = 1000
+    self.intervalStatus = 2000
 
-    -- API Requirements
+    -- Versioning
     self.minExeVersion = "1.0.0.0"
     self.hasShownVersionWarning = false
 
-    -- HUD Integration: Only for clients (non-Dedi)
+    -- UI Integration for local clients
     if g_dedicatedServerInfo == nil then
         self:initStatusHudHooks()
     end
 
-    -- Console Debug API
     addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host)", "consoleCommandTestStatus", self)
 end
 
 -- =========================================================================
--- HUD STATUS INTEGRATION (GameInfoDisplay Hooks)
+-- HUD STATUS INTEGRATION (Force-Injection Method)
 -- =========================================================================
 
 function GlobalMarket:initStatusHudHooks()
-    -- Hook 1: Constructor - Prepare Overlay using guiProfiles.xml definition
-    GameInfoDisplay.new = Utils.appendedFunction(GameInfoDisplay.new, function(display)
-        -- Profile "gui.icon_sync" must exist in guiProfiles.xml
-        display.gmStatusIcon = g_overlayManager:createOverlay("gui.icon_sync", 0, 0, 0, 0)
-        display.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5) -- Initial offline color
-    end)
-
-    -- Hook 2: Cleanup - prevent memory leaks
-    GameInfoDisplay.delete = Utils.appendedFunction(GameInfoDisplay.delete, function(display)
-        if display.gmStatusIcon ~= nil then
-            display.gmStatusIcon:delete()
-            display.gmStatusIcon = nil
+    -- Safety check for the existence of the HUD display component
+    local display = g_currentMission.hud.gameInfoDisplay
+    if display == nil then
+        if self.debugManager ~= nil then
+            self.debugManager:error("HUD Injection failed: gameInfoDisplay instance not found!")
         end
-    end)
+        return
+    end
 
-    -- Hook 3: Scaling - Maintain FS25 48px standard
-    GameInfoDisplay.storeScaledValues = Utils.appendedFunction(GameInfoDisplay.storeScaledValues, function(display)
+    -- 1. Create Overlay immediately on the existing instance
+    -- This forces the engine to validate the path and creates the object in memory
+    display.gmStatusIcon = g_overlayManager:createOverlay("gui.icon_sync", 0, 0, 0, 0)
+    if display.gmStatusIcon == nil then
+        if self.debugManager ~= nil then
+            self.debugManager:error("HUD Injection failed: Could not create overlay 'gui.icon_sync'!")
+        end
+    else
+        display.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5)
+        -- Trigger initial scaling for our injected variables
         display.gmIconWidth, display.gmIconHeight = display:scalePixelValuesToScreenVector(48, 48)
-        if display.gmStatusIcon ~= nil then
-            display.gmStatusIcon:setDimension(display.gmIconWidth, display.gmIconHeight)
+        display.gmStatusIcon:setDimension(display.gmIconWidth, display.gmIconHeight)
+    end
+
+    -- 2. Inject Scaling Logic into the instance
+    display.storeScaledValues = Utils.appendedFunction(display.storeScaledValues, function(target)
+        target.gmIconWidth, target.gmIconHeight = target:scalePixelValuesToScreenVector(48, 48)
+        if target.gmStatusIcon ~= nil then
+            target.gmStatusIcon:setDimension(target.gmIconWidth, target.gmIconHeight)
         end
     end)
 
-    -- Hook 4: Rendering - Optimized draw with minimal logic
-    GameInfoDisplay.draw = Utils.overwrittenFunction(GameInfoDisplay.draw, function(display, superFunc)
-        if not display.isVisible or display.gmStatusIcon == nil then
-            return superFunc(display)
+    -- 3. Direct Draw Override on the instance (RealClock Strategy)
+    local originalDraw = display.draw
+    display.draw = function(target)
+        -- Execute original draw logic to calculate dynamic anchors (like infoBgLeft.x)
+        originalDraw(target)
+
+        if target.isVisible and target.gmStatusIcon ~= nil then
+            -- FS25 positioning: Align to the left of the dynamic InfoBar background
+            local posX = target.infoBgLeft.x - target.gmIconWidth - target.spacing
+            local posY = target.y - target.moneyBgRight.height + target.weatherIconOffsetY
+
+            target.gmStatusIcon:setPosition(posX, posY)
+            target.gmStatusIcon:render()
         end
+    end
 
-        -- Run vanilla rendering (draws background and weather elements)
-        superFunc(display)
-
-        -- Position icon left of weather using info bar anchors
-        local posY = display.y - display.moneyBgRight.height
-        local posX = display.infoBgLeft.x + display.spacing
-
-        display.gmStatusIcon:setPosition(posX, posY + display.weatherIconOffsetY)
-        display.gmStatusIcon:render()
+    -- 4. Cleanup Hook for instance destruction
+    display.delete = Utils.prependedFunction(display.delete, function(target)
+        if target.gmStatusIcon ~= nil then
+            target.gmStatusIcon:delete()
+            target.gmStatusIcon = nil
+        end
     end)
 end
 
 -- =========================================================================
--- UPDATE LOGIC: CONSOLIDATED POLLING
+-- UPDATE LOGIC: PERFORMANCE CONSOLIDATED
 -- =========================================================================
 
 local function isVersionSufficient(currentVersion, minVersion)
@@ -136,7 +142,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
     self.timerData = self.timerData + dt
     self.timerStatus = self.timerStatus + dt
 
-    -- Phase 1: Heartbeat - Update local EXE status (Clients only)
+    -- Phase 1: Heartbeat - Update local EXE status
     if not g_currentMission:getIsServer() and self.timerStatus >= self.intervalStatus then
         self.timerStatus = 0
         local exeRunningNow = false
@@ -159,17 +165,16 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
         if exeRunningNow ~= self.isExeRunningLocal then
             self.isExeRunningLocal = exeRunningNow
-            self:updateHudIconState() -- Trigger optimized HUD color change
+            self:updateHudIconState()
             if ExeStatusEvent ~= nil then
                 g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal))
             end
         end
     end
 
-    -- Phase 2: Processing - File Polling (Data-Host only)
+    -- Phase 2: Processing - backend IO (Data-Host only)
     if self.isDataHost and self.timerData >= self.intervalData then
         self.timerData = 0
-        -- Guarded directory check to minimize IO overhead
         if fileExists(self.readFolder) then
             local files = getFiles(self.readFolder)
             if files ~= nil and #files > 0 then
@@ -199,24 +204,30 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 end
 
 -- =========================================================================
--- OPTIMIZED HUD COLOR MANAGEMENT
+-- HUD STATE MANAGEMENT (Event Driven)
 -- =========================================================================
 
 function GlobalMarket:updateHudIconState()
-    if g_dedicatedServerInfo ~= nil or g_currentMission.hud.display.gmStatusIcon == nil then return end
+    -- Validating HUD instance before access
+    if g_currentMission == nil or g_currentMission.hud == nil or g_currentMission.hud.gameInfoDisplay == nil then
+        return
+    end
 
-    local icon = g_currentMission.hud.display.gmStatusIcon
+    local icon = g_currentMission.hud.gameInfoDisplay.gmStatusIcon
+    if icon == nil then return end
+
+    -- Color assignment based on sync state
     if self.isDataHost then
-        icon:setColor(0.3, 0.8, 0, 1.0) -- Green: Hosting
+        icon:setColor(0.3, 0.8, 0, 1.0) -- Green: Primary Data Source
     elseif self.isExeRunningLocal then
-        icon:setColor(1.0, 0.5, 0, 1.0) -- Orange: Heartbeat Active
+        icon:setColor(1.0, 0.5, 0, 1.0) -- Orange: Local Link Active
     else
-        icon:setColor(0.5, 0.5, 0.5, 0.5) -- Gray: Offline
+        icon:setColor(0.5, 0.5, 0.5, 0.5) -- Gray: Link Lost
     end
 end
 
 -- =========================================================================
--- NETWORKING & WHITELIST GENERATION
+-- NETWORKING & DATA HANDLING
 -- =========================================================================
 
 function GlobalMarket:initServerWhitelist()
@@ -237,10 +248,7 @@ function GlobalMarket:initServerWhitelist()
         end
     end
 
-    if self.debugManager ~= nil then
-        self.debugManager:info("Sync (Server): Discovery whitelist generated (%d items).", #self.serverWhitelist)
-    end
-
+    -- Write whitelist for external EXE discovery
     local xmlFile = XMLFile.create("gmServerWhitelist", self.serverWhitelistFile, "gmServerWhitelist")
     if xmlFile ~= nil then
         for i, item in ipairs(self.serverWhitelist) do
@@ -259,9 +267,6 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning)
     if isExeRunning then
         if self.dataHostConnection == nil then
             self.dataHostConnection = connection
-            if self.debugManager ~= nil then
-                self.debugManager:info("Sync (Server): Connection %s elected as Data-Host.", tostring(connection:getContext()))
-            end
             if SyncMarketWhitelistEvent ~= nil then
                 connection:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist))
             end
@@ -288,10 +293,11 @@ end
 function GlobalMarket:receiveDataHostToken(whitelist)
     self.isDataHost = true
     self.isOnline = true
-    self:updateHudIconState() -- Transition to Green
+    self:updateHudIconState()
 
     if self.writeFolder == nil then return end
 
+    -- Notify backend about becoming the host
     local xmlPath = self.writeFolder .. "whitelist_" .. tostring(math.floor(g_time)) .. ".xml"
     local xmlFile = XMLFile.create("gmWhitelist", xmlPath, "gmDataSync")
     if xmlFile ~= nil then
@@ -308,13 +314,11 @@ function GlobalMarket:receiveDataHostToken(whitelist)
 end
 
 function GlobalMarket:applySyncedMarketData(marketData)
-    local updatedCount = 0
     if self.offlineMarketFillTypes ~= nil then
         for _, incomingItem in ipairs(marketData) do
             for _, localItem in pairs(self.offlineMarketFillTypes) do
                 if localItem.fillType == incomingItem.fillType then
                     localItem.fillLevel = incomingItem.fillLevel
-                    updatedCount = updatedCount + 1
                     break
                 end
             end
