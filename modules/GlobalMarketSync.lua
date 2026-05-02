@@ -72,62 +72,83 @@ function GlobalMarket:initStatusHudHooks()
     end
 
     -- Prevent double injection on script reload
-    if display.gmStatusIcon ~= nil then
+    if display.hasGlobalMarketIcon then
         return
     end
+    display.hasGlobalMarketIcon = true
 
-    -- Resolve the absolute path to the custom status icon image
-    local iconPath = Utils.getFilename("images/menuIcon.png", GlobalMarket.dir)
-
-    -- Use the native Overlay class instead of g_overlayManager to load raw files
-    -- Overlay.new(overlayFilename, x, y, width, height) uses the engine's createImageOverlay
-    display.gmStatusIcon = Overlay.new(iconPath, 0, 0, 0, 0)
-
-    if display.gmStatusIcon == nil or display.gmStatusIcon.overlayId == 0 then
-        if self.debugManager ~= nil then
-            self.debugManager:error("HUD Injection failed: Could not create Overlay from path '%s'!", iconPath)
+    -- Hook into the draw method of GameInfoDisplay
+    display.draw = Utils.appendedFunction(display.draw, function(self)
+        -- Only render if the HUD is actually visible
+        if not self.getVisible or not self:getVisible() then
+            return
         end
-        return
-    end
 
-    -- Set default color state (Inactive/Grey)
-    display.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5)
+        -- Initialize the GlobalMarket overlays if they do not exist yet
+        if self.gmStatusBg == nil then
+            -- Create background overlay using the vanilla white circle slice
+            self.gmStatusBg = g_overlayManager:createOverlay("gui.whiteCircleFilled", 0, 0, 0, 0)
 
-    -- Force initial scaling based on FS25 UI standard size (48px)
-    display.gmIconWidth, display.gmIconHeight = display:scalePixelValuesToScreenVector(48, 48)
-    display.gmStatusIcon:setDimension(display.gmIconWidth, display.gmIconHeight)
+            -- Create icon overlay from local mod file
+            local iconPath = Utils.getFilename("images/menuIcon.png", GlobalMarket.dir)
+            self.gmStatusIcon = Overlay.new(iconPath, 0, 0, 0, 0)
 
-    -- Hook scaling method to react to user changing the UI scale in the game settings
-    display.storeScaledValues = Utils.appendedFunction(display.storeScaledValues, function(target)
-        target.gmIconWidth, target.gmIconHeight = target:scalePixelValuesToScreenVector(48, 48)
-        if target.gmStatusIcon ~= nil then
-            target.gmStatusIcon:setDimension(target.gmIconWidth, target.gmIconHeight)
+            -- Set initial default color state (Inactive/Grey) so it's not invisible
+            self.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5)
         end
+
+        -- Calculate dynamic scaling based on UI scale settings
+        local bgSizeX, bgSizeY = self:scalePixelValuesToScreenVector(42, 42)
+        local iconSizeX, iconSizeY = self:scalePixelValuesToScreenVector(28, 28)
+
+        self.gmStatusBg:setDimension(bgSizeX, bgSizeY)
+        self.gmStatusIcon:setDimension(iconSizeX, iconSizeY)
+
+        -- Set background color to native HUD background color (semi-transparent black)
+        local bgColor = HUD.COLOR.BACKGROUND
+        if bgColor ~= nil then
+            self.gmStatusBg:setColor(bgColor[1], bgColor[2], bgColor[3], bgColor[4])
+        else
+            self.gmStatusBg:setColor(0, 0, 0, 0.8) -- Fallback
+        end
+
+        -- Calculate dynamic position relative to the leftmost part of the GameInfoDisplay
+        local paddingX = self:scalePixelToScreenWidth(15)
+        local targetBgX = self.infoBgLeft.x - bgSizeX - paddingX
+
+        -- Center vertically relative to the base posY of the GameInfoDisplay
+        local _, posY = self:getPosition()
+        posY = posY - self.moneyBgRight.height -- Adjust for the HUD box height
+        local targetBgY = posY + (self.infoBgLeft.height * 0.5) - (bgSizeY * 0.5)
+
+        self.gmStatusBg:setPosition(targetBgX, targetBgY)
+
+        -- Center the icon inside the background circle
+        local targetIconX = targetBgX + (bgSizeX * 0.5) - (iconSizeX * 0.5)
+        local targetIconY = targetBgY + (bgSizeY * 0.5) - (iconSizeY * 0.5)
+
+        self.gmStatusIcon:setPosition(targetIconX, targetIconY)
+
+        -- Render the overlays (background first, then icon)
+        self.gmStatusBg:render()
+        self.gmStatusIcon:render()
     end)
 
-    -- Inject direct draw method
-    local originalDraw = display.draw
-    display.draw = function(target)
-        -- Execute original draw to let the engine calculate dynamic anchor positions
-        originalDraw(target)
-
-        if target.isVisible and target.gmStatusIcon ~= nil then
-            -- Position dynamically based on the left background edge and weather icon Y-axis
-            local posX = target.infoBgLeft.x - target.gmIconWidth - target.spacing
-            local posY = target.y + target.weatherIconOffsetY
-
-            target.gmStatusIcon:setPosition(posX, posY)
-            target.gmStatusIcon:render()
+    -- Hook into the delete method to prevent memory leaks
+    display.delete = Utils.prependedFunction(display.delete, function(self)
+        if self.gmStatusBg ~= nil then
+            self.gmStatusBg:delete()
+            self.gmStatusBg = nil
         end
-    end
-
-    -- Prevent memory leaks upon UI destruction
-    display.delete = Utils.prependedFunction(display.delete, function(target)
-        if target.gmStatusIcon ~= nil then
-            target.gmStatusIcon:delete()
-            target.gmStatusIcon = nil
+        if self.gmStatusIcon ~= nil then
+            self.gmStatusIcon:delete()
+            self.gmStatusIcon = nil
         end
+        self.hasGlobalMarketIcon = false
     end)
+
+    -- Force initial status update to color the icon immediately
+    self:updateHudIconState()
 end
 
 -- =========================================================================
