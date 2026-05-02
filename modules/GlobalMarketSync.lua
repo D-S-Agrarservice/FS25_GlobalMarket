@@ -2,10 +2,9 @@
 -- FS25 - GlobalMarket (Sync Module)
 -- Description: Handles dynamic token assignment for external EXE synchronization.
 -- Implements semantic version checking and local pricing strategies.
--- Corrected: Segregated FileSystem initialization to prevent Nil-Pointer access during early boot.
+-- Enhanced: Comprehensive logging for Trace and Debug levels to monitor Dedi-Server stability.
 --
 
--- Initializing path variables at module level to ensure visibility
 function GlobalMarket:initFileSystem()
     if self.debugManager ~= nil then
         self.debugManager:info("Sync: Initializing FileSystem Paths & Directories...")
@@ -19,6 +18,10 @@ function GlobalMarket:initFileSystem()
     self.serverWhitelistFile = settingsPath .. "server_whitelist.xml"
     self.readFolder = settingsPath .. "read/"
     self.writeFolder = settingsPath .. "write/"
+
+    if self.debugManager ~= nil then
+        self.debugManager:trace("Sync: Path configuration: OnlineFile=%s, Read=%s, Write=%s", self.isOnlineFile, self.readFolder, self.writeFolder)
+    end
 
     -- Ensure physical directories exist
     createFolder(settingsPath)
@@ -85,7 +88,6 @@ end
 function GlobalMarket:initServerWhitelist()
     if not g_currentMission:getIsServer() then return end
 
-    -- Critical Safety: Prevent XML engine crash if paths are not initialized
     if self.serverWhitelistFile == nil then
         if self.debugManager ~= nil then
             self.debugManager:error("Sync (Server): Cannot generate Whitelist. FileSystem not initialized!")
@@ -111,7 +113,7 @@ function GlobalMarket:initServerWhitelist()
     end
 
     if self.debugManager ~= nil then
-        self.debugManager:info("Sync (Server): Generated enriched whitelist with %d items. Saving to %s", #self.serverWhitelist, self.serverWhitelistFile)
+        self.debugManager:info("Sync (Server): Generated enriched whitelist with %d items.", #self.serverWhitelist)
     end
 
     local xmlFile = XMLFile.create("gmServerWhitelist", self.serverWhitelistFile, "gmServerWhitelist")
@@ -124,6 +126,9 @@ function GlobalMarket:initServerWhitelist()
         end
         xmlFile:save()
         xmlFile:delete()
+        if self.debugManager ~= nil then
+            self.debugManager:debug("Sync (Server): Whitelist persisted to XML.")
+        end
     end
 end
 
@@ -135,6 +140,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
     self.timerData = self.timerData + dt
     self.timerStatus = self.timerStatus + dt
 
+    -- 1. Check local EXE status
     if not g_currentMission:getIsServer() and self.timerStatus >= self.intervalStatus then
         self.timerStatus = 0
         local exeRunningNow = false
@@ -148,6 +154,10 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 exeRunningNow = isVersionSufficient(exeVersion, self.minExeVersion)
 
                 if not exeRunningNow and exeVersion ~= nil then
+                    if self.debugManager ~= nil then
+                        self.debugManager:warning("Sync: Local EXE version %s is outdated. Required: %s", exeVersion, self.minExeVersion)
+                    end
+
                     if not self.hasShownVersionWarning and g_currentMission ~= nil then
                         local msg = g_i18n:getText("ui_gm_warning_exe_outdated")
                         if msg == nil or msg == "ui_gm_warning_exe_outdated" then
@@ -164,18 +174,26 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
         if exeRunningNow ~= self.isExeRunningLocal then
             self.isExeRunningLocal = exeRunningNow
+            if self.debugManager ~= nil then
+                self.debugManager:debug("Sync: Local EXE status changed to: %s", tostring(exeRunningNow))
+            end
             if ExeStatusEvent ~= nil then
                 g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal))
             end
         end
     end
 
+    -- 2. Data Host Processing
     if self.isDataHost and self.timerData >= self.intervalData then
         self.timerData = 0
 
         local files = getFiles(self.readFolder)
         if files ~= nil and #files > 0 then
             local newMarketData = {}
+
+            if self.debugManager ~= nil then
+                self.debugManager:trace("Sync (Data-Host): Found %d files in read folder.", #files)
+            end
 
             for _, filename in pairs(files) do
                 local fullPath = self.readFolder .. filename
@@ -187,11 +205,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                         xmlFile:iterate("gmDataSync.fillTypes.fillType", function (_, baseKey)
                             local ftName = xmlFile:getString(baseKey .. "#fillType")
                             local ftLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0
-
-                            table.insert(newMarketData, {
-                                fillType = ftName,
-                                fillLevel = ftLevel
-                            })
+                            table.insert(newMarketData, { fillType = ftName, fillLevel = ftLevel })
                         end)
                     end
                     xmlFile:delete()
@@ -200,6 +214,9 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             end
 
             if #newMarketData > 0 and MarketDataSyncEvent ~= nil then
+                if self.debugManager ~= nil then
+                    self.debugManager:debug("Sync (Data-Host): Dispatching MarketDataSyncEvent with %d items.", #newMarketData)
+                end
                 g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData))
             end
         end
@@ -216,6 +233,9 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning)
     if isExeRunning then
         if self.dataHostConnection == nil then
             self.dataHostConnection = connection
+            if self.debugManager ~= nil then
+                self.debugManager:info("Sync (Server): Connection %s elected as Data-Host.", tostring(connection:getContext()))
+            end
             if SyncMarketWhitelistEvent ~= nil then
                 connection:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist))
             end
@@ -228,6 +248,9 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning)
         if self.dataHostConnection == connection then
             self.dataHostConnection = nil
             self.isOnline = false
+            if self.debugManager ~= nil then
+                self.debugManager:info("Sync (Server): Data-Host stopped EXE. Reverting to offline mode.")
+            end
             if g_currentMission.globalMarketUi ~= nil then
                 g_currentMission.globalMarketUi:updateContent()
             end
@@ -239,6 +262,9 @@ function GlobalMarket:onClientDisconnected(connection)
     if g_currentMission:getIsServer() and self.dataHostConnection == connection then
         self.dataHostConnection = nil
         self.isOnline = false
+        if self.debugManager ~= nil then
+            self.debugManager:warning("Sync (Server): Data-Host disconnected. Sync disabled.")
+        end
         if g_currentMission.globalMarketUi ~= nil then
             g_currentMission.globalMarketUi:updateContent()
         end
@@ -252,6 +278,10 @@ end
 function GlobalMarket:receiveDataHostToken(whitelist)
     self.isDataHost = true
     self.isOnline = true
+
+    if self.debugManager ~= nil then
+        self.debugManager:info("Sync (Client): Successfully received Data-Host Token.")
+    end
 
     if self.writeFolder == nil then return end
 
@@ -268,6 +298,9 @@ function GlobalMarket:receiveDataHostToken(whitelist)
         end
         xmlFile:save()
         xmlFile:delete()
+        if self.debugManager ~= nil then
+            self.debugManager:debug("Sync (Client): Whitelist written for EXE registration.")
+        end
     end
 end
 
@@ -287,6 +320,10 @@ function GlobalMarket:applySyncedMarketData(marketData)
                 end
             end
         end
+    end
+
+    if self.debugManager ~= nil then
+        self.debugManager:debug("Sync: Applied %d synced global stock levels.", updatedCount)
     end
 
     if self.updateOfflinePrices ~= nil then
