@@ -240,6 +240,11 @@ local function onFinishedLoading(mission)
             g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
         end
 
+        -- Inject HUD Icon Status safely after engine UI is fully initialized
+        if g_currentMission.globalMarket.initStatusHudHooks ~= nil then
+            g_currentMission.globalMarket:initStatusHudHooks()
+        end
+
         if GlobalMarketUI ~= nil then
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:info("Injecting GlobalMarket UI into native game menu...")

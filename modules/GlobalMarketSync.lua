@@ -2,7 +2,7 @@
 -- FS25 - GlobalMarket (Sync Module)
 -- Description: Handles dynamic token assignment for external EXE synchronization.
 -- Implements semantic version checking, enriched whitelist generation, and HUD status integration.
--- Enhanced: Force-Injection method to bypass FS25 HUD initialization timing issues.
+-- Enhanced: Instance-Injection method to safely bypass FS25 HUD initialization timing issues.
 --
 
 function GlobalMarket:initFileSystem()
@@ -50,21 +50,20 @@ function GlobalMarket:initSync()
     self.minExeVersion = "1.0.0.0"
     self.hasShownVersionWarning = false
 
-    -- UI Integration for local clients
-    if g_dedicatedServerInfo == nil then
-        self:initStatusHudHooks()
-    end
+    -- Note: HUD injection (self:initStatusHudHooks()) has been moved to onFinishedLoading in gm.lua
+    -- to ensure g_currentMission.hud.gameInfoDisplay is fully initialized before access.
 
     addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host)", "consoleCommandTestStatus", self)
 end
 
 -- =========================================================================
--- HUD STATUS INTEGRATION (Force-Injection Method)
+-- HUD STATUS INTEGRATION (Instance Injection Method)
 -- =========================================================================
 
 function GlobalMarket:initStatusHudHooks()
-    -- Safety check for the existence of the HUD display component
     local display = g_currentMission.hud.gameInfoDisplay
+
+    -- Abort if the instance does not exist
     if display == nil then
         if self.debugManager ~= nil then
             self.debugManager:error("HUD Injection failed: gameInfoDisplay instance not found!")
@@ -72,21 +71,33 @@ function GlobalMarket:initStatusHudHooks()
         return
     end
 
-    -- 1. Create Overlay immediately on the existing instance
-    -- This forces the engine to validate the path and creates the object in memory
-    display.gmStatusIcon = g_overlayManager:createOverlay("gui.icon_sync", 0, 0, 0, 0)
-    if display.gmStatusIcon == nil then
-        if self.debugManager ~= nil then
-            self.debugManager:error("HUD Injection failed: Could not create overlay 'gui.icon_sync'!")
-        end
-    else
-        display.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5)
-        -- Trigger initial scaling for our injected variables
-        display.gmIconWidth, display.gmIconHeight = display:scalePixelValuesToScreenVector(48, 48)
-        display.gmStatusIcon:setDimension(display.gmIconWidth, display.gmIconHeight)
+    -- Prevent double injection on script reload
+    if display.gmStatusIcon ~= nil then
+        return
     end
 
-    -- 2. Inject Scaling Logic into the instance
+    -- Resolve the absolute path to the custom status icon image
+    local iconPath = Utils.getFilename("images/menuIcon.png", GlobalMarket.dir)
+
+    -- Use the native Overlay class instead of g_overlayManager to load raw files
+    -- Overlay.new(overlayFilename, x, y, width, height) uses the engine's createImageOverlay
+    display.gmStatusIcon = Overlay.new(iconPath, 0, 0, 0, 0)
+
+    if display.gmStatusIcon == nil or display.gmStatusIcon.overlayId == 0 then
+        if self.debugManager ~= nil then
+            self.debugManager:error("HUD Injection failed: Could not create Overlay from path '%s'!", iconPath)
+        end
+        return
+    end
+
+    -- Set default color state (Inactive/Grey)
+    display.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5)
+
+    -- Force initial scaling based on FS25 UI standard size (48px)
+    display.gmIconWidth, display.gmIconHeight = display:scalePixelValuesToScreenVector(48, 48)
+    display.gmStatusIcon:setDimension(display.gmIconWidth, display.gmIconHeight)
+
+    -- Hook scaling method to react to user changing the UI scale in the game settings
     display.storeScaledValues = Utils.appendedFunction(display.storeScaledValues, function(target)
         target.gmIconWidth, target.gmIconHeight = target:scalePixelValuesToScreenVector(48, 48)
         if target.gmStatusIcon ~= nil then
@@ -94,23 +105,23 @@ function GlobalMarket:initStatusHudHooks()
         end
     end)
 
-    -- 3. Direct Draw Override on the instance (RealClock Strategy)
+    -- Inject direct draw method
     local originalDraw = display.draw
     display.draw = function(target)
-        -- Execute original draw logic to calculate dynamic anchors (like infoBgLeft.x)
+        -- Execute original draw to let the engine calculate dynamic anchor positions
         originalDraw(target)
 
         if target.isVisible and target.gmStatusIcon ~= nil then
-            -- FS25 positioning: Align to the left of the dynamic InfoBar background
+            -- Position dynamically based on the left background edge and weather icon Y-axis
             local posX = target.infoBgLeft.x - target.gmIconWidth - target.spacing
-            local posY = target.y - target.moneyBgRight.height + target.weatherIconOffsetY
+            local posY = target.y + target.weatherIconOffsetY
 
             target.gmStatusIcon:setPosition(posX, posY)
             target.gmStatusIcon:render()
         end
     end
 
-    -- 4. Cleanup Hook for instance destruction
+    -- Prevent memory leaks upon UI destruction
     display.delete = Utils.prependedFunction(display.delete, function(target)
         if target.gmStatusIcon ~= nil then
             target.gmStatusIcon:delete()

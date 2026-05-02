@@ -139,14 +139,4 @@
         <startImageColor value="$preset_fs25_colorMainHighlight"/>
         <endImageColor value="$preset_fs25_colorMainHighlight"/>
     </Profile>
-
-    <!-- GlobalMarket Status Icon for GameInfoDisplay -->
-    <Profile name="gui.icon_sync" extends="baseReference">
-        <size value="48px 48px"/>
-        <imageUVs value="0 0 1 1"/>
-        <imageColor value="1 1 1 1"/>
-        <imageSliceId value="noSlice"/>
-        <!-- Ensure this path points to your actual status icon file -->
-        <imageFilename value="$moddir$FS25_GlobalMarket/images/menuIcon.png"/>
-    </Profile>
 </GUIProfiles>
