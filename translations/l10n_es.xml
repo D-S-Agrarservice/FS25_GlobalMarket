@@ -45,6 +45,8 @@
         <e k="ui_gm_settings_detailedFinance"                      v="Estadísticas financieras detalladas" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Activa un desglose de las transacciones de GlobalMarket por categoría de bienes en la vista general financiera. (¡Requiere recargar la partida!)" />
         <e k="ui_gm_settings_header"                               v="MERCADO GLOBAL" />
+        <e k="ui_gm_settings_iconPulse"                            v="Icono de estado: Pulso" />
+        <e k="ui_gm_settings_iconPulse_desc"                       v="Activa un suave efecto de pulso en el icono al recibir datos." />
         <e k="ui_gm_settings_literCost"                            v="Gastos de envío: Precio por litro" />
         <e k="ui_gm_settings_literCost_desc"                       v="Establece los costes de transporte adicionales por litro comerciado." />
         <e k="ui_gm_settings_system_header"                        v="GM Sistema y Compatibilidad" />

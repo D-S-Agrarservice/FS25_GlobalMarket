@@ -45,6 +45,8 @@
         <e k="ui_gm_settings_detailedFinance"                      v="Detailed Finance Statistics" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Activates a breakdown of GlobalMarket transactions by goods category in the finance overview. (Requires a savegame reload!)" />
         <e k="ui_gm_settings_header"                               v="GLOBAL MARKET" />
+        <e k="ui_gm_settings_iconPulse"                            v="Status Icon: Pulse" />
+        <e k="ui_gm_settings_iconPulse_desc"                       v="Enables a soft pulsing effect on the icon when receiving data." />
         <e k="ui_gm_settings_literCost"                            v="Delivery Costs: Price per Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Sets the additional transport costs per traded liter." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Compatibility" />

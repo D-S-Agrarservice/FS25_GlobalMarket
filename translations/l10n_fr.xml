@@ -45,6 +45,8 @@
         <e k="ui_gm_settings_detailedFinance"                      v="Statistiques financières détaillées" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Active une répartition des transactions du GlobalMarket par catégorie de biens dans l'aperçu financier. (Nécessite le rechargement de la partie !)" />
         <e k="ui_gm_settings_header"                               v="MARCHÉ GLOBAL" />
+        <e k="ui_gm_settings_iconPulse"                            v="Icône d'état : Impulsion" />
+        <e k="ui_gm_settings_iconPulse_desc"                       v="Active un doux effet d'impulsion sur l'icône lors de la réception de données." />
         <e k="ui_gm_settings_literCost"                            v="Frais de livraison : Prix par litre" />
         <e k="ui_gm_settings_literCost_desc"                       v="Définit les frais de transport supplémentaires par litre échangé." />
         <e k="ui_gm_settings_system_header"                        v="GM Système &amp; Compatibilité" />

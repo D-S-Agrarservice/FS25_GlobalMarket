@@ -45,6 +45,8 @@
         <e k="ui_gm_settings_detailedFinance"                      v="Detaillierte Finanzstatistik" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Aktiviert eine nach Güterklassen aufgeteilte Auflistung der GlobalMarket-Transaktionen in der Finanzübersicht. (Erfordert ein Neuladen des Spielstands!)" />
         <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
+        <e k="ui_gm_settings_iconPulse"                            v="Status-Icon: Pulsieren" />
+        <e k="ui_gm_settings_iconPulse_desc"                       v="Aktiviert ein sanftes Pulsieren des Icons bei Datenempfang." />
         <e k="ui_gm_settings_literCost"                            v="Lieferkosten: Preis pro Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Legt die zusätzlichen Transportkosten pro gehandeltem Liter fest." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatibilität" />

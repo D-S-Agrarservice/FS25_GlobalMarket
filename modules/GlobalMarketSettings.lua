@@ -27,7 +27,8 @@ GlobalMarketSettings.current = {
     debugLevelIndex = 1,   -- Default: Info
     debugDurationIndex = 1, -- Default: 1 Hour
     isDetailedFinance = false, -- Default: Off (Simple Finance)
-    compatModeIndex = 3    -- Default: Strict (Auto-resolve known conflicts)
+    compatModeIndex = 3,    -- Default: Strict (Auto-resolve known conflicts)
+    isIconPulseActive = true -- Default: On
 }
 
 -- Gets default indices based on the game's economic difficulty
@@ -119,6 +120,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.debugLevelIndex = 1
         self.current.debugDurationIndex = 1
         self.current.compatModeIndex = 3
+        self.current.isIconPulseActive = true
 
         self:saveToXML()
         self:applyDebugSettings()
@@ -147,6 +149,7 @@ function GlobalMarketSettings:loadFromXML()
 
         -- Load Compatibility Setting
         self.current.compatModeIndex = xmlFile:getInt(prefix .. ".compatibility#modeIndex", 3)
+        self.current.isIconPulseActive = xmlFile:getBool(prefix .. "#isIconPulseActive", true)
 
         -- Apply loaded values to active global variables
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
@@ -193,6 +196,7 @@ function GlobalMarketSettings:saveToXML()
 
         -- Save Compatibility Setting
         xmlFile:setInt(prefix .. ".compatibility#modeIndex", self.current.compatModeIndex)
+        xmlFile:setBool(prefix .. "#isIconPulseActive", self.current.isIconPulseActive)
 
         -- Write to disk and cleanup
         xmlFile:save()
@@ -315,9 +319,11 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
 
         -- 3. COMPATIBILITY SETTINGS
         GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_system_header")
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsIconPulse", "ui_gm_settings_iconPulse", "ui_gm_settings_iconPulse_desc", "onIconPulseChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode", "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged")
 
         -- 4. DEBUG MODE
+        GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_debug_header")
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
@@ -364,6 +370,13 @@ function GlobalMarketSettings.refreshMenuState()
         financeControl:setDisabled(not isAdmin)
     end
 
+    -- System Controls
+    local iconPulseControl = GlobalMarketSettings.CONTROLS["gmSettingsIconPulse"]
+    if iconPulseControl ~= nil then
+        iconPulseControl:setState(GlobalMarketSettings.current.isIconPulseActive and 2 or 1)
+        iconPulseControl:setDisabled(not isAdmin)
+    end
+
     -- Compatibility Controls
     local compatControl = GlobalMarketSettings.CONTROLS["gmSettingsCompatMode"]
     if compatControl ~= nil then
@@ -400,10 +413,9 @@ function GlobalMarketSettings:broadcastChanges()
     local c = self.current
     if g_server ~= nil then
         self:saveToXML()
-        -- IMPORTANT: Added c.compatModeIndex to the broadcast payload!
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex))
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive))
     else
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive))
     end
 end
 
@@ -427,6 +439,11 @@ function GlobalMarketSettings:onDetailedFinanceChanged(state)
     self.current.isDetailedFinance = (state == 2)
     self:broadcastChanges()
     self.refreshMenuState()
+end
+
+function GlobalMarketSettings:onIconPulseChanged(state)
+    self.current.isIconPulseActive = (state == 2)
+    self:broadcastChanges()
 end
 
 function GlobalMarketSettings:onCompatModeChanged(state)

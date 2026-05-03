@@ -36,6 +36,7 @@ function GlobalMarket:initSync()
 
     -- Network and EXE state tracking
     self.isExeRunningLocal = false
+    self.hasBackendConnection = false -- Tracks connection state to external backend
     self.isDataHost = false
     self.dataHostConnection = nil
     self.serverWhitelist = {}
@@ -77,6 +78,11 @@ function GlobalMarket:initStatusHudHooks()
     end
     display.hasGlobalMarketIcon = true
 
+    -- Local reference for the hook
+    local syncModule = self
+    -- Default color values (Gray)
+    syncModule.iconColorR, syncModule.iconColorG, syncModule.iconColorB = 0.5, 0.5, 0.5
+
     -- Hook into the draw method of GameInfoDisplay
     display.draw = Utils.appendedFunction(display.draw, function(self)
         -- Only render if the HUD is actually visible
@@ -92,9 +98,6 @@ function GlobalMarket:initStatusHudHooks()
             -- Create icon overlay from local mod file
             local iconPath = Utils.getFilename("images/menuIcon.png", GlobalMarket.dir)
             self.gmStatusIcon = Overlay.new(iconPath, 0, 0, 0, 0)
-
-            -- Set initial default color state (Inactive/Grey) so it's not invisible
-            self.gmStatusIcon:setColor(0.5, 0.5, 0.5, 0.5)
         end
 
         -- Calculate dynamic scaling based on UI scale settings
@@ -128,6 +131,18 @@ function GlobalMarket:initStatusHudHooks()
         local targetIconY = targetBgY + (bgSizeY * 0.5) - (iconSizeY * 0.5)
 
         self.gmStatusIcon:setPosition(targetIconX, targetIconY)
+
+        -- Determine alpha for pulsing effect
+        local alpha = 1.0
+        if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil and GlobalMarketSettings.current.isIconPulseActive then
+            if syncModule.syncPulseTimer ~= nil and syncModule.syncPulseTimer > g_time then
+                -- Calculate fading effect using sine wave between 0.2 and 1.0
+                alpha = 0.2 + 0.8 * math.abs(math.sin(g_time / 150))
+            end
+        end
+
+        -- Apply color state and alpha
+        self.gmStatusIcon:setColor(syncModule.iconColorR, syncModule.iconColorG, syncModule.iconColorB, alpha)
 
         -- Render the overlays (background first, then icon)
         self.gmStatusBg:render()
@@ -178,11 +193,16 @@ function GlobalMarket:runSyncUpdateLogic(dt)
     if not g_currentMission:getIsServer() and self.timerStatus >= self.intervalStatus then
         self.timerStatus = 0
         local exeRunningNow = false
+        local backendConnectedNow = false
 
         if fileExists(self.isOnlineFile) then
             local xmlFile = XMLFile.load("globalMarketOnline", self.isOnlineFile)
             if xmlFile ~= nil then
                 local exeVersion = xmlFile:getString("globalMarketOnline.version")
+
+                -- Read backend connection state (default to true for legacy support)
+                backendConnectedNow = xmlFile:getBool("globalMarketOnline#isConnected", true)
+
                 xmlFile:delete()
                 exeRunningNow = isVersionSufficient(exeVersion, self.minExeVersion)
 
@@ -195,11 +215,16 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             end
         end
 
-        if exeRunningNow ~= self.isExeRunningLocal then
+        -- Check if either EXE status or backend connection state changed
+        if exeRunningNow ~= self.isExeRunningLocal or backendConnectedNow ~= self.hasBackendConnection then
             self.isExeRunningLocal = exeRunningNow
+            self.hasBackendConnection = backendConnectedNow
+
             self:updateHudIconState()
+
             if ExeStatusEvent ~= nil then
-                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal))
+                -- Note: ExeStatusEvent must be updated to support the second parameter (self.hasBackendConnection)
+                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection))
             end
         end
     end
@@ -240,21 +265,16 @@ end
 -- =========================================================================
 
 function GlobalMarket:updateHudIconState()
-    -- Validating HUD instance before access
-    if g_currentMission == nil or g_currentMission.hud == nil or g_currentMission.hud.gameInfoDisplay == nil then
-        return
-    end
-
-    local icon = g_currentMission.hud.gameInfoDisplay.gmStatusIcon
-    if icon == nil then return end
-
-    -- Color assignment based on sync state
     if self.isDataHost then
-        icon:setColor(0.3, 0.8, 0, 1.0) -- Green: Primary Data Source
+        self.iconColorR, self.iconColorG, self.iconColorB = 0.3, 0.8, 0.0 -- Green (All OK, Master)
     elseif self.isExeRunningLocal then
-        icon:setColor(1.0, 0.5, 0, 1.0) -- Orange: Local Link Active
+        if self.hasBackendConnection == false then
+            self.iconColorR, self.iconColorG, self.iconColorB = 1.0, 0.0, 0.0 -- Red (EXE running, but no backend connection)
+        else
+            self.iconColorR, self.iconColorG, self.iconColorB = 1.0, 0.5, 0.0 -- Orange (EXE running, connected, not host)
+        end
     else
-        icon:setColor(0.5, 0.5, 0.5, 0.5) -- Gray: Link Lost
+        self.iconColorR, self.iconColorG, self.iconColorB = 0.5, 0.5, 0.5 -- Gray (No local EXE)
     end
 end
 
@@ -294,9 +314,11 @@ function GlobalMarket:initServerWhitelist()
     end
 end
 
-function GlobalMarket:handleClientExeStatus(connection, isExeRunning)
+function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection)
     if not g_currentMission:getIsServer() then return end
-    if isExeRunning then
+
+    -- Verify the connection parameters depending on the actual client state
+    if isExeRunning and hasBackendConnection ~= false then
         if self.dataHostConnection == nil then
             self.dataHostConnection = connection
             if SyncMarketWhitelistEvent ~= nil then
@@ -346,6 +368,9 @@ function GlobalMarket:receiveDataHostToken(whitelist)
 end
 
 function GlobalMarket:applySyncedMarketData(marketData)
+    -- Trigger UI pulse effect for 2000 milliseconds
+    self.syncPulseTimer = g_time + 2000
+
     if self.offlineMarketFillTypes ~= nil then
         for _, incomingItem in ipairs(marketData) do
             for _, localItem in pairs(self.offlineMarketFillTypes) do
@@ -369,12 +394,19 @@ function GlobalMarket:consoleCommandTestStatus(val)
     if state == 0 then
         self.isExeRunningLocal = false
         self.isDataHost = false
+        self.hasBackendConnection = false
     elseif state == 1 then
         self.isExeRunningLocal = true
         self.isDataHost = false
+        self.hasBackendConnection = true
     elseif state == 2 then
         self.isExeRunningLocal = true
         self.isDataHost = true
+        self.hasBackendConnection = true
+    elseif state == 3 then
+        self.isExeRunningLocal = true
+        self.isDataHost = false
+        self.hasBackendConnection = false
     end
     self:updateHudIconState()
     return string.format("GM Status Test Mode: %d", state)

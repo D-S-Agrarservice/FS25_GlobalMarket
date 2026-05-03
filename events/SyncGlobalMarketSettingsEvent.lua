@@ -11,7 +11,7 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex)
+function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -19,7 +19,8 @@ function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, is
     self.isDebug = isDebug
     self.debugLevel = debugLevel
     self.debugDur = debugDur
-    self.compatModeIndex = compatModeIndex or 3 -- Default to Strict if nil
+    self.compatModeIndex = compatModeIndex or 3
+    self.isIconPulse = isIconPulse
     return self
 end
 
@@ -31,6 +32,7 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.debugLevel)
     streamWriteInt8(streamId, self.debugDur)
     streamWriteInt8(streamId, self.compatModeIndex)
+    streamWriteBool(streamId, self.isIconPulse)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -41,6 +43,7 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.debugLevel = streamReadInt8(streamId)
     self.debugDur = streamReadInt8(streamId)
     self.compatModeIndex = streamReadInt8(streamId)
+    self.isIconPulse = streamReadBool(streamId)
     self:run(connection)
 end
 
@@ -57,7 +60,6 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     end
 
     -- 1. DETECT CHANGES BEFORE APPLYING
-    -- Check what exactly the Admin changed to trigger the correct on-screen broadcast
     local financeChanged = false
     local deliveryChanged = false
     local compatChanged = false
@@ -76,12 +78,12 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.debugLevelIndex = self.debugLevel
     GlobalMarketSettings.current.debugDurationIndex = self.debugDur
     GlobalMarketSettings.current.compatModeIndex = self.compatModeIndex
+    GlobalMarketSettings.current.isIconPulseActive = self.isIconPulse
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
     GlobalMarket.DELIVER_COST_PERLITER = GlobalMarketSettings.OPTIONS.DELIVERY_LITER[self.literIndex]
 
-    -- Update Finance Module Cache immediately to ensure the next transaction uses the correct MoneyType
     if GlobalMarketFinance ~= nil then
         GlobalMarketFinance.isDetailedCached = self.isDetailed
     end
@@ -94,52 +96,37 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         GlobalMarketSettings:refreshMenuState()
     end
 
-    -- Dynamically notify the compatibility manager to re-evaluate current mods if the setting changed
     if compatChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.compatibilityManager ~= nil then
         g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
     end
 
     -- 3. NETWORK & BROADCAST LOGIC
     if not connection:getIsServer() then
-        -- SERVER SIDE: Save to XML and broadcast to all others
+        -- SERVER SIDE
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex), nil, connection, nil)
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse), nil, connection, nil)
     else
-        -- CLIENT SIDE: We received the broadcast from the server.
-
-        -- Save settings to the local disk persistently using the existing save function.
+        -- CLIENT SIDE
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
 
-        -- Trigger specific On-Screen Broadcast based on what actually changed
         if g_currentMission ~= nil then
             if financeChanged and deliveryChanged then
                 local msg = g_i18n:getText("ui_gm_notification_settings_both")
-                if msg == nil or msg == "ui_gm_notification_settings_both" then
-                    msg = "GlobalMarket: Delivery costs updated. (Finance stats require restart!)"
-                end
+                if msg == nil or msg == "ui_gm_notification_settings_both" then msg = "GlobalMarket: Delivery costs updated. (Finance stats require restart!)" end
                 g_currentMission:showBlinkingWarning(msg, 6000)
-
             elseif financeChanged then
                 local msg = g_i18n:getText("ui_gm_notification_settings_finance")
-                if msg == nil or msg == "ui_gm_notification_settings_finance" then
-                    msg = "GlobalMarket: Finance stats updated! (Requires game restart)"
-                end
+                if msg == nil or msg == "ui_gm_notification_settings_finance" then msg = "GlobalMarket: Finance stats updated! (Requires game restart)" end
                 g_currentMission:showBlinkingWarning(msg, 5000)
-
             elseif deliveryChanged then
                 local msg = g_i18n:getText("ui_gm_notification_settings_delivery")
-                if msg == nil or msg == "ui_gm_notification_settings_delivery" then
-                    msg = "GlobalMarket: Delivery costs have been updated!"
-                end
+                if msg == nil or msg == "ui_gm_notification_settings_delivery" then msg = "GlobalMarket: Delivery costs have been updated!" end
                 g_currentMission:showBlinkingWarning(msg, 5000)
             end
-
-            -- Optional: We don't necessarily need a blinking warning for Compatibility changes,
-            -- as it's an admin backend setting, but the logic is here if you want to add one.
         end
     end
 end
