@@ -25,7 +25,6 @@ function InitGlobalMarketSettingsEvent:readStream(streamId, connection)
 end
 
 function InitGlobalMarketSettingsEvent:run(connection)
-
     if not connection:getIsServer() then
         if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
             local s = GlobalMarketSettings.current
@@ -35,7 +34,9 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.isDetailedFinance, 
                 s.isDebugActive, 
                 s.debugLevelIndex, 
-                s.debugDurationIndex
+                s.debugDurationIndex,
+                s.compatModeIndex,      -- Added missing compatModeIndex
+                s.isIconPulseActive     -- Added missing isIconPulseActive
             ))
         end
     end
