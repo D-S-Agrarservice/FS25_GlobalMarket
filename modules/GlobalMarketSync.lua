@@ -3,6 +3,7 @@
 -- Description: Handles dynamic token assignment for external EXE synchronization.
 -- Implements semantic version checking, enriched whitelist generation, and HUD status integration.
 -- Enhanced: Instance-Injection method to safely bypass FS25 HUD initialization timing issues.
+-- Added: Unix Timestamp validation (Anti-Zombie) and Transaction Cooldown handling.
 --
 
 function GlobalMarket:initFileSystem()
@@ -41,6 +42,10 @@ function GlobalMarket:initSync()
     self.dataHostConnection = nil
     self.serverWhitelist = {}
 
+    -- Transaction Management
+    self.lastTransactionTime = 0 -- Unix timestamp of the last executed transaction
+    self.transactionCooldown = 15 -- 15 seconds rate limit for market actions
+
     -- Polling management
     self.timerData = 0
     self.timerStatus = 0
@@ -54,7 +59,7 @@ function GlobalMarket:initSync()
     -- Note: HUD injection (self:initStatusHudHooks()) has been moved to onFinishedLoading in gm.lua
     -- to ensure g_currentMission.hud.gameInfoDisplay is fully initialized before access.
 
-    addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host)", "consoleCommandTestStatus", self)
+    addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
 end
 
 -- =========================================================================
@@ -199,14 +204,22 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             local xmlFile = XMLFile.load("globalMarketOnline", self.isOnlineFile)
             if xmlFile ~= nil then
                 local exeVersion = xmlFile:getString("globalMarketOnline.version")
+                local exeTimestamp = xmlFile:getInt("globalMarketOnline#timestamp") or 0
 
                 -- Read backend connection state (default to true for legacy support)
                 backendConnectedNow = xmlFile:getBool("globalMarketOnline#isConnected", true)
-
                 xmlFile:delete()
-                exeRunningNow = isVersionSufficient(exeVersion, self.minExeVersion)
 
-                if not exeRunningNow and not self.hasShownVersionWarning then
+                -- Anti-Zombie Check: Ensure the file was written within the last 10 seconds
+                local currentUnixTime = os.time()
+                if exeTimestamp > 0 and math.abs(currentUnixTime - exeTimestamp) > 10 then
+                    exeRunningNow = false
+                    backendConnectedNow = false
+                else
+                    exeRunningNow = isVersionSufficient(exeVersion, self.minExeVersion)
+                end
+
+                if not exeRunningNow and not self.hasShownVersionWarning and exeTimestamp > 0 then
                     g_currentMission:showBlinkingWarning(g_i18n:getText("ui_gm_warning_exe_outdated"), 8000)
                     self.hasShownVersionWarning = true
                 elseif exeRunningNow then
@@ -336,14 +349,6 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackend
     end
 end
 
-function GlobalMarket:onClientDisconnected(connection)
-    if g_currentMission:getIsServer() and self.dataHostConnection == connection then
-        self.dataHostConnection = nil
-        self.isOnline = false
-        if g_currentMission.globalMarketUi ~= nil then g_currentMission.globalMarketUi:updateContent() end
-    end
-end
-
 function GlobalMarket:receiveDataHostToken(whitelist)
     self.isDataHost = true
     self.isOnline = true
@@ -351,8 +356,9 @@ function GlobalMarket:receiveDataHostToken(whitelist)
 
     if self.writeFolder == nil then return end
 
-    -- Notify backend about becoming the host
-    local xmlPath = self.writeFolder .. "whitelist_" .. tostring(math.floor(g_time)) .. ".xml"
+    -- Notify backend about becoming the host utilizing Unix Timestamp (UTC)
+    local unixTimestamp = os.time()
+    local xmlPath = self.writeFolder .. "whitelist_" .. tostring(unixTimestamp) .. ".xml"
     local xmlFile = XMLFile.create("gmWhitelist", xmlPath, "gmDataSync")
     if xmlFile ~= nil then
         xmlFile:setString("gmDataSync#action", "updateWhitelist")
@@ -383,6 +389,49 @@ function GlobalMarket:applySyncedMarketData(marketData)
     end
     if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
     if g_currentMission.globalMarketUi ~= nil then g_currentMission.globalMarketUi:updateContent() end
+end
+
+-- =========================================================================
+-- EXPORT FUNCTIONS (Lua -> EXE)
+-- =========================================================================
+
+-- Exports a player transaction to the write folder for the EXE to process
+-- Includes a strict rate limit (cooldown) to prevent transaction spamming
+function GlobalMarket:exportTransaction(fillType, amount, transactionType)
+    if not self.isDataHost or self.writeFolder == nil then return false end
+
+    local currentUnixTime = os.time()
+
+    -- Enforce the 15-second cooldown
+    if (currentUnixTime - self.lastTransactionTime) < self.transactionCooldown then
+        if self.debugManager ~= nil then
+            self.debugManager:warning("Sync: Transaction cooldown is active. Please wait.")
+        end
+        return false -- Request denied due to rate limiting
+    end
+
+    local xmlPath = self.writeFolder .. "transaction_" .. tostring(currentUnixTime) .. ".xml"
+    local xmlFile = XMLFile.create("gmTransaction", xmlPath, "gmDataSync")
+
+    if xmlFile ~= nil then
+        xmlFile:setString("gmDataSync#action", "transaction")
+        xmlFile:setString("gmDataSync.entry(0)#fillType", fillType)
+        xmlFile:setInt("gmDataSync.entry(0)#amount", amount)
+        xmlFile:setString("gmDataSync.entry(0)#type", transactionType)
+
+        xmlFile:save()
+        xmlFile:delete()
+
+        -- Update the timestamp to lock further transactions
+        self.lastTransactionTime = currentUnixTime
+
+        if self.debugManager ~= nil then
+            self.debugManager:info(string.format("Sync: Exported transaction (%s %s %s)", transactionType, tostring(amount), fillType))
+        end
+        return true
+    end
+
+    return false
 end
 
 -- =========================================================================
