@@ -106,8 +106,8 @@ function GlobalMarket:initStatusHudHooks()
         end
 
         -- Calculate dynamic scaling based on UI scale settings
-        local bgSizeX, bgSizeY = self:scalePixelValuesToScreenVector(42, 42)
-        local iconSizeX, iconSizeY = self:scalePixelValuesToScreenVector(28, 28)
+        local bgSizeX, bgSizeY = self:scalePixelValuesToScreenVector(50, 50)
+        local iconSizeX, iconSizeY = self:scalePixelValuesToScreenVector(35, 35)
 
         self.gmStatusBg:setDimension(bgSizeX, bgSizeY)
         self.gmStatusIcon:setDimension(iconSizeX, iconSizeY)
@@ -120,9 +120,31 @@ function GlobalMarket:initStatusHudHooks()
             self.gmStatusBg:setColor(0, 0, 0, 0.8) -- Fallback
         end
 
-        -- Calculate dynamic position relative to the leftmost part of the GameInfoDisplay
+        -- =========================================================
+        -- STRICT BACKGROUND-EDGE ANCHOR
+        -- =========================================================
+        -- We anchor to the absolute left edge of the UI background box (infoBgLeft),
+        -- NOT the weather icon. The background cap extends further left than the icon itself.
+
+        local anchorX = 0
+
+        if self.infoBgLeft ~= nil then
+            -- Read the original vanilla position of the left background cap
+            local baseBgX = self.infoBgLeft.x or 0
+            -- Read any offsets injected by other mods (like eGID)
+            local modBgOffset = self.infoBgLeft.offsetX or 0
+
+            -- The true, visible X-coordinate of the absolute left HUD edge
+            anchorX = baseBgX + modBgOffset
+        elseif self.weatherIcon ~= nil then
+            -- Fallback just in case infoBgLeft is ever unavailable
+            local baseWx = self.weatherIcon.x or 0
+            local modWxOffset = self.weatherIcon.offsetX or 0
+            anchorX = baseWx + modWxOffset
+        end
+
         local paddingX = self:scalePixelToScreenWidth(15)
-        local targetBgX = self.infoBgLeft.x - bgSizeX - paddingX
+        local targetBgX = anchorX - bgSizeX - paddingX
 
         -- Center vertically relative to the base posY of the GameInfoDisplay
         local _, posY = self:getPosition()
