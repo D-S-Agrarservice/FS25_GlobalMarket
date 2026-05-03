@@ -375,16 +375,19 @@ function GlobalMarketSettings.refreshMenuState()
     end
 
     -- System Controls
+    local isStatusIconOn = GlobalMarketSettings.current.showStatusIcon
+
     local showIconControl = GlobalMarketSettings.CONTROLS["gmSettingsShowIcon"]
     if showIconControl ~= nil then
-        showIconControl:setState(GlobalMarketSettings.current.showStatusIcon and 2 or 1)
+        showIconControl:setState(isStatusIconOn and 2 or 1)
         showIconControl:setDisabled(not isAdmin)
     end
 
     local iconPulseControl = GlobalMarketSettings.CONTROLS["gmSettingsIconPulse"]
     if iconPulseControl ~= nil then
         iconPulseControl:setState(GlobalMarketSettings.current.isIconPulseActive and 2 or 1)
-        iconPulseControl:setDisabled(not isAdmin)
+        -- Disable the pulse option if the user is not an admin OR if the status icon is hidden
+        iconPulseControl:setDisabled(not isAdmin or not isStatusIconOn)
     end
 
     -- Compatibility Controls
@@ -452,13 +455,17 @@ function GlobalMarketSettings:onDetailedFinanceChanged(state)
     self.refreshMenuState()
 end
 
-function GlobalMarketSettings:onIconPulseChanged(state)
-    self.current.isIconPulseActive = (state == 2)
-    self:broadcastChanges()
-end
-
 function GlobalMarketSettings:onShowIconChanged(state)
     self.current.showStatusIcon = (state == 2)
+    self:broadcastChanges()
+    -- Force the UI to refresh immediately so the pulse option visually enables/disables
+    if GlobalMarketSettings.refreshMenuState ~= nil then
+        GlobalMarketSettings.refreshMenuState()
+    end
+end
+
+function GlobalMarketSettings:onIconPulseChanged(state)
+    self.current.isIconPulseActive = (state == 2)
     self:broadcastChanges()
 end
 

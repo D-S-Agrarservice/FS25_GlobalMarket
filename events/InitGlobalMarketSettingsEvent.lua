@@ -29,14 +29,15 @@ function InitGlobalMarketSettingsEvent:run(connection)
         if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
             local s = GlobalMarketSettings.current
             connection:sendEvent(SyncGlobalMarketSettingsEvent.new(
-                s.deliveryBaseIndex, 
-                s.deliveryLiterIndex, 
-                s.isDetailedFinance, 
-                s.isDebugActive, 
-                s.debugLevelIndex, 
+                s.deliveryBaseIndex,
+                s.deliveryLiterIndex,
+                s.isDetailedFinance,
+                s.isDebugActive,
+                s.debugLevelIndex,
                 s.debugDurationIndex,
-                s.compatModeIndex,      -- Added missing compatModeIndex
-                s.isIconPulseActive     -- Added missing isIconPulseActive
+                s.compatModeIndex,
+                s.showStatusIcon,
+                s.isIconPulseActive
             ))
         end
     end
