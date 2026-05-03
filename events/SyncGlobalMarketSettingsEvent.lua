@@ -11,7 +11,7 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse)
+function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -21,6 +21,8 @@ function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, is
     self.debugDur = debugDur
     self.compatModeIndex = compatModeIndex or 3
     self.isIconPulse = isIconPulse
+    -- Add the new status icon visibility state
+    self.showStatusIcon = showStatusIcon
     return self
 end
 
@@ -33,6 +35,8 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.debugDur)
     streamWriteInt8(streamId, self.compatModeIndex)
     streamWriteBool(streamId, self.isIconPulse)
+    -- Write visibility state to the network stream
+    streamWriteBool(streamId, self.showStatusIcon)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -44,6 +48,8 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.debugDur = streamReadInt8(streamId)
     self.compatModeIndex = streamReadInt8(streamId)
     self.isIconPulse = streamReadBool(streamId)
+    -- Read visibility state from the network stream
+    self.showStatusIcon = streamReadBool(streamId)
     self:run(connection)
 end
 
@@ -79,6 +85,8 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.debugDurationIndex = self.debugDur
     GlobalMarketSettings.current.compatModeIndex = self.compatModeIndex
     GlobalMarketSettings.current.isIconPulseActive = self.isIconPulse
+    -- Apply the new status icon visibility state
+    GlobalMarketSettings.current.showStatusIcon = self.showStatusIcon
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
@@ -106,7 +114,8 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse), nil, connection, nil)
+        -- Add self.showStatusIcon to the broadcast event
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon), nil, connection, nil)
     else
         -- CLIENT SIDE
         if GlobalMarketSettings.saveToXML ~= nil then

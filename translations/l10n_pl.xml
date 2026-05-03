@@ -49,6 +49,8 @@
         <e k="ui_gm_settings_iconPulse_desc"                       v="Włącza delikatny efekt pulsowania ikony podczas odbierania danych." />
         <e k="ui_gm_settings_literCost"                            v="Koszty dostawy: Cena za litr" />
         <e k="ui_gm_settings_literCost_desc"                       v="Ustala dodatkowe koszty transportu za każdy sprzedany litr." />
+        <e k="ui_gm_settings_showIcon"                             v="Pokaż ikonę statusu" />
+        <e k="ui_gm_settings_showIcon_desc"                        v="Włącza lub wyłącza widoczność ikony statusu GlobalMarket w HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatybilność" />
         <e k="ui_gm_storage_only"                                  v="(Tylko GM)" />
         <e k="ui_gm_storage_split"                                 v="(Gosp.: %s | GM: %s)" />

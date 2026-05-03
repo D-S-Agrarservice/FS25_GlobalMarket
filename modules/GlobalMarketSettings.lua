@@ -28,7 +28,8 @@ GlobalMarketSettings.current = {
     debugDurationIndex = 1, -- Default: 1 Hour
     isDetailedFinance = false, -- Default: Off (Simple Finance)
     compatModeIndex = 3,    -- Default: Strict (Auto-resolve known conflicts)
-    isIconPulseActive = true -- Default: On
+    isIconPulseActive = true, -- Default: On
+    showStatusIcon = true   -- Default: On (Controls HUD icon visibility)
 }
 
 -- Gets default indices based on the game's economic difficulty
@@ -121,6 +122,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.debugDurationIndex = 1
         self.current.compatModeIndex = 3
         self.current.isIconPulseActive = true
+        self.current.showStatusIcon = true -- Initialize default for new XML
 
         self:saveToXML()
         self:applyDebugSettings()
@@ -150,6 +152,7 @@ function GlobalMarketSettings:loadFromXML()
         -- Load Compatibility Setting
         self.current.compatModeIndex = xmlFile:getInt(prefix .. ".compatibility#modeIndex", 3)
         self.current.isIconPulseActive = xmlFile:getBool(prefix .. "#isIconPulseActive", true)
+        self.current.showStatusIcon = xmlFile:getBool(prefix .. "#showStatusIcon", true) -- Load visibility state
 
         -- Apply loaded values to active global variables
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
@@ -197,6 +200,7 @@ function GlobalMarketSettings:saveToXML()
         -- Save Compatibility Setting
         xmlFile:setInt(prefix .. ".compatibility#modeIndex", self.current.compatModeIndex)
         xmlFile:setBool(prefix .. "#isIconPulseActive", self.current.isIconPulseActive)
+        xmlFile:setBool(prefix .. "#showStatusIcon", self.current.showStatusIcon) -- Save visibility state
 
         -- Write to disk and cleanup
         xmlFile:save()
@@ -319,6 +323,7 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
 
         -- 3. COMPATIBILITY SETTINGS
         GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_system_header")
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsShowIcon", "ui_gm_settings_showIcon", "ui_gm_settings_showIcon_desc", "onShowIconChanged") -- Add toggle to UI
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsIconPulse", "ui_gm_settings_iconPulse", "ui_gm_settings_iconPulse_desc", "onIconPulseChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode", "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged")
 
@@ -370,6 +375,12 @@ function GlobalMarketSettings.refreshMenuState()
     end
 
     -- System Controls
+    local showIconControl = GlobalMarketSettings.CONTROLS["gmSettingsShowIcon"]
+    if showIconControl ~= nil then
+        showIconControl:setState(GlobalMarketSettings.current.showStatusIcon and 2 or 1)
+        showIconControl:setDisabled(not isAdmin)
+    end
+
     local iconPulseControl = GlobalMarketSettings.CONTROLS["gmSettingsIconPulse"]
     if iconPulseControl ~= nil then
         iconPulseControl:setState(GlobalMarketSettings.current.isIconPulseActive and 2 or 1)
@@ -412,9 +423,10 @@ function GlobalMarketSettings:broadcastChanges()
     local c = self.current
     if g_server ~= nil then
         self:saveToXML()
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive))
+
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon))
     else
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon))
     end
 end
 
@@ -442,6 +454,11 @@ end
 
 function GlobalMarketSettings:onIconPulseChanged(state)
     self.current.isIconPulseActive = (state == 2)
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onShowIconChanged(state)
+    self.current.showStatusIcon = (state == 2)
     self:broadcastChanges()
 end
 

@@ -171,9 +171,24 @@ function GlobalMarket:initStatusHudHooks()
         -- Apply color state and alpha
         self.gmStatusIcon:setColor(syncModule.iconColorR, syncModule.iconColorG, syncModule.iconColorB, alpha)
 
-        -- Render the overlays (background first, then icon)
-        self.gmStatusBg:render()
-        self.gmStatusIcon:render()
+        -- =========================================================
+        -- VISIBILITY TOGGLE (ON THE FLY)
+        -- =========================================================
+        -- Check if the user has disabled the HUD icon in the mod settings.
+        -- Default to true (visible) if the setting is missing or nil.
+        local isVisible = true
+        
+        if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
+            if type(GlobalMarketSettings.current.showStatusIcon) == "boolean" then
+                isVisible = GlobalMarketSettings.current.showStatusIcon
+            end
+        end
+
+        -- Render the overlays (background first, then icon) only if permitted
+        if isVisible then
+            self.gmStatusBg:render()
+            self.gmStatusIcon:render()
+        end
     end)
 
     -- Hook into the delete method to prevent memory leaks
