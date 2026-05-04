@@ -148,9 +148,37 @@ function GlobalMarket:loadMap(name)
         self:initFileSystem()
     end
 
-    -- Load GUI profiles
+    -- Load GUI profiles and inject UI
     if g_gui ~= nil then
         g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
+
+        -- =========================================================
+        -- UI INJECTION (Moved to early map load to prevent FocusManager corruption)
+        -- =========================================================
+        if GlobalMarketUI ~= nil then
+            if self.debugManager ~= nil then
+                self.debugManager:info("Injecting GlobalMarket UI during map load...")
+            end
+
+            -- 1. Load Transaction Dialog
+            local dialogController = GlobalMarketDialog.new()
+            g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketDialog.xml", "GlobalMarketDialog", dialogController)
+            self.dialog = dialogController
+
+            -- 2. Load Main Market UI
+            local uiController = GlobalMarketUI.new()
+            local xmlFilename = GlobalMarket.dir .. "gui/GlobalMarketUI.xml"
+
+            g_gui:loadGui(xmlFilename, "GlobalMarketUI", uiController, true)
+            self.ui = uiController
+
+            -- Inject Tab into InGameMenu
+            self:fixInGameMenu(uiController, "GlobalMarketUI")
+        else
+            if self.debugManager ~= nil then
+                self.debugManager:error("UI Injection failed! GlobalMarketUI class is nil.")
+            end
+        end
     end
 
     -- =========================================================
@@ -243,31 +271,6 @@ local function onFinishedLoading(mission)
         -- Inject HUD Icon Status safely after engine UI is fully initialized
         if g_currentMission.globalMarket.initStatusHudHooks ~= nil then
             g_currentMission.globalMarket:initStatusHudHooks()
-        end
-
-        if GlobalMarketUI ~= nil then
-            if GlobalMarket.debugManager ~= nil then
-                GlobalMarket.debugManager:info("Injecting GlobalMarket UI into native game menu...")
-            end
-
-            -- 1. Load Transaction Dialog
-            local dialogController = GlobalMarketDialog.new()
-            g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketDialog.xml", "GlobalMarketDialog", dialogController)
-            g_currentMission.globalMarket.dialog = dialogController
-
-            -- 2. Load Main Market UI
-            local uiController = GlobalMarketUI.new()
-            local xmlFilename = GlobalMarket.dir .. "gui/GlobalMarketUI.xml"
-
-            g_gui:loadGui(xmlFilename, "GlobalMarketUI", uiController, true)
-            g_currentMission.globalMarket.ui = uiController
-
-            -- Inject Tab into InGameMenu
-            g_currentMission.globalMarket:fixInGameMenu(uiController, "GlobalMarketUI")
-        else
-            if GlobalMarket.debugManager ~= nil then
-                GlobalMarket.debugManager:error("UI Injection failed! GlobalMarketUI class is nil.")
-            end
         end
 
         -- Init store cache for global available buy/sell list
@@ -388,24 +391,20 @@ function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAn
 end
 
 local function registerGlobalPlayerActionEvents(playerInputComponent, contextName)
+    -- Only register for the local player who owns the input
     if playerInputComponent.player ~= nil and playerInputComponent.player.isOwner then
-        local currentContextName = g_inputBinding:getContextName()
-        local newContextName = contextName or currentContextName
 
-        if currentContextName ~= newContextName then
-            g_inputBinding:beginActionEventsModification(newContextName)
-        end
-
+        -- Clean up old references to prevent duplicate binds
         g_inputBinding:removeActionEventsByTarget(GlobalMarket)
+
+        -- Register the action event directly.
+        -- DO NOT use beginActionEventsModification here, as the Engine already
+        -- provides the correct context. Modifying it manually breaks the HandTools (Flashlight)!
         local _, eventId = g_inputBinding:registerActionEvent(InputAction.GLOBAL_MARKET_OPEN, GlobalMarket, GlobalMarket.onToggleMarket, false, true, false, true)
 
         if eventId ~= nil then
             g_inputBinding:setActionEventTextVisibility(eventId, true)
             g_inputBinding:setActionEventActive(eventId, true)
-        end
-
-        if currentContextName ~= newContextName then
-            g_inputBinding:beginActionEventsModification(currentContextName)
         end
     end
 end
