@@ -5,7 +5,7 @@
 GlobalMarketOffline = {}
 GlobalMarketOffline.PRICE_MIN_FACTOR = 0.7 -- Minimum 70% of base price
 GlobalMarketOffline.PRICE_MAX_FACTOR = 1.3 -- Maximum 130% of base price
-GlobalMarketOffline.SATURATION_LIMIT = 5000000 -- 5M Liters = Market is "full" (lowest price)
+GlobalMarketOffline.SATURATION_LIMIT = 2500000 -- 2.5M Liters = Market is "full" (lowest price)
 
 -- Initialize the simulated market. Fetches valid fillTypes and sets random starting stocks.
 function GlobalMarket:initOfflineMarket()
@@ -18,8 +18,8 @@ function GlobalMarket:initOfflineMarket()
             -- Ask the API if this fillType is allowed on the market (handles Whitelist/Blacklist/Engine-Flags)
             if GlobalMarketAPI.getIsFillTypeAllowed(fillType) then
 
-                -- Starting stock: Random between 0 and 750k Liters
-                local startLevel = math.random(0, 75) * 10000
+                -- Starting stock: Random between 0 and 500k Liters
+                local startLevel = math.random(0, 50) * 10000
 
                 table.insert(self.offlineMarketFillTypes, {
                     fillType = fillType.name,
@@ -57,29 +57,62 @@ function GlobalMarket:updateOfflinePrices()
     end
 
     for _, data in pairs(self.offlineMarketFillTypes) do
-        local fillType = g_fillTypeManager:getFillTypeByIndex(data.fillTypeIndex)
-        local seasonFactor = 1.0
+        local fillTypeIndex = data.fillTypeIndex
+        local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
 
-        if fillType ~= nil then
-            -- FS25 Native: Ask the EconomyManager to calculate the Catmull-Rom interpolated seasonal factor
-            if g_economyManager ~= nil and g_economyManager.getFillTypeSeasonalFactor ~= nil then
-                seasonFactor = g_economyManager:getFillTypeSeasonalFactor(fillType, currentPeriod, periodAlpha)
-            elseif fillType.economy ~= nil and fillType.economy.factors ~= nil then
-                -- Fallback for hardcoded mods or if EconomyManager fails
-                seasonFactor = fillType.economy.factors[currentPeriod] or 1.0
+        -- ===============================================================
+        -- 1. MAP SPY: Get the actual average price from local selling stations
+        -- ===============================================================
+        local totalMapPrice = 0
+        local numStations = 0
+
+        if g_currentMission.economyManager ~= nil and g_currentMission.economyManager.sellingStations ~= nil then
+            for _, stationData in ipairs(g_currentMission.economyManager.sellingStations) do
+                local station = stationData.station
+
+                -- Check if this station accepts the current fillType
+                if station.acceptedFillTypes ~= nil and station.acceptedFillTypes[fillTypeIndex] then
+                    -- Fetch the exact current price this station is paying per liter.
+                    -- CRITICAL: This already includes Difficulty, Season, and Map XML priceScales!
+                    local stationPrice = station:getEffectiveFillTypePrice(fillTypeIndex, ToolType.UNDEFINED)
+
+                    if stationPrice > 0 then
+                        totalMapPrice = totalMapPrice + stationPrice
+                        numStations = numStations + 1
+                    end
+                end
             end
         end
 
-        -- Calculate Saturation Factor (Supply & Demand). More stock = lower price.
+        local currentBasePricePerLiter = data.basePrice
+
+        if numStations > 0 then
+            -- Use the average map price as the GM baseline
+            currentBasePricePerLiter = totalMapPrice / numStations
+        else
+            -- FALLBACK: If no station on the map accepts this fillType (e.g. custom productions),
+            -- fallback to the native EconomyManager calculation.
+            if g_currentMission.economyManager ~= nil and g_currentMission.economyManager.getPricePerLiter ~= nil then
+                currentBasePricePerLiter = g_currentMission.economyManager:getPricePerLiter(fillTypeIndex)
+            elseif fillTypeDesc ~= nil then
+                -- Hard fallback if EconomyManager is unavailable
+                currentBasePricePerLiter = fillTypeDesc.pricePerLiter
+            end
+        end
+
+        -- ===============================================================
+        -- 2. GM DEMAND FACTOR: Apply our own saturation logic
+        -- ===============================================================
         local saturation = math.min(data.fillLevel / GlobalMarketOffline.SATURATION_LIMIT, 1.0)
         local priceRange = GlobalMarketOffline.PRICE_MAX_FACTOR - GlobalMarketOffline.PRICE_MIN_FACTOR
         local demandFactor = GlobalMarketOffline.PRICE_MAX_FACTOR - (priceRange * saturation)
 
-        -- Final Price: Base * Season * Demand * 1000 (for display per unit)
-        data.price = data.basePrice * seasonFactor * demandFactor * 1000
+        -- Final Price: BaseMapPrice * Demand * 1000 (for display per unit)
+        -- Note: Difficulty and Season are ALREADY included in currentBasePricePerLiter!
+        data.price = currentBasePricePerLiter * demandFactor * 1000
 
         if self.debugManager ~= nil then
-            self.debugManager:trace("OfflineMarket Price Update - %s: Base=%.2f, Season=%.2f, Demand=%.2f, Final=%.2f", data.fillType, data.basePrice, seasonFactor, demandFactor, data.price)
+            self.debugManager:trace("OfflineMarket Price Update - %s: MapAvgBase=%.2f, Demand=%.2f, Final=%.2f", data.fillType, currentBasePricePerLiter, demandFactor, data.price)
         end
     end
 end
