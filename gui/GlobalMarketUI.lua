@@ -147,6 +147,8 @@ function GlobalMarketUI:updateContent()
         end
         -- Keep market deselected visually
         if self.gmTableMarket ~= nil then self.gmTableMarket:setSelectedIndex(0) end
+        -- Force the engine's FocusManager to explicitly re-target the active list
+        FocusManager:setFocus(self.gmTableStorage)
 
     elseif activeList == "market" and self.gmTableMarket ~= nil then
         -- Restore market index, ensure it does not exceed current data length
@@ -156,6 +158,9 @@ function GlobalMarketUI:updateContent()
         end
         -- Keep storage deselected visually
         if self.gmTableStorage ~= nil then self.gmTableStorage:setSelectedIndex(0) end
+        -- Force the engine's FocusManager to explicitly re-target the active list
+        FocusManager:setFocus(self.gmTableMarket)
+
     end
 
     -- 5. Drop the shield so user inputs are processed normally again
