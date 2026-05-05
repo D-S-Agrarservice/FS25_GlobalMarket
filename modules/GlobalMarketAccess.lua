@@ -17,21 +17,21 @@ function GlobalMarketAccess.init()
     -- =========================================================================
 
     -- Bypass for player on-foot interaction (e.g., ObjectStorageActivatable)
-    local function canPlayerAccessHook(accessHandler, superFunc, object)
-        if object ~= nil then
+    local function canPlayerAccessHook(accessHandler, superFunc, player, object, ...)
+        if object ~= nil and type(object) == "table" then
             -- Check if the object itself or its owning placeable is a GM terminal
             local isGmMarket = object.isGmMarket or (object.owningPlaceable ~= nil and object.owningPlaceable.isGmMarket)
             if isGmMarket then
                 return true
             end
         end
-        return superFunc(accessHandler, object)
+        return superFunc(accessHandler, player, object, ...)
     end
     AccessHandler.canPlayerAccess = Utils.overwrittenFunction(AccessHandler.canPlayerAccess, canPlayerAccessHook)
 
     -- Bypass for farm/vehicle interaction (e.g., UnloadingStation, LoadTrigger)
     local function canFarmAccessHook(accessHandler, superFunc, farmId, object, ...)
-        if object ~= nil then
+        if object ~= nil and type(object) == "table" then
             local isGmMarket = object.isGmMarket or (object.owningPlaceable ~= nil and object.owningPlaceable.isGmMarket)
             if isGmMarket then
                 return true

@@ -117,8 +117,49 @@ function GlobalMarketUI:updateContent()
         GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d, Market items: %d", #self.storageData, #self.marketData)
     end
 
+    -- =========================================================================
+    -- STATE SAVE & RESTORE (Fixes scroll jumping during live updates)
+    -- =========================================================================
+
+    -- 1. Enable the shield to prevent onListSelectionChanged from firing recursively
+    self.isUpdatingSelection = true
+
+    -- 2. Save current list focus and exact scroll/selection index
+    local activeList = self.currentListFocus
+    local activeIndex = 0
+
+    if activeList == "storage" and self.gmTableStorage ~= nil then
+        _, activeIndex = self.gmTableStorage:getSelectedPath()
+    elseif activeList == "market" and self.gmTableMarket ~= nil then
+        _, activeIndex = self.gmTableMarket:getSelectedPath()
+    end
+
+    -- 3. Blindly reload data (Engine tries to reset focus, but shield blocks the event)
     if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
     if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end
+
+    -- 4. Restore the exact previous state silently
+    if activeList == "storage" and self.gmTableStorage ~= nil then
+        -- Restore storage index, ensure it does not exceed current data length
+        local safeIndex = math.min(activeIndex or 1, #self.storageData)
+        if safeIndex > 0 then
+            self.gmTableStorage:setSelectedIndex(safeIndex)
+        end
+        -- Keep market deselected visually
+        if self.gmTableMarket ~= nil then self.gmTableMarket:setSelectedIndex(0) end
+
+    elseif activeList == "market" and self.gmTableMarket ~= nil then
+        -- Restore market index, ensure it does not exceed current data length
+        local safeIndex = math.min(activeIndex or 1, #self.marketData)
+        if safeIndex > 0 then
+            self.gmTableMarket:setSelectedIndex(safeIndex)
+        end
+        -- Keep storage deselected visually
+        if self.gmTableStorage ~= nil then self.gmTableStorage:setSelectedIndex(0) end
+    end
+
+    -- 5. Drop the shield so user inputs are processed normally again
+    self.isUpdatingSelection = false
 end
 
 -- =========================================================================
@@ -134,7 +175,7 @@ function GlobalMarketUI:update(dt)
         -- Trigger exactly ONCE when the countdown hits zero or falls slightly below
         if self.refreshCountdown <= 0 then
             -- Set to a permanent negative value to prevent the loop from refiring every frame
-            self.refreshCountdown = -1 
+            self.refreshCountdown = -1
             self:updateContent()
         end
     end

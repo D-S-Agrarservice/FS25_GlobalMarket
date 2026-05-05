@@ -368,7 +368,7 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
 end
 
 -- =========================================================================
--- INPUT BINDINGS
+-- INPUT BINDINGS (Reverted to original working state)
 -- =========================================================================
 
 -- Triggered via the custom input binding to open/close the market
@@ -391,20 +391,24 @@ function GlobalMarket:onToggleMarket(actionName, inputValue, callbackState, isAn
 end
 
 local function registerGlobalPlayerActionEvents(playerInputComponent, contextName)
-    -- Only register for the local player who owns the input
     if playerInputComponent.player ~= nil and playerInputComponent.player.isOwner then
+        local currentContextName = g_inputBinding:getContextName()
+        local newContextName = contextName or currentContextName
 
-        -- Clean up old references to prevent duplicate binds
+        if currentContextName ~= newContextName then
+            g_inputBinding:beginActionEventsModification(newContextName)
+        end
+
         g_inputBinding:removeActionEventsByTarget(GlobalMarket)
-
-        -- Register the action event directly.
-        -- DO NOT use beginActionEventsModification here, as the Engine already
-        -- provides the correct context. Modifying it manually breaks the HandTools (Flashlight)!
         local _, eventId = g_inputBinding:registerActionEvent(InputAction.GLOBAL_MARKET_OPEN, GlobalMarket, GlobalMarket.onToggleMarket, false, true, false, true)
 
         if eventId ~= nil then
             g_inputBinding:setActionEventTextVisibility(eventId, true)
             g_inputBinding:setActionEventActive(eventId, true)
+        end
+
+        if currentContextName ~= newContextName then
+            g_inputBinding:beginActionEventsModification(currentContextName)
         end
     end
 end
