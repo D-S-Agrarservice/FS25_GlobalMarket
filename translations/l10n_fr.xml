@@ -49,6 +49,8 @@
         <e k="ui_gm_settings_iconPulse_desc"                       v="Active un doux effet d'impulsion sur l'icône lors de la réception de données." />
         <e k="ui_gm_settings_literCost"                            v="Frais de livraison : Prix par litre" />
         <e k="ui_gm_settings_literCost_desc"                       v="Définit les frais de transport supplémentaires par litre échangé." />
+        <e k="ui_gm_settings_markup"                               v="Marge du vendeur"/>
+        <e k="ui_gm_settings_markup_desc"                          v="Pourcentage supplémentaire ajouté au prix de base lors de l'achat d'articles sur le Global Market."/>
         <e k="ui_gm_settings_showIcon"                             v="Afficher l'icône d'état" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Active ou désactive la visibilité de l'icône d'état GlobalMarket dans le HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM Système &amp; Compatibilité" />

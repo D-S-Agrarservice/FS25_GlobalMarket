@@ -362,6 +362,12 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         end
 
         local marketPricePerUnit = self:getOfflinePriceByFillType(filltypeName) / 1000
+
+        -- Apply a spread (markup) when buying to prevent instant arbitrage at the terminal
+        if mode == 2 then
+            marketPricePerUnit = marketPricePerUnit * (1 + (GlobalMarket.DEALER_MARKUP / 100))
+        end
+
         local totalPrice = marketPricePerUnit * level
         local deliveryCosts = 0
 
@@ -644,6 +650,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
             local actualLitersBought = numObjectsToBuy * actualCapacity
             local marketPricePerUnit = marketItem.price / 1000
+
+            -- Apply a spread (markup) when buying objects to prevent instant arbitrage
+            marketPricePerUnit = marketPricePerUnit * (1 + (GlobalMarket.DEALER_MARKUP / 100))
+
             local totalPrice = marketPricePerUnit * actualLitersBought
 
             local deliveryCosts = 0

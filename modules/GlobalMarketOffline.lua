@@ -5,7 +5,7 @@
 GlobalMarketOffline = {}
 GlobalMarketOffline.PRICE_MIN_FACTOR = 0.7 -- Minimum 70% of base price
 GlobalMarketOffline.PRICE_MAX_FACTOR = 1.3 -- Maximum 130% of base price
-GlobalMarketOffline.SATURATION_LIMIT = 2500000 -- 2.5M Liters = Market is "full" (lowest price)
+GlobalMarketOffline.SATURATION_LIMIT = 2000000 -- 2.0M Liters = Market is "full" (lowest price)
 
 -- Initialize the simulated market. Fetches valid fillTypes and sets random starting stocks.
 function GlobalMarket:initOfflineMarket()
@@ -18,8 +18,8 @@ function GlobalMarket:initOfflineMarket()
             -- Ask the API if this fillType is allowed on the market (handles Whitelist/Blacklist/Engine-Flags)
             if GlobalMarketAPI.getIsFillTypeAllowed(fillType) then
 
-                -- Starting stock: Random between 0 and 500k Liters
-                local startLevel = math.random(0, 50) * 10000
+                -- Starting stock: Random between 250k and 1M Liters
+                local startLevel = math.random(25, 100) * 10000
 
                 table.insert(self.offlineMarketFillTypes, {
                     fillType = fillType.name,

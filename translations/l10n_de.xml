@@ -49,6 +49,8 @@
         <e k="ui_gm_settings_iconPulse_desc"                       v="Aktiviert ein sanftes Pulsieren des Icons bei Datenempfang." />
         <e k="ui_gm_settings_literCost"                            v="Lieferkosten: Preis pro Liter" />
         <e k="ui_gm_settings_literCost_desc"                       v="Legt die zusätzlichen Transportkosten pro gehandeltem Liter fest." />
+        <e k="ui_gm_settings_markup"                               v="Händleraufschlag"/>
+        <e k="ui_gm_settings_markup_desc"                          v="Zusätzlicher prozentualer Aufschlag auf den Basispreis beim Kauf von Gütern am Global Market."/>
         <e k="ui_gm_settings_showIcon"                             v="Status-Icon anzeigen" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Aktiviert oder deaktiviert die Anzeige des GlobalMarket Status-Icons im HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatibilität" />

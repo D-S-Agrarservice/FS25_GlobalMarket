@@ -11,7 +11,7 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon)
+function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon, dealerMarkupIndex)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -21,8 +21,9 @@ function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, is
     self.debugDur = debugDur
     self.compatModeIndex = compatModeIndex or 3
     self.isIconPulse = isIconPulse
-    -- Add the new status icon visibility state
     self.showStatusIcon = showStatusIcon
+    -- Add the new dealer markup index
+    self.dealerMarkupIndex = dealerMarkupIndex
     return self
 end
 
@@ -35,8 +36,9 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.debugDur)
     streamWriteInt8(streamId, self.compatModeIndex)
     streamWriteBool(streamId, self.isIconPulse)
-    -- Write visibility state to the network stream
     streamWriteBool(streamId, self.showStatusIcon)
+    -- Write dealer markup index to the network stream (Int8 is sufficient for indices 1-7)
+    streamWriteInt8(streamId, self.dealerMarkupIndex)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -48,8 +50,9 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.debugDur = streamReadInt8(streamId)
     self.compatModeIndex = streamReadInt8(streamId)
     self.isIconPulse = streamReadBool(streamId)
-    -- Read visibility state from the network stream
     self.showStatusIcon = streamReadBool(streamId)
+    -- Read dealer markup index from the network stream
+    self.dealerMarkupIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -72,7 +75,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = (GlobalMarketSettings.current.isDetailedFinance ~= self.isDetailed)
-        deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex)
+        deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex) or (GlobalMarketSettings.current.dealerMarkupIndex ~= self.dealerMarkupIndex)
         compatChanged = (GlobalMarketSettings.current.compatModeIndex ~= self.compatModeIndex)
     end
 
@@ -85,12 +88,16 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.debugDurationIndex = self.debugDur
     GlobalMarketSettings.current.compatModeIndex = self.compatModeIndex
     GlobalMarketSettings.current.isIconPulseActive = self.isIconPulse
-    -- Apply the new status icon visibility state
     GlobalMarketSettings.current.showStatusIcon = self.showStatusIcon
+    -- Apply the new dealer markup index
+    GlobalMarketSettings.current.dealerMarkupIndex = self.dealerMarkupIndex
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
     GlobalMarket.DELIVER_COST_PERLITER = GlobalMarketSettings.OPTIONS.DELIVERY_LITER[self.literIndex]
+    if GlobalMarketSettings.OPTIONS.DEALER_MARKUP ~= nil then
+        GlobalMarket.DEALER_MARKUP = GlobalMarketSettings.OPTIONS.DEALER_MARKUP[self.dealerMarkupIndex]
+    end
 
     if GlobalMarketFinance ~= nil then
         GlobalMarketFinance.isDetailedCached = self.isDetailed
@@ -114,8 +121,8 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
-        -- Add self.showStatusIcon to the broadcast event
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon), nil, connection, nil)
+        -- Add self.dealerMarkupIndex to the broadcast event
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex), nil, connection, nil)
     else
         -- CLIENT SIDE
         if GlobalMarketSettings.saveToXML ~= nil then

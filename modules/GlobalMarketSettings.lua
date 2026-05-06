@@ -12,6 +12,8 @@ GlobalMarketSettings.CONTROLS = {}
 GlobalMarketSettings.OPTIONS = {
     DELIVERY_BASE = {0, 10, 25, 50, 75, 100, 150, 200},
     DELIVERY_LITER = {0.0, 0.01, 0.02, 0.05, 0.10, 0.20},
+    -- Dealer Markup in percent (e.g., 5 = 5% price increase when buying)
+    DEALER_MARKUP = {0, 2, 5, 10, 15, 20, 25}, 
     -- Reordered array: Starts with Info on the far left
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
@@ -21,19 +23,21 @@ GlobalMarketSettings.OPTIONS = {
 
 -- Default values
 GlobalMarketSettings.current = {
-    deliveryBaseIndex = 4, -- Default: 50
-    deliveryLiterIndex = 4, -- Default: 0.05
-    isDebugActive = false, -- Default: Off (Boolean for BinaryOption)
-    debugLevelIndex = 1,   -- Default: Info
-    debugDurationIndex = 1, -- Default: 1 Hour
+    deliveryBaseIndex = 4,   -- Default: 50
+    deliveryLiterIndex = 4,  -- Default: 0.05
+    dealerMarkupIndex = 3,   -- Default: 5%
+    isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
+    debugLevelIndex = 1,     -- Default: Info
+    debugDurationIndex = 1,  -- Default: 1 Hour
     isDetailedFinance = false, -- Default: Off (Simple Finance)
-    compatModeIndex = 3,    -- Default: Strict (Auto-resolve known conflicts)
-    isIconPulseActive = true, -- Default: On
-    showStatusIcon = true   -- Default: On (Controls HUD icon visibility)
+    compatModeIndex = 3,     -- Default: Strict (Auto-resolve known conflicts)
+    isIconPulseActive = true,  -- Default: On
+    showStatusIcon = true    -- Default: On (Controls HUD icon visibility)
 }
 
 -- Gets default indices based on the game's economic difficulty
 -- 1 = Easy, 2 = Normal, 3 = Hard
+-- Returns: deliveryBaseIndex, deliveryLiterIndex, dealerMarkupIndex
 function GlobalMarketSettings:getDefaultIndices()
     local diff = 2
     if g_currentMission ~= nil and g_currentMission.missionInfo ~= nil then
@@ -41,11 +45,11 @@ function GlobalMarketSettings:getDefaultIndices()
     end
 
     if diff == 1 then
-        return 2, 2 -- Easy: Base=10, Liter=0.01
+        return 2, 2, 2 -- Easy: Base=10, Liter=0.01, Markup=2% (Index 2)
     elseif diff == 3 then
-        return 6, 5 -- Hard: Base=100, Liter=0.10
+        return 6, 5, 5 -- Hard: Base=100, Liter=0.10, Markup=15% (Index 5)
     else
-        return 4, 4 -- Normal: Base=50, Liter=0.05
+        return 4, 4, 3 -- Normal: Base=50, Liter=0.05, Markup=5% (Index 3)
     end
 end
 
@@ -87,12 +91,9 @@ if settingsDirectory == nil or settingsDirectory == "" then
 end
 
 -- Helper: Determines the correct XML Node prefix based on the environment.
--- This allows us to keep SP, MP, and Dedi settings completely separated inside a single XML file.
 function GlobalMarketSettings:getEnvPrefix()
-    -- Check if we are the Dedicated Server itself
     local isDedi = (g_dedicatedServer ~= nil)
 
-    -- If we are not the server, check if we are a client connected to a Dedicated Server
     if not isDedi and g_currentMission ~= nil then
         isDedi = g_currentMission.connectedToDedicatedServer
     end
@@ -110,36 +111,35 @@ function GlobalMarketSettings:loadFromXML()
     local savePath = settingsDirectory .. "settings.xml"
     local prefix = self:getEnvPrefix()
 
-    -- Fetch dynamic defaults based on game difficulty (used as fallback for new profiles)
-    local defaultBase, defaultLiter = self:getDefaultIndices()
+    -- Fetch dynamic defaults based on game difficulty
+    local defaultBase, defaultLiter, defaultMarkup = self:getDefaultIndices()
 
-    -- If the entire file doesn't exist yet, apply defaults, save the initial XML, and exit
     if not fileExists(savePath) then
         self.current.deliveryBaseIndex = defaultBase
         self.current.deliveryLiterIndex = defaultLiter
+        self.current.dealerMarkupIndex = defaultMarkup
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
         self.current.debugDurationIndex = 1
         self.current.compatModeIndex = 3
         self.current.isIconPulseActive = true
-        self.current.showStatusIcon = true -- Initialize default for new XML
+        self.current.showStatusIcon = true 
 
         self:saveToXML()
         self:applyDebugSettings()
 
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
+        GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
         return
     end
 
     local xmlFile = XMLFile.load("GlobalMarketSettingsXML", savePath)
     if xmlFile ~= nil then
-        -- Load values dynamically from the current environment profile.
-        -- If a specific profile (e.g., 'dedi') doesn't exist yet, it gracefully falls back to 'defaultBase/Liter'.
-
-        -- Load Delivery Costs
+        -- Load Delivery & Markup Costs
         self.current.deliveryBaseIndex = xmlFile:getInt(prefix .. "#deliveryBaseIndex", defaultBase)
         self.current.deliveryLiterIndex = xmlFile:getInt(prefix .. "#deliveryLiterIndex", defaultLiter)
+        self.current.dealerMarkupIndex = xmlFile:getInt(prefix .. "#dealerMarkupIndex", defaultMarkup)
 
         -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
@@ -152,16 +152,14 @@ function GlobalMarketSettings:loadFromXML()
         -- Load Compatibility Setting
         self.current.compatModeIndex = xmlFile:getInt(prefix .. ".compatibility#modeIndex", 3)
         self.current.isIconPulseActive = xmlFile:getBool(prefix .. "#isIconPulseActive", true)
-        self.current.showStatusIcon = xmlFile:getBool(prefix .. "#showStatusIcon", true) -- Load visibility state
+        self.current.showStatusIcon = xmlFile:getBool(prefix .. "#showStatusIcon", true)
 
         -- Apply loaded values to active global variables
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
+        GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
 
-        -- Synchronize debug module states
         self:applyDebugSettings()
-
-        -- Cleanup
         xmlFile:delete()
 
         if GlobalMarket.debugManager ~= nil then
@@ -176,8 +174,6 @@ function GlobalMarketSettings:saveToXML()
     local prefix = self:getEnvPrefix()
 
     local xmlFile
-    -- CRITICAL: If the file already exists, we must LOAD it to append or overwrite our specific profile.
-    -- If we use XMLFile.create on an existing file, it would wipe out all other environment profiles!
     if fileExists(savePath) then
         xmlFile = XMLFile.load("GlobalMarketSettingsXML", savePath)
     else
@@ -185,24 +181,20 @@ function GlobalMarketSettings:saveToXML()
     end
 
     if xmlFile ~= nil then
-        -- Save Delivery Costs
         xmlFile:setInt(prefix .. "#deliveryBaseIndex", self.current.deliveryBaseIndex)
         xmlFile:setInt(prefix .. "#deliveryLiterIndex", self.current.deliveryLiterIndex)
+        xmlFile:setInt(prefix .. "#dealerMarkupIndex", self.current.dealerMarkupIndex)
 
-        -- Save Detailed Finance Setting
         xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
-        -- Save Debug Settings
         xmlFile:setBool(prefix .. ".debug#isActive", self.current.isDebugActive)
         xmlFile:setInt(prefix .. ".debug#levelIndex", self.current.debugLevelIndex)
         xmlFile:setInt(prefix .. ".debug#durationIndex", self.current.debugDurationIndex)
 
-        -- Save Compatibility Setting
         xmlFile:setInt(prefix .. ".compatibility#modeIndex", self.current.compatModeIndex)
         xmlFile:setBool(prefix .. "#isIconPulseActive", self.current.isIconPulseActive)
-        xmlFile:setBool(prefix .. "#showStatusIcon", self.current.showStatusIcon) -- Save visibility state
+        xmlFile:setBool(prefix .. "#showStatusIcon", self.current.showStatusIcon)
 
-        -- Write to disk and cleanup
         xmlFile:save()
         xmlFile:delete()
 
@@ -314,16 +306,20 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         local literTexts = {}
         for _, val in ipairs(GlobalMarketSettings.OPTIONS.DELIVERY_LITER) do table.insert(literTexts, tostring(val) .. " € / L") end
 
-        -- 1. DELIVERY COSTS
+        local markupTexts = {}
+        for _, val in ipairs(GlobalMarketSettings.OPTIONS.DEALER_MARKUP) do table.insert(markupTexts, tostring(val) .. " %") end
+
+        -- 1. DELIVERY COSTS & DEALER MARKUP
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsBaseCost", "ui_gm_settings_baseCost", "ui_gm_settings_baseCost_desc", baseTexts, "onBaseCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsLiterCost", "ui_gm_settings_literCost", "ui_gm_settings_literCost_desc", literTexts, "onLiterCostChanged")
+        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDealerMarkup", "ui_gm_settings_markup", "ui_gm_settings_markup_desc", markupTexts, "onDealerMarkupChanged")
 
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
 
         -- 3. COMPATIBILITY SETTINGS
         GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_system_header")
-        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsShowIcon", "ui_gm_settings_showIcon", "ui_gm_settings_showIcon_desc", "onShowIconChanged") -- Add toggle to UI
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsShowIcon", "ui_gm_settings_showIcon", "ui_gm_settings_showIcon_desc", "onShowIconChanged")
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsIconPulse", "ui_gm_settings_iconPulse", "ui_gm_settings_iconPulse_desc", "onIconPulseChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode", "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged")
 
@@ -367,6 +363,12 @@ function GlobalMarketSettings.refreshMenuState()
         literControl:setDisabled(not isAdmin)
     end
 
+    local markupControl = GlobalMarketSettings.CONTROLS["gmSettingsDealerMarkup"]
+    if markupControl ~= nil then
+        markupControl:setState(GlobalMarketSettings.current.dealerMarkupIndex)
+        markupControl:setDisabled(not isAdmin)
+    end
+
     -- Finance Controls
     local financeControl = GlobalMarketSettings.CONTROLS["gmSettingsDetailedFinance"]
     if financeControl ~= nil then
@@ -386,7 +388,6 @@ function GlobalMarketSettings.refreshMenuState()
     local iconPulseControl = GlobalMarketSettings.CONTROLS["gmSettingsIconPulse"]
     if iconPulseControl ~= nil then
         iconPulseControl:setState(GlobalMarketSettings.current.isIconPulseActive and 2 or 1)
-        -- Disable the pulse option if the user is not an admin OR if the status icon is hidden
         iconPulseControl:setDisabled(not isAdmin or not isStatusIconOn)
     end
 
@@ -426,10 +427,10 @@ function GlobalMarketSettings:broadcastChanges()
     local c = self.current
     if g_server ~= nil then
         self:saveToXML()
-
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon))
+        -- IMPORTANT: Ensure your SyncGlobalMarketSettingsEvent class is updated to accept c.dealerMarkupIndex!
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex))
     else
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex))
     end
 end
 
@@ -449,6 +450,12 @@ function GlobalMarketSettings:onLiterCostChanged(state)
     self:broadcastChanges()
 end
 
+function GlobalMarketSettings:onDealerMarkupChanged(state)
+    self.current.dealerMarkupIndex = state
+    GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[state]
+    self:broadcastChanges()
+end
+
 function GlobalMarketSettings:onDetailedFinanceChanged(state)
     self.current.isDetailedFinance = (state == 2)
     self:broadcastChanges()
@@ -458,7 +465,6 @@ end
 function GlobalMarketSettings:onShowIconChanged(state)
     self.current.showStatusIcon = (state == 2)
     self:broadcastChanges()
-    -- Force the UI to refresh immediately so the pulse option visually enables/disables
     if GlobalMarketSettings.refreshMenuState ~= nil then
         GlobalMarketSettings.refreshMenuState()
     end
@@ -472,8 +478,6 @@ end
 function GlobalMarketSettings:onCompatModeChanged(state)
     self.current.compatModeIndex = state
     self:broadcastChanges()
-
-    -- Dynamically notify the compatibility manager to re-evaluate current mods
     if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.compatibilityManager ~= nil then
         g_currentMission.globalMarket.compatibilityManager:checkActiveMods()
     end

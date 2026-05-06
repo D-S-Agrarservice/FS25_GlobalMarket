@@ -38,6 +38,7 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.compatModeIndex,
                 s.showStatusIcon,
                 s.isIconPulseActive
+                s.dealerMarkupIndex,
             ))
         end
     end
