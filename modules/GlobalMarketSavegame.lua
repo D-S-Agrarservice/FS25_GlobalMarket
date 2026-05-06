@@ -171,7 +171,7 @@ function GlobalMarket:loadFromXMLFile()
 
             -- Recalculate all prices once after all levels are loaded
             if self.updateOfflinePrices ~= nil then
-                self:updateOfflinePrices()
+                self:refreshMarketPrices()
             end
 
             if self.debugManager ~= nil then

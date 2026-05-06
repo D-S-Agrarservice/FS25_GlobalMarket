@@ -37,7 +37,7 @@ function GlobalMarket:initOfflineMarket()
         end
     end
 
-    self:updateOfflinePrices()
+    self:refreshMarketPrices()
 
     if self.debugManager ~= nil then
         self.debugManager:info("OfflineMarket: Initialized with %d dynamic fillTypes.", addedCount)
@@ -137,7 +137,7 @@ function GlobalMarket:runOfflineSimulation()
         end
     end
 
-    self:updateOfflinePrices()
+    self:refreshMarketPrices()
 
     -- Sync new offline state to clients
     if g_server ~= nil and SynchOfflineMarketEvent ~= nil then

@@ -84,6 +84,7 @@ source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 
 -- Economy & Savegame Modules
 source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketFinance.lua")
@@ -244,6 +245,33 @@ end
 -- Used by the UI to check if the external EXE is currently connected
 function GlobalMarket:getIsMarketOnline()
     return self.isOnline == true
+end
+
+-- =========================================================================
+-- CENTRAL PRICE ROUTER
+-- =========================================================================
+-- Decides dynamically which module calculates the prices based on connection state.
+-- This function can be safely called by any module (Sync, Offline, UI) to refresh prices.
+function GlobalMarket:refreshMarketPrices()
+    -- Check heartbeat flags provided by the Sync module
+    local useOnline = self.isExeRunningLocal and self.hasBackendConnection
+
+    if useOnline then
+        -- EXE is active and connected -> Online Module takes over
+        if GlobalMarketOnline ~= nil and GlobalMarketOnline.updateOnlinePrices ~= nil then
+            GlobalMarketOnline:updateOnlinePrices(self.offlineMarketFillTypes)
+        end
+    else
+        -- EXE missing or connection broken -> Safe fallback to local simulation
+        if self.updateOfflinePrices ~= nil then
+            self:updateOfflinePrices()
+        end
+    end
+
+    -- Trigger UI update if the terminal is currently open
+    if g_currentMission.globalMarketUi ~= nil then
+        g_currentMission.globalMarketUi:updateContent()
+    end
 end
 
 -- Global frame update loop (Be careful with heavy operations here)

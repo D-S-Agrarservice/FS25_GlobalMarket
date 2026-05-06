@@ -424,7 +424,7 @@ function GlobalMarket:applySyncedMarketData(marketData)
             end
         end
     end
-    if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
+    if self.updateOfflinePrices ~= nil then self:refreshMarketPrices() end
     if g_currentMission.globalMarketUi ~= nil then g_currentMission.globalMarketUi:updateContent() end
 end
 

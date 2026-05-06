@@ -418,7 +418,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
             self.debugManager:trace("Bulk transaction completed. Price: %.2f, Delivery: %.2f, New Silo Level: %.2f", math.abs(finalAccountBalance), deliveryCosts, newSiloLevel)
         end
 
-        if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
+        if self.updateOfflinePrices ~= nil then self:refreshMarketPrices() end
         if SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
@@ -733,7 +733,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             if self.debugManager ~= nil then self.debugManager:debug("Bought %d objects (Total: %.2f L). Total Cost: %.2f (Delivery: %.2f)", numObjectsToBuy, actualLitersBought, totalPrice, deliveryCosts) end
         end
 
-        if self.updateOfflinePrices ~= nil then self:updateOfflinePrices() end
+        if self.updateOfflinePrices ~= nil then self:refreshMarketPrices() end
         if SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
