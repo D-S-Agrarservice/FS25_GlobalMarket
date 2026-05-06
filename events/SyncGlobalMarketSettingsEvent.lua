@@ -99,9 +99,12 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         GlobalMarket.DEALER_MARKUP = GlobalMarketSettings.OPTIONS.DEALER_MARKUP[self.dealerMarkupIndex]
     end
 
-    if GlobalMarketFinance ~= nil then
-        GlobalMarketFinance.isDetailedCached = self.isDetailed
-    end
+    -- FIX: Do NOT update isDetailedCached at runtime! 
+    -- Custom MoneyTypes can only be registered during game initialization.
+    -- The UI setting is saved to XML and will automatically apply on the next server restart.
+    -- if GlobalMarketFinance ~= nil then
+    --     GlobalMarketFinance.isDetailedCached = self.isDetailed
+    -- end
 
     if GlobalMarketSettings.applyDebugSettings ~= nil then
         GlobalMarketSettings:applyDebugSettings()
