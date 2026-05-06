@@ -425,11 +425,20 @@ function GlobalMarketSettings:broadcastChanges()
     if SyncGlobalMarketSettingsEvent == nil then return end
 
     local c = self.current
-    if g_server ~= nil then
+
+    -- FIX: Force local save immediately for everyone (SP, Dedi, or MP Client).
+    -- This ensures the client admin saves their own changes before the network sync,
+    -- bypassing the issue where the sender is ignored by the server's broadcast echo.
+    if self.saveToXML ~= nil then
         self:saveToXML()
-        -- IMPORTANT: Ensure your SyncGlobalMarketSettingsEvent class is updated to accept c.dealerMarkupIndex!
+    end
+
+    -- Network Synchronization
+    if g_server ~= nil then
+        -- Server broadcasts the changes to all connected clients
         g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex))
     else
+        -- Client admin sends the changes to the dedicated server
         g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex))
     end
 end
