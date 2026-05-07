@@ -460,6 +460,29 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
         local spec = targetPlaceable.spec_objectStorage
 
+        -- =========================================================
+        -- PRE-PROCESS: Decode Network Payload (Number -> String)
+        -- formatXml can be an Integer (Dedi Client Event) or String (SP/Host UI / Pallet)
+        -- =========================================================
+        local rawInput = formatXml
+        local xmlFilename = nil
+        local isTargetBale = false
+
+        -- 1. Input is a Number (Bale Index received via Network Event from a Dedicated Client)
+        if type(rawInput) == "number" and rawInput > 0 then
+            if g_baleManager ~= nil then
+                xmlFilename = g_baleManager:getBaleXMLFilenameByIndex(rawInput)
+                if xmlFilename ~= nil then isTargetBale = true end
+            end
+
+        -- 2. Input is a String (Direct call from UI in SP/Host, OR it is a Pallet)
+        elseif type(rawInput) == "string" and rawInput ~= "" then
+            if g_baleManager ~= nil and g_baleManager:getBaleTypeIndexByXMLFilename(rawInput) ~= nil then
+                isTargetBale = true
+            end
+            xmlFilename = rawInput
+        end
+
         -- ==========================================
         -- MODE 1: SELLING (From Storage to Market)
         -- ==========================================
@@ -506,14 +529,15 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                 if objFillType == fillTypeIndex and not isFermenting and objFarmId == targetFarmId then
                     local isFormatMatch = true
 
-                    if formatXml ~= nil and objXml ~= nil then
+                    -- FIX: Compare against decoded xmlFilename, not the raw integer payload
+                    if xmlFilename ~= nil and objXml ~= nil then
                         -- Extract the filename from the absolute path to ensure compatibility with custom mod maps
                         local function getFileName(path)
                             return string.match(path, "([^/\\]+)$") or path
                         end
 
                         local cleanObjXml = string.lower(getFileName(objXml))
-                        local cleanFormatXml = string.lower(getFileName(formatXml))
+                        local cleanFormatXml = string.lower(getFileName(xmlFilename))
 
                         if cleanObjXml ~= cleanFormatXml then
                             isFormatMatch = false
@@ -619,43 +643,13 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             if marketItem == nil then return end
 
             local availableLitersToBuy = math.min(requestedLiters, marketItem.fillLevel)
-
-            -- formatXml can be an Integer (Dedi Client Event) or String (SP/Host UI / Pallet)
-            local rawInput = formatXml
             local actualCapacity = capacityPerObject or 5000
-
-            local xmlFilename = nil
-            local isBale = false
-
-            -- 1. Input is a Number (Bale Index received via Network Event from a Dedicated Client)
-            if type(rawInput) == "number" and rawInput > 0 then
-                if g_baleManager ~= nil then
-                    xmlFilename = g_baleManager:getBaleXMLFilenameByIndex(rawInput)
-                    if xmlFilename ~= nil then
-                        isBale = true
-                    end
-                end
-
-            -- 2. Input is a String (Direct call from UI in SP/Host, OR it is a Pallet)
-            elseif type(rawInput) == "string" and rawInput ~= "" then
-                if g_baleManager ~= nil then
-                    -- Test if this string is a registered bale path (Fixes SP and Local MP)
-                    local testIndex = g_baleManager:getBaleTypeIndexByXMLFilename(rawInput)
-                    if testIndex ~= nil then
-                        isBale = true
-                    end
-                end
-
-                -- Regardless of whether it's a bale or pallet, the string is our filename
-                xmlFilename = rawInput
-            end
 
             if xmlFilename == nil then
                 if self.debugManager ~= nil then self.debugManager:error("Buying aborted: No valid Pallet or Bale XML provided for FillType %s", filltypeName) end
                 return
             end
 
-            -- ORIGINAL LOGIC: Calculate free slots and buyable amount
             local numObjectsToBuy = math.floor(availableLitersToBuy / actualCapacity)
             local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
             numObjectsToBuy = math.min(numObjectsToBuy, freeSlots)
@@ -691,8 +685,8 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             end
 
             -- Execute Payment
-            local isPallet = not isBale
-            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, true, isBale, isPallet)
+            local isPallet = not isTargetBale
+            local moneyType = GlobalMarketFinance.getMoneyType(fillTypeIndex, true, isTargetBale, isPallet)
             g_currentMission:addMoney(totalPrice * -1, targetFarmId, moneyType, true, true)
 
             if deliveryCosts > 0 then
@@ -700,14 +694,14 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             end
             marketItem.fillLevel = math.max(marketItem.fillLevel - actualLitersBought, 0)
 
-            local className = isBale and "Bale" or "Vehicle"
+            local className = isTargetBale and "Bale" or "Vehicle"
             local abstractClass = PlaceableObjectStorage.ABSTRACT_OBJECTS_BY_CLASS_NAME[className]
 
             -- Build AbstractObjects to inject into the storage without rendering them in the world yet
             for i = 1, numObjectsToBuy do
                 local abstractObject = abstractClass.new()
 
-                if isBale then
+                if isTargetBale then
                     abstractObject.baleAttributes = {
                         xmlFilename = xmlFilename,
                         fillLevel = actualCapacity,
@@ -739,15 +733,13 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                 end
             end
 
-            if isBale then
+            if isTargetBale then
                 g_farmManager:updateFarmStats(targetFarmId, "storedBales", numObjectsToBuy)
             else
                 g_farmManager:updateFarmStats(targetFarmId, "storedPallets", numObjectsToBuy)
             end
 
             targetPlaceable:setObjectStorageObjectInfosDirty()
-
-            if self.debugManager ~= nil then self.debugManager:debug("Bought %d objects (Total: %.2f L). Total Cost: %.2f (Delivery: %.2f)", numObjectsToBuy, actualLitersBought, totalPrice, deliveryCosts) end
         end
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
