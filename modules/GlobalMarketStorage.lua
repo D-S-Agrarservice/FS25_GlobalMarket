@@ -620,27 +620,34 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
             local availableLitersToBuy = math.min(requestedLiters, marketItem.fillLevel)
 
-            -- FIX: formatXml now holds the synchronized baleIndex (number) passed over the network,
-            -- OR it holds a regular string path if it's a pallet.
-            local baleIndex = formatXml
+            -- formatXml can be an Integer (Dedi Client Event) or String (SP/Host UI / Pallet)
+            local rawInput = formatXml
             local actualCapacity = capacityPerObject or 5000
 
             local xmlFilename = nil
             local isBale = false
 
-            -- If we received a valid bale index from the client, fetch the server's local path
-            if baleIndex ~= nil and type(baleIndex) == "number" and baleIndex > 0 then
+            -- 1. Input is a Number (Bale Index received via Network Event from a Dedicated Client)
+            if type(rawInput) == "number" and rawInput > 0 then
                 if g_baleManager ~= nil then
-                    xmlFilename = g_baleManager:getBaleXMLFilenameByIndex(baleIndex)
+                    xmlFilename = g_baleManager:getBaleXMLFilenameByIndex(rawInput)
                     if xmlFilename ~= nil then
                         isBale = true
                     end
                 end
-            end
 
-            -- Fallback: If it's not a bale (Index 0, nil, or string), it must be a pallet string
-            if not isBale and type(formatXml) == "string" then
-                xmlFilename = formatXml
+            -- 2. Input is a String (Direct call from UI in SP/Host, OR it is a Pallet)
+            elseif type(rawInput) == "string" and rawInput ~= "" then
+                if g_baleManager ~= nil then
+                    -- Test if this string is a registered bale path (Fixes SP and Local MP)
+                    local testIndex = g_baleManager:getBaleTypeIndexByXMLFilename(rawInput)
+                    if testIndex ~= nil then
+                        isBale = true
+                    end
+                end
+
+                -- Regardless of whether it's a bale or pallet, the string is our filename
+                xmlFilename = rawInput
             end
 
             if xmlFilename == nil then
