@@ -628,13 +628,54 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                 return
             end
 
-            -- Determine if the format is a bale by checking the engine's bale manager
+            -- Determine if it is a bale by checking the engine's bale manager.
+            -- FIX: Compare the end of the client's absolute path with the core of the server's network path.
             local isBale = false
+            local serverSafeXmlFilename = xmlFilename
+
             if g_baleManager ~= nil then
+                local targetXml = string.lower(xmlFilename)
+
                 for _, bale in ipairs(g_baleManager.bales) do
-                    if bale.xmlFilename == xmlFilename then
-                        isBale = true
-                        break
+                    if bale.xmlFilename ~= nil then
+                        local serverBaleXml = string.lower(bale.xmlFilename)
+
+                        -- 1. Exact match (Works for SP, Local MP, or if UI already sent a clean network path)
+                        if serverBaleXml == targetXml then
+                            isBale = true
+                            serverSafeXmlFilename = bale.xmlFilename
+                            break
+                        end
+
+                        -- 2. Dedi-Server Match for Mod paths (Server has "$moddir$...", Client sends absolute "C:/...")
+                        if string.sub(serverBaleXml, 1, 8) == "$moddir$" then
+                            -- Extract everything after "$moddir$" (e.g., "fs25_map/bales/bale.xml")
+                            local corePath = string.sub(serverBaleXml, 9)
+
+                            -- Check if the client's absolute path perfectly ends with this core path
+                            if string.len(targetXml) >= string.len(corePath) then
+                                local endOfTarget = string.sub(targetXml, -string.len(corePath))
+                                if endOfTarget == corePath then
+                                    isBale = true
+                                    serverSafeXmlFilename = bale.xmlFilename
+                                    break
+                                end
+                            end
+
+                        -- 3. Dedi-Server Match for Basegame paths (Server has "$data/...", Client might send absolute)
+                        elseif string.sub(serverBaleXml, 1, 6) == "$data/" then
+                            -- Extract everything after "$data/" (e.g., "objects/bales/bale.xml")
+                            local corePath = string.sub(serverBaleXml, 7)
+
+                            if string.len(targetXml) >= string.len(corePath) then
+                                local endOfTarget = string.sub(targetXml, -string.len(corePath))
+                                if endOfTarget == corePath then
+                                    isBale = true
+                                    serverSafeXmlFilename = bale.xmlFilename
+                                    break
+                                end
+                            end
+                        end
                     end
                 end
             end
@@ -692,7 +733,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
                 if isBale then
                     abstractObject.baleAttributes = {
-                        xmlFilename = xmlFilename,
+                        xmlFilename = serverSafeXmlFilename,
                         fillLevel = actualCapacity,
                         fillType = fillTypeIndex,
                         variationIndex = 1,
