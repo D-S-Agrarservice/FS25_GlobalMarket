@@ -620,25 +620,35 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
             local availableLitersToBuy = math.min(requestedLiters, marketItem.fillLevel)
 
-            local xmlFilename = formatXml
+            -- FIX: formatXml now holds the synchronized baleIndex (number) passed over the network,
+            -- OR it holds a regular string path if it's a pallet.
+            local baleIndex = formatXml
             local actualCapacity = capacityPerObject or 5000
+
+            local xmlFilename = nil
+            local isBale = false
+
+            -- If we received a valid bale index from the client, fetch the server's local path
+            if baleIndex ~= nil and type(baleIndex) == "number" and baleIndex > 0 then
+                if g_baleManager ~= nil then
+                    xmlFilename = g_baleManager:getBaleXMLFilenameByIndex(baleIndex)
+                    if xmlFilename ~= nil then
+                        isBale = true
+                    end
+                end
+            end
+
+            -- Fallback: If it's not a bale (Index 0, nil, or string), it must be a pallet string
+            if not isBale and type(formatXml) == "string" then
+                xmlFilename = formatXml
+            end
 
             if xmlFilename == nil then
                 if self.debugManager ~= nil then self.debugManager:error("Buying aborted: No valid Pallet or Bale XML provided for FillType %s", filltypeName) end
                 return
             end
 
-            -- Determine if the format is a bale by checking the engine's bale manager
-            local isBale = false
-            if g_baleManager ~= nil then
-                for _, bale in ipairs(g_baleManager.bales) do
-                    if bale.xmlFilename == xmlFilename then
-                        isBale = true
-                        break
-                    end
-                end
-            end
-
+            -- ORIGINAL LOGIC: Calculate free slots and buyable amount
             local numObjectsToBuy = math.floor(availableLitersToBuy / actualCapacity)
             local freeSlots = math.max(0, spec.capacity - spec.numStoredObjects)
             numObjectsToBuy = math.min(numObjectsToBuy, freeSlots)
@@ -742,7 +752,20 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP
         -- even if the external sync tool is disabled or currently unavailable.
         if SellBuyOfflineMarketEvent ~= nil then
-            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceableObj, requestedLiters, true, playerFarmId, formatXml, capacityPerObject))
+
+            -- SMART TRANSMISSION: Default to the original string (for pallets)
+            local payloadData = formatXml
+
+            -- If it's a bale, overwrite the string with the synchronized integer index
+            if formatXml ~= nil and g_baleManager ~= nil then
+                local foundIndex = g_baleManager:getBaleTypeIndexByXMLFilename(formatXml)
+                if foundIndex ~= nil then
+                    payloadData = foundIndex
+                end
+            end
+
+            -- Pass payloadData (which is now either a String for Pallets or a Number for Bales)
+            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceableObj, requestedLiters, true, playerFarmId, payloadData, capacityPerObject))
         end
     end
 end

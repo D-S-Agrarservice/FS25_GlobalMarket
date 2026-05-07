@@ -25,8 +25,8 @@ function SellBuyOfflineMarketEvent.new(mode, filltypeName, level, storageObject,
     self.isObjectStorage = isObjectStorage or false
     self.playerFarmId = playerFarmId
 
-    -- NEW parameters with safe fallbacks for bulk network transmission
-    self.formatXml = formatXml or ""
+    -- NEW: formatXml can now be either a String (Pallet Path) OR a Number (Bale Index)
+    self.formatXml = formatXml
     self.capacityPerObject = capacityPerObject or 0
 
     -- FIX: Safe Network Node resolution to prevent transmitting raw Lua tables
@@ -71,8 +71,17 @@ function SellBuyOfflineMarketEvent:writeStream(streamId, connection)
     streamWriteBool(streamId, self.isObjectStorage)
     streamWriteInt16(streamId, self.playerFarmId)
 
-    -- NEW parameters appended to the stream
-    streamWriteString(streamId, self.formatXml)
+    -- SMART TRANSMISSION: Check if formatXml is a BaleIndex (Number) or PalletPath (String)
+    local isBaleIndex = type(self.formatXml) == "number"
+    streamWriteBool(streamId, isBaleIndex)
+
+    if isBaleIndex then
+        streamWriteInt32(streamId, self.formatXml) -- Send as a number
+    else
+        local safeString = (self.formatXml ~= nil and type(self.formatXml) == "string") and self.formatXml or ""
+        streamWriteString(streamId, safeString) -- Send as a string
+    end
+
     streamWriteInt32(streamId, self.capacityPerObject)
 end
 
@@ -90,8 +99,15 @@ function SellBuyOfflineMarketEvent:readStream(streamId, connection)
     self.isObjectStorage = streamReadBool(streamId)
     self.playerFarmId = streamReadInt16(streamId)
 
-    -- NEW parameters read from the stream
-    self.formatXml = streamReadString(streamId)
+    -- SMART TRANSMISSION: Reconstruct as BaleIndex (Number) or PalletPath (String)
+    local isBaleIndex = streamReadBool(streamId)
+
+    if isBaleIndex then
+        self.formatXml = streamReadInt32(streamId)
+    else
+        self.formatXml = streamReadString(streamId)
+    end
+
     self.capacityPerObject = streamReadInt32(streamId)
 
     -- FIX: Reconstruct the original storageObject for backend compatibility
@@ -121,12 +137,12 @@ function SellBuyOfflineMarketEvent:run(connection)
             GlobalMarket.debugManager:info("Network (Server): Received %s request for %s (%s) from Farm %d", modeStr, tostring(self.filltypeName), typeStr, self.playerFarmId)
 
             -- Detailed payload trace to ensure stream data is not corrupted
-            GlobalMarket.debugManager:trace("Payload -> Level: %d, Storage: %s, XML: %s, Cap: %d", self.level, tostring(self.storageObject), tostring(self.formatXml), self.capacityPerObject)
+            GlobalMarket.debugManager:trace("Payload -> Level: %d, Storage: %s, Format: %s, Cap: %d", self.level, tostring(self.storageObject), tostring(self.formatXml), self.capacityPerObject)
         end
 
         if g_currentMission.globalMarket ~= nil then
             if self.storageObject ~= nil then
-                -- Convert network safe fallbacks back to nil if they are empty
+                -- Revert empty strings back to nil to prevent false positive matching
                 local xmlToPass = (self.formatXml ~= "") and self.formatXml or nil
                 local capToPass = (self.capacityPerObject > 0) and self.capacityPerObject or nil
 
