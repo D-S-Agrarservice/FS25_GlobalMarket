@@ -5,7 +5,6 @@
 GlobalMarketOffline = {}
 GlobalMarketOffline.PRICE_MIN_FACTOR = 0.7 -- Minimum 70% of base price
 GlobalMarketOffline.PRICE_MAX_FACTOR = 1.3 -- Maximum 130% of base price
-GlobalMarketOffline.SATURATION_LIMIT = 2000000 -- 2.0M Liters = Market is "full" (lowest price)
 
 -- Initialize the simulated market. Fetches valid fillTypes and sets random starting stocks.
 function GlobalMarket:initOfflineMarket()
@@ -15,11 +14,17 @@ function GlobalMarket:initOfflineMarket()
     if g_fillTypeManager ~= nil and g_fillTypeManager.fillTypes ~= nil then
         for _, fillType in pairs(g_fillTypeManager.fillTypes) do
 
-            -- Ask the API if this fillType is allowed on the market (handles Whitelist/Blacklist/Engine-Flags)
+            -- Ask the API if this fillType is allowed on the market
             if GlobalMarketAPI.getIsFillTypeAllowed(fillType) then
 
-                -- Starting stock: Random between 250k and 1M Liters
-                local startLevel = math.random(25, 100) * 10000
+                -- Dynamic starting stock based on the server's configured capacity limit
+                local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+                -- Start between 10% and 50% of the maximum capacity
+                local minStart = currentLimit * 0.10
+                local maxStart = currentLimit * 0.50
+
+                -- math.random needs integers, so we round the values
+                local startLevel = math.random(math.floor(minStart), math.floor(maxStart))
 
                 table.insert(self.offlineMarketFillTypes, {
                     fillType = fillType.name,
@@ -103,7 +108,11 @@ function GlobalMarket:updateOfflinePrices()
         -- ===============================================================
         -- 2. GM DEMAND FACTOR: Apply our own saturation logic
         -- ===============================================================
-        local saturation = math.min(data.fillLevel / GlobalMarketOffline.SATURATION_LIMIT, 1.0)
+        -- OFFLINE MODE: Apply local saturation logic
+        -- Fallback to 2M if settings haven't loaded yet
+        local currentSaturationLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+
+        local saturation = math.min(data.fillLevel / currentSaturationLimit, 1.0)
         local priceRange = GlobalMarketOffline.PRICE_MAX_FACTOR - GlobalMarketOffline.PRICE_MIN_FACTOR
         local demandFactor = GlobalMarketOffline.PRICE_MAX_FACTOR - (priceRange * saturation)
 
@@ -127,9 +136,17 @@ function GlobalMarket:runOfflineSimulation()
         self.debugManager:debug("Running hourly offline simulation...")
     end
 
+    -- Fetch current capacity to scale the NPC trade volume
+    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+
     for _, data in pairs(self.offlineMarketFillTypes) do
-        -- Random fluctuation: -50000 to +45000 Liters
-        local fluctuation = math.random(-500, 450) * 100
+        -- Scale fluctuation between -2.5% and +2.25% of the total market capacity.
+        -- This ensures the market remains dynamic regardless of the chosen size.
+        -- Higher minus to "bleed out" the market over time.
+        local minFluct = currentLimit * -0.025
+        local maxFluct = currentLimit * 0.0225
+
+        local fluctuation = math.random(math.floor(minFluct), math.floor(maxFluct))
         data.fillLevel = math.max(data.fillLevel + fluctuation, 0)
 
         if self.debugManager ~= nil then

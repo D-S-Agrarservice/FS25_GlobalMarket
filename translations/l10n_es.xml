@@ -30,10 +30,13 @@
         <e k="ui_gm_format_roundbale"                              v="Paca redonda" />
         <e k="ui_gm_format_squarebale"                             v="Paca cuadrada" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: ¡Costes de envío actualizados! (Las estadísticas financieras requieren reiniciar el juego)" />
-        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket: ¡Estadísticas financieras actualizadas! (Requiere reiniciar el juego)" />
+        <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: ¡Se ha actualizado la capacidad del mercado! Los precios se ajustarán gradualmente." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: ¡Los costes de envío han sido actualizados!" />
+        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket: ¡Estadísticas financieras actualizadas! (Requiere reiniciar el juego)" />
         <e k="ui_gm_settings_baseCost"                             v="Gastos de envío: Tarifa base" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Establece la tarifa base fija para las entregas de mercancías hacia o desde el silo privado de la granja." />
+        <e k="ui_gm_settings_capacity"                             v="Capacidad del mercado" />
+        <e k="ui_gm_settings_capacity_desc"                        v="Establece el nivel máximo de llenado del mercado sin conexión. Valores de referencia: 500k (Solo/Hardcore), 1M-2M (Estándar/Cooperativo), 5M+ (Servidores grandes)." />
         <e k="ui_gm_settings_compatMode"                           v="Modo de compatibilidad" />
         <e k="ui_gm_settings_compatMode_desc"                      v="Define cómo GM gestiona mods de terceros. 1 (Ignore): Sin acción. 2 (Warn Only): Solo aviso en log. 3 (Smart): Usa cortafuegos, bloquea expulsiones (Recomendado*). 4 (Paranoia): Expulsa estrictamente en conflictos graves*. (* ¡Requiere reiniciar la partida!)" />
         <e k="ui_gm_settings_debugDuration"                        v="Duración del registro profundo" />

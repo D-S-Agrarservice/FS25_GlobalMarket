@@ -11,7 +11,7 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon, dealerMarkupIndex)
+function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -22,8 +22,8 @@ function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, is
     self.compatModeIndex = compatModeIndex or 3
     self.isIconPulse = isIconPulse
     self.showStatusIcon = showStatusIcon
-    -- Add the new dealer markup index
     self.dealerMarkupIndex = dealerMarkupIndex
+    self.capacityIndex = capacityIndex
     return self
 end
 
@@ -37,8 +37,8 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.compatModeIndex)
     streamWriteBool(streamId, self.isIconPulse)
     streamWriteBool(streamId, self.showStatusIcon)
-    -- Write dealer markup index to the network stream (Int8 is sufficient for indices 1-7)
     streamWriteInt8(streamId, self.dealerMarkupIndex)
+    streamWriteInt8(streamId, self.capacityIndex)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -51,8 +51,8 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.compatModeIndex = streamReadInt8(streamId)
     self.isIconPulse = streamReadBool(streamId)
     self.showStatusIcon = streamReadBool(streamId)
-    -- Read dealer markup index from the network stream
     self.dealerMarkupIndex = streamReadInt8(streamId)
+    self.capacityIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -72,11 +72,13 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     local financeChanged = false
     local deliveryChanged = false
     local compatChanged = false
+    local capacityChanged = false
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = (GlobalMarketSettings.current.isDetailedFinance ~= self.isDetailed)
         deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex) or (GlobalMarketSettings.current.dealerMarkupIndex ~= self.dealerMarkupIndex)
         compatChanged = (GlobalMarketSettings.current.compatModeIndex ~= self.compatModeIndex)
+        capacityChanged = (GlobalMarketSettings.current.capacityIndex ~= self.capacityIndex)
     end
 
     -- 2. APPLY SETTINGS LOCALLY
@@ -89,14 +91,18 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.compatModeIndex = self.compatModeIndex
     GlobalMarketSettings.current.isIconPulseActive = self.isIconPulse
     GlobalMarketSettings.current.showStatusIcon = self.showStatusIcon
-    -- Apply the new dealer markup index
     GlobalMarketSettings.current.dealerMarkupIndex = self.dealerMarkupIndex
+    GlobalMarketSettings.current.capacityIndex = self.capacityIndex
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
     GlobalMarket.DELIVER_COST_PERLITER = GlobalMarketSettings.OPTIONS.DELIVERY_LITER[self.literIndex]
     if GlobalMarketSettings.OPTIONS.DEALER_MARKUP ~= nil then
         GlobalMarket.DEALER_MARKUP = GlobalMarketSettings.OPTIONS.DEALER_MARKUP[self.dealerMarkupIndex]
+    end
+
+    if GlobalMarketSettings.OPTIONS.MARKET_CAPACITY ~= nil then
+        GlobalMarket.MARKET_CAPACITY = GlobalMarketSettings.OPTIONS.MARKET_CAPACITY[self.capacityIndex]
     end
 
     -- FIX: Do NOT update isDetailedCached at runtime! 
@@ -124,8 +130,8 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         if GlobalMarketSettings.saveToXML ~= nil then
             GlobalMarketSettings:saveToXML()
         end
-        -- Add self.dealerMarkupIndex to the broadcast event
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex), nil, connection, nil)
+
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex, self.capacityIndex), nil, connection, nil)
     else
         -- CLIENT SIDE
         if GlobalMarketSettings.saveToXML ~= nil then
@@ -133,6 +139,15 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         end
 
         if g_currentMission ~= nil then
+            if capacityChanged then
+                local msg = g_i18n:getText("ui_gm_notification_settings_capacity")
+                if msg == nil or msg == "ui_gm_notification_settings_capacity" then 
+                    msg = "GlobalMarket: Market capacity has been updated! Prices will adjust gradually." 
+                end
+                g_currentMission:showBlinkingWarning(msg, 6000)
+            end
+
+            -- Existing warnings
             if financeChanged and deliveryChanged then
                 local msg = g_i18n:getText("ui_gm_notification_settings_both")
                 if msg == nil or msg == "ui_gm_notification_settings_both" then msg = "GlobalMarket: Delivery costs updated. (Finance stats require restart!)" end

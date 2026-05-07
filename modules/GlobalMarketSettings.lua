@@ -14,6 +14,8 @@ GlobalMarketSettings.OPTIONS = {
     DELIVERY_LITER = {0.0, 0.01, 0.02, 0.05, 0.10, 0.20},
     -- Dealer Markup in percent (e.g., 5 = 5% price increase when buying)
     DEALER_MARKUP = {0, 2, 5, 10, 15, 20, 25}, 
+    -- Market Capacity in Liters (500k, 1M, 2M, 5M, 10M, 20M)
+    MARKET_CAPACITY = {500000, 1000000, 2000000, 5000000, 10000000, 20000000},
     -- Reordered array: Starts with Info on the far left
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
@@ -26,6 +28,7 @@ GlobalMarketSettings.current = {
     deliveryBaseIndex = 4,   -- Default: 50
     deliveryLiterIndex = 4,  -- Default: 0.05
     dealerMarkupIndex = 3,   -- Default: 5%
+    capacityIndex = 3,       -- Default 2M Liters
     isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,     -- Default: Info
     debugDurationIndex = 1,  -- Default: 1 Hour
@@ -37,7 +40,7 @@ GlobalMarketSettings.current = {
 
 -- Gets default indices based on the game's economic difficulty
 -- 1 = Easy, 2 = Normal, 3 = Hard
--- Returns: deliveryBaseIndex, deliveryLiterIndex, dealerMarkupIndex
+-- Returns: deliveryBaseIndex, deliveryLiterIndex, dealerMarkupIndex, capacityIndex
 function GlobalMarketSettings:getDefaultIndices()
     local diff = 2
     if g_currentMission ~= nil and g_currentMission.missionInfo ~= nil then
@@ -45,11 +48,11 @@ function GlobalMarketSettings:getDefaultIndices()
     end
 
     if diff == 1 then
-        return 2, 2, 2 -- Easy: Base=10, Liter=0.01, Markup=2% (Index 2)
+        return 2, 2, 2, 4 -- Easy: Base=10, Liter=0.01, Markup=2%, Capacity=5M (Index 4)
     elseif diff == 3 then
-        return 6, 5, 5 -- Hard: Base=100, Liter=0.10, Markup=15% (Index 5)
+        return 6, 5, 5, 2 -- Hard: Base=100, Liter=0.10, Markup=15%, Capacity=1M (Index 2)
     else
-        return 4, 4, 3 -- Normal: Base=50, Liter=0.05, Markup=5% (Index 3)
+        return 4, 4, 3, 3 -- Normal: Base=50, Liter=0.05, Markup=5%, Capacity=2M (Index 3)
     end
 end
 
@@ -112,12 +115,13 @@ function GlobalMarketSettings:loadFromXML()
     local prefix = self:getEnvPrefix()
 
     -- Fetch dynamic defaults based on game difficulty
-    local defaultBase, defaultLiter, defaultMarkup = self:getDefaultIndices()
+    local defaultBase, defaultLiter, defaultMarkup, defaultCapacity = self:getDefaultIndices()
 
     if not fileExists(savePath) then
         self.current.deliveryBaseIndex = defaultBase
         self.current.deliveryLiterIndex = defaultLiter
         self.current.dealerMarkupIndex = defaultMarkup
+        self.current.capacityIndex = defaultCapacity
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
         self.current.debugDurationIndex = 1
@@ -131,6 +135,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
         GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
+        GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex] -- NEW
         return
     end
 
@@ -140,6 +145,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.deliveryBaseIndex = xmlFile:getInt(prefix .. "#deliveryBaseIndex", defaultBase)
         self.current.deliveryLiterIndex = xmlFile:getInt(prefix .. "#deliveryLiterIndex", defaultLiter)
         self.current.dealerMarkupIndex = xmlFile:getInt(prefix .. "#dealerMarkupIndex", defaultMarkup)
+        self.current.capacityIndex = xmlFile:getInt(prefix .. "#capacityIndex", defaultCapacity)
 
         -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
@@ -158,6 +164,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
         GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
+        GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex]
 
         self:applyDebugSettings()
         xmlFile:delete()
@@ -184,6 +191,7 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt(prefix .. "#deliveryBaseIndex", self.current.deliveryBaseIndex)
         xmlFile:setInt(prefix .. "#deliveryLiterIndex", self.current.deliveryLiterIndex)
         xmlFile:setInt(prefix .. "#dealerMarkupIndex", self.current.dealerMarkupIndex)
+        xmlFile:setInt(prefix .. "#capacityIndex", self.current.capacityIndex)
 
         xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
@@ -309,10 +317,17 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         local markupTexts = {}
         for _, val in ipairs(GlobalMarketSettings.OPTIONS.DEALER_MARKUP) do table.insert(markupTexts, tostring(val) .. " %") end
 
+        local capacityTexts = {}
+        for _, val in ipairs(GlobalMarketSettings.OPTIONS.MARKET_CAPACITY) do 
+            -- Convert to Millions for cleaner UI (e.g., "2.0 M")
+            table.insert(capacityTexts, string.format("%.1f M", val / 1000000)) 
+        end
+
         -- 1. DELIVERY COSTS & DEALER MARKUP
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsBaseCost", "ui_gm_settings_baseCost", "ui_gm_settings_baseCost_desc", baseTexts, "onBaseCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsLiterCost", "ui_gm_settings_literCost", "ui_gm_settings_literCost_desc", literTexts, "onLiterCostChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDealerMarkup", "ui_gm_settings_markup", "ui_gm_settings_markup_desc", markupTexts, "onDealerMarkupChanged")
+        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCapacity", "ui_gm_settings_capacity", "ui_gm_settings_capacity_desc", capacityTexts, "onCapacityChanged")
 
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
@@ -367,6 +382,12 @@ function GlobalMarketSettings.refreshMenuState()
     if markupControl ~= nil then
         markupControl:setState(GlobalMarketSettings.current.dealerMarkupIndex)
         markupControl:setDisabled(not isAdmin)
+    end
+
+    local capacityControl = GlobalMarketSettings.CONTROLS["gmSettingsCapacity"]
+    if capacityControl ~= nil then
+        capacityControl:setState(GlobalMarketSettings.current.capacityIndex)
+        capacityControl:setDisabled(not isAdmin)
     end
 
     -- Finance Controls
@@ -436,10 +457,10 @@ function GlobalMarketSettings:broadcastChanges()
     -- Network Synchronization
     if g_server ~= nil then
         -- Server broadcasts the changes to all connected clients
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex))
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex))
     else
         -- Client admin sends the changes to the dedicated server
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex))
     end
 end
 
@@ -462,6 +483,12 @@ end
 function GlobalMarketSettings:onDealerMarkupChanged(state)
     self.current.dealerMarkupIndex = state
     GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[state]
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onCapacityChanged(state)
+    self.current.capacityIndex = state
+    GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[state]
     self:broadcastChanges()
 end
 

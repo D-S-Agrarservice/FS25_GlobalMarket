@@ -30,10 +30,13 @@
         <e k="ui_gm_format_roundbale"                              v="Bela okrągła" />
         <e k="ui_gm_format_squarebale"                             v="Bela kostka" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: Koszty dostawy zaktualizowane! (Statystyki finansowe wymagają restartu)" />
-        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket: Statystyki finansowe zaktualizowane! (Wymaga restartu gry)" />
+        <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: Pojemność rynku została zaktualizowana! Ceny będą się stopniowo dostosowywać." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Koszty dostawy zostały zaktualizowane!" />
+        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket: Statystyki finansowe zaktualizowane! (Wymaga restartu gry)" />
         <e k="ui_gm_settings_baseCost"                             v="Koszty dostawy: Opłata podstawowa" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Ustala stałą opłatę podstawową za dostawy do lub z prywatnego silosu na farmie." />
+        <e k="ui_gm_settings_capacity"                             v="Pojemność rynku" />
+        <e k="ui_gm_settings_capacity_desc"                        v="Określa maksymalny poziom wypełnienia rynku offline. Wartości orientacyjne: 500k (Solo/Hardcore), 1M-2M (Standard/Kooperacja), 5M+ (Duże serwery)." />
         <e k="ui_gm_settings_compatMode"                           v="Tryb kompatybilności" />
         <e k="ui_gm_settings_compatMode_desc"                      v="Określa, jak GM radzi sobie z innymi modami. 1 (Ignore): Brak akcji. 2 (Warn Only): Ostrzeżenie w logu. 3 (Smart): Używa zapór, blokuje wyrzucanie (Zalecane*). 4 (Paranoia): Wyrzuca z gry przy poważnych konfliktach*. (* Wymaga restartu zapisu gry!)" />
         <e k="ui_gm_settings_debugDuration"                        v="Czas głębokiego logowania" />

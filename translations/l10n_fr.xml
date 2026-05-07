@@ -30,10 +30,13 @@
         <e k="ui_gm_format_roundbale"                              v="Balle ronde" />
         <e k="ui_gm_format_squarebale"                             v="Balle carrée" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket : Frais de livraison mis à jour ! (Les statistiques financières nécessitent un redémarrage)" />
-        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket : Statistiques financières mises à jour ! (Nécessite un redémarrage du jeu)" />
+        <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket : La capacité du marché a été mise à jour ! Les prix s'ajusteront progressivement." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket : Les frais de livraison ont été mis à jour !" />
+        <e k="ui_gm_notification_settings_finance"                 v="GlobalMarket : Statistiques financières mises à jour ! (Nécessite un redémarrage du jeu)" />
         <e k="ui_gm_settings_baseCost"                             v="Frais de livraison : Frais de base" />
         <e k="ui_gm_settings_baseCost_desc"                        v="Définit les frais de base fixes pour les livraisons de fret vers ou depuis le silo privé de la ferme." />
+        <e k="ui_gm_settings_capacity"                             v="Capacité du marché" />
+        <e k="ui_gm_settings_capacity_desc"                        v="Définit le niveau de remplissage maximum du marché hors ligne. Valeurs de référence : 500k (Solo/Hardcore), 1M-2M (Standard/Coop), 5M+ (Gros serveurs)." />
         <e k="ui_gm_settings_compatMode"                           v="Mode de compatibilité" />
         <e k="ui_gm_settings_compatMode_desc"                      v="Définit la gestion des mods tiers. 1 (Ignore): Aucune action. 2 (Warn Only): Avertissement log. 3 (Smart): Utilise des pare-feux, bloque les expulsions (Recommandé*). 4 (Paranoia): Expulse strictement en cas de conflits graves*. (* Nécessite un redémarrage du jeu !)" />
         <e k="ui_gm_settings_debugDuration"                        v="Durée de la journalisation approfondie" />

@@ -25,9 +25,13 @@ function InitGlobalMarketSettingsEvent:readStream(streamId, connection)
 end
 
 function InitGlobalMarketSettingsEvent:run(connection)
+    -- When the server receives this ping from a joining client,
+    -- it bounces back the actual Sync event containing all current parameters.
     if not connection:getIsServer() then
         if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
             local s = GlobalMarketSettings.current
+
+            -- FIX: Corrected argument order, fixed missing comma, and added capacityIndex
             connection:sendEvent(SyncGlobalMarketSettingsEvent.new(
                 s.deliveryBaseIndex,
                 s.deliveryLiterIndex,
@@ -36,9 +40,10 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.debugLevelIndex,
                 s.debugDurationIndex,
                 s.compatModeIndex,
+                s.isIconPulseActive,
                 s.showStatusIcon,
-                s.isIconPulseActive
                 s.dealerMarkupIndex,
+                s.capacityIndex
             ))
         end
     end
