@@ -7,6 +7,207 @@
 -- UI Helper Functions
 -- =========================================================================
 
+-- Checks whether a bulk storage is linked to an Animal Husbandry (Barn) via its stations
+function GlobalMarket:getConnectedHusbandryPlaceable(storage)
+    if storage == nil then
+        return nil
+    end
+
+    if storage.unloadingStations ~= nil then
+        for _, station in pairs(storage.unloadingStations) do
+            if station.owningPlaceable ~= nil and station.owningPlaceable.spec_husbandry ~= nil then
+                return station.owningPlaceable
+            end
+        end
+    end
+
+    if storage.loadingStations ~= nil then
+        for _, station in pairs(storage.loadingStations) do
+            if station.owningPlaceable ~= nil and station.owningPlaceable.spec_husbandry ~= nil then
+                return station.owningPlaceable
+            end
+        end
+    end
+
+    return nil
+end
+
+-- Resolves the owning Placeable, display name, specialization type, and index for a bulk Storage/ManureHeap
+function GlobalMarket:resolveBulkStorageOwner(storage)
+    if storage == nil then
+        return nil, "Silo", "unknown", 1
+    end
+
+    if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil and g_currentMission.placeableSystem.placeables ~= nil then
+        for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+            -- 1. Standard Silo (PlaceableSilo)
+            if placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
+                for i, s in ipairs(placeable.spec_silo.storages) do
+                    if s == storage then
+                        return placeable, placeable:getName(), "silo", i
+                    end
+                end
+            end
+
+            -- 2. Silo Extension (PlaceableSiloExtension)
+            if placeable.spec_siloExtension ~= nil and placeable.spec_siloExtension.storage == storage then
+                return placeable, placeable:getName(), "siloExtension", 1
+            end
+
+            -- 3. Animal Husbandry / Barn (PlaceableHusbandry)
+            if placeable.spec_husbandry ~= nil and placeable.spec_husbandry.storage == storage then
+                return placeable, placeable:getName(), "husbandry", 1
+            end
+
+            -- 4. Manure Heap (PlaceableManureHeap)
+            if placeable.spec_manureHeap ~= nil and placeable.spec_manureHeap.manureHeap == storage then
+                return placeable, placeable:getName(), "manureHeap", 1
+            end
+
+            -- 5. Production Point (PlaceableProductionPoint)
+            if placeable.spec_productionPoint ~= nil and placeable.spec_productionPoint.productionPoint ~= nil then
+                if placeable.spec_productionPoint.productionPoint.storage == storage then
+                    return placeable, placeable:getName(), "productionPoint", 1
+                end
+            end
+        end
+    end
+
+    -- Fallback: Check connected unloading/loading stations for an owningPlaceable reference
+    if storage.unloadingStations ~= nil then
+        for _, station in pairs(storage.unloadingStations) do
+            if station.owningPlaceable ~= nil then
+                return station.owningPlaceable, station.owningPlaceable:getName(), "station", 1
+            end
+        end
+    end
+
+    if storage.loadingStations ~= nil then
+        for _, station in pairs(storage.loadingStations) do
+            if station.owningPlaceable ~= nil then
+                return station.owningPlaceable, station.owningPlaceable:getName(), "station", 1
+            end
+        end
+    end
+
+    return nil, "Silo", "unknown", 1
+end
+
+-- Validates whether a bulk storage is accessible by the given farmId (GM Terminal or strictly owned by farmId)
+function GlobalMarket:getIsBulkStorageAccessible(storage, ownerPlaceable, farmId)
+    if storage == nil or farmId == nil or farmId == FarmManager.SPECTATOR_FARM_ID or farmId <= 0 then
+        return false, false
+    end
+
+    local isGmMarket = storage.isGmMarket or (ownerPlaceable ~= nil and ownerPlaceable.isGmMarket) or false
+    if isGmMarket then
+        return true, true
+    end
+
+    -- Strictly require both the storage and its owning placeable building to belong to farmId
+    if storage.ownerFarmId ~= farmId then
+        return false, false
+    end
+
+    if ownerPlaceable ~= nil and ownerPlaceable:getOwnerFarmId() ~= farmId then
+        return false, false
+    end
+
+    return true, false
+end
+
+-- Enforces Barn (Husbandry) & ManureHeap restrictions:
+-- 1. ManureHeaps are completely excluded (no manure buying/selling).
+-- 2. Barns (and extensions attached to Barns) never allow buying into the barn, and only allow selling Milk.
+function GlobalMarket:getIsBulkFillTypeAllowedForStorage(entry, fillTypeIndex, isSelling)
+    if entry == nil or fillTypeIndex == nil then
+        return false
+    end
+
+    if entry.specType == "manureHeap" then
+        return false
+    end
+
+    if entry.specType == "husbandry" or entry.husbandryPlaceable ~= nil then
+        -- Buying goods from the market directly into a barn is never allowed
+        if not isSelling then
+            return false
+        end
+
+        -- Selling from a barn to the market is strictly limited to Milk fillTypes
+        if fillTypeIndex == FillType.MILK or
+           (FillType.BUFFALOMILK ~= nil and fillTypeIndex == FillType.BUFFALOMILK) or
+           (FillType.GOATMILK ~= nil and fillTypeIndex == FillType.GOATMILK) then
+            return true
+        end
+
+        local barn = entry.husbandryPlaceable or entry.ownerPlaceable
+        if barn ~= nil and barn.spec_husbandryMilk ~= nil and barn.spec_husbandryMilk.fillTypes ~= nil then
+            if table.hasElement(barn.spec_husbandryMilk.fillTypes, fillTypeIndex) then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    return true
+end
+
+-- Collects and deduplicates all bulk storages (StorageSystem + ProductionPoints) accessible by farmId
+function GlobalMarket:getBulkStorageEntries(farmId)
+    local entries = {}
+    local seenStorages = {}
+
+    local function tryAddStorage(storage)
+        if storage == nil or seenStorages[storage] then
+            return
+        end
+        seenStorages[storage] = true
+
+        local ownerPlaceable, storageName, specType, storageIndex = self:resolveBulkStorageOwner(storage)
+
+        -- Exclude ManureHeaps completely (no manure trading)
+        if specType == "manureHeap" then
+            return
+        end
+
+        local isAccessible, isGmMarket = self:getIsBulkStorageAccessible(storage, ownerPlaceable, farmId)
+
+        if isAccessible then
+            local husbandryPlaceable = (specType == "husbandry") and ownerPlaceable or self:getConnectedHusbandryPlaceable(storage)
+
+            table.insert(entries, {
+                storage = storage,
+                ownerPlaceable = ownerPlaceable,
+                husbandryPlaceable = husbandryPlaceable,
+                storageName = storageName,
+                specType = specType,
+                storageIndex = storageIndex,
+                isGmMarket = isGmMarket
+            })
+        end
+    end
+
+    -- 1. Standard StorageSystem storages (Silos, SiloExtensions, Husbandries/Barns)
+    if g_currentMission ~= nil and g_currentMission.storageSystem ~= nil and g_currentMission.storageSystem.storages ~= nil then
+        for storage, _ in pairs(g_currentMission.storageSystem.storages) do
+            tryAddStorage(storage)
+        end
+    end
+
+    -- 2. ProductionPoint storages (not registered in storageSystem.storages by default)
+    if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil and g_currentMission.placeableSystem.placeables ~= nil then
+        for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+            if placeable.spec_productionPoint ~= nil and placeable.spec_productionPoint.productionPoint ~= nil then
+                tryAddStorage(placeable.spec_productionPoint.productionPoint.storage)
+            end
+        end
+    end
+
+    return entries
+end
+
 -- Gets all valid player storages for a specific fillType (Includes Bulk and ObjectStorages)
 -- @param fillTypeName string: The name of the fillType (e.g., "MAIZE")
 -- @param farmId integer: The ID of the farm requesting the storages
@@ -22,14 +223,20 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
         return availableStorages
     end
 
+    -- Enforce GlobalMarketAPI blacklist/allowance rules
+    if GlobalMarketAPI ~= nil and not GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc) then
+        return availableStorages
+    end
+
     local fillTypeIndex = fillTypeDesc.index
 
-    -- 1. Scan regular bulk storages (Silos, Extensions)
-    for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        local isGmMarket = storage.isGmMarket or false
+    -- 1. Scan bulk storages (Silos, Extensions, Barns [Milk Sell only], ProductionPoints)
+    local bulkEntries = self:getBulkStorageEntries(farmId)
+    for _, entry in ipairs(bulkEntries) do
+        local storage = entry.storage
+        local isGmMarket = entry.isGmMarket
 
-        -- Bypass the hardcoded owner check if it is a GM Market
-        if (storage.ownerFarmId == farmId or isGmMarket) and storage:getIsFillTypeSupported(fillTypeIndex) then
+        if storage:getIsFillTypeSupported(fillTypeIndex) and self:getIsBulkFillTypeAllowedForStorage(entry, fillTypeIndex, isSelling) then
             local level = 0
             local freeCapacity = storage:getFreeCapacity(fillTypeIndex)
 
@@ -37,38 +244,17 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 -- Extract strictly from the Shadow Array for the requesting farm
                 level = (storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil) and (storage.gmFarmFillLevels[farmId][fillTypeIndex] or 0) or 0
             else
-                -- Native behavior
-                if storage.ownerFarmId == farmId then
-                    level = storage:getFillLevel(fillTypeIndex)
-                end
+                level = storage:getFillLevel(fillTypeIndex)
             end
 
-            -- MATCHING LOGIC: Since FS25 does not assign owningPlaceable to Storage objects directly,
-            -- we match the storage object against the placeables to extract the custom building name.
-            local storageName = "Silo"
-            local foundOwner = false
-
-            for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-                if placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
-                    for _, s in ipairs(placeable.spec_silo.storages) do
-                        if s == storage then
-                            storageName = placeable:getName()
-                            foundOwner = true
-                            break
-                        end
-                    end
-                end
-                if foundOwner then break end
-            end
-
-            local displayTitle = storageName
+            local displayTitle = entry.storageName or "Silo"
 
             if isGmMarket then
-                displayTitle = storageName .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
+                displayTitle = displayTitle .. (g_i18n:getText("ui_gm_terminal_hint") or " (GM Terminal)")
             end
 
             -- Only insert if the farm actually has stock (or if buying, has free capacity)
-            if (isSelling and level > 0.01) or (not isSelling and freeCapacity > 0.01 and (isGmMarket or storage.ownerFarmId == farmId)) then
+            if (isSelling and level > 0.01) or (not isSelling and freeCapacity > 0.01) then
                 table.insert(availableStorages, {
                     storage = storage,
                     id = storage,
@@ -96,22 +282,27 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 local totalFillLevel = 0
 
                 for _, objectInfo in ipairs(spec.objectInfos) do
-                    local obj = objectInfo.objects[1]
-                    local objFillType, objLevel = nil, 0
-                    local isFermenting = false
+                    local obj = objectInfo.objects ~= nil and objectInfo.objects[1] or nil
+                    if obj ~= nil then
+                        local objFillType, objLevel = nil, 0
+                        local isFermenting = false
+                        local objFarmId = FarmManager.SPECTATOR_FARM_ID
 
-                    if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
-                        objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
-                        objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
-                        if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
-                        if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
-                    elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
-                        objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
-                        objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
-                    end
+                        if obj.REFERENCE_CLASS_NAME == "Bale" or obj.REFERENCE_CLASS_NAME == "PackedBale" then
+                            objFillType = (obj.baleObject ~= nil) and obj.baleObject:getFillType() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillType)
+                            objLevel = (obj.baleObject ~= nil) and obj.baleObject:getFillLevel() or (obj.baleAttributes ~= nil and obj.baleAttributes.fillLevel)
+                            objFarmId = (obj.baleObject ~= nil and obj.baleObject.ownerFarmId) or (obj.baleAttributes ~= nil and obj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                            if obj.baleObject ~= nil and obj.baleObject.isFermenting then isFermenting = true end
+                            if obj.baleAttributes ~= nil and obj.baleAttributes.isFermenting then isFermenting = true end
+                        elseif obj.REFERENCE_CLASS_NAME == "Vehicle" then
+                            objFillType = obj.palletAttributes ~= nil and obj.palletAttributes.fillType
+                            objLevel = obj.palletAttributes ~= nil and obj.palletAttributes.fillLevel
+                            objFarmId = obj.palletAttributes ~= nil and obj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
+                        end
 
-                    if objFillType == fillTypeIndex and not isFermenting then
-                        totalFillLevel = totalFillLevel + (objLevel * objectInfo.numObjects)
+                        if objFillType == fillTypeIndex and not isFermenting and objFarmId == farmId then
+                            totalFillLevel = totalFillLevel + (objLevel * objectInfo.numObjects)
+                        end
                     end
                 end
 
@@ -178,32 +369,30 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         end
     end
 
-    -- 1. Bulk Storages (Silos & GM Terminals)
-    for storage, _ in pairs(g_currentMission.storageSystem.storages) do
-        local isGM = storage.isGmMarket or false
+    -- 1. Bulk Storages (Silos, Extensions, Barns [Milk only], ProductionPoints & GM Terminals)
+    local bulkEntries = self:getBulkStorageEntries(farmId)
+    for _, entry in ipairs(bulkEntries) do
+        local storage = entry.storage
+        local isGM = entry.isGmMarket
 
-        if storage.ownerFarmId == farmId or isGM then
-            if isGM then
-                -- Only extract values from the shadow array for the requesting farm
-                if storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil then
-                    for fillTypeIndex, fillLevel in pairs(storage.gmFarmFillLevels[farmId]) do
-                        if fillLevel > 0.01 then
-                            initFillType(fillTypeIndex)
-                            fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
-                            fillTypeTotals[fillTypeIndex].gm = fillTypeTotals[fillTypeIndex].gm + fillLevel
-                        end
+        if isGM then
+            -- Only extract values from the shadow array for the requesting farm
+            if storage.gmFarmFillLevels ~= nil and storage.gmFarmFillLevels[farmId] ~= nil then
+                for fillTypeIndex, fillLevel in pairs(storage.gmFarmFillLevels[farmId]) do
+                    if fillLevel > 0.01 and self:getIsBulkFillTypeAllowedForStorage(entry, fillTypeIndex, true) then
+                        initFillType(fillTypeIndex)
+                        fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
+                        fillTypeTotals[fillTypeIndex].gm = fillTypeTotals[fillTypeIndex].gm + fillLevel
                     end
                 end
-            else
-                -- Native behavior for private silos
-                if storage.ownerFarmId == farmId then
-                    for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
-                        if fillLevel > 0.01 then
-                            initFillType(fillTypeIndex)
-                            fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
-                            fillTypeTotals[fillTypeIndex].private = fillTypeTotals[fillTypeIndex].private + fillLevel
-                        end
-                    end
+            end
+        else
+            -- Native behavior for private farm storages
+            for fillTypeIndex, fillLevel in pairs(storage:getFillLevels()) do
+                if fillLevel > 0.01 and self:getIsBulkFillTypeAllowedForStorage(entry, fillTypeIndex, true) then
+                    initFillType(fillTypeIndex)
+                    fillTypeTotals[fillTypeIndex].total = fillTypeTotals[fillTypeIndex].total + fillLevel
+                    fillTypeTotals[fillTypeIndex].private = fillTypeTotals[fillTypeIndex].private + fillLevel
                 end
             end
         end
@@ -259,10 +448,10 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         end
     end
 
-    -- Convert totals into UI-ready table
+    -- Convert totals into UI-ready table (excluding blacklisted fillTypes such as WATER in barns)
     for fillTypeIndex, totals in pairs(fillTypeTotals) do
         local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
-        if fillTypeDesc ~= nil then
+        if fillTypeDesc ~= nil and (GlobalMarketAPI == nil or GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc)) then
             table.insert(aggregatedData, {
                 fillType = fillTypeDesc.name,
                 level = totals.total,
@@ -323,7 +512,13 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
-        local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
+        local fillTypeDesc = g_fillTypeManager:getFillTypeByName(filltypeName)
+        if fillTypeDesc == nil or (GlobalMarketAPI ~= nil and not GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc)) then
+            if self.debugManager ~= nil then self.debugManager:warning("Bulk Transaction aborted: FillType '%s' is invalid or blacklisted.", tostring(filltypeName)) end
+            return
+        end
+
+        local fillTypeIndex = fillTypeDesc.index
         local marketItem = nil
         for _, ft in pairs(self.offlineMarketFillTypes) do
             if ft.fillType == filltypeName then
@@ -337,7 +532,33 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         -- =======================================================
         -- SERVER-SIDE SECURITY VALIDATION
         -- =======================================================
-        local isGmMarket = targetStorage.isGmMarket or false
+        local ownerPlaceable, storageName, specType, storageIndex = self:resolveBulkStorageOwner(targetStorage)
+        local isAccessible, isGmMarket = self:getIsBulkStorageAccessible(targetStorage, ownerPlaceable, targetFarmId)
+        if not isAccessible then
+            if self.debugManager ~= nil then
+                self.debugManager:warning("Bulk Transaction aborted: Farm %d does not own the target storage!", tostring(targetFarmId))
+            end
+            return
+        end
+
+        local husbandryPlaceable = (specType == "husbandry") and ownerPlaceable or self:getConnectedHusbandryPlaceable(targetStorage)
+        local validationEntry = {
+            storage = targetStorage,
+            ownerPlaceable = ownerPlaceable,
+            husbandryPlaceable = husbandryPlaceable,
+            storageName = storageName,
+            specType = specType,
+            storageIndex = storageIndex,
+            isGmMarket = isGmMarket
+        }
+
+        if not self:getIsBulkFillTypeAllowedForStorage(validationEntry, fillTypeIndex, mode == 1) then
+            if self.debugManager ~= nil then
+                self.debugManager:warning("Bulk Transaction aborted: FillType '%s' is not allowed for storage type '%s' (Mode %d).", tostring(filltypeName), tostring(specType), mode)
+            end
+            return
+        end
+
         local physicalSiloLevel = targetStorage:getFillLevel(fillTypeIndex)
         local availableForFarm = physicalSiloLevel
 
@@ -457,7 +678,19 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
-        local fillTypeIndex = g_fillTypeManager:getFillTypeByName(filltypeName).index
+        local fillTypeDesc = g_fillTypeManager:getFillTypeByName(filltypeName)
+        if fillTypeDesc == nil or (GlobalMarketAPI ~= nil and not GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc)) then
+            if self.debugManager ~= nil then self.debugManager:warning("Object Transaction aborted: FillType '%s' is invalid or blacklisted.", tostring(filltypeName)) end
+            return
+        end
+
+        local isGmMarket = targetPlaceable.isGmMarket or false
+        if not isGmMarket and targetPlaceable:getOwnerFarmId() ~= targetFarmId then
+            if self.debugManager ~= nil then self.debugManager:warning("Object Transaction aborted: Farm %d does not own the target ObjectStorage!", tostring(targetFarmId)) end
+            return
+        end
+
+        local fillTypeIndex = fillTypeDesc.index
         local spec = targetPlaceable.spec_objectStorage
 
         -- =========================================================

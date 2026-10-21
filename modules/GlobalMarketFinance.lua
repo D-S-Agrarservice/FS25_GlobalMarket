@@ -311,7 +311,8 @@ function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPal
         return isBuying and MoneyType.GM_BUY_PIECE or MoneyType.GM_SELL_PIECE
     end
 
-    if fillType.isBaleType then
+    -- FIX: Prevent items that are BOTH Bulk and Bale (like Straw/Hay/Silage) from being booked as Bales in bulk silos
+    if fillType.isBaleType and not fillType.isBulkType then
         return isBuying and MoneyType.GM_BUY_BALE or MoneyType.GM_SELL_BALE
     end
 

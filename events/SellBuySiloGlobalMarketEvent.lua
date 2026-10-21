@@ -29,24 +29,16 @@ function SellBuySiloGlobalMarketEvent.new(action, price, playerFarmId, fillType,
     self.fillLevel = math.floor(fillLevel)
     self.playerUserId = playerUserId
 
-    -- FIX: Safe Network Node resolution to prevent transmitting raw Lua tables
+    -- FIX: Store direct registered Network Object (Storage/ManureHeap) AND resolve owning Placeable fallback
+    self.storage = storage
     self.targetPlaceable = nil
     self.storageIndex = 1
 
     if storage ~= nil and type(storage) == "table" then
-        if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
-            for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-                if placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
-                    for i, s in ipairs(placeable.spec_silo.storages) do
-                        if s == storage then
-                            self.targetPlaceable = placeable
-                            self.storageIndex = i
-                            break
-                        end
-                    end
-                end
-                if self.targetPlaceable ~= nil then break end
-            end
+        if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.resolveBulkStorageOwner ~= nil then
+            local ownerPlaceable, _, _, resolvedIndex = g_currentMission.globalMarket:resolveBulkStorageOwner(storage)
+            self.targetPlaceable = ownerPlaceable
+            self.storageIndex = resolvedIndex or 1
         end
     end
 
@@ -61,9 +53,20 @@ function SellBuySiloGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteString(streamId, self.fillType)
     streamWriteInt32(streamId, self.fillLevel)
 
-    -- FIX: Send the resolved Network Node and Index
-    NetworkUtil.writeNodeObject(streamId, self.targetPlaceable)
-    streamWriteInt8(streamId, self.storageIndex)
+    -- 1. Primary: Transmit registered Network Object (Storage or ManureHeap) directly
+    local hasDirectStorageNode = (self.storage ~= nil and self.storage.isRegistered == true)
+    streamWriteBool(streamId, hasDirectStorageNode)
+    if hasDirectStorageNode then
+        NetworkUtil.writeNodeObject(streamId, self.storage)
+    end
+
+    -- 2. Fallback: Also transmit resolved owning Placeable and storage index
+    local hasTargetPlaceable = (self.targetPlaceable ~= nil and self.targetPlaceable.isRegistered == true)
+    streamWriteBool(streamId, hasTargetPlaceable)
+    if hasTargetPlaceable then
+        NetworkUtil.writeNodeObject(streamId, self.targetPlaceable)
+    end
+    streamWriteInt8(streamId, self.storageIndex or 1)
 
     streamWriteInt16(streamId, self.playerUserId)
 end
@@ -76,16 +79,37 @@ function SellBuySiloGlobalMarketEvent:readStream(streamId, connection)
     self.fillType = streamReadString(streamId)
     self.fillLevel = streamReadInt32(streamId)
 
-    -- FIX: Read the Network Node and Index
-    self.targetPlaceable = NetworkUtil.readNodeObject(streamId)
+    -- 1. Primary: Read direct registered Network Object
+    local hasDirectStorageNode = streamReadBool(streamId)
+    local directStorageObject = nil
+    if hasDirectStorageNode then
+        directStorageObject = NetworkUtil.readNodeObject(streamId)
+    end
+
+    -- 2. Fallback: Read owning Placeable and storage index
+    local hasTargetPlaceable = streamReadBool(streamId)
+    self.targetPlaceable = nil
+    if hasTargetPlaceable then
+        self.targetPlaceable = NetworkUtil.readNodeObject(streamId)
+    end
     self.storageIndex = streamReadInt8(streamId)
 
     self.playerUserId = streamReadInt16(streamId)
 
-    -- FIX: Reconstruct raw storage for backend execution
-    self.storage = nil
-    if self.targetPlaceable ~= nil and self.targetPlaceable.spec_silo ~= nil and self.targetPlaceable.spec_silo.storages ~= nil then
-        self.storage = self.targetPlaceable.spec_silo.storages[self.storageIndex]
+    -- Reconstruct raw storage for backend execution across all placeable types
+    self.storage = directStorageObject
+    if self.storage == nil and self.targetPlaceable ~= nil then
+        if self.targetPlaceable.spec_silo ~= nil and self.targetPlaceable.spec_silo.storages ~= nil then
+            self.storage = self.targetPlaceable.spec_silo.storages[self.storageIndex]
+        elseif self.targetPlaceable.spec_siloExtension ~= nil and self.targetPlaceable.spec_siloExtension.storage ~= nil then
+            self.storage = self.targetPlaceable.spec_siloExtension.storage
+        elseif self.targetPlaceable.spec_husbandry ~= nil and self.targetPlaceable.spec_husbandry.storage ~= nil then
+            self.storage = self.targetPlaceable.spec_husbandry.storage
+        elseif self.targetPlaceable.spec_manureHeap ~= nil and self.targetPlaceable.spec_manureHeap.manureHeap ~= nil then
+            self.storage = self.targetPlaceable.spec_manureHeap.manureHeap
+        elseif self.targetPlaceable.spec_productionPoint ~= nil and self.targetPlaceable.spec_productionPoint.productionPoint ~= nil then
+            self.storage = self.targetPlaceable.spec_productionPoint.productionPoint.storage
+        end
     end
 
     self:run(connection)
