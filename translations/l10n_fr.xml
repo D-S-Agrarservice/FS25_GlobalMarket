@@ -46,7 +46,7 @@
         <e k="ui_gm_settings_debugMode"                            v="Mode débogage" />
         <e k="ui_gm_settings_debugMode_desc"                       v="Active les journaux de développement étendus pour le GlobalMarket." />
         <e k="ui_gm_settings_detailedFinance"                      v="Statistiques financières détaillées" />
-        <e k="ui_gm_settings_detailedFinance_desc"                 v="Active une répartition des transactions du GlobalMarket par catégorie de biens dans l'aperçu financier. (Nécessite le rechargement de la partie !)" />
+        <e k="ui_gm_settings_detailedFinance_desc"                 v="Active une répartition des transactions du GlobalMarket par catégorie de biens dans l'aperçu financier." />
         <e k="ui_gm_settings_header"                               v="MARCHÉ GLOBAL" />
         <e k="ui_gm_settings_iconPulse"                            v="Icône d'état : Impulsion" />
         <e k="ui_gm_settings_iconPulse_desc"                       v="Active un doux effet d'impulsion sur l'icône lors de la réception de données." />

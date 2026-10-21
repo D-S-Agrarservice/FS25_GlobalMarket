@@ -75,7 +75,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     local capacityChanged = false
 
     if GlobalMarketSettings.current ~= nil then
-        financeChanged = (GlobalMarketSettings.current.isDetailedFinance ~= self.isDetailed)
+        financeChanged = false
         deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex) or (GlobalMarketSettings.current.dealerMarkupIndex ~= self.dealerMarkupIndex)
         compatChanged = (GlobalMarketSettings.current.compatModeIndex ~= self.compatModeIndex)
         capacityChanged = (GlobalMarketSettings.current.capacityIndex ~= self.capacityIndex)
@@ -84,13 +84,13 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     -- 2. APPLY SETTINGS LOCALLY
     GlobalMarketSettings.current.deliveryBaseIndex = self.baseIndex
     GlobalMarketSettings.current.deliveryLiterIndex = self.literIndex
-    GlobalMarketSettings.current.isDetailedFinance = self.isDetailed
+    -- Note: isDetailedFinance is a local per-player UI comfort setting and is not overwritten by network sync.
     GlobalMarketSettings.current.isDebugActive = self.isDebug
     GlobalMarketSettings.current.debugLevelIndex = self.debugLevel
     GlobalMarketSettings.current.debugDurationIndex = self.debugDur
     GlobalMarketSettings.current.compatModeIndex = self.compatModeIndex
-    GlobalMarketSettings.current.isIconPulseActive = self.isIconPulse
-    GlobalMarketSettings.current.showStatusIcon = self.showStatusIcon
+    -- Note: isIconPulseActive is a local per-player UI comfort setting and is not overwritten by network sync.
+    -- Note: showStatusIcon is a local per-player UI comfort setting and is not overwritten by network sync.
     GlobalMarketSettings.current.dealerMarkupIndex = self.dealerMarkupIndex
     GlobalMarketSettings.current.capacityIndex = self.capacityIndex
 

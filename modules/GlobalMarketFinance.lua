@@ -43,7 +43,11 @@ local function setupFinanceSystemEarly()
 
             -- Helper to determine the current environment profile early in the boot sequence
             local prefix = "globalMarketSettings.profiles.sp"
-            if g_dedicatedServerInfo ~= nil then
+            local isDedi = (g_dedicatedServer ~= nil)
+            if not isDedi and StartParams ~= nil and type(StartParams.getIsSet) == "function" then
+                isDedi = StartParams.getIsSet("server") or StartParams.getIsSet("serverWithGui")
+            end
+            if isDedi then
                 prefix = "globalMarketSettings.profiles.dedi"
             elseif g_currentMission ~= nil and g_currentMission.missionDynamicInfo ~= nil and g_currentMission.missionDynamicInfo.isMultiplayer then
                 prefix = "globalMarketSettings.profiles.mp"
@@ -73,6 +77,10 @@ local function setupFinanceSystemEarly()
 
     MoneyType.GM_BUY  = MoneyType.register("gmBuy", "finance_gmBuy", GlobalMarket.modName)
     MoneyType.GM_SELL = MoneyType.register("gmSell", "finance_gmSell", GlobalMarket.modName)
+
+    -- Update LAST_ID so FSBaseMission:initialize() -> MoneyType.reset() does not reset
+    -- the internal ID counter below our registered MoneyTypes.
+    MoneyType.LAST_ID = MoneyType.GM_SELL.id
 
     -- 3. UNCONDITIONAL FinanceStats Injection
     -- We inject ALL stats here to ensure perfect network synchronization.
@@ -222,12 +230,29 @@ if InGameMenuStatisticsFrame ~= nil and not GlobalMarketFinance.uiHooked then
         return superFunc(self, list, section, index, cell)
     end)
 
+    -- 3. Hook HUD notifications so simple finance mode displays aggregated labels
+    if HUD ~= nil then
+        HUD.showMoneyChange = Utils.overwrittenFunction(HUD.showMoneyChange, function(self, superFunc, moneyType, text)
+            if not GlobalMarketFinance.isDetailedCached and text == nil and moneyType ~= nil and type(moneyType.title) == "string" then
+                if string.sub(moneyType.title, 1, 13) == "finance_gmBuy" then
+                    text = g_i18n:getText("finance_gmBuy", GlobalMarket.modName)
+                elseif string.sub(moneyType.title, 1, 14) == "finance_gmSell" then
+                    text = g_i18n:getText("finance_gmSell", GlobalMarket.modName)
+                end
+            end
+            return superFunc(self, moneyType, text)
+        end)
+    end
+
     GlobalMarketFinance.uiHooked = true
 end
 
 -- Dummy init function so we don't crash GlobalMarket:loadMap when it calls this
 function GlobalMarketFinance.init()
-    -- Kept empty to prevent missing function calls from the main loader.
+    -- Sync cached UI preference with the loaded environment profile from GlobalMarketSettings.
+    if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
+        GlobalMarketFinance.isDetailedCached = (GlobalMarketSettings.current.isDetailedFinance == true)
+    end
     -- External data is now handled entirely by GlobalMarketAPI.
 end
 
@@ -237,7 +262,9 @@ end
 function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPallet)
     local isDetailed = GlobalMarketFinance.isDetailedCached
 
-    if not isDetailed then
+    -- Always book into the 8 detailed categories on the server so every client can
+    -- freely toggle between simple (aggregated) and detailed finance views at runtime.
+    if false then
         return isBuying and MoneyType.GM_BUY or MoneyType.GM_SELL
     end
 

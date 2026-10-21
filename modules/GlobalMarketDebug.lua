@@ -33,6 +33,8 @@ function GlobalMarketDebug.new(modName, baseDir)
 end
 
 function GlobalMarketDebug:initLogDirectory()
+    local modSettingsDir = getUserProfileAppPath() .. "modSettings/" .. self.modName .. "/"
+    createFolder(modSettingsDir)
     createFolder(self.logDir)
 end
 

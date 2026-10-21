@@ -96,6 +96,9 @@ end
 -- Helper: Determines the correct XML Node prefix based on the environment.
 function GlobalMarketSettings:getEnvPrefix()
     local isDedi = (g_dedicatedServer ~= nil)
+    if not isDedi and StartParams ~= nil and type(StartParams.getIsSet) == "function" then
+        isDedi = StartParams.getIsSet("server") or StartParams.getIsSet("serverWithGui")
+    end
 
     if not isDedi and g_currentMission ~= nil then
         isDedi = g_currentMission.connectedToDedicatedServer
@@ -103,7 +106,7 @@ function GlobalMarketSettings:getEnvPrefix()
 
     if isDedi then
         return "globalMarketSettings.profiles.dedi"
-    elseif g_currentMission ~= nil and g_currentMission.missionDynamicInfo.isMultiplayer then
+    elseif g_currentMission ~= nil and g_currentMission.missionDynamicInfo ~= nil and g_currentMission.missionDynamicInfo.isMultiplayer then
         return "globalMarketSettings.profiles.mp"
     else
         return "globalMarketSettings.profiles.sp"
@@ -122,6 +125,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.deliveryLiterIndex = defaultLiter
         self.current.dealerMarkupIndex = defaultMarkup
         self.current.capacityIndex = defaultCapacity
+        self.current.isDetailedFinance = false
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
         self.current.debugDurationIndex = 1
@@ -135,11 +139,15 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.DELIVER_COST = self.OPTIONS.DELIVERY_BASE[self.current.deliveryBaseIndex]
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
         GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
-        GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex] -- NEW
+        GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex]
+        if GlobalMarketFinance ~= nil then
+            GlobalMarketFinance.isDetailedCached = false
+        end
         return
     end
 
     local xmlFile = XMLFile.load("GlobalMarketSettingsXML", savePath)
+    local profileExisted = (xmlFile ~= nil) and xmlFile:hasProperty(prefix) or false
     if xmlFile ~= nil then
         -- Load Delivery & Markup Costs
         self.current.deliveryBaseIndex = xmlFile:getInt(prefix .. "#deliveryBaseIndex", defaultBase)
@@ -148,7 +156,11 @@ function GlobalMarketSettings:loadFromXML()
         self.current.capacityIndex = xmlFile:getInt(prefix .. "#capacityIndex", defaultCapacity)
 
         -- Load Detailed Finance Setting
+        -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
+        if GlobalMarketFinance ~= nil then
+            GlobalMarketFinance.isDetailedCached = (self.current.isDetailedFinance == true)
+        end
 
         -- Load Debug Settings
         self.current.isDebugActive = xmlFile:getBool(prefix .. ".debug#isActive", false)
@@ -171,6 +183,11 @@ function GlobalMarketSettings:loadFromXML()
 
         if GlobalMarket.debugManager ~= nil then
             GlobalMarket.debugManager:info("Settings: Loaded profile '%s' from XML.", prefix)
+        end
+
+        -- Persist the environment profile (sp/mp/dedi) if it did not exist in settings.xml yet
+        if not profileExisted then
+            self:saveToXML()
         end
     end
 end
@@ -394,7 +411,7 @@ function GlobalMarketSettings.refreshMenuState()
     local financeControl = GlobalMarketSettings.CONTROLS["gmSettingsDetailedFinance"]
     if financeControl ~= nil then
         financeControl:setState(GlobalMarketSettings.current.isDetailedFinance and 2 or 1)
-        financeControl:setDisabled(not isAdmin)
+        financeControl:setDisabled(false)
     end
 
     -- System Controls
@@ -403,13 +420,13 @@ function GlobalMarketSettings.refreshMenuState()
     local showIconControl = GlobalMarketSettings.CONTROLS["gmSettingsShowIcon"]
     if showIconControl ~= nil then
         showIconControl:setState(isStatusIconOn and 2 or 1)
-        showIconControl:setDisabled(not isAdmin)
+        showIconControl:setDisabled(false)
     end
 
     local iconPulseControl = GlobalMarketSettings.CONTROLS["gmSettingsIconPulse"]
     if iconPulseControl ~= nil then
         iconPulseControl:setState(GlobalMarketSettings.current.isIconPulseActive and 2 or 1)
-        iconPulseControl:setDisabled(not isAdmin or not isStatusIconOn)
+        iconPulseControl:setDisabled(not isStatusIconOn)
     end
 
     -- Compatibility Controls
@@ -454,7 +471,11 @@ function GlobalMarketSettings:broadcastChanges()
         self:saveToXML()
     end
 
-    -- Network Synchronization
+    -- Network Synchronization (skip for purely local client comfort settings)
+    if self.isLocalChange then
+        self.isLocalChange = false
+        return
+    end
     if g_server ~= nil then
         -- Server broadcasts the changes to all connected clients
         g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex))
@@ -494,12 +515,17 @@ end
 
 function GlobalMarketSettings:onDetailedFinanceChanged(state)
     self.current.isDetailedFinance = (state == 2)
+    if GlobalMarketFinance ~= nil then
+        GlobalMarketFinance.isDetailedCached = self.current.isDetailedFinance
+    end
+    self.isLocalChange = true
     self:broadcastChanges()
     self.refreshMenuState()
 end
 
 function GlobalMarketSettings:onShowIconChanged(state)
     self.current.showStatusIcon = (state == 2)
+    self.isLocalChange = true
     self:broadcastChanges()
     if GlobalMarketSettings.refreshMenuState ~= nil then
         GlobalMarketSettings.refreshMenuState()
@@ -508,6 +534,7 @@ end
 
 function GlobalMarketSettings:onIconPulseChanged(state)
     self.current.isIconPulseActive = (state == 2)
+    self.isLocalChange = true
     self:broadcastChanges()
 end
 
