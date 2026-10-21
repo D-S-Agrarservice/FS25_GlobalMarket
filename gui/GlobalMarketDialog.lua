@@ -167,10 +167,13 @@ function GlobalMarketDialog:onClickStorage(state)
                                 end
                             end
                         end
+                    end
+
                     -- GM STORE CACHE BRIDGE:
                     -- Strictly fetches dynamically parsed formats (Pallets, BigBags, IBCs)
-                    -- from our RAM dictionary. Fallback to native engine logic is removed.
-                    elseif selectedSilo.supportsPallets then
+                    -- from our RAM dictionary. Using an independent 'if' instead of 'elseif'
+                    -- allows dual-capable storages (like the GM Terminal) to offer both bales and pallets.
+                    if selectedSilo.supportsPallets then
                         if GlobalMarketStoreCache ~= nil then
                             local cachedFormats = GlobalMarketStoreCache.getFormatsForFillType(self.fillTypeName)
                             for _, formatData in ipairs(cachedFormats) do

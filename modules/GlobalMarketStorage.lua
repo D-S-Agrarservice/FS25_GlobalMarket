@@ -313,11 +313,25 @@ function GlobalMarket:getAvailableStorages(fillTypeName, farmId, isSelling)
                 if not isSelling then
                     local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
                     if fillType ~= nil then
-                        local canBeBale = fillType.isBaleType or false
-                        local canBePallet = fillType.isPalletType or false
+                        local canBeBale = false
+                        if fillType.isBaleType and g_baleManager ~= nil and g_baleManager.bales ~= nil then
+                            for _, bale in ipairs(g_baleManager.bales) do
+                                if bale.isAvailable and bale.fillTypes ~= nil then
+                                    for _, ftData in ipairs(bale.fillTypes) do
+                                        if ftData.fillTypeIndex == fillTypeIndex then
+                                            canBeBale = true
+                                            break
+                                        end
+                                    end
+                                end
+                                if canBeBale then break end
+                            end
+                        end
 
-                        if fillType.palletFilename ~= nil and fillType.palletFilename ~= "" then
-                            canBePallet = true
+                        local canBePallet = false
+                        if GlobalMarketStoreCache ~= nil then
+                            local cachedFormats = GlobalMarketStoreCache.getFormatsForFillType(fillType.name)
+                            canBePallet = (cachedFormats ~= nil and #cachedFormats > 0)
                         end
 
                         if not ((supportsBales and canBeBale) or (supportsPallets and canBePallet)) then
@@ -710,10 +724,14 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
         -- 2. Input is a String (Direct call from UI in SP/Host, OR it is a Pallet)
         elseif type(rawInput) == "string" and rawInput ~= "" then
-            if g_baleManager ~= nil and g_baleManager:getBaleTypeIndexByXMLFilename(rawInput) ~= nil then
+            local decodedFilename = rawInput
+            if NetworkUtil ~= nil and NetworkUtil.convertFromNetworkFilename ~= nil then
+                decodedFilename = NetworkUtil.convertFromNetworkFilename(rawInput) or rawInput
+            end
+            if g_baleManager ~= nil and g_baleManager:getBaleTypeIndexByXMLFilename(decodedFilename) ~= nil then
                 isTargetBale = true
             end
-            xmlFilename = rawInput
+            xmlFilename = decodedFilename
         end
 
         -- ==========================================
@@ -776,9 +794,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                             isFormatMatch = false
                         end
 
-                        -- Bypass strict XML matching for generic engine pallets (e.g., fillablePallet)
-                        -- as they dynamically hold different fillTypes like apples, tomatoes, etc.
-                        if string.find(cleanObjXml, "fillablepallet") or string.find(cleanFormatXml, "fillablepallet") then
+                        -- Bypass strict XML matching for generic engine pallets (e.g., fillablePallet, vegetablesPallet)
+                        -- as they dynamically hold different fillTypes like apples, tomatoes, root crops, etc.
+                        if string.find(cleanObjXml, "fillablepallet", 1, true) or string.find(cleanFormatXml, "fillablepallet", 1, true)
+                            or string.find(cleanObjXml, "vegetablespallet", 1, true) or string.find(cleanFormatXml, "vegetablespallet", 1, true) then
                             isFormatMatch = true
                         end
                     end
@@ -948,9 +967,12 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                         fermentationTime = 0
                     }
                 else
+                    local lowerXml = string.lower(xmlFilename)
+                    local isBigBag = (string.find(lowerXml, "bigbag", 1, true) ~= nil and string.find(lowerXml, "bigbagpallet", 1, true) == nil)
+
                     abstractObject.palletAttributes = {
                         configFileName = xmlFilename,
-                        isBigBag = false,
+                        isBigBag = isBigBag,
                         ownerFarmId = targetFarmId,
                         fillType = fillTypeIndex,
                         fillLevel = actualCapacity,
@@ -958,6 +980,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                             fillUnit = 1
                         }
                     }
+                end
+
+                if abstractClass.getSize ~= nil then
+                    abstractClass.getSize(xmlFilename)
                 end
 
                 if targetPlaceable.addAbstactObjectToObjectStorage ~= nil then
@@ -994,6 +1020,11 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                 if foundIndex ~= nil then
                     payloadData = foundIndex
                 end
+            end
+
+            -- Normalize pallet XML paths for Dedicated Server compatibility ($moddir$ / $pdlcdir$ / $data)
+            if type(payloadData) == "string" and payloadData ~= "" and NetworkUtil ~= nil and NetworkUtil.convertToNetworkFilename ~= nil then
+                payloadData = NetworkUtil.convertToNetworkFilename(payloadData)
             end
 
             -- Pass payloadData (which is now either a String for Pallets or a Number for Bales)
