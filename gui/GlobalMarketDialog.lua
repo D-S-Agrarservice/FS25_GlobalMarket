@@ -156,16 +156,69 @@ function GlobalMarketDialog:onClickStorage(state)
                 if self.actionType == "BUY" then
                     -- BUYING: Scan engine for all possible supported formats
                     if selectedSilo.supportsBales and fillType.isBaleType and g_baleManager ~= nil then
+                        local seenMapBaleSizes = {}
+                        local seenBaleSizeAndCap = {}
+                        local baleFormats = {}
+                        local baseTitleCounts = {}
+
+                        local mapCustomEnv = (g_currentMission ~= nil and g_currentMission.missionInfo ~= nil) and g_currentMission.missionInfo.customEnvironment or nil
+                        local mapBaseDir = g_currentMission ~= nil and g_currentMission.baseDirectory or nil
+
                         for _, bale in ipairs(g_baleManager.bales) do
-                            if bale.isAvailable then
+                            if bale.isAvailable and bale.fillTypes ~= nil then
                                 for _, ftData in ipairs(bale.fillTypes) do
                                     if ftData.fillTypeIndex == fillType.index then
                                         local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
-                                        local title = isRound and string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_roundbale"), diameter or width or 1.25) or string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_squarebale"), length or 2.40)
-                                        table.insert(self.availableFormats, {title = title, xml = bale.xmlFilename, capacity = ftData.capacity, unitKey = "ui_gm_unit_bale"})
+                                        local sizeKey = isRound
+                                            and string.format("ROUND_%.2f_%.2f", diameter or 0, width or 0)
+                                            or string.format("SQUARE_%.2f_%.2f_%.2f", length or 0, width or 0, height or 0)
+                                        local capInt = math.floor((ftData.capacity or 0) + 0.5)
+                                        local sizeCapKey = string.format("%s_%d", sizeKey, capInt)
+
+                                        local isMapOrBaseBale = (bale.customEnvironment == nil)
+                                            or (mapCustomEnv ~= nil and bale.customEnvironment == mapCustomEnv)
+                                            or (mapBaseDir ~= nil and mapBaseDir ~= "" and bale.baseDirectory == mapBaseDir)
+
+                                        local shouldAdd = false
+                                        if isMapOrBaseBale then
+                                            -- Map/Basegame bales: Only allow the first matching bale per physical size (mirrors BaleManager:getBaleIndex)
+                                            if not seenMapBaleSizes[sizeKey] and not seenBaleSizeAndCap[sizeCapKey] then
+                                                seenMapBaleSizes[sizeKey] = true
+                                                seenBaleSizeAndCap[sizeCapKey] = true
+                                                shouldAdd = true
+                                            end
+                                        else
+                                            -- External Mod/DLC bales: Allow if they introduce new dimensions OR a different capacity (e.g. High-Density / Liftable bales)
+                                            if not seenBaleSizeAndCap[sizeCapKey] then
+                                                seenBaleSizeAndCap[sizeCapKey] = true
+                                                shouldAdd = true
+                                            end
+                                        end
+
+                                        if shouldAdd then
+                                            local title = isRound
+                                                and string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_roundbale"), diameter or width or 1.25)
+                                                or string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_squarebale"), length or 2.40)
+
+                                            baseTitleCounts[title] = (baseTitleCounts[title] or 0) + 1
+                                            table.insert(baleFormats, {
+                                                title = title,
+                                                xml = bale.xmlFilename,
+                                                capacity = ftData.capacity,
+                                                unitKey = "ui_gm_unit_bale"
+                                            })
+                                        end
                                     end
                                 end
                             end
+                        end
+
+                        -- Disambiguate dropdown labels if a mod added a variant with the same display length/diameter but different capacity
+                        for _, baleFormat in ipairs(baleFormats) do
+                            if baseTitleCounts[baleFormat.title] ~= nil and baseTitleCounts[baleFormat.title] > 1 then
+                                baleFormat.title = string.format("%s - %s L", baleFormat.title, g_i18n:formatVolume(baleFormat.capacity or 0, 0))
+                            end
+                            table.insert(self.availableFormats, baleFormat)
                         end
                     end
 
