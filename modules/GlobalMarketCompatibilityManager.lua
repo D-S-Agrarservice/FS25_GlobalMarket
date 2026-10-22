@@ -234,6 +234,11 @@ function GMCompatibilityManager:installFirewalls()
         end
 
         local function applyInstanceFirewall(placeable)
+            if GlobalMarketAccess ~= nil and GlobalMarketAccess.applyGmPlaceableHooks ~= nil then
+                GlobalMarketAccess.applyGmPlaceableHooks(placeable)
+                return
+            end
+
             if placeable.isGmMarket and placeable.updateInfo ~= nil then
 
                 -- Prevent double-hooking if the user toggles settings multiple times
@@ -278,8 +283,8 @@ function GMCompatibilityManager:installFirewalls()
         end
 
         -- Catch newly placed buildings during the session
-        if Placeable.onFinalizePlacement ~= nil then
-            Placeable.onFinalizePlacement = Utils.appendedFunction(Placeable.onFinalizePlacement, function(placeable)
+        if Placeable ~= nil and Placeable.finalizePlacement ~= nil then
+            Placeable.finalizePlacement = Utils.appendedFunction(Placeable.finalizePlacement, function(placeable)
                 applyInstanceFirewall(placeable)
             end)
         end

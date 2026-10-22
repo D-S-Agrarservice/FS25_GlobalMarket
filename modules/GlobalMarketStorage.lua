@@ -1064,8 +1064,13 @@ function GlobalMarket.PlaceableObjectStorage_onLoad(self, superFunc, savegame)
             spec.storage.isGmMarket = spec.isGmMarket
         end
 
-        if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to ObjectStorage.")
+        if spec.isGmMarket then
+            if GlobalMarketAccess ~= nil and GlobalMarketAccess.applyGmPlaceableHooks ~= nil then
+                GlobalMarketAccess.applyGmPlaceableHooks(self)
+            end
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to ObjectStorage.")
+            end
         end
     end
 end
@@ -1080,6 +1085,13 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
 
         self.isGmMarket = spec.isGmMarket
 
+        if spec.unloadingStation ~= nil then
+            spec.unloadingStation.isGmMarket = spec.isGmMarket
+        end
+        if spec.loadingStation ~= nil then
+            spec.loadingStation.isGmMarket = spec.isGmMarket
+        end
+
         -- Pass the flag down to all child storages so the existing getAvailableStorages loop works flawlessly
         if spec.storages ~= nil then
             for _, storage in ipairs(spec.storages) do
@@ -1087,8 +1099,13 @@ function GlobalMarket.PlaceableSilo_onLoad(self, superFunc, savegame)
             end
         end
 
-        if spec.isGmMarket and GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to Silo and child storages.")
+        if spec.isGmMarket then
+            if GlobalMarketAccess ~= nil and GlobalMarketAccess.applyGmPlaceableHooks ~= nil then
+                GlobalMarketAccess.applyGmPlaceableHooks(self)
+            end
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:trace("GM Terminal Flag (isGmMarket) successfully applied to Silo and child storages.")
+            end
         end
     end
 end

@@ -17,22 +17,29 @@ function GlobalMarketAccess.init()
     -- =========================================================================
 
     -- Bypass for player on-foot interaction (e.g., ObjectStorageActivatable)
-    local function canPlayerAccessHook(accessHandler, superFunc, player, object, ...)
+    -- Note: AccessHandler:canPlayerAccess signature is (object, player, allowEqualAlways)
+    local function canPlayerAccessHook(accessHandler, superFunc, object, player, ...)
         if object ~= nil and type(object) == "table" then
             -- Check if the object itself or its owning placeable is a GM terminal
-            local isGmMarket = object.isGmMarket or (object.owningPlaceable ~= nil and object.owningPlaceable.isGmMarket)
+            local isGmMarket = object.isGmMarket
+                or (object.owningPlaceable ~= nil and object.owningPlaceable.isGmMarket)
+                or (object.target ~= nil and object.target.isGmMarket)
+                or (object.source ~= nil and object.source.isGmMarket)
             if isGmMarket then
                 return true
             end
         end
-        return superFunc(accessHandler, player, object, ...)
+        return superFunc(accessHandler, object, player, ...)
     end
     AccessHandler.canPlayerAccess = Utils.overwrittenFunction(AccessHandler.canPlayerAccess, canPlayerAccessHook)
 
     -- Bypass for farm/vehicle interaction (e.g., UnloadingStation, LoadTrigger)
     local function canFarmAccessHook(accessHandler, superFunc, farmId, object, ...)
         if object ~= nil and type(object) == "table" then
-            local isGmMarket = object.isGmMarket or (object.owningPlaceable ~= nil and object.owningPlaceable.isGmMarket)
+            local isGmMarket = object.isGmMarket
+                or (object.owningPlaceable ~= nil and object.owningPlaceable.isGmMarket)
+                or (object.target ~= nil and object.target.isGmMarket)
+                or (object.source ~= nil and object.source.isGmMarket)
             if isGmMarket then
                 return true
             end
@@ -516,45 +523,105 @@ function GlobalMarketAccess.init()
     end
 
     -- =========================================================================
-    -- Hook 10: AnimatedObject Hybrid Trigger (The Elegant Bypass)
-    -- We target our GM Terminals specifically and overwrite the instance function.
-    -- To ensure Dedi-Server clients are caught AFTER network synchronization,
-    -- we trigger the sweep via onStartMission instead of onFinishedLoading.
+    -- Hook 10: Instance-Level Hooks for GM Terminals (Doors, InfoTrigger & UI)
+    -- Because TypeManager:finalizeTypes() runs before mod scripts load, instance
+    -- methods like updateInfo are copied from the unhooked specialization table.
+    -- Furthermore, PlaceableAnimatedObjects:getCanTriggerAnimatedObject checks
+    -- canFarmAccessOtherId(playerFarmId, ownerFarmId) without passing the object.
+    -- Therefore, we apply instance-level hooks in finalizePlacement & onStartMission.
     -- =========================================================================
 
-    local function applyGmHybridDoorHook(placeable)
-        -- Only target our GM Terminals that have the door check function
-        if placeable.isGmMarket and placeable.getCanTriggerAnimatedObject ~= nil then
+    function GlobalMarketAccess.applyGmPlaceableHooks(placeable)
+        if placeable == nil or type(placeable) ~= "table" then
+            return
+        end
 
-            -- Prevent double hooking
-            if not placeable.hasGmDoorBypass then
-                local function gmInstanceTriggerHook(self, superFunc, animatedObject)
-                    -- 'self' is our GM Market building. We always greenlight its doors.
-                    return true
+        -- Ensure isGmMarket is propagated between placeable and its specializations
+        local isGm = placeable.isGmMarket == true
+        if not isGm and placeable.spec_silo ~= nil and placeable.spec_silo.isGmMarket then
+            isGm = true
+        end
+        if not isGm and placeable.spec_objectStorage ~= nil and placeable.spec_objectStorage.isGmMarket then
+            isGm = true
+        end
+
+        if not isGm then
+            return
+        end
+
+        placeable.isGmMarket = true
+
+        if placeable.spec_silo ~= nil then
+            placeable.spec_silo.isGmMarket = true
+            if placeable.spec_silo.unloadingStation ~= nil then
+                placeable.spec_silo.unloadingStation.isGmMarket = true
+            end
+            if placeable.spec_silo.loadingStation ~= nil then
+                placeable.spec_silo.loadingStation.isGmMarket = true
+            end
+            if placeable.spec_silo.storages ~= nil then
+                for _, storage in ipairs(placeable.spec_silo.storages) do
+                    storage.isGmMarket = true
                 end
+            end
+        end
 
-                placeable.getCanTriggerAnimatedObject = Utils.overwrittenFunction(placeable.getCanTriggerAnimatedObject, gmInstanceTriggerHook)
-                placeable.hasGmDoorBypass = true
+        if placeable.spec_objectStorage ~= nil then
+            placeable.spec_objectStorage.isGmMarket = true
+            if placeable.spec_objectStorage.storage ~= nil then
+                placeable.spec_objectStorage.storage.isGmMarket = true
+            end
+        end
 
-                if GlobalMarket.debugManager ~= nil then
-                    GlobalMarket.debugManager:info("Access Hook: Elegant VIP Pass applied to GM Terminal instance.")
+        -- 1. Door Bypass: Allow all farms to open/close animatedObjects (doors/gates) on GM buildings
+        if placeable.getCanTriggerAnimatedObject ~= nil and not placeable.hasGmDoorBypass then
+            local function gmInstanceTriggerHook(self, superFunc, animatedObject)
+                return true
+            end
+            placeable.getCanTriggerAnimatedObject = Utils.overwrittenFunction(placeable.getCanTriggerAnimatedObject, gmInstanceTriggerHook)
+            placeable.hasGmDoorBypass = true
+
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:info("Access Hook: Elegant VIP Pass applied to GM Terminal instance.")
+            end
+        end
+
+        -- 2. InfoTrigger Visibility: Ensure all players see the InfoTrigger HUD regardless of ownerFarmId
+        if placeable.spec_infoTrigger ~= nil then
+            placeable.spec_infoTrigger.showAllPlayers = true
+        end
+
+        -- 3. Instance-Level updateInfo Hook: Route directly to our clean GM multi-farm HUD logic
+        if placeable.updateInfo ~= nil and not placeable.hasGmFirewall then
+            placeable.hasGmFirewall = true
+            local originalUpdateInfo = placeable.updateInfo
+
+            placeable.updateInfo = function(self, infoTable)
+                local dummySuperFunc = function(s, t) end
+
+                if self.spec_silo ~= nil and GlobalMarketAccess.cleanSiloUpdateInfo ~= nil then
+                    GlobalMarketAccess.cleanSiloUpdateInfo(self, dummySuperFunc, infoTable)
+                elseif self.spec_objectStorage ~= nil and GlobalMarketAccess.cleanObjectStorageUpdateInfo ~= nil then
+                    GlobalMarketAccess.cleanObjectStorageUpdateInfo(self, dummySuperFunc, infoTable)
+                elseif originalUpdateInfo ~= nil then
+                    originalUpdateInfo(self, infoTable)
                 end
             end
         end
     end
 
-    -- 1. Catch newly placed buildings purchased mid-game by any player
-    if Placeable ~= nil and Placeable.onFinalizePlacement ~= nil then
-        Placeable.onFinalizePlacement = Utils.appendedFunction(Placeable.onFinalizePlacement, function(placeable)
-            applyGmHybridDoorHook(placeable)
+    -- 1. Catch newly placed buildings purchased mid-game (server & client stream) and loaded placeables
+    if Placeable ~= nil and Placeable.finalizePlacement ~= nil then
+        Placeable.finalizePlacement = Utils.appendedFunction(Placeable.finalizePlacement, function(placeable)
+            GlobalMarketAccess.applyGmPlaceableHooks(placeable)
         end)
     end
 
-    -- 2. Retroactively sweep the map exactly when network sync is 100% complete
+    -- 2. Retroactively sweep the map when network sync is 100% complete
     local function retroactiveGmDoorSweep(mission)
         if g_currentMission ~= nil and g_currentMission.placeableSystem ~= nil then
             for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-                applyGmHybridDoorHook(placeable)
+                GlobalMarketAccess.applyGmPlaceableHooks(placeable)
             end
         end
     end

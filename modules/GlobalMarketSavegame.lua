@@ -41,7 +41,6 @@ function GlobalMarket:saveToXmlFile()
                     local siloKey = string.format("globalMarket.siloStorages.silo(%d)", siloIndex)
                     xmlFile:setString(siloKey .. "#uniqueId", uid)
 
-                    local savedAtLeastOneStorage = false
                     for sIndex, storage in ipairs(placeable.spec_silo.storages) do
                         if storage.gmFarmFillLevels ~= nil then
                             local storageKey = string.format("%s.storage(%d)", siloKey, sIndex - 1)
@@ -49,9 +48,8 @@ function GlobalMarket:saveToXmlFile()
 
                             for farmId, fillLevels in pairs(storage.gmFarmFillLevels) do
                                 local farmKey = string.format("%s.farm(%d)", storageKey, fIndex)
-                                xmlFile:setInt(farmKey .. "#farmId", farmId)
-
                                 local ftIndex = 0
+
                                 for fillTypeIndex, level in pairs(fillLevels) do
                                     if level > 0.01 then
                                         local ftKey = string.format("%s.fillType(%d)", farmKey, ftIndex)
@@ -60,18 +58,19 @@ function GlobalMarket:saveToXmlFile()
                                             xmlFile:setString(ftKey .. "#name", fillTypeName)
                                             xmlFile:setFloat(ftKey .. "#level", level)
                                             ftIndex = ftIndex + 1
-                                            savedAtLeastOneStorage = true
                                         end
                                     end
                                 end
-                                fIndex = fIndex + 1
+
+                                if ftIndex > 0 then
+                                    xmlFile:setInt(farmKey .. "#farmId", farmId)
+                                    fIndex = fIndex + 1
+                                end
                             end
                         end
                     end
 
-                    if savedAtLeastOneStorage then
-                        siloIndex = siloIndex + 1
-                    end
+                    siloIndex = siloIndex + 1
                 end
             end
         end
