@@ -7,6 +7,26 @@
 GlobalMarketUI = {}
 local GlobalMarketUI_mt = Class(GlobalMarketUI, TabbedMenuFrameElement)
 
+-- Normalizes localized fillType titles for alphabetical sorting across languages (DE/EN/FR/ES/etc.)
+-- so umlauts and accented characters (Ä, Ö, Ü, É, Á, etc.) sort in their natural letter position instead of after 'Z'.
+function GlobalMarketUI.normalizeSortTitle(title)
+    if title == nil or title == "" then
+        return ""
+    end
+    local s = title
+    s = string.gsub(s, "Ä", "A"):gsub("ä", "a")
+    s = string.gsub(s, "Ö", "O"):gsub("ö", "o")
+    s = string.gsub(s, "Ü", "U"):gsub("ü", "u")
+    s = string.gsub(s, "ß", "ss")
+    s = string.gsub(s, "Á", "A"):gsub("á", "a"):gsub("À", "A"):gsub("à", "a"):gsub("Â", "A"):gsub("â", "a")
+    s = string.gsub(s, "É", "E"):gsub("é", "e"):gsub("È", "E"):gsub("è", "e"):gsub("Ê", "E"):gsub("ê", "e")
+    s = string.gsub(s, "Í", "I"):gsub("í", "i"):gsub("Ì", "I"):gsub("ì", "i"):gsub("Î", "I"):gsub("î", "i")
+    s = string.gsub(s, "Ó", "O"):gsub("ó", "o"):gsub("Ò", "O"):gsub("ò", "o"):gsub("Ô", "O"):gsub("ô", "o")
+    s = string.gsub(s, "Ú", "U"):gsub("ú", "u"):gsub("Ù", "U"):gsub("ù", "u"):gsub("Û", "U"):gsub("û", "u")
+    s = string.gsub(s, "Ñ", "N"):gsub("ñ", "n"):gsub("Ç", "C"):gsub("ç", "c")
+    return string.lower(s)
+end
+
 function GlobalMarketUI.new(target, custom_mt)
     local self = TabbedMenuFrameElement.new(target, custom_mt or GlobalMarketUI_mt)
 
@@ -106,12 +126,23 @@ function GlobalMarketUI:updateContent()
         self.totalStorageDisplay:setText(self.i18n:formatVolume(totalVolume, 0))
     end
 
-    -- Load market data
-    if gm:getIsMarketOnline() then
-        self.marketData = gm.fillTypes or {}
-    else
-        self.marketData = gm.offlineMarketFillTypes or {}
+    -- Load and alphabetically sort market data by the client's active localized FillType title
+    local rawMarketData = gm:getIsMarketOnline() and (gm.fillTypes or {}) or (gm.offlineMarketFillTypes or {})
+    self.marketData = {}
+    for _, item in ipairs(rawMarketData) do
+        table.insert(self.marketData, item)
     end
+
+    table.sort(self.marketData, function(a, b)
+        local descA = a ~= nil and g_fillTypeManager:getFillTypeByName(a.fillType) or nil
+        local descB = b ~= nil and g_fillTypeManager:getFillTypeByName(b.fillType) or nil
+        local titleA = GlobalMarketUI.normalizeSortTitle(descA ~= nil and descA.title or (a and a.fillType or ""))
+        local titleB = GlobalMarketUI.normalizeSortTitle(descB ~= nil and descB.title or (b and b.fillType or ""))
+        if titleA == titleB then
+            return tostring(a and a.fillType or "") < tostring(b and b.fillType or "")
+        end
+        return titleA < titleB
+    end)
 
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d, Market items: %d", #self.storageData, #self.marketData)

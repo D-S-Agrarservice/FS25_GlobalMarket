@@ -416,12 +416,13 @@ function GlobalMarketDialog:onClickMaxAmount()
         if currentMoney <= 0 then
             fillAmount = 0
         else
-            -- BUGFIX/QOL: Account for delivery costs in max calculation to avoid liquidity overshoot
+            -- BUGFIX/QOL: Account for dealer markup and delivery costs in max calculation to avoid liquidity overshoot
             local baseDeliveryFee = isGmMarket and 0 or ((GlobalMarket.DELIVER_COST or 0) * EconomyManager.getCostMultiplier())
             local feePerLiter = isGmMarket and 0 or ((GlobalMarket.DELIVER_COST_PERLITER or 0) * EconomyManager.getCostMultiplier())
+            local markupFactor = 1 + ((GlobalMarket.DEALER_MARKUP or 0) / 100)
 
-            -- Combine commodity price and delivery fee to get total cost per liter
-            local costPerLiter = (self.pricePer1000 / 1000) + feePerLiter
+            -- Combine commodity price (including dealer markup) and delivery fee to get total cost per liter
+            local costPerLiter = ((self.pricePer1000 / 1000) * markupFactor) + feePerLiter
             local maxAffordableLiters = 0
 
             if currentMoney > baseDeliveryFee and costPerLiter > 0 then
@@ -484,9 +485,12 @@ end
 function GlobalMarketDialog:updateTotalValue()
     -- Calculate total liters respecting the format (bulk vs pieces)
     local totalLiters = self.currentAmount * self.currentCountFactor
-    local total = (totalLiters / 1000) * self.pricePer1000
+    local baseValue = (totalLiters / 1000) * self.pricePer1000
 
-    -- QOL FEATURE: Real-time calculation of dynamic delivery costs
+    -- QOL FEATURE: Real-time calculation of dealer markup (on BUY) and dynamic delivery costs
+    local markupPct = (self.actionType == "BUY") and (GlobalMarket.DEALER_MARKUP or 0) or 0
+    local dealerCosts = (totalLiters > 0 and markupPct > 0) and (baseValue * (markupPct / 100)) or 0
+
     local deliveryCosts = 0
     local selectedSilo = self.storageLocations[self.selectedStorageIndex]
 
@@ -496,22 +500,39 @@ function GlobalMarketDialog:updateTotalValue()
         deliveryCosts = (baseCost + (costPerLiter * totalLiters)) * EconomyManager.getCostMultiplier()
     end
 
-    -- Update the delivery cost text visually
+    local finalTotal = baseValue
+    if self.actionType == "BUY" then
+        finalTotal = baseValue + dealerCosts + deliveryCosts
+    else
+        finalTotal = math.max(0, baseValue - deliveryCosts)
+    end
+
+    -- Update the fee breakdown text visually (dealer markup & delivery costs)
     if self.deliveryCostText ~= nil then
+        local feeParts = {}
+
+        if dealerCosts > 0 then
+            local markupLabel = g_i18n:getText("ui_gm_settings_markup") or "Markup"
+            table.insert(feeParts, string.format("%s (%d%%): %s", markupLabel, markupPct, g_i18n:formatMoney(dealerCosts, 0, true, true)))
+        end
+
         if deliveryCosts > 0 then
             local deliveryLabel = g_i18n:getText("ui_gm_delivery_costs") or "Delivery"
-            local deliveryText = string.format("%s: %s", deliveryLabel, g_i18n:formatMoney(deliveryCosts, 0, true, true))
-            self.deliveryCostText:setText(deliveryText)
+            table.insert(feeParts, string.format("%s: %s", deliveryLabel, g_i18n:formatMoney(deliveryCosts, 0, true, true)))
+        end
+
+        if #feeParts > 0 then
+            self.deliveryCostText:setText(table.concat(feeParts, " | "))
             self.deliveryCostText:setVisible(true)
         else
             self.deliveryCostText:setVisible(false)
         end
     end
 
-    -- BUGFIX: Ensure liquidity validation considers total value AND delivery costs when buying
+    -- BUGFIX: Ensure liquidity validation considers base value, dealer markup, AND delivery costs when buying
     local hasEnoughMoney = true
     if self.actionType == "BUY" then
-        hasEnoughMoney = g_currentMission:getMoney() >= (total + deliveryCosts)
+        hasEnoughMoney = g_currentMission:getMoney() >= finalTotal
     end
 
     if not hasEnoughMoney then
@@ -523,7 +544,7 @@ function GlobalMarketDialog:updateTotalValue()
 
         local baseText = string.format("%s %s (%s L)",
             totalValueHeader,
-            g_i18n:formatMoney(total, 0, true, true),
+            g_i18n:formatMoney(finalTotal, 0, true, true),
             g_i18n:formatVolume(totalLiters, 0))
 
         -- CRITICAL UX FEATURE: Show Engine Limit Warning

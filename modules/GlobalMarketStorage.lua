@@ -476,11 +476,20 @@ function GlobalMarket:getAggregatedStorageData(farmId)
         end
     end
 
-    -- Sort alphabetically by title
+    -- Sort alphabetically by localized title (using umlaut/accent-safe normalization if available)
     table.sort(aggregatedData, function(a, b)
-        local titleA = g_fillTypeManager:getFillTypeByName(a.fillType).title
-        local titleB = g_fillTypeManager:getFillTypeByName(b.fillType).title
-        return titleA < titleB
+        local descA = g_fillTypeManager:getFillTypeByName(a.fillType)
+        local descB = g_fillTypeManager:getFillTypeByName(b.fillType)
+        local rawA = descA ~= nil and descA.title or tostring(a.fillType or "")
+        local rawB = descB ~= nil and descB.title or tostring(b.fillType or "")
+        if GlobalMarketUI ~= nil and GlobalMarketUI.normalizeSortTitle ~= nil then
+            local normA = GlobalMarketUI.normalizeSortTitle(rawA)
+            local normB = GlobalMarketUI.normalizeSortTitle(rawB)
+            if normA ~= normB then
+                return normA < normB
+            end
+        end
+        return rawA < rawB
     end)
 
     return aggregatedData

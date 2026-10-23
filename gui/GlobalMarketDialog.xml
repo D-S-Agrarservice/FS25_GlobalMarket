@@ -24,11 +24,13 @@
             <!-- Reverted to absolute positioning to prevent engine layout glitches -->
             <GuiElement profile="globalMarketInputGroup" with="anchorTopCenter">
                 <GuiElement profile="emptyPanel" position="0px 0px" size="200px 40px" with="anchorMiddleLeft">
-                    <Bitmap profile="fs25_textInputBg" size="100% 100%" />
+                    <ThreePartBitmap profile="globalMarketTextInputBg" />
                     <TextInput profile="globalMarketAmountInput" id="amountInput" onTextChanged="onAmountChanged" text="0" maxCharacters="10" />
                 </GuiElement>
 
-                <Button profile="globalMarketMaxButton" text="MAX" onClick="onClickMaxAmount" />
+                <Button profile="globalMarketMaxButton" text="MAX" onClick="onClickMaxAmount">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
 
                 <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
@@ -76,25 +78,43 @@
             <position value="0px -260px" />
         </Profile>
 
+        <Profile name="globalMarketTextInputBg" extends="baseReference" with="anchorStretchingYStretchingX">
+            <size value="100% 100%" />
+            <imageSliceId value="gui.3dShop_button_middle" />
+            <imageColor value="$preset_fs25_colorTextInput" />
+            <startImageSize value="6px 0px" />
+            <startImageSliceId value="gui.3dShop_button_left" />
+            <startImageColor value="$preset_fs25_colorTextInput" />
+            <endImageSize value="6px 0px" />
+            <endImageSliceId value="gui.3dShop_button_right" />
+            <endImageColor value="$preset_fs25_colorTextInput" />
+        </Profile>
+
         <Profile name="globalMarketAmountInput" extends="fs25_textInput" with="anchorMiddleCenter">
             <size value="200px 40px" />
             <textSize value="22px" />
             <textAlignment value="center" />
         </Profile>
 
-        <Profile name="globalMarketMaxButton" extends="buttonBase" with="anchorMiddleLeft">
+        <Profile name="globalMarketMaxButton" extends="emptyPanel" with="anchorMiddleLeft">
             <size value="80px 40px" />
             <position value="210px 0px" />
             <textSize value="20px" />
             <textBold value="true" />
-            <textPadding value="10px 0px" />
+            <textPadding value="0px 0px" />
             <textAlignment value="center" />
             <textColor value="$preset_colorWhite" />
             <textHighlightedColor value="$preset_fs25_colorMainDark" />
             <textFocusedColor value="$preset_fs25_colorMainDark" />
-            <imageColor value="0 0 0 0.4" />
+        </Profile>
+
+        <Profile name="globalMarketMaxButtonBg" extends="globalMarketTextInputBg">
             <imageHighlightedColor value="$preset_fs25_colorMainHighlight" />
             <imageFocusedColor value="$preset_fs25_colorMainHighlight" />
+            <startImageHighlightedColor value="$preset_fs25_colorMainHighlight" />
+            <startImageFocusedColor value="$preset_fs25_colorMainHighlight" />
+            <endImageHighlightedColor value="$preset_fs25_colorMainHighlight" />
+            <endImageFocusedColor value="$preset_fs25_colorMainHighlight" />
         </Profile>
 
         <Profile name="globalMarketInputUnitText" extends="fs25_textDefault" with="anchorMiddleLeft">
