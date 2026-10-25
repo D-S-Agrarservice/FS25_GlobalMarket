@@ -1,14 +1,97 @@
 --
 -- FS25 - GlobalMarketUI
 -- Description: Main UI Frame for the GlobalMarket. Handles data rendering,
+-- search filtering (#12), switchable product categorization (#19),
 -- user input routing, and triggers the transaction dialog.
 --
 
 GlobalMarketUI = {}
 local GlobalMarketUI_mt = Class(GlobalMarketUI, TabbedMenuFrameElement)
 
--- Normalizes localized fillType titles for alphabetical sorting across languages (DE/EN/FR/ES/etc.)
--- so umlauts and accented characters (Ä, Ö, Ü, É, Á, etc.) sort in their natural letter position instead of after 'Z'.
+-- Switchable Category View Modes (#19)
+GlobalMarketUI.CATEGORY_MODE_DETAILED = 1
+GlobalMarketUI.CATEGORY_MODE_COMPACT  = 2
+GlobalMarketUI.CATEGORY_MODE_FLAT     = 3
+
+GlobalMarketUI.DETAILED_CATEGORIES = {
+    { id = "GRAINS",   l10n = "ui_gm_cat_detail_grains",   fallback = "Grains & Combinables" },
+    { id = "ROOTS",    l10n = "ui_gm_cat_detail_roots",    fallback = "Root Crops, Vegetables & Specialty" },
+    { id = "FORAGE",   l10n = "ui_gm_cat_detail_forage",   fallback = "Forage, Grass & Bales" },
+    { id = "SUPPLIES", l10n = "ui_gm_cat_detail_supplies", fallback = "Seeds, Fertilizer & Supplies" },
+    { id = "ANIMAL",   l10n = "ui_gm_cat_detail_animal",   fallback = "Animal Products" },
+    { id = "PALLETS",  l10n = "ui_gm_cat_detail_pallets",  fallback = "Pallets & Productions" },
+    { id = "OTHER",    l10n = "ui_gm_cat_detail_other",    fallback = "Forestry, Bulk & Other" }
+}
+
+GlobalMarketUI.COMPACT_CATEGORIES = {
+    { id = "CROPS_BULK",       l10n = "ui_gm_cat_compact_crops",   fallback = "Field Crops & Bulk" },
+    { id = "BALES_FORAGE",     l10n = "ui_gm_cat_compact_bales",   fallback = "Bales & Forage" },
+    { id = "LIQUIDS",          l10n = "ui_gm_cat_compact_liquids", fallback = "Liquids" },
+    { id = "PALLETS_PRODUCTS", l10n = "ui_gm_cat_compact_pallets", fallback = "Pallets & Productions" }
+}
+
+-- Explicit FillType lookup tables for fast, reliable classification across vanilla and mod maps
+GlobalMarketUI.LOOKUP_GRAINS = {
+    WHEAT = true, BARLEY = true, OAT = true, CANOLA = true, SORGHUM = true,
+    SUNFLOWER = true, SOYBEAN = true, MAIZE = true, RICE = true, RICELONGGRAIN = true,
+    RYE = true, SPELT = true, TRITICALE = true, MILLET = true, POPPY = true,
+    MUSTARD = true, LINSEED = true, LENTILS = true, CHICKPEAS = true, BUCKWHEAT = true,
+    HEMP = true, FLAX = true, GRAINMAIZE = true, CORN = true
+}
+
+GlobalMarketUI.LOOKUP_ROOTS = {
+    POTATO = true, SUGARBEET = true, SUGARBEET_CUT = true, BEETROOT = true,
+    CARROT = true, PARSNIP = true, GREENBEAN = true, PEA = true, SPINACH = true,
+    OLIVE = true, GRAPE = true, SUGARCANE = true, ONION = true, HOPS = true, LAVENDER = true
+}
+
+GlobalMarketUI.LOOKUP_FORAGE = {
+    GRASS = true, GRASS_WINDROW = true, DRYGRASS = true, DRYGRASS_WINDROW = true,
+    STRAW = true, SILAGE = true, CHAFF = true, FORAGE = true, FORAGE_MIXING = true,
+    PIGFOOD = true, MINERAL_FEED = true, COTTON = true, CHICKENFOOD = true, HORSEFOOD = true,
+    ALFALFA = true, ALFALFA_WINDROW = true, DRYALFALFA = true, DRYALFALFA_WINDROW = true,
+    CLOVER = true, CLOVER_WINDROW = true, DRYCLOVER = true, DRYCLOVER_WINDROW = true,
+    MAIZESILAGE = true, WETGRASS_WINDROW = true,
+    ROUNDBALE = true, ROUNDBALE_GRASS = true, ROUNDBALE_DRYGRASS = true, ROUNDBALE_COTTON = true,
+    SQUAREBALE = true, SQUAREBALE_GRASS = true, SQUAREBALE_DRYGRASS = true, SQUAREBALE_COTTON = true
+}
+
+GlobalMarketUI.LOOKUP_SUPPLIES = {
+    SEEDS = true, FERTILIZER = true, LIQUIDFERTILIZER = true, LIME = true,
+    HERBICIDE = true, MANURE = true, LIQUIDMANURE = true, DIGESTATE = true,
+    SILAGE_ADDITIVE = true, DIESEL = true, DEF = true, WATER = true,
+    ROADSALT = true, METHANE = true, ELECTRICCHARGE = true,
+    BALE_NET = true, BALE_TWINE = true, BALE_WRAP = true,
+    LIQUIDSEEDTREATMENT = true, COMPOST = true, RICESAPLINGS = true, TREESAPLINGS = true
+}
+
+-- Non-bulk operating supplies traded exclusively as pallets/rolls (classified as Supplies in Detailed, Pallets in Compact)
+GlobalMarketUI.LOOKUP_PALLET_SUPPLIES = {
+    BALE_NET = true, BALE_TWINE = true, BALE_WRAP = true,
+    RICESAPLINGS = true, TREESAPLINGS = true
+}
+
+GlobalMarketUI.LOOKUP_ANIMAL = {
+    MILK = true, BUFFALOMILK = true, GOATMILK = true,
+    MILK_BOTTLED = true, BUFFALOMILK_BOTTLED = true, GOATMILK_BOTTLED = true,
+    EGG = true, WOOL = true, HONEY = true, BUTTER = true,
+    CHEESE = true, BUFFALOMOZZARELLA = true, GOATCHEESE = true,
+    MEAT = true, SAUSAGE = true, LEATHER = true
+}
+
+GlobalMarketUI.LOOKUP_LIQUIDS = {
+    MILK = true, BUFFALOMILK = true, GOATMILK = true, WATER = true,
+    DIESEL = true, DEF = true, LIQUIDFERTILIZER = true, HERBICIDE = true,
+    LIQUIDMANURE = true, DIGESTATE = true, SILAGE_ADDITIVE = true,
+    LIQUIDSEEDTREATMENT = true, METHANE = true
+}
+
+GlobalMarketUI.LOOKUP_FORESTRY_OTHER = {
+    WOOD = true, WOODCHIPS = true, POPLAR = true, TREE = true,
+    ROUNDBALE_WOOD = true, SQUAREBALE_WOOD = true, STONE = true, SNOW = true, TARP = true
+}
+
+-- Normalizes localized fillType titles for alphabetical sorting and search matching across languages (DE/EN/FR/ES/etc.)
 function GlobalMarketUI.normalizeSortTitle(title)
     if title == nil or title == "" then
         return ""
@@ -27,11 +110,214 @@ function GlobalMarketUI.normalizeSortTitle(title)
     return string.lower(s)
 end
 
+-- Lookup maps for optional XML UI category overrides (gm_customs.xml / gm_fallback.xml)
+GlobalMarketUI.DETAILED_CATEGORY_BY_ID = {
+    GRAINS = 1, ROOTS = 2, FORAGE = 3, SUPPLIES = 4, ANIMAL = 5, PALLETS = 6, OTHER = 7,
+    CROPS_BULK = 1, BALES_FORAGE = 3, LIQUIDS = 4, PALLETS_PRODUCTS = 6
+}
+
+GlobalMarketUI.COMPACT_CATEGORY_BY_ID = {
+    CROPS_BULK = 1, BALES_FORAGE = 2, LIQUIDS = 3, PALLETS_PRODUCTS = 4,
+    GRAINS = 1, ROOTS = 1, FORAGE = 2, ANIMAL = 4, PALLETS = 4
+}
+
+-- Resolves the 1..7 Detailed Category index for a given fillType name
+function GlobalMarketUI.getDetailedCategoryIndex(fillTypeName)
+    if fillTypeName == nil then
+        return 7
+    end
+    local nameUpper = string.upper(fillTypeName)
+
+    -- 1. Check optional explicit XML override from GlobalMarketAPI (gm_customs.xml / gm_fallback.xml)
+    if GlobalMarketAPI ~= nil and GlobalMarketAPI.getUiCategoryOverride ~= nil then
+        local override = GlobalMarketAPI.getUiCategoryOverride(nameUpper)
+        if override ~= nil and override.category ~= nil then
+            local mapped = GlobalMarketUI.DETAILED_CATEGORY_BY_ID[override.category]
+            if mapped ~= nil then
+                return mapped
+            end
+        end
+    end
+
+    -- 2. Check explicit basegame & common mod lookup tables
+    if GlobalMarketUI.LOOKUP_FORESTRY_OTHER[nameUpper] then
+        return 7
+    end
+    if GlobalMarketUI.LOOKUP_GRAINS[nameUpper] then
+        return 1
+    end
+    if GlobalMarketUI.LOOKUP_ROOTS[nameUpper] then
+        return 2
+    end
+    if GlobalMarketUI.LOOKUP_FORAGE[nameUpper] then
+        return 3
+    end
+    if GlobalMarketUI.LOOKUP_SUPPLIES[nameUpper] then
+        return 4
+    end
+    if GlobalMarketUI.LOOKUP_ANIMAL[nameUpper] then
+        return 5
+    end
+
+    -- 3. Check GIANTS fillTypeCategories, GlobalMarketAPI liquid/IBC rules, and GlobalMarketStoreCache
+    if g_fillTypeManager ~= nil then
+        local ftDesc = g_fillTypeManager:getFillTypeByName(nameUpper)
+        if ftDesc ~= nil then
+            local ftIndex = ftDesc.index
+            if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "COMBINE")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "FARMSILO") then
+                return 1
+            end
+            if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "ROOT_CROPS")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "VEGETABLES")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "TOPLIFTINGHARVESTER")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "PLANTER_SMALL") then
+                return 2
+            end
+            if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "FORAGEWAGON")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "MIXERWAGON")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "WINDROW")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "HAYLOFT")
+                or ftDesc.isBaleType == true then
+                return 3
+            end
+            if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SPRAYER")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SPREADER")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SLURRYTANK")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "MANURESPREADER")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "PRODUCT_BGA") then
+                return 4
+            end
+
+            -- Check custom mod liquid categories (e.g. CCM_ADDITIVE / GRIST_ADDITIVE for LUPROSIL) and IBC restrictions
+            if GlobalMarketAPI ~= nil then
+                if GlobalMarketAPI.getLiquidCategories ~= nil then
+                    for _, catName in ipairs(GlobalMarketAPI.getLiquidCategories()) do
+                        if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, catName) then
+                            return 4
+                        end
+                    end
+                end
+                if GlobalMarketAPI.containerRestrictions ~= nil and GlobalMarketAPI.containerRestrictions[nameUpper] ~= nil then
+                    if table.hasElement(GlobalMarketAPI.containerRestrictions[nameUpper], "UI_GM_UNIT_IBC") then
+                        return 4
+                    end
+                end
+            end
+
+            if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "PRODUCT")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SELLINGSTATION_PRODUCTS")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SELLINGSTATION_PRODUCTSFOOD")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "PIECE")
+                or ftDesc.isPalletType == true
+                or (not ftDesc.isBulkType and not ftDesc.isBaleType and (
+                    (ftDesc.palletFilename ~= nil and ftDesc.palletFilename ~= "")
+                    or (GlobalMarketStoreCache ~= nil and GlobalMarketStoreCache.cache ~= nil and GlobalMarketStoreCache.cache[nameUpper] ~= nil)
+                )) then
+                return 6
+            end
+        end
+    end
+
+    return 7
+end
+
+-- Resolves the 1..4 Compact Category index for a given fillType name
+function GlobalMarketUI.getCompactCategoryIndex(fillTypeName)
+    if fillTypeName == nil then
+        return 1
+    end
+    local nameUpper = string.upper(fillTypeName)
+
+    -- 0. Check optional explicit XML override from GlobalMarketAPI (gm_customs.xml / gm_fallback.xml)
+    if GlobalMarketAPI ~= nil and GlobalMarketAPI.getUiCategoryOverride ~= nil then
+        local override = GlobalMarketAPI.getUiCategoryOverride(nameUpper)
+        if override ~= nil then
+            if override.compactCategory ~= nil and GlobalMarketUI.COMPACT_CATEGORY_BY_ID[override.compactCategory] ~= nil then
+                return GlobalMarketUI.COMPACT_CATEGORY_BY_ID[override.compactCategory]
+            elseif override.category ~= nil and GlobalMarketUI.COMPACT_CATEGORY_BY_ID[override.category] ~= nil then
+                return GlobalMarketUI.COMPACT_CATEGORY_BY_ID[override.category]
+            end
+        end
+    end
+
+    -- 1. Check Liquids first (includes liquid manure, liquid fertilizer, milk, water, diesel, and custom API liquid/IBC categories)
+    if GlobalMarketUI.LOOKUP_LIQUIDS[nameUpper] then
+        return 3
+    end
+
+    if g_fillTypeManager ~= nil then
+        local ftDesc = g_fillTypeManager:getFillTypeByName(nameUpper)
+        if ftDesc ~= nil then
+            local ftIndex = ftDesc.index
+            if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "LIQUID")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SPRAYER")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SLURRYTANK") then
+                return 3
+            end
+            if GlobalMarketAPI ~= nil then
+                if GlobalMarketAPI.getLiquidCategories ~= nil then
+                    for _, catName in ipairs(GlobalMarketAPI.getLiquidCategories()) do
+                        if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, catName) then
+                            return 3
+                        end
+                    end
+                end
+                if GlobalMarketAPI.containerRestrictions ~= nil and GlobalMarketAPI.containerRestrictions[nameUpper] ~= nil then
+                    if table.hasElement(GlobalMarketAPI.containerRestrictions[nameUpper], "UI_GM_UNIT_IBC") then
+                        return 3
+                    end
+                end
+            end
+        end
+    end
+
+    -- 2. Check non-bulk pallet operating supplies (Bale Twine, Bale Net, Bale Wrap, Rice/Tree Saplings)
+    if GlobalMarketUI.LOOKUP_PALLET_SUPPLIES[nameUpper] then
+        return 4
+    end
+
+    -- 3. Map from Detailed Category for remaining types
+    local detailedIdx = GlobalMarketUI.getDetailedCategoryIndex(nameUpper)
+    if detailedIdx == 3 then
+        -- Forage, Grass & Bales
+        return 2
+    elseif detailedIdx == 5 or detailedIdx == 6 then
+        -- Animal Products (non-liquid) & Pallets/Productions
+        return 4
+    end
+
+    -- 4. Fallback for custom mod pallet/piece items where isPalletType was omitted on <fillType>
+    if g_fillTypeManager ~= nil then
+        local ftDesc = g_fillTypeManager:getFillTypeByName(nameUpper)
+        if ftDesc ~= nil and not ftDesc.isBulkType and not ftDesc.isBaleType then
+            if ftDesc.isPalletType == true
+                or (ftDesc.palletFilename ~= nil and ftDesc.palletFilename ~= "")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftDesc.index, "PIECE")
+                or g_fillTypeManager:getIsFillTypeInCategory(ftDesc.index, "PRODUCT")
+                or (GlobalMarketStoreCache ~= nil and GlobalMarketStoreCache.cache ~= nil and GlobalMarketStoreCache.cache[nameUpper] ~= nil) then
+                return 4
+            end
+        end
+    end
+
+    -- Default: Field Crops & Bulk (Grains, Root Crops, Seeds, Solid Fertilizer, Lime, Woodchips, Stones, etc.)
+    return 1
+end
+
 function GlobalMarketUI.new(target, custom_mt)
     local self = TabbedMenuFrameElement.new(target, custom_mt or GlobalMarketUI_mt)
 
+    self.rawStorageData = {}
+    self.rawMarketData = {}
     self.storageData = {}
     self.marketData = {}
+    self.storageSections = {}
+    self.marketSections = {}
+
+    self.searchFilterText = ""
+    self.categoryMode = GlobalMarketUI.CATEGORY_MODE_DETAILED
+
     self.i18n = g_i18n
     self.currentListFocus = "storage"
     self.isUpdatingSelection = false
@@ -54,10 +340,38 @@ function GlobalMarketUI:onGuiSetupFinished()
     end
 end
 
+-- Returns the localized label for the currently active category mode
+function GlobalMarketUI:getCategoryModeText()
+    if self.categoryMode == GlobalMarketUI.CATEGORY_MODE_COMPACT then
+        local text = self.i18n:getText("ui_gm_cat_mode_compact")
+        return (text ~= nil and text ~= "ui_gm_cat_mode_compact") and text or "Categories: Compact"
+    elseif self.categoryMode == GlobalMarketUI.CATEGORY_MODE_FLAT then
+        local text = self.i18n:getText("ui_gm_cat_mode_flat")
+        return (text ~= nil and text ~= "ui_gm_cat_mode_flat") and text or "Categories: Off (A-Z)"
+    else
+        local text = self.i18n:getText("ui_gm_cat_mode_detailed")
+        return (text ~= nil and text ~= "ui_gm_cat_mode_detailed") and text or "Categories: Detailed"
+    end
+end
+
+function GlobalMarketUI:updateCategoryModeButtonVisuals()
+    local modeText = self:getCategoryModeText()
+    if self.btnCategoryMode ~= nil then
+        self.btnCategoryMode:setText(modeText)
+    end
+    if self.categoryModeButtonInfo ~= nil then
+        self.categoryModeButtonInfo.text = modeText
+        self:setMenuButtonInfoDirty()
+    end
+end
+
 -- Initializes the UI state and bindings when the player opens the menu
 function GlobalMarketUI:onFrameOpen()
     GlobalMarketUI:superClass().onFrameOpen(self)
-    self:updateContent()
+
+    if self.searchTextInput ~= nil then
+        self.searchTextInput:setText(self.searchFilterText or "")
+    end
 
     local backButton = { inputAction = InputAction.MENU_BACK }
     self.actionButtonInfo = {
@@ -66,12 +380,215 @@ function GlobalMarketUI:onFrameOpen()
         callback = function() self:onButtonAction() end,
         disabled = true
     }
+    self.categoryModeButtonInfo = {
+        inputAction = InputAction.MENU_EXTRA_1,
+        text = self:getCategoryModeText(),
+        callback = function() self:onClickToggleCategoryMode() end,
+        disabled = false
+    }
 
-    self:setMenuButtonInfo({ backButton, self.actionButtonInfo })
+    self:setMenuButtonInfo({ backButton, self.actionButtonInfo, self.categoryModeButtonInfo })
+    self:updateCategoryModeButtonVisuals()
+    self:updateContent()
 
     if self.gmTableStorage ~= nil then
         FocusManager:setFocus(self.gmTableStorage)
     end
+end
+
+-- Filters, sorts alphabetically, and groups raw items into SmoothList sections
+function GlobalMarketUI:buildSectionsForData(rawItems)
+    local filteredItems = {}
+    local normalizedQuery = GlobalMarketUI.normalizeSortTitle(self.searchFilterText or "")
+    local hasQuery = (normalizedQuery ~= "")
+
+    for _, item in ipairs(rawItems or {}) do
+        if item ~= nil then
+            local desc = g_fillTypeManager:getFillTypeByName(item.fillType)
+            local localizedTitle = (desc ~= nil and desc.title) or item.fillType or ""
+
+            if not hasQuery then
+                table.insert(filteredItems, item)
+            else
+                local normTitle = GlobalMarketUI.normalizeSortTitle(localizedTitle)
+                local normInternal = GlobalMarketUI.normalizeSortTitle(item.fillType or "")
+                if string.find(normTitle, normalizedQuery, 1, true) ~= nil
+                    or string.find(normInternal, normalizedQuery, 1, true) ~= nil then
+                    table.insert(filteredItems, item)
+                end
+            end
+        end
+    end
+
+    -- Sort alphabetically by localized title (with umlaut/accent normalization)
+    table.sort(filteredItems, function(a, b)
+        local descA = a ~= nil and g_fillTypeManager:getFillTypeByName(a.fillType) or nil
+        local descB = b ~= nil and g_fillTypeManager:getFillTypeByName(b.fillType) or nil
+        local titleA = GlobalMarketUI.normalizeSortTitle(descA ~= nil and descA.title or (a and a.fillType or ""))
+        local titleB = GlobalMarketUI.normalizeSortTitle(descB ~= nil and descB.title or (b and b.fillType or ""))
+        if titleA == titleB then
+            return tostring(a and a.fillType or "") < tostring(b and b.fillType or "")
+        end
+        return titleA < titleB
+    end)
+
+    local sections = {}
+
+    if self.categoryMode == GlobalMarketUI.CATEGORY_MODE_FLAT then
+        if #filteredItems > 0 then
+            table.insert(sections, { title = nil, items = filteredItems })
+        end
+        return sections, filteredItems
+    end
+
+    local catDefs = (self.categoryMode == GlobalMarketUI.CATEGORY_MODE_COMPACT)
+        and GlobalMarketUI.COMPACT_CATEGORIES
+        or GlobalMarketUI.DETAILED_CATEGORIES
+
+    local buckets = {}
+    for i = 1, #catDefs do
+        buckets[i] = {}
+    end
+
+    for _, item in ipairs(filteredItems) do
+        local catIndex
+        if self.categoryMode == GlobalMarketUI.CATEGORY_MODE_COMPACT then
+            catIndex = GlobalMarketUI.getCompactCategoryIndex(item.fillType)
+        else
+            catIndex = GlobalMarketUI.getDetailedCategoryIndex(item.fillType)
+        end
+        catIndex = math.clamp(catIndex or 1, 1, #catDefs)
+        table.insert(buckets[catIndex], item)
+    end
+
+    for i, def in ipairs(catDefs) do
+        local bucketItems = buckets[i]
+        if #bucketItems > 0 then
+            local catTitle = self.i18n:getText(def.l10n)
+            if catTitle == nil or catTitle == def.l10n then
+                catTitle = def.fallback
+            end
+            table.insert(sections, {
+                id = def.id,
+                title = catTitle,
+                items = bucketItems
+            })
+        end
+    end
+
+    return sections, filteredItems
+end
+
+-- Finds the (section, index) of a given fillType in a sections table, or returns the first available item
+function GlobalMarketUI.findSelectionInSections(sections, preferredFillType, fallbackSection, fallbackIndex)
+    if sections == nil or #sections == 0 then
+        return 0, 0
+    end
+
+    if preferredFillType ~= nil then
+        for sIdx, sec in ipairs(sections) do
+            for iIdx, item in ipairs(sec.items) do
+                if item.fillType == preferredFillType then
+                    return sIdx, iIdx
+                end
+            end
+        end
+    end
+
+    local safeSection = math.clamp(fallbackSection or 1, 1, #sections)
+    local secItems = sections[safeSection].items
+    if secItems ~= nil and #secItems > 0 then
+        local safeIndex = math.clamp(fallbackIndex or 1, 1, #secItems)
+        return safeSection, safeIndex
+    end
+
+    return 1, 1
+end
+
+-- Applies current search filter and category grouping to rawStorageData & rawMarketData and reloads both SmoothLists
+function GlobalMarketUI:applyFilterAndCategories(restoreTableFocus)
+    if restoreTableFocus == nil then
+        restoreTableFocus = true
+    end
+
+    -- 1. Enable the shield to prevent onListSelectionChanged from firing recursively
+    self.isUpdatingSelection = true
+
+    -- 2. Save current list focus, selected path, and selected fillType before rebuilding sections
+    local activeList = self.currentListFocus
+    local activeSection, activeIndex = 1, 0
+    local activeFillType = nil
+
+    if activeList == "storage" and self.gmTableStorage ~= nil then
+        activeSection, activeIndex = self.gmTableStorage:getSelectedPath()
+        if self.storageSections[activeSection] ~= nil and self.storageSections[activeSection].items ~= nil then
+            local curItem = self.storageSections[activeSection].items[activeIndex]
+            activeFillType = curItem and curItem.fillType or nil
+        end
+    elseif activeList == "market" and self.gmTableMarket ~= nil then
+        activeSection, activeIndex = self.gmTableMarket:getSelectedPath()
+        if self.marketSections[activeSection] ~= nil and self.marketSections[activeSection].items ~= nil then
+            local curItem = self.marketSections[activeSection].items[activeIndex]
+            activeFillType = curItem and curItem.fillType or nil
+        end
+    end
+
+    -- 3. Build filtered and categorized sections
+    self.storageSections, self.storageData = self:buildSectionsForData(self.rawStorageData)
+    self.marketSections, self.marketData = self:buildSectionsForData(self.rawMarketData)
+
+    -- 4. Reload SmoothList data
+    if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
+    if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end
+
+    -- 5. Restore selection state
+    local hasValidSelection = false
+
+    if activeList == "storage" and self.gmTableStorage ~= nil then
+        local newSec, newIdx = GlobalMarketUI.findSelectionInSections(self.storageSections, activeFillType, activeSection, activeIndex)
+        if newSec > 0 and newIdx > 0 then
+            self.gmTableStorage:setSelectedItem(newSec, newIdx)
+            hasValidSelection = true
+        else
+            self.gmTableStorage:setSelectedItem(1, 0)
+            self.gmTableStorage:clearElementSelection()
+        end
+        if self.gmTableMarket ~= nil then
+            self.gmTableMarket:setSelectedItem(1, 0)
+            self.gmTableMarket:clearElementSelection()
+        end
+        if restoreTableFocus and FocusManager:getFocusedElement() ~= self.searchTextInput then
+            FocusManager:setFocus(self.gmTableStorage)
+        end
+
+    elseif activeList == "market" and self.gmTableMarket ~= nil then
+        local newSec, newIdx = GlobalMarketUI.findSelectionInSections(self.marketSections, activeFillType, activeSection, activeIndex)
+        if newSec > 0 and newIdx > 0 then
+            self.gmTableMarket:setSelectedItem(newSec, newIdx)
+            hasValidSelection = true
+        else
+            self.gmTableMarket:setSelectedItem(1, 0)
+            self.gmTableMarket:clearElementSelection()
+        end
+        if self.gmTableStorage ~= nil then
+            self.gmTableStorage:setSelectedItem(1, 0)
+            self.gmTableStorage:clearElementSelection()
+        end
+        if restoreTableFocus and FocusManager:getFocusedElement() ~= self.searchTextInput then
+            FocusManager:setFocus(self.gmTableMarket)
+        end
+    end
+
+    if self.actionButtonInfo ~= nil then
+        self.actionButtonInfo.text = (activeList == "storage")
+            and (self.i18n:getText("ui_btn_sell") or "Sell")
+            or (self.i18n:getText("ui_btn_buy") or "Buy")
+        self.actionButtonInfo.disabled = not hasValidSelection
+        self:setMenuButtonInfoDirty()
+    end
+
+    -- 6. Drop the shield so user inputs are processed normally again
+    self.isUpdatingSelection = false
 end
 
 -- Fetches all current market and storage data and triggers a list redraw
@@ -115,11 +632,11 @@ function GlobalMarketUI:updateContent()
     local farmId = g_currentMission:getFarmId()
 
     -- Load storage data
-    self.storageData = gm:getAggregatedStorageData(farmId)
+    self.rawStorageData = gm:getAggregatedStorageData(farmId) or {}
 
-    -- Calculate total volume for footer display
+    -- Calculate total volume for footer display (across all owned storage items)
     local totalVolume = 0
-    for _, data in ipairs(self.storageData) do
+    for _, data in ipairs(self.rawStorageData) do
         totalVolume = totalVolume + (data.level or 0)
     end
     if self.totalStorageDisplay ~= nil then
@@ -131,76 +648,56 @@ function GlobalMarketUI:updateContent()
         gm:refreshMarketPrices(true)
     end
 
-    -- Load and alphabetically sort market data by the client's active localized FillType title
-    local rawMarketData = (gm:getIsMarketOnline() and gm.fillTypes ~= nil and #gm.fillTypes > 0) and gm.fillTypes or (gm.offlineMarketFillTypes or {})
-    self.marketData = {}
-    for _, item in ipairs(rawMarketData) do
-        table.insert(self.marketData, item)
+    -- Load raw market data
+    local sourceMarketData = (gm:getIsMarketOnline() and gm.fillTypes ~= nil and #gm.fillTypes > 0) and gm.fillTypes or (gm.offlineMarketFillTypes or {})
+    self.rawMarketData = {}
+    for _, item in ipairs(sourceMarketData) do
+        table.insert(self.rawMarketData, item)
     end
 
-    table.sort(self.marketData, function(a, b)
-        local descA = a ~= nil and g_fillTypeManager:getFillTypeByName(a.fillType) or nil
-        local descB = b ~= nil and g_fillTypeManager:getFillTypeByName(b.fillType) or nil
-        local titleA = GlobalMarketUI.normalizeSortTitle(descA ~= nil and descA.title or (a and a.fillType or ""))
-        local titleB = GlobalMarketUI.normalizeSortTitle(descB ~= nil and descB.title or (b and b.fillType or ""))
-        if titleA == titleB then
-            return tostring(a and a.fillType or "") < tostring(b and b.fillType or "")
-        end
-        return titleA < titleB
-    end)
+    self:applyFilterAndCategories(true)
 
     if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d, Market items: %d", #self.storageData, #self.marketData)
+        GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d (%d sections), Market items: %d (%d sections)",
+            #self.storageData, #self.storageSections, #self.marketData, #self.marketSections)
+    end
+end
+
+-- =========================================================================
+-- SEARCH & CATEGORY TOOLBAR CALLBACKS (#12 & #19)
+-- =========================================================================
+
+function GlobalMarketUI:onSearchTextChanged(element, text)
+    self.searchFilterText = text or ""
+    self:applyFilterAndCategories(false)
+end
+
+function GlobalMarketUI:onSearchEnterPressed(element)
+    local targetList = (self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket
+    if targetList ~= nil then
+        FocusManager:setFocus(targetList)
+    end
+end
+
+function GlobalMarketUI:onClickClearSearch()
+    self.searchFilterText = ""
+    if self.searchTextInput ~= nil then
+        self.searchTextInput:setText("")
+    end
+    self:applyFilterAndCategories(true)
+end
+
+function GlobalMarketUI:onClickToggleCategoryMode()
+    if self.categoryMode == GlobalMarketUI.CATEGORY_MODE_DETAILED then
+        self.categoryMode = GlobalMarketUI.CATEGORY_MODE_COMPACT
+    elseif self.categoryMode == GlobalMarketUI.CATEGORY_MODE_COMPACT then
+        self.categoryMode = GlobalMarketUI.CATEGORY_MODE_FLAT
+    else
+        self.categoryMode = GlobalMarketUI.CATEGORY_MODE_DETAILED
     end
 
-    -- =========================================================================
-    -- STATE SAVE & RESTORE (Fixes scroll jumping during live updates)
-    -- =========================================================================
-
-    -- 1. Enable the shield to prevent onListSelectionChanged from firing recursively
-    self.isUpdatingSelection = true
-
-    -- 2. Save current list focus and exact scroll/selection index
-    local activeList = self.currentListFocus
-    local activeIndex = 0
-
-    if activeList == "storage" and self.gmTableStorage ~= nil then
-        _, activeIndex = self.gmTableStorage:getSelectedPath()
-    elseif activeList == "market" and self.gmTableMarket ~= nil then
-        _, activeIndex = self.gmTableMarket:getSelectedPath()
-    end
-
-    -- 3. Blindly reload data (Engine tries to reset focus, but shield blocks the event)
-    if self.gmTableStorage ~= nil then self.gmTableStorage:reloadData() end
-    if self.gmTableMarket ~= nil then self.gmTableMarket:reloadData() end
-
-    -- 4. Restore the exact previous state silently
-    if activeList == "storage" and self.gmTableStorage ~= nil then
-        -- Restore storage index, ensure it does not exceed current data length
-        local safeIndex = math.min(activeIndex or 1, #self.storageData)
-        if safeIndex > 0 then
-            self.gmTableStorage:setSelectedIndex(safeIndex)
-        end
-        -- Keep market deselected visually
-        if self.gmTableMarket ~= nil then self.gmTableMarket:setSelectedIndex(0) end
-        -- Force the engine's FocusManager to explicitly re-target the active list
-        FocusManager:setFocus(self.gmTableStorage)
-
-    elseif activeList == "market" and self.gmTableMarket ~= nil then
-        -- Restore market index, ensure it does not exceed current data length
-        local safeIndex = math.min(activeIndex or 1, #self.marketData)
-        if safeIndex > 0 then
-            self.gmTableMarket:setSelectedIndex(safeIndex)
-        end
-        -- Keep storage deselected visually
-        if self.gmTableStorage ~= nil then self.gmTableStorage:setSelectedIndex(0) end
-        -- Force the engine's FocusManager to explicitly re-target the active list
-        FocusManager:setFocus(self.gmTableMarket)
-
-    end
-
-    -- 5. Drop the shield so user inputs are processed normally again
-    self.isUpdatingSelection = false
+    self:updateCategoryModeButtonVisuals()
+    self:applyFilterAndCategories(true)
 end
 
 -- =========================================================================
@@ -227,19 +724,29 @@ end
 -- =========================================================================
 
 function GlobalMarketUI:getNumberOfSections(list)
-    return 1
-end
-
-function GlobalMarketUI:getNumberOfItemsInSection(list, section)
-    if list == self.gmTableStorage then return #self.storageData end
-    if list == self.gmTableMarket then return #self.marketData end
+    if list == self.gmTableStorage then return #self.storageSections end
+    if list == self.gmTableMarket then return #self.marketSections end
     return 0
 end
 
+function GlobalMarketUI:getTitleForSectionHeader(list, section)
+    local sections = (list == self.gmTableStorage) and self.storageSections or self.marketSections
+    local sec = sections and sections[section]
+    return sec and sec.title or nil
+end
+
+function GlobalMarketUI:getNumberOfItemsInSection(list, section)
+    local sections = (list == self.gmTableStorage) and self.storageSections or self.marketSections
+    local sec = sections and sections[section]
+    return sec and #sec.items or 0
+end
+
 -- Populates each row in the storage and market lists
--- Handles HUD icons and dynamic price trend arrows based on basePrice comparison
+-- Handles HUD icons and dynamic price trend arrows based on normalPrice comparison
 function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
-    local data = (list == self.gmTableStorage) and self.storageData[index] or self.marketData[index]
+    local sections = (list == self.gmTableStorage) and self.storageSections or self.marketSections
+    local sec = sections and sections[section]
+    local data = sec and sec.items[index]
     if not data then return end
 
     local icon = cell:getAttribute("icon")
@@ -337,17 +844,27 @@ function GlobalMarketUI:onListSelectionChanged(list, section, index)
         if self.actionButtonInfo ~= nil then
             self.actionButtonInfo.text = self.i18n:getText("ui_btn_sell") or "Sell"
         end
-        if self.gmTableMarket then self.gmTableMarket:setSelectedIndex(0) end
+        if self.gmTableMarket then
+            self.gmTableMarket:setSelectedItem(1, 0)
+            self.gmTableMarket:clearElementSelection()
+        end
     else
         self.currentListFocus = "market"
         if self.actionButtonInfo ~= nil then
             self.actionButtonInfo.text = self.i18n:getText("ui_btn_buy") or "Buy"
         end
-        if self.gmTableStorage then self.gmTableStorage:setSelectedIndex(0) end
+        if self.gmTableStorage then
+            self.gmTableStorage:setSelectedItem(1, 0)
+            self.gmTableStorage:clearElementSelection()
+        end
     end
 
+    local sections = (self.currentListFocus == "storage") and self.storageSections or self.marketSections
+    local hasValidItem = (section ~= nil and index ~= nil and section > 0 and index > 0
+        and sections[section] ~= nil and sections[section].items ~= nil and sections[section].items[index] ~= nil)
+
     if self.actionButtonInfo ~= nil then
-        self.actionButtonInfo.disabled = (index <= 0)
+        self.actionButtonInfo.disabled = not hasValidItem
         self:setMenuButtonInfoDirty()
     end
 
@@ -358,24 +875,27 @@ end
 function GlobalMarketUI:onButtonAction(list, section, index)
     local gm = g_currentMission.globalMarket
 
-    -- If triggered via double-click, we get the list and index directly.
+    -- If triggered via double-click, we get the list, section, and index directly.
     -- If triggered via the button, we fall back to the currently focused list.
     local targetList = list or ((self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket)
+    local targetSection = section
     local targetIndex = index
 
     -- If no index was passed (button click), get the selected path from the list
-    if targetIndex == nil then
-        _, targetIndex = targetList:getSelectedPath()
+    if targetIndex == nil or targetSection == nil then
+        targetSection, targetIndex = targetList:getSelectedPath()
     else
         -- If it was a double-click, ensure the UI state updates to the clicked list
         if targetList == self.gmTableStorage then
-            self:onListSelectionChanged(self.gmTableStorage, 1, targetIndex)
+            self:onListSelectionChanged(self.gmTableStorage, targetSection, targetIndex)
         else
-            self:onListSelectionChanged(self.gmTableMarket, 1, targetIndex)
+            self:onListSelectionChanged(self.gmTableMarket, targetSection, targetIndex)
         end
     end
 
-    local data = (self.currentListFocus == "storage") and self.storageData[targetIndex] or self.marketData[targetIndex]
+    local sections = (self.currentListFocus == "storage") and self.storageSections or self.marketSections
+    local sec = sections and sections[targetSection]
+    local data = sec and sec.items and sec.items[targetIndex] or nil
 
     if data and gm.dialog ~= nil then
         local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)

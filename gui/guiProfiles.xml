@@ -139,4 +139,66 @@
         <startImageColor value="$preset_fs25_colorMainHighlight"/>
         <endImageColor value="$preset_fs25_colorMainHighlight"/>
     </Profile>
+    <!-- Section Header Profiles for Categorized SmoothLists (#19) -->
+    <Profile name="globalMarketSectionHeader" extends="baseReference" with="anchorTopStretchingX">
+        <height value="28px"/>
+        <imageColor value="0.06 0.07 0.08 0.92"/>
+        <allowSelected value="false"/>
+    </Profile>
+
+    <Profile name="globalMarketSectionHeaderTitle" extends="baseReference" with="anchorStretchingYLeft">
+        <position value="12px 0px"/>
+        <size value="600px 28px"/>
+        <textSize value="14px"/>
+        <textBold value="true"/>
+        <textUpperCase value="true"/>
+        <textAlignment value="left"/>
+        <textVerticalAlignment value="middle"/>
+        <textColor value="$preset_fs25_colorMainHighlight"/>
+    </Profile>
+
+    <!-- Search Input & Category Mode Toolbar Profiles (#12 & #19) -->
+    <Profile name="globalMarketSearchInputBg" extends="baseReference" with="anchorStretchingYStretchingX">
+        <size value="100% 100%"/>
+        <imageSliceId value="gui.3dShop_button_middle"/>
+        <imageColor value="$preset_fs25_colorTextInput"/>
+        <startImageSize value="6px 0px"/>
+        <startImageSliceId value="gui.3dShop_button_left"/>
+        <startImageColor value="$preset_fs25_colorTextInput"/>
+        <endImageSize value="6px 0px"/>
+        <endImageSliceId value="gui.3dShop_button_right"/>
+        <endImageColor value="$preset_fs25_colorTextInput"/>
+    </Profile>
+
+    <Profile name="globalMarketSearchInput" extends="fs25_textInput" with="anchorMiddleCenter">
+        <size value="310px 32px"/>
+        <maxInputTextWidth value="280px"/>
+        <textSize value="16px"/>
+        <textAlignment value="center"/>
+    </Profile>
+
+    <Profile name="globalMarketToolbarBtnBg" extends="globalMarketSearchInputBg">
+        <imageHighlightedColor value="$preset_fs25_colorMainHighlight"/>
+        <imageFocusedColor value="$preset_fs25_colorMainHighlight"/>
+        <startImageHighlightedColor value="$preset_fs25_colorMainHighlight"/>
+        <startImageFocusedColor value="$preset_fs25_colorMainHighlight"/>
+        <endImageHighlightedColor value="$preset_fs25_colorMainHighlight"/>
+        <endImageFocusedColor value="$preset_fs25_colorMainHighlight"/>
+    </Profile>
+
+    <Profile name="globalMarketToolbarBtnSmall" extends="emptyPanel" with="anchorMiddleLeft">
+        <size value="34px 32px"/>
+        <textSize value="16px"/>
+        <textBold value="true"/>
+        <textPadding value="0px 0px"/>
+        <textAlignment value="center"/>
+        <textColor value="$preset_colorWhite"/>
+        <textHighlightedColor value="$preset_fs25_colorMainDark"/>
+        <textFocusedColor value="$preset_fs25_colorMainDark"/>
+    </Profile>
+
+    <Profile name="globalMarketToolbarBtnMode" extends="globalMarketToolbarBtnSmall">
+        <size value="260px 32px"/>
+        <textSize value="15px"/>
+    </Profile>
 </GUIProfiles>

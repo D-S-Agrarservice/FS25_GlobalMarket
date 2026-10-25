@@ -23,6 +23,21 @@
         <e k="ui_btn_buy"                                          v="Kup z Rynku Globalnego" />
         <e k="ui_btn_sell"                                         v="Sprzedaj na Rynek Globalny" />
         <e k="ui_gm_balance"                                       v="STAN KONTA:" />
+        <e k="ui_gm_cat_compact_bales"                             v="Bele i Pasze" />
+        <e k="ui_gm_cat_compact_crops"                             v="Uprawy polowe i Luzem" />
+        <e k="ui_gm_cat_compact_liquids"                           v="Ciecze" />
+        <e k="ui_gm_cat_compact_pallets"                           v="Palety i Produkcja" />
+        <e k="ui_gm_cat_detail_animal"                             v="Produkty zwierzęce" />
+        <e k="ui_gm_cat_detail_forage"                             v="Pasze, Trawa i Bele" />
+        <e k="ui_gm_cat_detail_grains"                             v="Zboża i Rośliny młócone" />
+        <e k="ui_gm_cat_detail_other"                              v="Leśnictwo, Luzem i Inne" />
+        <e k="ui_gm_cat_detail_pallets"                            v="Palety i Produkcja" />
+        <e k="ui_gm_cat_detail_roots"                              v="Okopowe, Warzywa i Specjalne" />
+        <e k="ui_gm_cat_detail_supplies"                           v="Nasiona, Nawozy i Zaopatrzenie" />
+        <e k="ui_gm_cat_mode_compact"                              v="Kategorie: Kompaktowe" />
+        <e k="ui_gm_cat_mode_detailed"                             v="Kategorie: Szczegółowe" />
+        <e k="ui_gm_cat_mode_flat"                                 v="Kategorie: Wył. (A-Z)" />
+        <e k="ui_gm_search_label"                                  v="SZUKAJ:" />
         <e k="ui_gm_delivery_costs"                                v="Koszty dostawy" />
         <e k="ui_gm_format_bulk"                                   v="Luzem (Niespakowane)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Maks: %d Szt. | 1 Szt. = %d L" />

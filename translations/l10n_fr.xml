@@ -23,6 +23,21 @@
         <e k="ui_btn_buy"                                          v="Acheter au Marché Global" />
         <e k="ui_btn_sell"                                         v="Vendre au Marché Global" />
         <e k="ui_gm_balance"                                       v="SOLDE :" />
+        <e k="ui_gm_cat_compact_bales"                             v="Balles &amp; Fourrage" />
+        <e k="ui_gm_cat_compact_crops"                             v="Cultures &amp; Vrac" />
+        <e k="ui_gm_cat_compact_liquids"                           v="Liquides" />
+        <e k="ui_gm_cat_compact_pallets"                           v="Palettes &amp; Productions" />
+        <e k="ui_gm_cat_detail_animal"                             v="Produits animaux" />
+        <e k="ui_gm_cat_detail_forage"                             v="Fourrage, Herbe &amp; Balles" />
+        <e k="ui_gm_cat_detail_grains"                             v="Céréales &amp; Récoltes" />
+        <e k="ui_gm_cat_detail_other"                              v="Foresterie, Vrac &amp; Autres" />
+        <e k="ui_gm_cat_detail_pallets"                            v="Palettes &amp; Productions" />
+        <e k="ui_gm_cat_detail_roots"                              v="Plantes sarclées &amp; Légumes" />
+        <e k="ui_gm_cat_detail_supplies"                           v="Semences, Engrais &amp; Fournitures" />
+        <e k="ui_gm_cat_mode_compact"                              v="Catégories : Compact" />
+        <e k="ui_gm_cat_mode_detailed"                             v="Catégories : Détaillé" />
+        <e k="ui_gm_cat_mode_flat"                                 v="Catégories : Aucune (A-Z)" />
+        <e k="ui_gm_search_label"                                  v="RECHERCHE :" />
         <e k="ui_gm_delivery_costs"                                v="Frais de livraison" />
         <e k="ui_gm_format_bulk"                                   v="Vrac (Non emballé)" />
         <e k="ui_gm_format_info"                                   v="Format : %s | Max : %d Pièces | 1 Pièce = %d L" />

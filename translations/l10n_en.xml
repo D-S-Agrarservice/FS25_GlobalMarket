@@ -23,6 +23,21 @@
         <e k="ui_btn_buy"                                          v="Buy from Global Market" />
         <e k="ui_btn_sell"                                         v="Sell to Global Market" />
         <e k="ui_gm_balance"                                       v="BALANCE:" />
+        <e k="ui_gm_cat_compact_bales"                             v="Bales &amp; Forage" />
+        <e k="ui_gm_cat_compact_crops"                             v="Field Crops &amp; Bulk" />
+        <e k="ui_gm_cat_compact_liquids"                           v="Liquids" />
+        <e k="ui_gm_cat_compact_pallets"                           v="Pallets &amp; Productions" />
+        <e k="ui_gm_cat_detail_animal"                             v="Animal Products" />
+        <e k="ui_gm_cat_detail_forage"                             v="Forage, Grass &amp; Bales" />
+        <e k="ui_gm_cat_detail_grains"                             v="Grains &amp; Combinables" />
+        <e k="ui_gm_cat_detail_other"                              v="Forestry, Bulk &amp; Other" />
+        <e k="ui_gm_cat_detail_pallets"                            v="Pallets &amp; Productions" />
+        <e k="ui_gm_cat_detail_roots"                              v="Root Crops, Vegetables &amp; Specialty" />
+        <e k="ui_gm_cat_detail_supplies"                           v="Seeds, Fertilizer &amp; Supplies" />
+        <e k="ui_gm_cat_mode_compact"                              v="Categories: Compact" />
+        <e k="ui_gm_cat_mode_detailed"                             v="Categories: Detailed" />
+        <e k="ui_gm_cat_mode_flat"                                 v="Categories: Off (A-Z)" />
+        <e k="ui_gm_search_label"                                  v="SEARCH:" />
         <e k="ui_gm_delivery_costs"                                v="Delivery costs" />
         <e k="ui_gm_format_bulk"                                   v="Bulk (Loose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Pcs | 1 Pc = %d L" />

@@ -23,6 +23,21 @@
         <e k="ui_btn_buy"                                          v="vom Globalen Markt kaufen" />
         <e k="ui_btn_sell"                                         v="an Globalen Markt verkaufen" />
         <e k="ui_gm_balance"                                       v="KONTOSTAND:" />
+        <e k="ui_gm_cat_compact_bales"                             v="Ballen &amp; Futter" />
+        <e k="ui_gm_cat_compact_crops"                             v="Feldfrüchte &amp; Schüttgut" />
+        <e k="ui_gm_cat_compact_liquids"                           v="Flüssigkeiten" />
+        <e k="ui_gm_cat_compact_pallets"                           v="Paletten &amp; Produktionen" />
+        <e k="ui_gm_cat_detail_animal"                             v="Tierprodukte" />
+        <e k="ui_gm_cat_detail_forage"                             v="Futter, Gras &amp; Ballen" />
+        <e k="ui_gm_cat_detail_grains"                             v="Getreide &amp; Druschfrüchte" />
+        <e k="ui_gm_cat_detail_other"                              v="Forst, Schüttgut &amp; Sonstiges" />
+        <e k="ui_gm_cat_detail_pallets"                            v="Paletten &amp; Produktionen" />
+        <e k="ui_gm_cat_detail_roots"                              v="Hackfrüchte, Gemüse &amp; Sonderkulturen" />
+        <e k="ui_gm_cat_detail_supplies"                           v="Saatgut, Dünger &amp; Betriebsstoffe" />
+        <e k="ui_gm_cat_mode_compact"                              v="Kategorien: Kompakt" />
+        <e k="ui_gm_cat_mode_detailed"                             v="Kategorien: Detailliert" />
+        <e k="ui_gm_cat_mode_flat"                                 v="Kategorien: Aus (A-Z)" />
+        <e k="ui_gm_search_label"                                  v="SUCHE:" />
         <e k="ui_gm_delivery_costs"                                v="Lieferkosten" />
         <e k="ui_gm_format_bulk"                                   v="Schüttgut (Lose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />

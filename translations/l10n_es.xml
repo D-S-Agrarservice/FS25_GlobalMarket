@@ -23,6 +23,21 @@
         <e k="ui_btn_buy"                                          v="Comprar en el Mercado Global" />
         <e k="ui_btn_sell"                                         v="Vender al Mercado Global" />
         <e k="ui_gm_balance"                                       v="SALDO:" />
+        <e k="ui_gm_cat_compact_bales"                             v="Pacas y Forraje" />
+        <e k="ui_gm_cat_compact_crops"                             v="Cultivos y Granel" />
+        <e k="ui_gm_cat_compact_liquids"                           v="Líquidos" />
+        <e k="ui_gm_cat_compact_pallets"                           v="Palés y Producciones" />
+        <e k="ui_gm_cat_detail_animal"                             v="Productos animales" />
+        <e k="ui_gm_cat_detail_forage"                             v="Forraje, Hierba y Pacas" />
+        <e k="ui_gm_cat_detail_grains"                             v="Cereales y Cosechas" />
+        <e k="ui_gm_cat_detail_other"                              v="Silvicultura, Granel y Otros" />
+        <e k="ui_gm_cat_detail_pallets"                            v="Palés y Producciones" />
+        <e k="ui_gm_cat_detail_roots"                              v="Tubérculos y Hortalizas" />
+        <e k="ui_gm_cat_detail_supplies"                           v="Semillas, Abono y Suministros" />
+        <e k="ui_gm_cat_mode_compact"                              v="Categorías: Compacto" />
+        <e k="ui_gm_cat_mode_detailed"                             v="Categorías: Detallado" />
+        <e k="ui_gm_cat_mode_flat"                                 v="Categorías: No (A-Z)" />
+        <e k="ui_gm_search_label"                                  v="BUSCAR:" />
         <e k="ui_gm_delivery_costs"                                v="Gastos de envío" />
         <e k="ui_gm_format_bulk"                                   v="A granel (Suelto)" />
         <e k="ui_gm_format_info"                                   v="Formato: %s | Máx: %d Uds | 1 Ud = %d L" />

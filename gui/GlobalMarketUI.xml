@@ -17,21 +17,36 @@
         <GuiElement size="650px 750px" position="20px 40px">
             <Text profile="globalMarketHeaderBright" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="10px 715px" size="600px 30px" textSize="22px" />
 
-            <GuiElement position="0px 660px" size="650px 40px">
-                <Text profile="globalMarketHeader" position="40px 10px" size="250px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
-                <Text profile="globalMarketHeaderRight" position="300px 10px" size="300px 24px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
+            <!-- Shared Search Toolbar (#12) -->
+            <GuiElement position="0px 652px" size="650px 34px">
+                <Text profile="globalMarketHeader" position="10px 5px" size="90px 24px" text="$l10n_ui_gm_search_label" />
+                <GuiElement profile="emptyPanel" position="105px 0px" size="310px 32px" with="anchorMiddleLeft">
+                    <ThreePartBitmap profile="globalMarketSearchInputBg" />
+                    <TextInput profile="globalMarketSearchInput" id="searchTextInput" onTextChanged="onSearchTextChanged" onEnterPressed="onSearchEnterPressed" enterWhenClickOutside="true" maxCharacters="30" />
+                </GuiElement>
+                <Button profile="globalMarketToolbarBtnSmall" id="btnClearSearch" position="422px 0px" text="X" onClick="onClickClearSearch">
+                    <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                </Button>
+            </GuiElement>
+
+            <GuiElement position="0px 608px" size="650px 38px">
+                <Text profile="globalMarketHeader" position="40px 8px" size="250px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                <Text profile="globalMarketHeaderRight" position="300px 8px" size="300px 24px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
             <!-- Wrapper container to constrain the list and provide an anchor point for the slider -->
-            <GuiElement position="0px 10px" size="650px 640px">
+            <GuiElement position="0px 10px" size="650px 592px">
                 <!-- List takes full size of the wrapper (650px width) -->
-                <SmoothList profile="emptyPanel" id="gmTableStorage" size="100% 100%" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
+                <SmoothList profile="emptyPanel" id="gmTableStorage" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
                     <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
                         <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                         <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
                         <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="250px 32px" name="name" />
                         <Text profile="globalMarketRowCellRight" position="300px 0px" size="300px 32px" name="amount" />
+                    </ListItem>
+                    <ListItem profile="globalMarketSectionHeader" name="section">
+                        <Text profile="globalMarketSectionHeaderTitle" name="title" />
                     </ListItem>
                 </SmoothList>
 
@@ -44,20 +59,27 @@
 
         <GuiElement size="650px 750px" position="700px 40px">
             <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="600px 30px" textSize="22px" />
-            <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 700px" size="630px 24px" textSize="16px" textColor="0.7 0.7 0.7 1" />
+            <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="630px 24px" textSize="16px" textColor="0.7 0.7 0.7 1" />
 
-            <GuiElement position="0px 660px" size="650px 40px">
-                <Text profile="globalMarketHeader" position="10px 10px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
-                <Text profile="globalMarketHeaderRight" position="220px 10px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
-                <Text profile="globalMarketHeader" position="390px 10px" size="140px 24px" text="$l10n_ui_gm_trend" />
-                <Text profile="globalMarketHeaderRight" position="440px 10px" size="180px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
+            <!-- Category View Mode Switcher Toolbar (#19) -->
+            <GuiElement position="0px 652px" size="650px 34px">
+                <Button profile="globalMarketToolbarBtnMode" id="btnCategoryMode" position="390px 0px" text="$l10n_ui_gm_cat_mode_detailed" onClick="onClickToggleCategoryMode">
+                    <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                </Button>
+            </GuiElement>
+
+            <GuiElement position="0px 608px" size="650px 38px">
+                <Text profile="globalMarketHeader" position="10px 8px" size="200px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                <Text profile="globalMarketHeaderRight" position="220px 8px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
+                <Text profile="globalMarketHeader" position="390px 8px" size="140px 24px" text="$l10n_ui_gm_trend" />
+                <Text profile="globalMarketHeaderRight" position="440px 8px" size="180px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
                 <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="650px 2px" />
             </GuiElement>
 
             <!-- Wrapper container to constrain the list and provide an anchor point for the slider -->
-            <GuiElement position="0px 10px" size="650px 640px">
+            <GuiElement position="0px 10px" size="650px 592px">
                 <!-- List takes full size of the wrapper (650px width) -->
-                <SmoothList profile="emptyPanel" id="gmTableMarket" size="100% 100%" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
+                <SmoothList profile="emptyPanel" id="gmTableMarket" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
                     <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
                         <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                         <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
@@ -65,6 +87,9 @@
                         <Text profile="globalMarketRowCellRight" position="220px 0px" size="150px 32px" name="price" />
                         <Bitmap profile="globalMarketRowCellArrow" position="400px 2px" name="trend" />
                         <Text profile="globalMarketRowCellRight" position="440px 0px" size="180px 32px" name="amount" />
+                    </ListItem>
+                    <ListItem profile="globalMarketSectionHeader" name="section">
+                        <Text profile="globalMarketSectionHeaderTitle" name="title" />
                     </ListItem>
                 </SmoothList>
 

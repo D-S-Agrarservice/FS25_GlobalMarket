@@ -1,7 +1,8 @@
 --
 -- FS25 - GlobalMarketAPI
 -- Description: Central API module acting as the single source of truth for external data.
--- Handles custom liquid categories, market whitelists, blacklists, and container restrictions.
+-- Handles custom liquid categories, market whitelists, blacklists, container restrictions,
+-- and optional UI category overrides (#19).
 -- Priority: 1. Basegame (Hardcode) -> 2. Mods (gm_customs.xml) -> 3. Player Fallback (gm_fallback.xml)
 --
 
@@ -10,6 +11,7 @@ GlobalMarketAPI.liquidCategories = {}
 GlobalMarketAPI.marketWhitelist = {}
 GlobalMarketAPI.marketBlacklist = {}
 GlobalMarketAPI.containerRestrictions = {}
+GlobalMarketAPI.uiCategoryOverrides = {}
 
 -- Main initialization function
 function GlobalMarketAPI.init()
@@ -19,6 +21,7 @@ function GlobalMarketAPI.init()
     GlobalMarketAPI.marketWhitelist = {}
     GlobalMarketAPI.marketBlacklist = {}
     GlobalMarketAPI.containerRestrictions = {}
+    GlobalMarketAPI.uiCategoryOverrides = {}
 
     GlobalMarketAPI.loadBasegameDefaults()
     GlobalMarketAPI.loadExternalModExtensions()
@@ -106,9 +109,16 @@ end
 function GlobalMarketAPI.registerSchemaElements(schema)
     schema:register(XMLValueType.STRING, "globalMarket.finance.liquidCategories.category(?)#name", "Name of the custom liquid category")
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#name", "Name of the fillType to whitelist")
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#category", "Optional UI Detailed Category ID (GRAINS, ROOTS, FORAGE, SUPPLIES, ANIMAL, PALLETS, OTHER)")
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#compactCategory", "Optional UI Compact Category ID (CROPS_BULK, BALES_FORAGE, LIQUIDS, PALLETS_PRODUCTS)")
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.blacklist.fillType(?)#name", "Name of the fillType to blacklist")
 
-    -- New schema elements for container restrictions
+    -- Optional standalone UI category overrides for fillTypes that already have showOnPriceTable="true"
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.uiCategories.fillType(?)#name", "Name of the fillType")
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.uiCategories.fillType(?)#category", "UI Detailed Category ID (GRAINS, ROOTS, FORAGE, SUPPLIES, ANIMAL, PALLETS, OTHER)")
+    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.uiCategories.fillType(?)#compactCategory", "UI Compact Category ID (CROPS_BULK, BALES_FORAGE, LIQUIDS, PALLETS_PRODUCTS)")
+
+    -- Schema elements for container restrictions
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.containerRestrictions.restriction(?)#fillType", "Name of the fillType to restrict")
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.containerRestrictions.restriction(?).allow(?)#unitKey", "Allowed UI unit key (e.g., ui_gm_unit_ibc)")
 end
@@ -125,6 +135,22 @@ function GlobalMarketAPI.parseXMLToAPI(xmlFile, isPriority)
         local fillTypeName = xmlFile:getValue(key .. "#name")
         if fillTypeName ~= nil then
             GlobalMarketAPI.registerToWhitelist(fillTypeName, isPriority)
+            local cat = xmlFile:getValue(key .. "#category")
+            local compactCat = xmlFile:getValue(key .. "#compactCategory")
+            if cat ~= nil or compactCat ~= nil then
+                GlobalMarketAPI.registerUiCategoryOverride(fillTypeName, cat, compactCat, isPriority)
+            end
+        end
+    end)
+
+    xmlFile:iterate("globalMarket.marketRegistration.uiCategories.fillType", function(_, key)
+        local fillTypeName = xmlFile:getValue(key .. "#name")
+        if fillTypeName ~= nil then
+            local cat = xmlFile:getValue(key .. "#category")
+            local compactCat = xmlFile:getValue(key .. "#compactCategory")
+            if cat ~= nil or compactCat ~= nil then
+                GlobalMarketAPI.registerUiCategoryOverride(fillTypeName, cat, compactCat, isPriority)
+            end
         end
     end)
 
@@ -205,12 +231,40 @@ function GlobalMarketAPI.registerContainerRestriction(fillTypeName, unitKey, isP
     end
 end
 
+function GlobalMarketAPI.registerUiCategoryOverride(fillTypeName, categoryName, compactCategoryName, isPriority)
+    if fillTypeName == nil then
+        return
+    end
+    local upperName = string.upper(fillTypeName)
+
+    -- Priority Check: Do not let fallback overwrite an existing Mod/Basegame UI category override
+    if not isPriority and GlobalMarketAPI.uiCategoryOverrides[upperName] ~= nil then
+        return
+    end
+
+    local entry = GlobalMarketAPI.uiCategoryOverrides[upperName] or {}
+    if categoryName ~= nil and categoryName ~= "" then
+        entry.category = string.upper(categoryName)
+    end
+    if compactCategoryName ~= nil and compactCategoryName ~= "" then
+        entry.compactCategory = string.upper(compactCategoryName)
+    end
+    GlobalMarketAPI.uiCategoryOverrides[upperName] = entry
+end
+
 -- =========================================================================
 -- PUBLIC GETTER API FOR CORE MODULES
 -- =========================================================================
 
 function GlobalMarketAPI.getLiquidCategories()
     return GlobalMarketAPI.liquidCategories
+end
+
+function GlobalMarketAPI.getUiCategoryOverride(fillTypeName)
+    if fillTypeName == nil then
+        return nil
+    end
+    return GlobalMarketAPI.uiCategoryOverrides[string.upper(fillTypeName)]
 end
 
 function GlobalMarketAPI.getIsFillTypeAllowed(fillType)
