@@ -172,6 +172,7 @@ function GlobalMarket:loadMap(name)
 
             g_gui:loadGui(xmlFilename, "GlobalMarketUI", uiController, true)
             self.ui = uiController
+            g_currentMission.globalMarketUi = uiController
 
             -- Inject Tab into InGameMenu
             self:fixInGameMenu(uiController, "GlobalMarketUI")
@@ -252,7 +253,7 @@ end
 -- =========================================================================
 -- Decides dynamically which module calculates the prices based on connection state.
 -- This function can be safely called by any module (Sync, Offline, UI) to refresh prices.
-function GlobalMarket:refreshMarketPrices()
+function GlobalMarket:refreshMarketPrices(skipUiUpdate)
     -- Check heartbeat flags provided by the Sync module
     local useOnline = self.isExeRunningLocal and self.hasBackendConnection
 
@@ -269,8 +270,11 @@ function GlobalMarket:refreshMarketPrices()
     end
 
     -- Trigger UI update if the terminal is currently open
-    if g_currentMission.globalMarketUi ~= nil then
-        g_currentMission.globalMarketUi:updateContent()
+    if not skipUiUpdate then
+        local ui = self.ui or g_currentMission.globalMarketUi
+        if ui ~= nil and ui:getIsVisible() then
+            ui:updateContent()
+        end
     end
 end
 
@@ -312,6 +316,14 @@ local function onFinishedLoading(mission)
                 GlobalMarket.debugManager:info("Map fully loaded. Injecting GM Savegame data into placeables...")
             end
             g_currentMission.globalMarket:loadFromXMLFile()
+        end
+
+        -- Recalculate market prices now that all map SellingStations and savegame economy settings are loaded
+        if g_currentMission:getIsServer() and g_currentMission.globalMarket.refreshMarketPrices ~= nil then
+            g_currentMission.globalMarket:refreshMarketPrices(true)
+            if g_currentMission.globalMarket.initServerWhitelist ~= nil then
+                g_currentMission.globalMarket:initServerWhitelist()
+            end
         end
     end
     -- GlobalMarket.dumpShopItems()

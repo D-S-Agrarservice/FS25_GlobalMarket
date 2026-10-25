@@ -25,11 +25,13 @@ function GlobalMarket:initOfflineMarket()
 
                 -- math.random needs integers, so we round the values
                 local startLevel = math.random(math.floor(minStart), math.floor(maxStart))
+                local initialNormalPrice = (fillType.pricePerLiter or 0.5) * 1000
 
                 table.insert(self.offlineMarketFillTypes, {
                     fillType = fillType.name,
                     fillTypeIndex = fillType.index,
                     basePrice = fillType.pricePerLiter or 0.5,
+                    normalPrice = initialNormalPrice,
                     fillLevel = startLevel,
                     price = 0 -- Calculated on demand/update
                 })
@@ -51,77 +53,88 @@ function GlobalMarket:initOfflineMarket()
     end
 end
 
--- Calculates the price considering Season Factors and Market Saturation.
-function GlobalMarket:updateOfflinePrices()
-    local currentPeriod = 1
-    local periodAlpha = 0.5 -- Fallback for the middle of the month
+-- Resolves the current local map baseline price per liter for a given fillTypeIndex.
+-- Queries active map SellingStations first (including difficulty, season, and station priceScales),
+-- and falls back to EconomyManager:getPricePerLiter when no station accepts the fillType.
+function GlobalMarket:getMapBasePricePerLiter(fillTypeIndex, fallbackBasePrice)
+    local fillTypeDesc = fillTypeIndex ~= nil and g_fillTypeManager:getFillTypeByIndex(fillTypeIndex) or nil
+    local totalMapPrice = 0
+    local numStations = 0
 
-    if g_currentMission ~= nil and g_currentMission.environment ~= nil and g_currentMission.environment.getPeriodAndAlphaIntoPeriod ~= nil then
-        -- FS25 Native: Fetch the exact period and the time progression (alpha) within that period
-        currentPeriod, periodAlpha = g_currentMission.environment:getPeriodAndAlphaIntoPeriod()
-    end
+    if fillTypeIndex ~= nil and g_currentMission ~= nil and g_currentMission.economyManager ~= nil and g_currentMission.economyManager.sellingStations ~= nil then
+        for _, stationData in ipairs(g_currentMission.economyManager.sellingStations) do
+            local station = stationData.station
 
-    for _, data in pairs(self.offlineMarketFillTypes) do
-        local fillTypeIndex = data.fillTypeIndex
-        local fillTypeDesc = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
+            -- Only include visible map selling stations that accept this fillType
+            if station ~= nil and not station.hideFromPricesMenu and station.acceptedFillTypes ~= nil and station.acceptedFillTypes[fillTypeIndex] then
+                local isAllowed = true
+                if station.getIsFillTypeAllowed ~= nil then
+                    isAllowed = station:getIsFillTypeAllowed(fillTypeIndex)
+                end
 
-        -- ===============================================================
-        -- 1. MAP SPY: Get the actual average price from local selling stations
-        -- ===============================================================
-        local totalMapPrice = 0
-        local numStations = 0
-
-        if g_currentMission.economyManager ~= nil and g_currentMission.economyManager.sellingStations ~= nil then
-            for _, stationData in ipairs(g_currentMission.economyManager.sellingStations) do
-                local station = stationData.station
-
-                -- Check if this station accepts the current fillType
-                if station.acceptedFillTypes ~= nil and station.acceptedFillTypes[fillTypeIndex] then
+                if isAllowed then
                     -- Fetch the exact current price this station is paying per liter.
                     -- CRITICAL: This already includes Difficulty, Season, and Map XML priceScales!
                     local stationPrice = station:getEffectiveFillTypePrice(fillTypeIndex, ToolType.UNDEFINED)
 
-                    if stationPrice > 0 then
+                    if stationPrice ~= nil and stationPrice > 0 then
                         totalMapPrice = totalMapPrice + stationPrice
                         numStations = numStations + 1
                     end
                 end
             end
         end
+    end
 
-        local currentBasePricePerLiter = data.basePrice
+    if numStations > 0 then
+        return totalMapPrice / numStations
+    end
 
-        if numStations > 0 then
-            -- Use the average map price as the GM baseline
-            currentBasePricePerLiter = totalMapPrice / numStations
-        else
-            -- FALLBACK: If no station on the map accepts this fillType (e.g. custom productions),
-            -- fallback to the native EconomyManager calculation.
-            if g_currentMission.economyManager ~= nil and g_currentMission.economyManager.getPricePerLiter ~= nil then
-                currentBasePricePerLiter = g_currentMission.economyManager:getPricePerLiter(fillTypeIndex)
-            elseif fillTypeDesc ~= nil then
-                -- Hard fallback if EconomyManager is unavailable
-                currentBasePricePerLiter = fillTypeDesc.pricePerLiter
-            end
+    -- FALLBACK: If no station on the map accepts this fillType (e.g. custom productions or early map load),
+    -- fallback to the native EconomyManager calculation (includes Difficulty & Season).
+    if fillTypeIndex ~= nil and g_currentMission ~= nil and g_currentMission.economyManager ~= nil and g_currentMission.economyManager.getPricePerLiter ~= nil and g_currentMission.environment ~= nil then
+        local econPrice = g_currentMission.economyManager:getPricePerLiter(fillTypeIndex)
+        if econPrice ~= nil and econPrice > 0 then
+            return econPrice
+        end
+    end
+
+    local rawBase = (fillTypeDesc ~= nil and fillTypeDesc.pricePerLiter) or fallbackBasePrice or 0.5
+    local diffMult = (EconomyManager ~= nil and EconomyManager.getPriceMultiplier ~= nil and g_currentMission ~= nil and g_currentMission.missionInfo ~= nil) and (EconomyManager.getPriceMultiplier() or 1) or 1
+    return rawBase * diffMult
+end
+
+-- Calculates the price considering Season Factors, Map SellingStations, and Market Saturation.
+function GlobalMarket:updateOfflinePrices()
+    if self.offlineMarketFillTypes == nil then
+        return
+    end
+
+    local currentSaturationLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+    local priceRange = GlobalMarketOffline.PRICE_MAX_FACTOR - GlobalMarketOffline.PRICE_MIN_FACTOR
+
+    for _, data in pairs(self.offlineMarketFillTypes) do
+        local fillTypeIndex = data.fillTypeIndex
+        if fillTypeIndex == nil and data.fillType ~= nil and g_fillTypeManager ~= nil then
+            fillTypeIndex = g_fillTypeManager:getFillTypeIndexByName(data.fillType)
+            data.fillTypeIndex = fillTypeIndex
         end
 
-        -- ===============================================================
-        -- 2. GM DEMAND FACTOR: Apply our own saturation logic
-        -- ===============================================================
-        -- OFFLINE MODE: Apply local saturation logic
-        -- Fallback to 2M if settings haven't loaded yet
-        local currentSaturationLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+        -- 1. MAP SPY: Get the actual average price per liter from local selling stations / EconomyManager
+        local currentBasePricePerLiter = self:getMapBasePricePerLiter(fillTypeIndex, data.basePrice)
 
-        local saturation = math.min(data.fillLevel / currentSaturationLimit, 1.0)
-        local priceRange = GlobalMarketOffline.PRICE_MAX_FACTOR - GlobalMarketOffline.PRICE_MIN_FACTOR
+        -- Store the neutral 1000L map reference price (demandFactor = 1.0) for accurate UI trend arrows & MP sync
+        data.normalPrice = currentBasePricePerLiter * 1000
+
+        -- 2. GM DEMAND FACTOR: Apply local saturation logic
+        local saturation = math.min((data.fillLevel or 0) / currentSaturationLimit, 1.0)
         local demandFactor = GlobalMarketOffline.PRICE_MAX_FACTOR - (priceRange * saturation)
 
-        -- Final Price: BaseMapPrice * Demand * 1000 (for display per unit)
-        -- Note: Difficulty and Season are ALREADY included in currentBasePricePerLiter!
-        data.price = currentBasePricePerLiter * demandFactor * 1000
+        -- Final Price: NormalMapPrice * Demand
+        data.price = data.normalPrice * demandFactor
 
         if self.debugManager ~= nil then
-            self.debugManager:trace("OfflineMarket Price Update - %s: MapAvgBase=%.2f, Demand=%.2f, Final=%.2f", data.fillType, currentBasePricePerLiter, demandFactor, data.price)
+            self.debugManager:trace("OfflineMarket Price Update - %s: MapNormal=%.2f, Demand=%.2f, Final=%.2f", tostring(data.fillType), data.normalPrice, demandFactor, data.price)
         end
     end
 end

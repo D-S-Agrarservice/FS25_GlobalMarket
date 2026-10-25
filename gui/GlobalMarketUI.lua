@@ -126,8 +126,13 @@ function GlobalMarketUI:updateContent()
         self.totalStorageDisplay:setText(self.i18n:formatVolume(totalVolume, 0))
     end
 
+    -- Ensure local map prices reflect the latest difficulty and station prices before rendering on server/SP
+    if g_currentMission:getIsServer() and gm.refreshMarketPrices ~= nil then
+        gm:refreshMarketPrices(true)
+    end
+
     -- Load and alphabetically sort market data by the client's active localized FillType title
-    local rawMarketData = gm:getIsMarketOnline() and (gm.fillTypes or {}) or (gm.offlineMarketFillTypes or {})
+    local rawMarketData = (gm:getIsMarketOnline() and gm.fillTypes ~= nil and #gm.fillTypes > 0) and gm.fillTypes or (gm.offlineMarketFillTypes or {})
     self.marketData = {}
     for _, item in ipairs(rawMarketData) do
         table.insert(self.marketData, item)
@@ -297,13 +302,15 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
         if list == self.gmTableMarket then
             trend:setVisible(true)
 
-            -- We assume data.basePrice is the value from the offline module
-            local basePrice = (data.basePrice or 0.5) * 1000
+            -- Compare current market price against the neutral (1.0x) map baseline price for this difficulty/season
+            local normalPrice = (data.normalPrice ~= nil and data.normalPrice > 0)
+                and data.normalPrice
+                or ((data.basePrice or 0.5) * 1000 * (EconomyManager ~= nil and EconomyManager.getPriceMultiplier ~= nil and EconomyManager.getPriceMultiplier() or 1))
 
             -- Trend detection with 5% threshold
-            if data.price > (basePrice * 1.05) then
+            if data.price > (normalPrice * 1.05) then
                 trend:applyProfile("globalMarketRowCellArrowClimbing")
-            elseif data.price < (basePrice * 0.95) then
+            elseif data.price < (normalPrice * 0.95) then
                 trend:applyProfile("globalMarketRowCellArrowFalling")
             else
                 -- Price is stable, hide arrow

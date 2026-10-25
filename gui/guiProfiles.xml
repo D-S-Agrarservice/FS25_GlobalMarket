@@ -96,7 +96,7 @@
 
     <Profile name="globalMarketRowCellArrowFalling" extends="globalMarketRowCellArrow">
         <imageColor value="$preset_colorRed"/>
-        <imageInvertY value="true"/>
+        <imageRotation value="180"/>
     </Profile>
 
     <Profile name="globalMarketListSliderBox1" extends="fs25_listSliderBox" with="anchorTopStretchingX pivotTopRight">

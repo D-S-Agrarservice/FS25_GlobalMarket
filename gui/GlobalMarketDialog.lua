@@ -135,7 +135,7 @@ function GlobalMarketDialog:onClickStorage(state)
         else
             local marketStock = 0
             local gm = g_currentMission.globalMarket
-            local marketData = gm:getIsMarketOnline() and gm.fillTypes or gm.offlineMarketFillTypes
+            local marketData = (gm:getIsMarketOnline() and gm.fillTypes ~= nil and #gm.fillTypes > 0) and gm.fillTypes or gm.offlineMarketFillTypes
 
             if marketData ~= nil then
                 for _, data in pairs(marketData) do
@@ -361,7 +361,7 @@ function GlobalMarketDialog:onClickFormat(state)
                 -- Determine how many pieces we can actually afford from the market stock
                 local marketStock = 0
                 local gm = g_currentMission.globalMarket
-                local marketData = gm:getIsMarketOnline() and gm.fillTypes or gm.offlineMarketFillTypes
+                local marketData = (gm:getIsMarketOnline() and gm.fillTypes ~= nil and #gm.fillTypes > 0) and gm.fillTypes or gm.offlineMarketFillTypes
                 if marketData ~= nil then
                     for _, data in pairs(marketData) do
                         if data.fillType == self.fillTypeName then

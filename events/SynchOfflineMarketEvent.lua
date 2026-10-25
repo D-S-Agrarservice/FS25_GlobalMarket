@@ -59,8 +59,12 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
         local normalPrice = streamReadFloat32(streamId)
         local price = streamReadFloat32(streamId)
 
+        local fillTypeDesc = (g_fillTypeManager ~= nil and fillType ~= nil) and g_fillTypeManager:getFillTypeByName(fillType) or nil
+
         table.insert(self.offlineMarketFillTypes, {
             fillType = fillType,
+            fillTypeIndex = fillTypeDesc ~= nil and fillTypeDesc.index or nil,
+            basePrice = (fillTypeDesc ~= nil and fillTypeDesc.pricePerLiter) or 0.5,
             fillLevel = fillLevel,
             normalPrice = normalPrice,
             price = price
@@ -68,7 +72,7 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
     end
 
     -- Proceed to execute the logic and apply the read data
-     self:run(connection)
+    self:run(connection)
 end
 
 -- Executes the core synchronization logic based on network authority
@@ -85,8 +89,9 @@ function SynchOfflineMarketEvent:run(connection)
 
             g_currentMission.globalMarket.offlineMarketFillTypes = self.offlineMarketFillTypes
 
-            if g_currentMission.globalMarketUi ~= nil then
-                g_currentMission.globalMarketUi:updateContent()
+            local ui = g_currentMission.globalMarket.ui or g_currentMission.globalMarketUi
+            if ui ~= nil and ui:getIsVisible() then
+                ui:updateContent()
             end
         else
             if GlobalMarket.debugManager ~= nil then
