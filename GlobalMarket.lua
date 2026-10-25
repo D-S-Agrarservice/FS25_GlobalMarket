@@ -176,6 +176,8 @@ function GlobalMarket:loadMap(name)
                 self.debugManager:info("Injecting GlobalMarket UI during map load...")
             end
 
+            local previousFocusGui = FocusManager.currentGui
+
             -- 1. Load Transaction Dialog
             local dialogController = GlobalMarketDialog.new()
             g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketDialog.xml", "GlobalMarketDialog", dialogController)
@@ -191,6 +193,11 @@ function GlobalMarket:loadMap(name)
 
             -- Inject Tab into InGameMenu
             self:fixInGameMenu(uiController, "GlobalMarketUI")
+
+            -- Restore active FocusManager GUI context if one was set prior to loadGui
+            if previousFocusGui ~= nil then
+                FocusManager:setGui(previousFocusGui)
+            end
         else
             if self.debugManager ~= nil then
                 self.debugManager:error("UI Injection failed! GlobalMarketUI class is nil.")
@@ -361,7 +368,7 @@ end
 -- UI MENU HACKS (FS25 Compatibility)
 -- =========================================================================
 
--- Manual Tab Injection to prevent InGameMenu crashes and fix Tab-Jumping
+-- Manual Tab Injection to prevent InGameMenu crashes and fix Tab-Jumping (#18 / #11)
 function GlobalMarket:fixInGameMenu(frame, pageName)
     local inGameMenu = g_gui.screenControllers[InGameMenu]
     if inGameMenu == nil or inGameMenu.pagingElement == nil then
@@ -371,10 +378,22 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
         return
     end
 
-    local targetPos = 2
-    for i, element in ipairs(inGameMenu.pagingElement.elements) do
+    local pagingElement = inGameMenu.pagingElement
+
+    -- 1. Find visual index in pagingElement.elements (contains unused mobile/console FrameReferences in FS25)
+    local targetElementPos = #pagingElement.elements + 1
+    for i, element in ipairs(pagingElement.elements) do
         if element == inGameMenu["pageStatistics"] then
-            targetPos = i
+            targetElementPos = i
+            break
+        end
+    end
+
+    -- 2. Find logical page index in pagingElement.pages / inGameMenu.pageFrames
+    local targetPagePos = #pagingElement.pages + 1
+    for i, page in ipairs(pagingElement.pages) do
+        if page.element == inGameMenu["pageStatistics"] then
+            targetPagePos = i
             break
         end
     end
@@ -382,50 +401,47 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     inGameMenu.controlIDs[pageName] = nil
     inGameMenu[pageName] = frame
 
-    inGameMenu.pagingElement:addElement(frame)
+    pagingElement:addElement(frame)
+    frame:setSize(unpack(pagingElement.size))
+    local rootElement = frame:getRootElement()
+    if rootElement ~= nil then
+        rootElement:setSize(unpack(pagingElement.size))
+    end
+
     inGameMenu:exposeControlsAsFields(pageName)
 
-    -- 1. Shift the visual elements
-    for i, element in ipairs(inGameMenu.pagingElement.elements) do
+    -- 3. Shift the visual element to targetElementPos
+    for i, element in ipairs(pagingElement.elements) do
         if element == frame then
-            table.remove(inGameMenu.pagingElement.elements, i)
-            table.insert(inGameMenu.pagingElement.elements, targetPos, element)
+            table.remove(pagingElement.elements, i)
+            table.insert(pagingElement.elements, targetElementPos, element)
             break
         end
     end
 
-    -- 2. Shift the internal pages mapping
-    for i, page in ipairs(inGameMenu.pagingElement.pages) do
+    -- 4. Shift the internal page mapping to targetPagePos
+    for i, page in ipairs(pagingElement.pages) do
         if page.element == frame then
-            table.remove(inGameMenu.pagingElement.pages, i)
-            table.insert(inGameMenu.pagingElement.pages, targetPos, page)
+            table.remove(pagingElement.pages, i)
+            table.insert(pagingElement.pages, targetPagePos, page)
             break
         end
     end
 
-    inGameMenu.pagingElement:updateAbsolutePosition()
-    inGameMenu.pagingElement:updatePageMapping()
+    pagingElement:updateAbsolutePosition()
+    pagingElement:updatePageMapping()
 
-    -- Register the page using the predicate function
-    inGameMenu:registerPage(frame, targetPos, function() return self:isMarketEnabled() end)
+    -- 5. Register the page directly at targetPagePos (inserts into inGameMenu.pageFrames at targetPagePos)
+    inGameMenu:registerPage(frame, targetPagePos, function() return self:isMarketEnabled() end)
 
     -- Create Tab cleanly using direct file path and UVs (No XML profile or post-injection needed)
     local iconFileName = Utils.getFilename("images/menuIcon.dds", GlobalMarket.dir)
     inGameMenu:addPageTab(frame, iconFileName, {0, 0, 0, 1, 1, 0, 1, 1})
 
-    -- 3. Shift the pageFrames table
-    for i, pFrame in ipairs(inGameMenu.pageFrames) do
-        if pFrame == frame then
-            table.remove(inGameMenu.pageFrames, i)
-            table.insert(inGameMenu.pageFrames, targetPos, pFrame)
-            break
-        end
-    end
-
     inGameMenu:rebuildTabList()
 
     if GlobalMarket.debugManager ~= nil then
-        GlobalMarket.debugManager:debug("GlobalMarket GUI registered natively as '%s' at position %d.", pageName, targetPos)
+        GlobalMarket.debugManager:debug("GlobalMarket GUI registered natively as '%s' at pagePos %d (elementPos %d).", pageName, targetPagePos, targetElementPos)
     end
 end
 
