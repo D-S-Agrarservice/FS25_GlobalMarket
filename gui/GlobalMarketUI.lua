@@ -557,7 +557,7 @@ function GlobalMarketUI:applyFilterAndCategories(restoreTableFocus)
             self.gmTableMarket:setSelectedItem(1, 0)
             self.gmTableMarket:clearElementSelection()
         end
-        if restoreTableFocus and FocusManager:getFocusedElement() ~= self.searchTextInput then
+        if restoreTableFocus and self:getIsVisible() and FocusManager:getFocusedElement() ~= self.searchTextInput then
             FocusManager:setFocus(self.gmTableStorage)
         end
 
@@ -574,7 +574,7 @@ function GlobalMarketUI:applyFilterAndCategories(restoreTableFocus)
             self.gmTableStorage:setSelectedItem(1, 0)
             self.gmTableStorage:clearElementSelection()
         end
-        if restoreTableFocus and FocusManager:getFocusedElement() ~= self.searchTextInput then
+        if restoreTableFocus and self:getIsVisible() and FocusManager:getFocusedElement() ~= self.searchTextInput then
             FocusManager:setFocus(self.gmTableMarket)
         end
     end

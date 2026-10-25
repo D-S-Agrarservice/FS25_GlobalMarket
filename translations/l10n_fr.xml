@@ -45,6 +45,14 @@
         <e k="ui_gm_format_roundbale"                              v="Balle ronde" />
         <e k="ui_gm_format_squarebale"                             v="Balle carrée" />
         <e k="ui_gm_notification_greatDemand"                      v="Forte demande pour %s sur le Marché Mondial !" />
+        <e k="ui_gm_notification_storage_cleared"                  v="Entrepôt GM vidé : %s (%s) a été retiré après la limite de %d mois !" />
+        <e k="ui_gm_notification_storage_final"                    v="DERNIER AVERTISSEMENT : %s (%s) dans l'entrepôt GM expire bientôt ! Récupérez ou vendez immédiatement !" />
+        <e k="ui_gm_notification_storage_halfway"                  v="Info entrepôt GM (%s) : Frais de stockage (%s) facturés. Évacuation dans %d mois." />
+        <e k="ui_gm_notification_storage_warning"                  v="Alerte entrepôt GM (%s) : Frais élevés (%s) ! Évacuation forcée dans %d mois !" />
+        <e k="ui_gm_settings_decay_months"                         v="%d Mois" />
+        <e k="ui_gm_settings_decay_off"                            v="Désactivé" />
+        <e k="ui_gm_settings_storageDecay"                         v="Entrepôt GM : Délai et perte" />
+        <e k="ui_gm_settings_storageDecay_desc"                    v="Définit après combien de mois les marchandises du centre logistique GM sont évacuées (1er mois gratuit, frais dès le 2e mois, perte en vrac à mi-parcours)." />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket : Frais de livraison mis à jour ! (Les statistiques financières nécessitent un redémarrage)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket : La capacité du marché a été mise à jour ! Les prix s'ajusteront progressivement." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket : Les frais de livraison ont été mis à jour !" />

@@ -14,6 +14,7 @@ GlobalMarket.modName = g_currentModName
 -- We initialize them as 0 here to catch loading errors.
 GlobalMarket.DELIVER_COST = 0
 GlobalMarket.DELIVER_COST_PERLITER = 0
+GlobalMarket.STORAGE_DECAY_MONTHS = 6
 
 -- =========================================================================
 -- DEBUG MANAGER INITIALIZATION (Highest Priority)
@@ -68,6 +69,20 @@ GuiOverlay.resolveFilename = function(filename)
 
     -- Pass the (potentially fixed) filename back to the original engine function
     return originalResolveFilename(filename)
+end
+
+-- Engine Fix: Prevent nil arithmetic crash in BuyingStation:getEffectiveFillTypePrice (BuyingStation.lua:127)
+-- when InGameMenuStatisticsFrame:onHourChanged() reloads priceList while open on the Finances sub-tab.
+if BuyingStation ~= nil and BuyingStation.getEffectiveFillTypePrice ~= nil then
+    local origBuyingStationGetEffectivePrice = BuyingStation.getEffectiveFillTypePrice
+    BuyingStation.getEffectiveFillTypePrice = function(stationSelf, fillTypeIndex)
+        if stationSelf == nil or fillTypeIndex == nil or stationSelf.fillTypePricesScale == nil or stationSelf.fillTypePricesScale[fillTypeIndex] == nil then
+            return 0
+        end
+        return origBuyingStationGetEffectivePrice(stationSelf, fillTypeIndex)
+    end
+end
+if false then
 end
 
 -- =========================================================================
@@ -230,6 +245,7 @@ function GlobalMarket:loadMap(name)
         -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
         addConsoleCommand("gmTriggerGreatDemand", "Triggers a GlobalMarket Great Demand for testing", "consoleCommandTriggerGreatDemand", self)
+        addConsoleCommand("gmAdvanceStorageAge", "Advances GM storage age in months to test fees/decay/clearance", "consoleCommandAdvanceStorageAge", self)
     end
 
     -- =========================================================

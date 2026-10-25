@@ -45,6 +45,14 @@
         <e k="ui_gm_format_roundbale"                              v="Paca redonda" />
         <e k="ui_gm_format_squarebale"                             v="Paca cuadrada" />
         <e k="ui_gm_notification_greatDemand"                      v="¡Gran demanda de %s en el Mercado Global!" />
+        <e k="ui_gm_notification_storage_cleared"                  v="Almacén GM vaciado: ¡%s (%s) fue eliminado tras el límite de %d meses!" />
+        <e k="ui_gm_notification_storage_final"                    v="ÚLTIMO AVISO: ¡%s (%s) en el almacén GM caduca pronto! ¡Recógelo o véndelo de inmediato!" />
+        <e k="ui_gm_notification_storage_halfway"                  v="Info de almacén GM (%s): Tarifa (%s) cobrada. Vaciado en %d mes(es)." />
+        <e k="ui_gm_notification_storage_warning"                  v="Aviso de almacén GM (%s): ¡Tarifa alta (%s)! ¡Vaciado forzoso en %d mes(es)!" />
+        <e k="ui_gm_settings_decay_months"                         v="%d Meses" />
+        <e k="ui_gm_settings_decay_off"                            v="Desactivado" />
+        <e k="ui_gm_settings_storageDecay"                         v="Almacén GM: Límite y merma" />
+        <e k="ui_gm_settings_storageDecay_desc"                    v="Define cuántos meses pueden permanecer los bienes en el centro logístico GM antes de su vaciado (1.er mes gratis, tarifas desde el 2.º mes, merma a granel a mitad de plazo)." />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: ¡Costes de envío actualizados! (Las estadísticas financieras requieren reiniciar el juego)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: ¡Se ha actualizado la capacidad del mercado! Los precios se ajustarán gradualmente." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: ¡Los costes de envío han sido actualizados!" />

@@ -11,7 +11,7 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex)
+function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -24,6 +24,7 @@ function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, is
     self.showStatusIcon = showStatusIcon
     self.dealerMarkupIndex = dealerMarkupIndex
     self.capacityIndex = capacityIndex
+    self.storageDecayIndex = storageDecayIndex or 3
     return self
 end
 
@@ -39,6 +40,7 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteBool(streamId, self.showStatusIcon)
     streamWriteInt8(streamId, self.dealerMarkupIndex)
     streamWriteInt8(streamId, self.capacityIndex)
+    streamWriteInt8(streamId, self.storageDecayIndex or 3)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -53,6 +55,7 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.showStatusIcon = streamReadBool(streamId)
     self.dealerMarkupIndex = streamReadInt8(streamId)
     self.capacityIndex = streamReadInt8(streamId)
+    self.storageDecayIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -76,7 +79,10 @@ function SyncGlobalMarketSettingsEvent:run(connection)
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = false
-        deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex) or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex) or (GlobalMarketSettings.current.dealerMarkupIndex ~= self.dealerMarkupIndex)
+        deliveryChanged = (GlobalMarketSettings.current.deliveryBaseIndex ~= self.baseIndex)
+            or (GlobalMarketSettings.current.deliveryLiterIndex ~= self.literIndex)
+            or (GlobalMarketSettings.current.dealerMarkupIndex ~= self.dealerMarkupIndex)
+            or (GlobalMarketSettings.current.storageDecayIndex ~= self.storageDecayIndex)
         compatChanged = (GlobalMarketSettings.current.compatModeIndex ~= self.compatModeIndex)
         capacityChanged = (GlobalMarketSettings.current.capacityIndex ~= self.capacityIndex)
     end
@@ -93,6 +99,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     -- Note: showStatusIcon is a local per-player UI comfort setting and is not overwritten by network sync.
     GlobalMarketSettings.current.dealerMarkupIndex = self.dealerMarkupIndex
     GlobalMarketSettings.current.capacityIndex = self.capacityIndex
+    GlobalMarketSettings.current.storageDecayIndex = self.storageDecayIndex or 3
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
@@ -105,12 +112,9 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         GlobalMarket.MARKET_CAPACITY = GlobalMarketSettings.OPTIONS.MARKET_CAPACITY[self.capacityIndex]
     end
 
-    -- FIX: Do NOT update isDetailedCached at runtime! 
-    -- Custom MoneyTypes can only be registered during game initialization.
-    -- The UI setting is saved to XML and will automatically apply on the next server restart.
-    -- if GlobalMarketFinance ~= nil then
-    --     GlobalMarketFinance.isDetailedCached = self.isDetailed
-    -- end
+    if GlobalMarketSettings.OPTIONS.STORAGE_DECAY ~= nil then
+        GlobalMarket.STORAGE_DECAY_MONTHS = GlobalMarketSettings.OPTIONS.STORAGE_DECAY[self.storageDecayIndex] or 6
+    end
 
     if GlobalMarketSettings.applyDebugSettings ~= nil then
         GlobalMarketSettings:applyDebugSettings()
@@ -131,7 +135,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
             GlobalMarketSettings:saveToXML()
         end
 
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex, self.capacityIndex), nil, connection, nil)
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex, self.capacityIndex, self.storageDecayIndex), nil, connection, nil)
     else
         -- CLIENT SIDE
         if GlobalMarketSettings.saveToXML ~= nil then

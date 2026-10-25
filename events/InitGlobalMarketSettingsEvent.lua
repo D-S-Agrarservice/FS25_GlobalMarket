@@ -31,7 +31,6 @@ function InitGlobalMarketSettingsEvent:run(connection)
         if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
             local s = GlobalMarketSettings.current
 
-            -- FIX: Corrected argument order, fixed missing comma, and added capacityIndex
             connection:sendEvent(SyncGlobalMarketSettingsEvent.new(
                 s.deliveryBaseIndex,
                 s.deliveryLiterIndex,
@@ -43,7 +42,8 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.isIconPulseActive,
                 s.showStatusIcon,
                 s.dealerMarkupIndex,
-                s.capacityIndex
+                s.capacityIndex,
+                s.storageDecayIndex
             ))
         end
     end

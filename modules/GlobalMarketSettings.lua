@@ -16,6 +16,7 @@ GlobalMarketSettings.OPTIONS = {
     DEALER_MARKUP = {0, 2, 5, 10, 15, 20, 25}, 
     -- Market Capacity in Liters (500k, 1M, 2M, 5M, 10M, 20M)
     MARKET_CAPACITY = {500000, 1000000, 2000000, 5000000, 10000000, 20000000},
+    STORAGE_DECAY = {0, 3, 6, 9, 12},
     -- Reordered array: Starts with Info on the far left
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
@@ -29,6 +30,7 @@ GlobalMarketSettings.current = {
     deliveryLiterIndex = 4,  -- Default: 0.05
     dealerMarkupIndex = 3,   -- Default: 5%
     capacityIndex = 3,       -- Default 2M Liters
+    storageDecayIndex = 3,   -- Default: 6 Months (Index 3)
     isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,     -- Default: Info
     debugDurationIndex = 1,  -- Default: 1 Hour
@@ -125,6 +127,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.deliveryLiterIndex = defaultLiter
         self.current.dealerMarkupIndex = defaultMarkup
         self.current.capacityIndex = defaultCapacity
+        self.current.storageDecayIndex = 3
         self.current.isDetailedFinance = false
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
@@ -140,6 +143,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
         GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
         GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex]
+        GlobalMarket.STORAGE_DECAY_MONTHS = self.OPTIONS.STORAGE_DECAY[self.current.storageDecayIndex] or 6
         if GlobalMarketFinance ~= nil then
             GlobalMarketFinance.isDetailedCached = false
         end
@@ -154,6 +158,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.deliveryLiterIndex = xmlFile:getInt(prefix .. "#deliveryLiterIndex", defaultLiter)
         self.current.dealerMarkupIndex = xmlFile:getInt(prefix .. "#dealerMarkupIndex", defaultMarkup)
         self.current.capacityIndex = xmlFile:getInt(prefix .. "#capacityIndex", defaultCapacity)
+        self.current.storageDecayIndex = xmlFile:getInt(prefix .. "#storageDecayIndex", 3)
 
         -- Load Detailed Finance Setting
         -- Load Detailed Finance Setting
@@ -177,6 +182,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.DELIVER_COST_PERLITER = self.OPTIONS.DELIVERY_LITER[self.current.deliveryLiterIndex]
         GlobalMarket.DEALER_MARKUP = self.OPTIONS.DEALER_MARKUP[self.current.dealerMarkupIndex]
         GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex]
+        GlobalMarket.STORAGE_DECAY_MONTHS = self.OPTIONS.STORAGE_DECAY[self.current.storageDecayIndex] or 6
 
         self:applyDebugSettings()
         xmlFile:delete()
@@ -209,6 +215,7 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt(prefix .. "#deliveryLiterIndex", self.current.deliveryLiterIndex)
         xmlFile:setInt(prefix .. "#dealerMarkupIndex", self.current.dealerMarkupIndex)
         xmlFile:setInt(prefix .. "#capacityIndex", self.current.capacityIndex)
+        xmlFile:setInt(prefix .. "#storageDecayIndex", self.current.storageDecayIndex or 3)
 
         xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
@@ -346,6 +353,20 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDealerMarkup", "ui_gm_settings_markup", "ui_gm_settings_markup_desc", markupTexts, "onDealerMarkupChanged")
         GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCapacity", "ui_gm_settings_capacity", "ui_gm_settings_capacity_desc", capacityTexts, "onCapacityChanged")
 
+        local decayTexts = {}
+        local offText = g_i18n:getText("ui_gm_settings_decay_off")
+        if offText == nil or offText == "ui_gm_settings_decay_off" then offText = "Off" end
+        local monthsPattern = g_i18n:getText("ui_gm_settings_decay_months")
+        if monthsPattern == nil or monthsPattern == "ui_gm_settings_decay_months" then monthsPattern = "%d Months" end
+        for _, val in ipairs(GlobalMarketSettings.OPTIONS.STORAGE_DECAY) do
+            if val <= 0 then
+                table.insert(decayTexts, offText)
+            else
+                table.insert(decayTexts, string.format(monthsPattern, val))
+            end
+        end
+        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsStorageDecay", "ui_gm_settings_storageDecay", "ui_gm_settings_storageDecay_desc", decayTexts, "onStorageDecayChanged")
+
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
 
@@ -402,6 +423,11 @@ function GlobalMarketSettings.refreshMenuState()
     end
 
     local capacityControl = GlobalMarketSettings.CONTROLS["gmSettingsCapacity"]
+    local storageDecayControl = GlobalMarketSettings.CONTROLS["gmSettingsStorageDecay"]
+    if storageDecayControl ~= nil then
+        storageDecayControl:setState(GlobalMarketSettings.current.storageDecayIndex or 3)
+        storageDecayControl:setDisabled(not isAdmin)
+    end
     if capacityControl ~= nil then
         capacityControl:setState(GlobalMarketSettings.current.capacityIndex)
         capacityControl:setDisabled(not isAdmin)
@@ -478,10 +504,10 @@ function GlobalMarketSettings:broadcastChanges()
     end
     if g_server ~= nil then
         -- Server broadcasts the changes to all connected clients
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex))
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex))
     else
         -- Client admin sends the changes to the dedicated server
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex))
     end
 end
 
@@ -508,6 +534,18 @@ function GlobalMarketSettings:onDealerMarkupChanged(state)
 end
 
 function GlobalMarketSettings:onCapacityChanged(state)
+    self.current.capacityIndex = state
+    GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[state]
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onStorageDecayChanged(state)
+    self.current.storageDecayIndex = state
+    GlobalMarket.STORAGE_DECAY_MONTHS = self.OPTIONS.STORAGE_DECAY[state] or 6
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onCapacityChanged_unused(state)
     self.current.capacityIndex = state
     GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[state]
     self:broadcastChanges()

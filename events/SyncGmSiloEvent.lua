@@ -1,6 +1,7 @@
 --
 -- FS25 - GlobalMarket (SyncGmSiloEvent)
--- Syncs dynamic changes in the GM shadow array (dumping/loading) from Server to Clients.
+-- Syncs dynamic changes in the GM shadow array (dumping/loading/decay) from Server to Clients,
+-- and delivers farm-specific GM Storage Fee / Decay / Clearance HUD notifications (#13).
 --
 
 SyncGmSiloEvent = {}
@@ -12,11 +13,14 @@ function SyncGmSiloEvent.emptyNew()
     return Event.new(SyncGmSiloEvent_mt)
 end
 
-function SyncGmSiloEvent.new(storage, farmId, fillTypeIndex, newFillLevel)
+function SyncGmSiloEvent.new(storage, farmId, fillTypeIndex, newFillLevel, notifyType, notifyParamA, notifyParamB)
     local self = SyncGmSiloEvent.emptyNew()
-    self.farmId = farmId
-    self.fillTypeIndex = fillTypeIndex
-    self.newFillLevel = newFillLevel
+    self.farmId = farmId or 0
+    self.fillTypeIndex = fillTypeIndex or 1
+    self.newFillLevel = newFillLevel or 0
+    self.notifyType = notifyType or 0
+    self.notifyParamA = notifyParamA or 0
+    self.notifyParamB = notifyParamB or 0
 
     self.targetPlaceable = nil
     self.storageIndex = 1
@@ -50,13 +54,13 @@ function SyncGmSiloEvent.new(storage, farmId, fillTypeIndex, newFillLevel)
                 if self.targetPlaceable ~= nil then break end
             end
         end
-    end
 
-    if GlobalMarket.debugManager ~= nil then
-        if self.targetPlaceable == nil then
-            GlobalMarket.debugManager:error("Network (Server): SyncGmSiloEvent FAILED. Could not resolve targetPlaceable for Storage!")
-        else
-            GlobalMarket.debugManager:trace("Network (Server): SyncGmSiloEvent created successfully. Broadcasting to clients...")
+        if GlobalMarket.debugManager ~= nil then
+            if self.targetPlaceable == nil then
+                GlobalMarket.debugManager:error("Network (Server): SyncGmSiloEvent FAILED. Could not resolve targetPlaceable for Storage!")
+            else
+                GlobalMarket.debugManager:trace("Network (Server): SyncGmSiloEvent created successfully. Broadcasting to clients...")
+            end
         end
     end
 
@@ -64,14 +68,33 @@ function SyncGmSiloEvent.new(storage, farmId, fillTypeIndex, newFillLevel)
 end
 
 function SyncGmSiloEvent:readStream(streamId, connection)
-    self.targetPlaceable = NetworkUtil.readNodeObject(streamId)
-    self.storageIndex = streamReadUIntN(streamId, 8)
+    local hasStorage = streamReadBool(streamId)
+    if hasStorage then
+        self.targetPlaceable = NetworkUtil.readNodeObject(streamId)
+        self.storageIndex = streamReadUIntN(streamId, 8)
+        self.newFillLevel = streamReadFloat32(streamId)
+    else
+        self.targetPlaceable = nil
+        self.storageIndex = 1
+        self.newFillLevel = 0
+    end
+
     self.farmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS)
     self.fillTypeIndex = streamReadUIntN(streamId, 10)
-    self.newFillLevel = streamReadFloat32(streamId)
+
+    local hasNotify = streamReadBool(streamId)
+    if hasNotify then
+        self.notifyType = streamReadUIntN(streamId, 8)
+        self.notifyParamA = streamReadFloat32(streamId)
+        self.notifyParamB = streamReadFloat32(streamId)
+    else
+        self.notifyType = 0
+        self.notifyParamA = 0
+        self.notifyParamB = 0
+    end
 
     self.storage = nil
-    if self.targetPlaceable ~= nil and self.targetPlaceable.spec_silo ~= nil and self.targetPlaceable.spec_silo.storages ~= nil then
+    if hasStorage and self.targetPlaceable ~= nil and self.targetPlaceable.spec_silo ~= nil and self.targetPlaceable.spec_silo.storages ~= nil then
         self.storage = self.targetPlaceable.spec_silo.storages[self.storageIndex]
     end
 
@@ -79,14 +102,38 @@ function SyncGmSiloEvent:readStream(streamId, connection)
 end
 
 function SyncGmSiloEvent:writeStream(streamId, connection)
-    NetworkUtil.writeNodeObject(streamId, self.targetPlaceable)
-    streamWriteUIntN(streamId, self.storageIndex, 8)
+    local hasStorage = (self.targetPlaceable ~= nil)
+    streamWriteBool(streamId, hasStorage)
+    if hasStorage then
+        NetworkUtil.writeNodeObject(streamId, self.targetPlaceable)
+        streamWriteUIntN(streamId, self.storageIndex, 8)
+        streamWriteFloat32(streamId, self.newFillLevel)
+    end
+
     streamWriteUIntN(streamId, self.farmId, FarmManager.FARM_ID_SEND_NUM_BITS)
     streamWriteUIntN(streamId, self.fillTypeIndex, 10)
-    streamWriteFloat32(streamId, self.newFillLevel)
+
+    local hasNotify = (self.notifyType ~= nil and self.notifyType > 0)
+    streamWriteBool(streamId, hasNotify)
+    if hasNotify then
+        streamWriteUIntN(streamId, self.notifyType, 8)
+        streamWriteFloat32(streamId, self.notifyParamA or 0)
+        streamWriteFloat32(streamId, self.notifyParamB or 0)
+    end
 end
 
 function SyncGmSiloEvent:run(connection)
+    -- Relay for Admin Console Command `gmAdvanceStorageAge` from Dedicated Server Client to Server
+    if not connection:getIsServer() then
+        if self.notifyType == 99 and g_currentMission.globalMarket ~= nil then
+            local isMaster = (g_currentMission.userManager ~= nil and g_currentMission.userManager.getIsConnectionMasterUser ~= nil and g_currentMission.userManager:getIsConnectionMasterUser(connection))
+            if isMaster and g_currentMission.globalMarket.updateGmStorageFeesAndDecay ~= nil then
+                g_currentMission.globalMarket:updateGmStorageFeesAndDecay(self.notifyParamA)
+            end
+        end
+        return
+    end
+
     -- Execute only on clients. g_server is false on dedicated clients.
     if not g_server then
         if self.storage ~= nil then
@@ -99,12 +146,17 @@ function SyncGmSiloEvent:run(connection)
             end
 
             -- Force UI update immediately if open
-            if g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.ui ~= nil then
+            if g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.ui ~= nil and g_currentMission.globalMarket.ui:getIsVisible() then
                 g_currentMission.globalMarket.ui:updateContent()
             end
-        else
-            if GlobalMarket.debugManager ~= nil then
-                GlobalMarket.debugManager:error("Network (Client): Live silo sync failed. targetPlaceable or storage was nil after stream read!")
+        end
+
+        -- Display farm-specific HUD notification if this client belongs to self.farmId
+        if self.notifyType ~= nil and self.notifyType > 0 and self.notifyType < 90 then
+            if g_currentMission ~= nil and g_currentMission:getFarmId() == self.farmId then
+                if GlobalMarketFinance ~= nil and GlobalMarketFinance.showStorageNotificationLocal ~= nil then
+                    GlobalMarketFinance.showStorageNotificationLocal(self.fillTypeIndex, self.notifyType, self.notifyParamA, self.notifyParamB)
+                end
             end
         end
     end

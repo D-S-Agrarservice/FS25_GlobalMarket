@@ -2,7 +2,7 @@
 -- FS25 - GlobalMarket (Savegame Module)
 --
 
--- Saves the current offline market fill levels and silo shadow arrays to the active savegame directory.
+-- Saves the current offline market fill levels, silo shadow arrays, and GM storage age trackers to the active savegame directory.
 function GlobalMarket:saveToXmlFile()
     if not g_currentMission:getIsServer() then
         return
@@ -35,15 +35,14 @@ function GlobalMarket:saveToXmlFile()
             end
         end)
 
-        -- Note: Future online save data hooks (e.g., server IP, credentials) go here.
-
-        -- Save siloStorages (Shadow Array for multi-farm logic) using Giants' native uniqueId
+        -- Save siloStorages (Shadow Array + Storage Age Tracker for multi-farm logic) using Giants' native uniqueId
         local siloIndex = 0
+        local objStorageIndex = 0
         for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
-            if placeable.isGmMarket and placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
+            if placeable.isGmMarket then
                 local uid = placeable.uniqueId
 
-                if uid ~= nil then
+                if uid ~= nil and placeable.spec_silo ~= nil and placeable.spec_silo.storages ~= nil then
                     local siloKey = string.format("globalMarket.siloStorages.silo(%d)", siloIndex)
                     xmlFile:setString(siloKey .. "#uniqueId", uid)
 
@@ -63,6 +62,17 @@ function GlobalMarket:saveToXmlFile()
                                         if fillTypeName ~= nil then
                                             xmlFile:setString(ftKey .. "#name", fillTypeName)
                                             xmlFile:setFloat(ftKey .. "#level", level)
+
+                                            local tracker = storage.gmStorageTracker ~= nil
+                                                and storage.gmStorageTracker[farmId] ~= nil
+                                                and storage.gmStorageTracker[farmId][fillTypeIndex]
+                                                or nil
+                                            if tracker ~= nil then
+                                                xmlFile:setFloat(ftKey .. "#monthsStored", tracker.months or 0)
+                                                xmlFile:setInt(ftKey .. "#lastBilledMonth", tracker.lastBilledMonth or 0)
+                                                xmlFile:setBool(ftKey .. "#warnedFinal", tracker.warnedFinal == true)
+                                            end
+
                                             ftIndex = ftIndex + 1
                                         end
                                     end
@@ -78,6 +88,42 @@ function GlobalMarket:saveToXmlFile()
 
                     siloIndex = siloIndex + 1
                 end
+
+                -- Save GM ObjectStorage Age Trackers (#13)
+                if uid ~= nil and placeable.spec_objectStorage ~= nil and placeable.gmObjectTracker ~= nil then
+                    local objKey = string.format("globalMarket.objectStorages.storage(%d)", objStorageIndex)
+                    local fIndex = 0
+
+                    for farmId, ftTrackers in pairs(placeable.gmObjectTracker) do
+                        local farmKey = string.format("%s.farm(%d)", objKey, fIndex)
+                        local ftIndex = 0
+
+                        for fillTypeIndex, tracker in pairs(ftTrackers) do
+                            if tracker ~= nil and (tracker.lastTrackedLevel or 0) > 0.01 then
+                                local fillTypeName = g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex)
+                                if fillTypeName ~= nil then
+                                    local ftKey = string.format("%s.fillType(%d)", farmKey, ftIndex)
+                                    xmlFile:setString(ftKey .. "#name", fillTypeName)
+                                    xmlFile:setFloat(ftKey .. "#monthsStored", tracker.months or 0)
+                                    xmlFile:setInt(ftKey .. "#lastBilledMonth", tracker.lastBilledMonth or 0)
+                                    xmlFile:setBool(ftKey .. "#warnedFinal", tracker.warnedFinal == true)
+                                    xmlFile:setFloat(ftKey .. "#lastTrackedLevel", tracker.lastTrackedLevel or 0)
+                                    ftIndex = ftIndex + 1
+                                end
+                            end
+                        end
+
+                        if ftIndex > 0 then
+                            xmlFile:setInt(farmKey .. "#farmId", farmId)
+                            fIndex = fIndex + 1
+                        end
+                    end
+
+                    if fIndex > 0 then
+                        xmlFile:setString(objKey .. "#uniqueId", uid)
+                        objStorageIndex = objStorageIndex + 1
+                    end
+                end
             end
         end
 
@@ -85,7 +131,7 @@ function GlobalMarket:saveToXmlFile()
         xmlFile:delete()
 
         if self.debugManager ~= nil then
-            self.debugManager:info("Savegame successfully written. Saved %d GM Silos.", siloIndex)
+            self.debugManager:info("Savegame successfully written. Saved %d GM Silos and %d GM ObjectStorages.", siloIndex, objStorageIndex)
         end
     end
 end
@@ -126,7 +172,7 @@ function GlobalMarket:loadFromXMLFile()
                 end
             end)
 
-            -- Load siloStorages (Shadow Array for multi-farm logic) via uniqueId
+            -- Load siloStorages (Shadow Array + Storage Age Tracker for multi-farm logic) via uniqueId
             local loadedSilos = 0
             xmlFile:iterate("globalMarket.siloStorages.silo", function(_, siloKey)
                 local uid = xmlFile:getString(siloKey .. "#uniqueId")
@@ -145,11 +191,13 @@ function GlobalMarket:loadFromXMLFile()
                             local storage = targetPlaceable.spec_silo.storages[sIndex]
                             if storage ~= nil then
                                 storage.gmFarmFillLevels = storage.gmFarmFillLevels or {}
+                                storage.gmStorageTracker = storage.gmStorageTracker or {}
 
                                 xmlFile:iterate(storageKey .. ".farm", function(_, farmKey)
                                     local farmId = xmlFile:getInt(farmKey .. "#farmId")
                                     if farmId ~= nil then
                                         storage.gmFarmFillLevels[farmId] = storage.gmFarmFillLevels[farmId] or {}
+                                        storage.gmStorageTracker[farmId] = storage.gmStorageTracker[farmId] or {}
 
                                         xmlFile:iterate(farmKey .. ".fillType", function(_, ftKey)
                                             local ftName = xmlFile:getString(ftKey .. "#name")
@@ -158,6 +206,15 @@ function GlobalMarket:loadFromXMLFile()
                                                 local fillTypeDesc = g_fillTypeManager:getFillTypeByName(ftName)
                                                 if fillTypeDesc ~= nil then
                                                     storage.gmFarmFillLevels[farmId][fillTypeDesc.index] = level
+                                                    local monthsStored = xmlFile:getFloat(ftKey .. "#monthsStored") or 0
+                                                    local lastBilled = xmlFile:getInt(ftKey .. "#lastBilledMonth") or 0
+                                                    local warnedFinal = xmlFile:getBool(ftKey .. "#warnedFinal", false)
+                                                    storage.gmStorageTracker[farmId][fillTypeDesc.index] = {
+                                                        months = monthsStored,
+                                                        lastBilledMonth = lastBilled,
+                                                        warnedFinal = warnedFinal,
+                                                        lastTrackedLevel = level
+                                                    }
                                                 end
                                             end
                                         end)
@@ -170,6 +227,46 @@ function GlobalMarket:loadFromXMLFile()
                         if self.debugManager ~= nil then
                             self.debugManager:warning("Failed to map saved GM Silo with uniqueId '%s' to a physical placeable. It might have been removed.", uid)
                         end
+                    end
+                end
+            end)
+
+            -- Load GM ObjectStorage Age Trackers (#13) via uniqueId
+            xmlFile:iterate("globalMarket.objectStorages.storage", function(_, objKey)
+                local uid = xmlFile:getString(objKey .. "#uniqueId")
+                if uid ~= nil then
+                    local targetPlaceable = nil
+                    for _, placeable in ipairs(g_currentMission.placeableSystem.placeables) do
+                        if placeable.uniqueId == uid then
+                            targetPlaceable = placeable
+                            break
+                        end
+                    end
+
+                    if targetPlaceable ~= nil and targetPlaceable.spec_objectStorage ~= nil then
+                        targetPlaceable.gmObjectTracker = targetPlaceable.gmObjectTracker or {}
+
+                        xmlFile:iterate(objKey .. ".farm", function(_, farmKey)
+                            local farmId = xmlFile:getInt(farmKey .. "#farmId")
+                            if farmId ~= nil then
+                                targetPlaceable.gmObjectTracker[farmId] = targetPlaceable.gmObjectTracker[farmId] or {}
+
+                                xmlFile:iterate(farmKey .. ".fillType", function(_, ftKey)
+                                    local ftName = xmlFile:getString(ftKey .. "#name")
+                                    if ftName ~= nil then
+                                        local fillTypeDesc = g_fillTypeManager:getFillTypeByName(ftName)
+                                        if fillTypeDesc ~= nil then
+                                            targetPlaceable.gmObjectTracker[farmId][fillTypeDesc.index] = {
+                                                months = xmlFile:getFloat(ftKey .. "#monthsStored") or 0,
+                                                lastBilledMonth = xmlFile:getInt(ftKey .. "#lastBilledMonth") or 0,
+                                                warnedFinal = xmlFile:getBool(ftKey .. "#warnedFinal", false),
+                                                lastTrackedLevel = xmlFile:getFloat(ftKey .. "#lastTrackedLevel") or 0
+                                            }
+                                        end
+                                    end
+                                end)
+                            end
+                        end)
                     end
                 end
             end)

@@ -233,7 +233,17 @@ end
 
 -- Simulation of NPC trading (Hourly). Adjusts stock levels, manages NPC bulk buyouts (#14), and recalculates prices.
 function GlobalMarket:runOfflineSimulation()
-    if not g_currentMission:getIsServer() or self:getIsMarketOnline() then
+    if not g_currentMission:getIsServer() then
+        return
+    end
+
+    -- Evaluate GM Logistics Center storage fees, natural bulk decay, warnings, and expiration (#13)
+    -- Runs hourly in both Offline and Online modes!
+    if self.updateGmStorageFeesAndDecay ~= nil then
+        self:updateGmStorageFeesAndDecay()
+    end
+
+    if self:getIsMarketOnline() then
         return
     end
 
