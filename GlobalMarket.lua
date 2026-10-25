@@ -229,6 +229,7 @@ function GlobalMarket:loadMap(name)
 
         -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
+        addConsoleCommand("gmTriggerGreatDemand", "Triggers a GlobalMarket Great Demand for testing", "consoleCommandTriggerGreatDemand", self)
     end
 
     -- =========================================================
@@ -255,7 +256,7 @@ end
 -- This function can be safely called by any module (Sync, Offline, UI) to refresh prices.
 function GlobalMarket:refreshMarketPrices(skipUiUpdate)
     -- Check heartbeat flags provided by the Sync module
-    local useOnline = self.isExeRunningLocal and self.hasBackendConnection
+    local useOnline = (self.isExeRunningLocal and self.hasBackendConnection) or (self.isOnline == true)
 
     if useOnline then
         -- EXE is active and connected -> Online Module takes over
@@ -267,6 +268,11 @@ function GlobalMarket:refreshMarketPrices(skipUiUpdate)
         if self.updateOfflinePrices ~= nil then
             self:updateOfflinePrices()
         end
+    end
+
+    -- Check for newly started Great Demands and announce via HUD notification (#14)
+    if self.checkAndAnnounceGreatDemands ~= nil then
+        self:checkAndAnnounceGreatDemands(skipUiUpdate)
     end
 
     -- Trigger UI update if the terminal is currently open

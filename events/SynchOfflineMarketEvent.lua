@@ -1,7 +1,7 @@
 --
 -- FS25 - GlobalMarket - SynchOfflineMarketEvent
--- Description: Server-to-Client event. Pushes the authoritative state (prices, fill levels)
--- of the entire offline market to joining or active clients to keep UIs synchronized.
+-- Description: Server-to-Client event. Pushes the authoritative state (prices, fill levels, Great Demand status)
+-- of the entire offline market to joining or active clients to keep UIs and HUD notifications synchronized.
 --
 
 SynchOfflineMarketEvent = {}
@@ -39,6 +39,7 @@ function SynchOfflineMarketEvent:writeStream(streamId, connection)
         streamWriteInt32(streamId, math.floor(ft.fillLevel))
         streamWriteFloat32(streamId, ft.normalPrice or 0)
         streamWriteFloat32(streamId, ft.price)
+        streamWriteBool(streamId, ft.isGreatDemand == true)
     end
 end
 
@@ -58,6 +59,7 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
         local fillLevel = streamReadInt32(streamId)
         local normalPrice = streamReadFloat32(streamId)
         local price = streamReadFloat32(streamId)
+        local isGreatDemand = streamReadBool(streamId)
 
         local fillTypeDesc = (g_fillTypeManager ~= nil and fillType ~= nil) and g_fillTypeManager:getFillTypeByName(fillType) or nil
 
@@ -67,7 +69,8 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
             basePrice = (fillTypeDesc ~= nil and fillTypeDesc.pricePerLiter) or 0.5,
             fillLevel = fillLevel,
             normalPrice = normalPrice,
-            price = price
+            price = price,
+            isGreatDemand = isGreatDemand
         })
     end
 
@@ -81,15 +84,24 @@ function SynchOfflineMarketEvent:run(connection)
     -- FIX: Removed 'not'. For a Server-to-Client event, getIsServer() returns true on the client.
     if connection:getIsServer() then
         if g_currentMission.globalMarket ~= nil then
+            local gm = g_currentMission.globalMarket
+
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:debug("Network (Client): Received offline market sync. Updating local data.")
                 -- Perform a deep table dump only if trace level is active to prevent standard log spam
                 GlobalMarket.debugManager:traceTable("Network (Client): Dump of synchronized market data", self.offlineMarketFillTypes)
             end
 
-            g_currentMission.globalMarket.offlineMarketFillTypes = self.offlineMarketFillTypes
+            gm.offlineMarketFillTypes = self.offlineMarketFillTypes
 
-            local ui = g_currentMission.globalMarket.ui or g_currentMission.globalMarketUi
+            -- Check for newly started Great Demands on the client (suppress on initial join sync)
+            if gm.checkAndAnnounceGreatDemands ~= nil then
+                local isInitialSync = not gm.hasInitializedGreatDemands
+                gm:checkAndAnnounceGreatDemands(isInitialSync)
+                gm.hasInitializedGreatDemands = true
+            end
+
+            local ui = gm.ui or g_currentMission.globalMarketUi
             if ui ~= nil and ui:getIsVisible() then
                 ui:updateContent()
             end

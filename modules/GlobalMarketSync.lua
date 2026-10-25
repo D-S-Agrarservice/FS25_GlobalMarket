@@ -295,7 +295,9 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                             xmlFile:iterate("gmDataSync.fillTypes.fillType", function (_, baseKey)
                                 local ftName = xmlFile:getString(baseKey .. "#fillType")
                                 local ftLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0
-                                table.insert(newMarketData, { fillType = ftName, fillLevel = ftLevel })
+                                local ftTrend = xmlFile:getFloat(baseKey .. "#trend")
+                                local ftGreatDemand = xmlFile:getBool(baseKey .. "#greatDemand", false)
+                                table.insert(newMarketData, { fillType = ftName, fillLevel = ftLevel, trend = ftTrend, isGreatDemand = ftGreatDemand })
                             end)
                         end
                         xmlFile:delete()
@@ -419,6 +421,8 @@ function GlobalMarket:applySyncedMarketData(marketData)
             for _, localItem in pairs(self.offlineMarketFillTypes) do
                 if localItem.fillType == incomingItem.fillType then
                     localItem.fillLevel = incomingItem.fillLevel
+                    localItem.trend = incomingItem.trend
+                    localItem.greatDemandFromServer = (incomingItem.isGreatDemand == true)
                     break
                 end
             end

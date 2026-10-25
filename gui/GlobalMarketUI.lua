@@ -814,8 +814,12 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
                 and data.normalPrice
                 or ((data.basePrice or 0.5) * 1000 * (EconomyManager ~= nil and EconomyManager.getPriceMultiplier ~= nil and EconomyManager.getPriceMultiplier() or 1))
 
-            -- Trend detection with 5% threshold
-            if data.price > (normalPrice * 1.05) then
+            -- Great Demand (blue arrow) or Trend detection with 5% threshold
+            local gdThreshold = (GlobalMarketOffline ~= nil and GlobalMarketOffline.GREAT_DEMAND_THRESHOLD) or 1.25
+            local isGreatDemand = (data.isGreatDemand == true) or (normalPrice > 0 and data.price >= (normalPrice * (gdThreshold - 0.001)))
+            if isGreatDemand then
+                trend:applyProfile("globalMarketRowCellArrowGreatDemand")
+            elseif data.price > (normalPrice * 1.05) then
                 trend:applyProfile("globalMarketRowCellArrowClimbing")
             elseif data.price < (normalPrice * 0.95) then
                 trend:applyProfile("globalMarketRowCellArrowFalling")

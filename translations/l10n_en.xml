@@ -44,6 +44,7 @@
         <e k="ui_gm_format_pallet"                                 v="Pallet" />
         <e k="ui_gm_format_roundbale"                              v="Round Bale" />
         <e k="ui_gm_format_squarebale"                             v="Square Bale" />
+        <e k="ui_gm_notification_greatDemand"                      v="Great demand for %s on the Global Market!" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: Delivery costs updated! (Finance stats require restart)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: Market capacity has been updated! Prices will adjust gradually." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Delivery costs have been updated!" />

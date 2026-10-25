@@ -99,6 +99,15 @@
         <imageRotation value="180"/>
     </Profile>
 
+    <Profile name="globalMarketRowCellArrowGreatDemand" extends="globalMarketRowCellArrow">
+        <imageColor value="0.05 0.65 1.00 1"/>
+        <imageSelectedColor value="0.02 0.35 0.85 1"/>
+        <imageHighlightedColor value="0.05 0.65 1.00 1"/>
+        <imageFocusedColor value="0.05 0.65 1.00 1"/>
+        <imageRotation value="0"/>
+        <animationMode value="blink"/>
+    </Profile>
+
     <Profile name="globalMarketListSliderBox1" extends="fs25_listSliderBox" with="anchorTopStretchingX pivotTopRight">
         <position value="28px -40px"/>
         <absoluteSizeOffset value="0px 80px"/>

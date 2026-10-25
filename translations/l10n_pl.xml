@@ -44,6 +44,7 @@
         <e k="ui_gm_format_pallet"                                 v="Paleta" />
         <e k="ui_gm_format_roundbale"                              v="Bela okrągła" />
         <e k="ui_gm_format_squarebale"                             v="Bela kostka" />
+        <e k="ui_gm_notification_greatDemand"                      v="Duży popyt na %s na Rynku Globalnym!" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: Koszty dostawy zaktualizowane! (Statystyki finansowe wymagają restartu)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: Pojemność rynku została zaktualizowana! Ceny będą się stopniowo dostosowywać." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Koszty dostawy zostały zaktualizowane!" />

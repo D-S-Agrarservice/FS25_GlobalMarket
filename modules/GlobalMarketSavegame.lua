@@ -27,6 +27,12 @@ function GlobalMarket:saveToXmlFile()
         xmlFile:setTable("globalMarket.offlineMarket.fillTypes.fillType", self.offlineMarketFillTypes, function (key, info, _)
             xmlFile:setString(key .. "#fillType", info.fillType)
             xmlFile:setFloat(key .. "#level", info.fillLevel)
+            if info.greatDemandBonus ~= nil and info.greatDemandBonus > 0 then
+                xmlFile:setFloat(key .. "#greatDemandBonus", info.greatDemandBonus)
+            end
+            if info.greatDemandHours ~= nil and info.greatDemandHours > 0 then
+                xmlFile:setInt(key .. "#greatDemandHours", info.greatDemandHours)
+            end
         end)
 
         -- Note: Future online save data hooks (e.g., server IP, credentials) go here.
@@ -109,6 +115,8 @@ function GlobalMarket:loadFromXMLFile()
                 for _, ft in pairs(self.offlineMarketFillTypes) do
                     if ft.fillType == fillType then
                         ft.fillLevel = level
+                        ft.greatDemandBonus = xmlFile:getFloat(baseKey .. "#greatDemandBonus") or 0
+                        ft.greatDemandHours = xmlFile:getInt(baseKey .. "#greatDemandHours") or 0
                         -- Logged as TRACE to prevent massive log spam when loading 100+ fillTypes
                         if self.debugManager ~= nil then
                             self.debugManager:trace("Loaded %s: Level=%.2f", fillType, level)

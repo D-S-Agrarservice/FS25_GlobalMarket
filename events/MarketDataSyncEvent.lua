@@ -1,7 +1,7 @@
 --
 -- FS25 - GlobalMarket - MarketDataSyncEvent
--- Description: Distributes parsed XML market stock levels across the network.
--- Note: Price is omitted to enforce local economic calculation (prevent arbitrage).
+-- Description: Distributes parsed XML market stock levels, trends, and Great Demand flags across the network.
+-- Note: Raw price is omitted to enforce local economic calculation (prevent arbitrage).
 --
 
 MarketDataSyncEvent = {}
@@ -23,7 +23,9 @@ function MarketDataSyncEvent:writeStream(streamId, connection)
     streamWriteInt32(streamId, #self.marketData)
     for _, item in ipairs(self.marketData) do
         streamWriteString(streamId, item.fillType)
-        streamWriteInt32(streamId, item.fillLevel)
+        streamWriteInt32(streamId, item.fillLevel or 0)
+        streamWriteFloat32(streamId, item.trend or 0)
+        streamWriteBool(streamId, item.isGreatDemand == true)
     end
 end
 
@@ -31,9 +33,16 @@ function MarketDataSyncEvent:readStream(streamId, connection)
     self.marketData = {}
     local count = streamReadInt32(streamId)
     for i = 1, count do
+        local ftName = streamReadString(streamId)
+        local ftLevel = streamReadInt32(streamId)
+        local ftTrend = streamReadFloat32(streamId)
+        local ftGreatDemand = streamReadBool(streamId)
+
         table.insert(self.marketData, {
-            fillType = streamReadString(streamId),
-            fillLevel = streamReadInt32(streamId)
+            fillType = ftName,
+            fillLevel = ftLevel,
+            trend = (ftTrend > 0) and ftTrend or nil,
+            isGreatDemand = ftGreatDemand
         })
     end
     self:run(connection)

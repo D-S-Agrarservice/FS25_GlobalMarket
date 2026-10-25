@@ -1,7 +1,7 @@
 --
 -- FS25 - GlobalMarket (Online Market Module)
 -- Description: Handles price calculations based on external EXE trend factors / stock levels.
--- Uses the "Map Spy" logic to align global trends with local map economy.
+-- Uses the "Map Spy" logic to align global trends with local map economy (#5 & #14).
 --
 
 GlobalMarketOnline = {}
@@ -15,6 +15,7 @@ function GlobalMarketOnline:updateOnlinePrices(fillTypeTable)
     local currentSaturationLimit = GlobalMarket.MARKET_CAPACITY or 2000000
     local minFactor = (GlobalMarketOffline ~= nil and GlobalMarketOffline.PRICE_MIN_FACTOR) or 0.7
     local maxFactor = (GlobalMarketOffline ~= nil and GlobalMarketOffline.PRICE_MAX_FACTOR) or 1.3
+    local gdThreshold = (GlobalMarketOffline ~= nil and GlobalMarketOffline.GREAT_DEMAND_THRESHOLD) or 1.25
     local priceRange = maxFactor - minFactor
 
     for _, data in pairs(fillTypeTable) do
@@ -39,16 +40,21 @@ function GlobalMarketOnline:updateOnlinePrices(fillTypeTable)
         -- 2. TREND / SATURATION INJECTION: Apply EXE trend or stock saturation
         -- ===============================================================
         local serverTrend = data.trend
-        if serverTrend == nil then
+        if serverTrend == nil or serverTrend <= 0 then
             local saturation = math.min((data.fillLevel or 0) / currentSaturationLimit, 1.0)
             serverTrend = maxFactor - (priceRange * saturation)
         end
+
+        -- ===============================================================
+        -- 3. GREAT DEMAND DETECTION (#14): Server flag or high scarcity trend
+        -- ===============================================================
+        data.isGreatDemand = (data.greatDemandFromServer == true) or (serverTrend >= gdThreshold)
 
         -- Final Price: NormalMapPrice * ServerTrend
         data.price = data.normalPrice * serverTrend
 
         if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:trace("OnlineMarket Price Update - %s: MapNormal=%.2f, Trend=%.2f, Final=%.2f", tostring(data.fillType), data.normalPrice, serverTrend, data.price)
+            GlobalMarket.debugManager:trace("OnlineMarket Price Update - %s: MapNormal=%.2f, Trend=%.2f, GD=%s, Final=%.2f", tostring(data.fillType), data.normalPrice, serverTrend, tostring(data.isGreatDemand), data.price)
         end
     end
 end

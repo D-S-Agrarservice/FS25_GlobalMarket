@@ -44,6 +44,7 @@
         <e k="ui_gm_format_pallet"                                 v="Palé" />
         <e k="ui_gm_format_roundbale"                              v="Paca redonda" />
         <e k="ui_gm_format_squarebale"                             v="Paca cuadrada" />
+        <e k="ui_gm_notification_greatDemand"                      v="¡Gran demanda de %s en el Mercado Global!" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: ¡Costes de envío actualizados! (Las estadísticas financieras requieren reiniciar el juego)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: ¡Se ha actualizado la capacidad del mercado! Los precios se ajustarán gradualmente." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: ¡Los costes de envío han sido actualizados!" />
