@@ -530,6 +530,10 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
+        if self:getIsMarketOnline() and self.checkOnlineTransactionCooldown ~= nil and not self:checkOnlineTransactionCooldown() then
+            return
+        end
+
         local fillTypeDesc = g_fillTypeManager:getFillTypeByName(filltypeName)
         if fillTypeDesc == nil or (GlobalMarketAPI ~= nil and not GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc)) then
             if self.debugManager ~= nil then self.debugManager:warning("Bulk Transaction aborted: FillType '%s' is invalid or blacklisted.", tostring(filltypeName)) end
@@ -694,6 +698,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
+        if self:getIsMarketOnline() and self.checkOnlineTransactionCooldown ~= nil and not self:checkOnlineTransactionCooldown() then
+            return
+        end
+
         local fillTypeDesc = g_fillTypeManager:getFillTypeByName(filltypeName)
         if fillTypeDesc == nil or (GlobalMarketAPI ~= nil and not GlobalMarketAPI.getIsFillTypeAllowed(fillTypeDesc)) then
             if self.debugManager ~= nil then self.debugManager:warning("Object Transaction aborted: FillType '%s' is invalid or blacklisted.", tostring(filltypeName)) end

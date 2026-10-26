@@ -14,8 +14,8 @@ function GlobalMarket:initFileSystem()
     -- Base path for mod settings
     local settingsPath = getUserProfileAppPath() .. "modSettings/" .. GlobalMarket.modName .. "/"
 
-    -- File definitions
-    self.isOnlineFile = getUserProfileAppPath() .. "globalMarketOnline.xml"
+    -- File definitions (all consolidated inside modSettings/FS25_GlobalMarket/)
+    self.isOnlineFile = settingsPath .. "globalMarketOnline.xml"
     self.serverWhitelistFile = settingsPath .. "server_whitelist.xml"
     self.readFolder = settingsPath .. "read/"
     self.writeFolder = settingsPath .. "write/"
@@ -231,15 +231,15 @@ local function isVersionSufficient(currentVersion, minVersion)
 end
 
 function GlobalMarket:runSyncUpdateLogic(dt)
-    -- Master switch guard: completely bypass EXE file polling while disabled (#3)
-    if not GlobalMarket.ENABLE_ONLINE_SYNC then
+    -- Master switch guard & Dedicated Server exclusion (the desktop EXE never runs on a Dedicated Server)
+    if not GlobalMarket.ENABLE_ONLINE_SYNC or g_dedicatedServer ~= nil then
         return
     end
 
     self.timerData = self.timerData + dt
     self.timerStatus = self.timerStatus + dt
 
-    -- Phase 1: Heartbeat - Update local EXE status (Supports SP, MP-Host, Dedi local EXE, and MP-Clients)
+    -- Phase 1: Heartbeat - Update local EXE status (SP, local MP-Host, and MP-Clients)
     if self.timerStatus >= self.intervalStatus then
         self.timerStatus = 0
         local exeRunningNow = false
@@ -533,7 +533,26 @@ end
 -- EXPORT FUNCTIONS (Lua -> EXE)
 -- =========================================================================
 
--- Server-side router: exports transaction locally if Server is Data-Host, or relays to the remote Data-Host client
+-- Server-side rate-limit check: blocks any player from buying/selling on the Online Market
+-- within 15 seconds after the previous online transaction.
+function GlobalMarket:checkOnlineTransactionCooldown()
+    if not self:getIsMarketOnline() then
+        return true
+    end
+
+    local currentUnixTime = os.time()
+    if (currentUnixTime - (self.lastTransactionTime or 0)) < (self.transactionCooldown or 15) then
+        if self.debugManager ~= nil then
+            self.debugManager:warning("Sync: Online transaction blocked (15s global cooldown active). Please wait.")
+        end
+        return false
+    end
+
+    return true
+end
+
+-- Server-side router: locks the 15s cooldown and exports the transaction locally (SP/MP-Host)
+-- or relays it to the active remote Data-Host client (Dedicated Server).
 function GlobalMarket:dispatchOnlineTransaction(fillType, amountLiters, transactionType)
     if not GlobalMarket.ENABLE_ONLINE_SYNC or not self:getIsMarketOnline() then
         return false
@@ -543,6 +562,9 @@ function GlobalMarket:dispatchOnlineTransaction(fillType, amountLiters, transact
     if cleanAmount <= 0 or fillType == nil then
         return false
     end
+
+    -- Lock global 15-second cooldown on the authoritative server for all players
+    self.lastTransactionTime = os.time()
 
     if self.isDataHost then
         return self:exportTransaction(fillType, cleanAmount, transactionType)
@@ -563,21 +585,11 @@ function GlobalMarket:dispatchOnlineTransaction(fillType, amountLiters, transact
     return false
 end
 
--- Exports a player transaction to the write folder for the EXE to process
--- Includes a strict rate limit (cooldown) to prevent transaction spamming
+-- Exports a server-validated transaction to the write folder on the Data-Host for the EXE to process
 function GlobalMarket:exportTransaction(fillType, amount, transactionType)
     if not self.isDataHost or self.writeFolder == nil then return false end
 
     local currentUnixTime = os.time()
-
-    -- Enforce the 15-second cooldown
-    if (currentUnixTime - self.lastTransactionTime) < self.transactionCooldown then
-        if self.debugManager ~= nil then
-            self.debugManager:warning("Sync: Transaction cooldown is active. Please wait.")
-        end
-        return false -- Request denied due to rate limiting
-    end
-
     self.txCounter = (self.txCounter or 0) + 1
     local xmlPath = string.format("%stransaction_%d_%d.xml", self.writeFolder, currentUnixTime, self.txCounter)
     local xmlFile = XMLFile.create("gmTransaction", xmlPath, "gmDataSync")
@@ -591,7 +603,6 @@ function GlobalMarket:exportTransaction(fillType, amount, transactionType)
         xmlFile:save()
         xmlFile:delete()
 
-        -- Update the timestamp to lock further transactions
         self.lastTransactionTime = currentUnixTime
 
         if self.debugManager ~= nil then
