@@ -249,25 +249,38 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             local xmlFile = XMLFile.load("globalMarketOnline", self.isOnlineFile)
             if xmlFile ~= nil then
                 local exeVersion = xmlFile:getString("globalMarketOnline.version")
+                local backendMinVersion = xmlFile:getString("globalMarketOnline.minVersion")
                 local exeTimestamp = xmlFile:getInt("globalMarketOnline#timestamp") or 0
 
                 -- Read backend connection state (default to true for legacy support)
                 backendConnectedNow = xmlFile:getBool("globalMarketOnline#isConnected", true)
                 xmlFile:delete()
 
+                -- Dynamic minimum version enforcement from backend:
+                -- If the backend reports a higher required EXE version than the mod's local baseline, enforce it immediately.
+                if backendMinVersion ~= nil and backendMinVersion ~= "" then
+                    if not isVersionSufficient(self.minExeVersion, backendMinVersion) then
+                        self.minExeVersion = backendMinVersion
+                    end
+                end
+
                 -- Anti-Zombie Check: Ensure the file was written within the last 10 seconds
                 local currentUnixTime = os.time()
-                if exeTimestamp > 0 and math.abs(currentUnixTime - exeTimestamp) > 10 then
+                local isTimestampActive = (exeTimestamp > 0 and math.abs(currentUnixTime - exeTimestamp) <= 10)
+                local isVersionValid = isVersionSufficient(exeVersion, self.minExeVersion)
+
+                if not isTimestampActive then
                     exeRunningNow = false
                     backendConnectedNow = false
                 else
-                    exeRunningNow = isVersionSufficient(exeVersion, self.minExeVersion)
+                    exeRunningNow = isVersionValid
                 end
 
-                if not exeRunningNow and not self.hasShownVersionWarning and exeTimestamp > 0 then
+                -- Show outdated warning only if the EXE is actively running (fresh timestamp) but fails the version check
+                if isTimestampActive and not isVersionValid and not self.hasShownVersionWarning then
                     g_currentMission:showBlinkingWarning(g_i18n:getText("ui_gm_warning_exe_outdated"), 8000)
                     self.hasShownVersionWarning = true
-                elseif exeRunningNow then
+                elseif isVersionValid then
                     self.hasShownVersionWarning = false
                 end
             end
