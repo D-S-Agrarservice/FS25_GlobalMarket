@@ -519,11 +519,6 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         self.debugManager:info("Backend: onSellBuyBulk [Mode: %d, FillType: %s, Requested Level: %.2f]", mode, filltypeName, level)
     end
 
-    if self:getIsMarketOnline() then
-        if self.debugManager ~= nil then self.debugManager:debug("Online-Mode: Redirecting to Sync Module (TBD).") end
-        return
-    end
-
     local targetStorage = targetStorageObj
 
     if targetStorage == nil or type(targetStorage) ~= "table" then
@@ -663,6 +658,9 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         end
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
+        if self.dispatchOnlineTransaction ~= nil and self:getIsMarketOnline() then
+            self:dispatchOnlineTransaction(filltypeName, level, (mode == 2) and "BUY" or "SELL")
+        end
         if SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
@@ -682,11 +680,6 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
 
     if requestedLiters <= 0.01 then
         if self.debugManager ~= nil then self.debugManager:warning("Object Transaction aborted. Requested Liters is 0.") end
-        return
-    end
-
-    if self:getIsMarketOnline() then
-        if self.debugManager ~= nil then self.debugManager:debug("Online-Mode: Redirecting to Sync Module (TBD).") end
         return
     end
 
@@ -892,6 +885,9 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             end
 
             if self.debugManager ~= nil then self.debugManager:debug("Sold %.2f Liters of objects. Total Earnings: %.2f (Cost: %.2f)", processedLiters, totalPrice, deliveryCosts) end
+            if self.dispatchOnlineTransaction ~= nil and self:getIsMarketOnline() then
+                self:dispatchOnlineTransaction(filltypeName, processedLiters, "SELL")
+            end
 
         -- ==========================================
         -- MODE 2: BUYING (From Market to Storage)
@@ -1008,6 +1004,9 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             end
 
             targetPlaceable:setObjectStorageObjectInfosDirty()
+            if self.dispatchOnlineTransaction ~= nil and self:getIsMarketOnline() then
+                self:dispatchOnlineTransaction(filltypeName, actualLitersBought, "BUY")
+            end
         end
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end

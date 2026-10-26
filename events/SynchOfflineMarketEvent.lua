@@ -29,6 +29,7 @@ function SynchOfflineMarketEvent:writeStream(streamId, connection)
         GlobalMarket.debugManager:info("Network (Server): Broadcasting offline market sync payload (%d items).", numEntries)
     end
 
+    streamWriteBool(streamId, market.isOnline == true)
     streamWriteInt16(streamId, numEntries)
 
     -- Loop through all active fillTypes and send their current simulated state
@@ -45,6 +46,7 @@ end
 
 -- Deserializes the market state from the network stream (Client side)
 function SynchOfflineMarketEvent:readStream(streamId, connection)
+    self.isOnline = streamReadBool(streamId)
     local n = streamReadInt16(streamId)
 
     if GlobalMarket.debugManager ~= nil then
@@ -92,6 +94,7 @@ function SynchOfflineMarketEvent:run(connection)
                 GlobalMarket.debugManager:traceTable("Network (Client): Dump of synchronized market data", self.offlineMarketFillTypes)
             end
 
+            gm.isOnline = (self.isOnline == true)
             gm.offlineMarketFillTypes = self.offlineMarketFillTypes
 
             -- Check for newly started Great Demands on the client (suppress on initial join sync)

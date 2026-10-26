@@ -16,6 +16,10 @@ GlobalMarket.DELIVER_COST = 0
 GlobalMarket.DELIVER_COST_PERLITER = 0
 GlobalMarket.STORAGE_DECAY_MONTHS = 6
 
+-- Master switch for external C# EXE file polling & online market synchronization (#3).
+-- Kept false by default while the external companion EXE and backend are finalized.
+GlobalMarket.ENABLE_ONLINE_SYNC = false
+
 -- =========================================================================
 -- DEBUG MANAGER INITIALIZATION (Highest Priority)
 -- =========================================================================

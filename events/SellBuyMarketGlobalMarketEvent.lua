@@ -9,6 +9,7 @@ local SellBuyMarketGlobalMarketEvent_mt = Class(SellBuyMarketGlobalMarketEvent, 
 
 SellBuyMarketGlobalMarketEvent.ACTION_SELL = 1
 SellBuyMarketGlobalMarketEvent.ACTION_BUY = 2
+SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX = 3
 
 InitEventClass(SellBuyMarketGlobalMarketEvent, "SellBuyMarketGlobalMarketEvent")
 
@@ -22,12 +23,12 @@ function SellBuyMarketGlobalMarketEvent.new(action, price, playerFarmId, count, 
     local self = SellBuyMarketGlobalMarketEvent.emptyNew()
 
     self.action = action
-    self.price = math.floor(price)
-    self.playerFarmId = playerFarmId
-    self.count = count
-    self.attributes = attributes
+    self.price = math.floor(price or 0)
+    self.playerFarmId = playerFarmId or 0
+    self.count = count or 0
+    self.attributes = attributes or ""
     self.storage = storage
-    self.playerUserId = playerUserId
+    self.playerUserId = playerUserId or 0
 
     return self
 end
@@ -35,6 +36,12 @@ end
 -- Serializes the transaction payload into the network stream
 function SellBuyMarketGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.action)
+    if self.action == SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX then
+        streamWriteString(streamId, self.attributes)
+        streamWriteInt32(streamId, self.count)
+        streamWriteInt8(streamId, self.price)
+        return
+    end
     streamWriteInt32(streamId, self.price)
     streamWriteInt16(streamId, self.playerFarmId) -- FIX: Datatype matched to Int16
     streamWriteInt32(streamId, self.count)
@@ -46,6 +53,13 @@ end
 -- Deserializes the transaction payload from the network stream
 function SellBuyMarketGlobalMarketEvent:readStream(streamId, connection)
     self.action = streamReadInt8(streamId)
+    if self.action == SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX then
+        self.attributes = streamReadString(streamId)
+        self.count = streamReadInt32(streamId)
+        self.price = streamReadInt8(streamId)
+        self:run(connection)
+        return
+    end
     self.price = streamReadInt32(streamId)
     self.playerFarmId = streamReadInt16(streamId) -- FIX: Datatype matched to Int16
     self.count = streamReadInt32(streamId)
@@ -58,6 +72,13 @@ end
 
 -- Executes the core event logic based on network authority (Server vs. Client)
 function SellBuyMarketGlobalMarketEvent:run(connection)
+    if self.action == SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX then
+        if connection:getIsServer() and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.exportTransaction ~= nil then
+            local txType = (self.price == SellBuyMarketGlobalMarketEvent.ACTION_BUY) and "BUY" or "SELL"
+            g_currentMission.globalMarket:exportTransaction(self.attributes, self.count, txType)
+        end
+        return
+    end
     if not connection:getIsServer() then
         -- ===================================================
         -- SERVER-SIDE LOGIC

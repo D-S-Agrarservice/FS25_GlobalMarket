@@ -40,11 +40,13 @@ function GlobalMarket:initSync()
     self.hasBackendConnection = false -- Tracks connection state to external backend
     self.isDataHost = false
     self.dataHostConnection = nil
+    self.clientExeStates = {}
     self.serverWhitelist = {}
 
     -- Transaction Management
     self.lastTransactionTime = 0 -- Unix timestamp of the last executed transaction
     self.transactionCooldown = 15 -- 15 seconds rate limit for market actions
+    self.txCounter = 0
 
     -- Polling management
     self.timerData = 0
@@ -60,6 +62,7 @@ function GlobalMarket:initSync()
     -- to ensure g_currentMission.hud.gameInfoDisplay is fully initialized before access.
 
     addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
+    addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
 end
 
 -- =========================================================================
@@ -228,11 +231,16 @@ local function isVersionSufficient(currentVersion, minVersion)
 end
 
 function GlobalMarket:runSyncUpdateLogic(dt)
+    -- Master switch guard: completely bypass EXE file polling while disabled (#3)
+    if not GlobalMarket.ENABLE_ONLINE_SYNC then
+        return
+    end
+
     self.timerData = self.timerData + dt
     self.timerStatus = self.timerStatus + dt
 
-    -- Phase 1: Heartbeat - Update local EXE status
-    if not g_currentMission:getIsServer() and self.timerStatus >= self.intervalStatus then
+    -- Phase 1: Heartbeat - Update local EXE status (Supports SP, MP-Host, Dedi local EXE, and MP-Clients)
+    if self.timerStatus >= self.intervalStatus then
         self.timerStatus = 0
         local exeRunningNow = false
         local backendConnectedNow = false
@@ -272,8 +280,11 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
             self:updateHudIconState()
 
-            if ExeStatusEvent ~= nil then
-                -- Note: ExeStatusEvent must be updated to support the second parameter (self.hasBackendConnection)
+            if g_currentMission:getIsServer() then
+                -- SP / MP-Host / Dedicated Server running local EXE directly
+                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection)
+            elseif ExeStatusEvent ~= nil and g_client ~= nil then
+                -- Remote MP-Client notifies the authoritative server
                 g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection))
             end
         end
@@ -304,8 +315,17 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                         deleteFile(fullPath)
                     end
                 end
-                if #newMarketData > 0 and MarketDataSyncEvent ~= nil then
-                    g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData))
+                if #newMarketData > 0 then
+                    if g_currentMission:getIsServer() then
+                        -- Local Host / Server applies immediately and broadcasts to clients
+                        self:applySyncedMarketData(newMarketData)
+                        if g_server ~= nil and MarketDataSyncEvent ~= nil then
+                            g_server:broadcastEvent(MarketDataSyncEvent.new(newMarketData))
+                        end
+                    elseif MarketDataSyncEvent ~= nil and g_client ~= nil then
+                        -- Remote Data-Host Client sends payload to Server
+                        g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData))
+                    end
                 end
             end
         end
@@ -366,25 +386,101 @@ function GlobalMarket:initServerWhitelist()
     end
 end
 
-function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection)
+-- Promotes the next available EXE-capable connection (or falls back to Offline mode)
+function GlobalMarket:assignNextDataHost()
     if not g_currentMission:getIsServer() then return end
 
-    -- Verify the connection parameters depending on the actual client state
-    if isExeRunning and hasBackendConnection ~= false then
-        if self.dataHostConnection == nil then
-            self.dataHostConnection = connection
-            if SyncMarketWhitelistEvent ~= nil then
-                connection:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist))
+    self.clientExeStates = self.clientExeStates or {}
+    local nextConn = nil
+
+    -- Prefer LOCAL_HOST (SP / MP-Host / Dedicated Server local EXE) if active
+    local localState = self.clientExeStates["LOCAL_HOST"]
+    if localState ~= nil and localState.isExeRunning and localState.hasBackendConnection then
+        nextConn = "LOCAL_HOST"
+    else
+        for conn, state in pairs(self.clientExeStates) do
+            if conn ~= "LOCAL_HOST" and state ~= nil and state.isExeRunning and state.hasBackendConnection then
+                nextConn = conn
+                break
             end
-            self.isOnline = true
-            if g_currentMission.globalMarketUi ~= nil then g_currentMission.globalMarketUi:updateContent() end
+        end
+    end
+
+    if nextConn ~= nil then
+        self.dataHostConnection = nextConn
+        self.isOnline = true
+
+        if nextConn == "LOCAL_HOST" then
+            self:receiveDataHostToken(self.serverWhitelist)
+        else
+            self.isDataHost = false
+            self:updateHudIconState()
+            if SyncMarketWhitelistEvent ~= nil and type(nextConn) == "table" and nextConn.sendEvent ~= nil then
+                nextConn:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist))
+            end
+        end
+
+        if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
+        if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
+            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+        end
+    else
+        -- No active EXE connection remaining -> seamless fallback to Offline Market
+        self.dataHostConnection = nil
+        self.isOnline = false
+        self.isDataHost = false
+        self:updateHudIconState()
+
+        if self.offlineMarketFillTypes ~= nil then
+            for _, item in pairs(self.offlineMarketFillTypes) do
+                item.trend = nil
+                item.greatDemandFromServer = nil
+            end
+        end
+
+        if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
+        if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
+            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+        end
+    end
+end
+
+function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection)
+    if not g_currentMission:getIsServer() or connection == nil then return end
+
+    self.clientExeStates = self.clientExeStates or {}
+    local isReady = (isExeRunning == true) and (hasBackendConnection ~= false)
+    self.clientExeStates[connection] = {
+        isExeRunning = (isExeRunning == true),
+        hasBackendConnection = (hasBackendConnection ~= false)
+    }
+
+    if isReady then
+        if self.dataHostConnection == nil then
+            self:assignNextDataHost()
         end
     else
         if self.dataHostConnection == connection then
             self.dataHostConnection = nil
-            self.isOnline = false
-            if g_currentMission.globalMarketUi ~= nil then g_currentMission.globalMarketUi:updateContent() end
+            self:assignNextDataHost()
         end
+    end
+end
+
+-- Safety hook called by GlobalMarket.lua when a client disconnects from the server
+function GlobalMarket:onClientDisconnected(connection)
+    if not g_currentMission:getIsServer() or connection == nil then return end
+
+    if self.clientExeStates ~= nil then
+        self.clientExeStates[connection] = nil
+    end
+
+    if self.dataHostConnection == connection then
+        if self.debugManager ~= nil then
+            self.debugManager:info("Sync: Active Data-Host disconnected. Reassigning token or falling back to Offline mode...")
+        end
+        self.dataHostConnection = nil
+        self:assignNextDataHost()
     end
 end
 
@@ -415,6 +511,7 @@ end
 function GlobalMarket:applySyncedMarketData(marketData)
     -- Trigger UI pulse effect for 2000 milliseconds
     self.syncPulseTimer = g_time + 2000
+    self.isOnline = true
 
     if self.offlineMarketFillTypes ~= nil then
         for _, incomingItem in ipairs(marketData) do
@@ -436,6 +533,36 @@ end
 -- EXPORT FUNCTIONS (Lua -> EXE)
 -- =========================================================================
 
+-- Server-side router: exports transaction locally if Server is Data-Host, or relays to the remote Data-Host client
+function GlobalMarket:dispatchOnlineTransaction(fillType, amountLiters, transactionType)
+    if not GlobalMarket.ENABLE_ONLINE_SYNC or not self:getIsMarketOnline() then
+        return false
+    end
+
+    local cleanAmount = math.floor((amountLiters or 0) + 0.5)
+    if cleanAmount <= 0 or fillType == nil then
+        return false
+    end
+
+    if self.isDataHost then
+        return self:exportTransaction(fillType, cleanAmount, transactionType)
+    elseif self.dataHostConnection ~= nil and type(self.dataHostConnection) == "table" and SellBuyMarketGlobalMarketEvent ~= nil then
+        local txCode = (transactionType == "BUY") and SellBuyMarketGlobalMarketEvent.ACTION_BUY or SellBuyMarketGlobalMarketEvent.ACTION_SELL
+        self.dataHostConnection:sendEvent(SellBuyMarketGlobalMarketEvent.new(
+            SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX,
+            txCode,
+            0,
+            cleanAmount,
+            fillType,
+            nil,
+            0
+        ))
+        return true
+    end
+
+    return false
+end
+
 -- Exports a player transaction to the write folder for the EXE to process
 -- Includes a strict rate limit (cooldown) to prevent transaction spamming
 function GlobalMarket:exportTransaction(fillType, amount, transactionType)
@@ -451,13 +578,14 @@ function GlobalMarket:exportTransaction(fillType, amount, transactionType)
         return false -- Request denied due to rate limiting
     end
 
-    local xmlPath = self.writeFolder .. "transaction_" .. tostring(currentUnixTime) .. ".xml"
+    self.txCounter = (self.txCounter or 0) + 1
+    local xmlPath = string.format("%stransaction_%d_%d.xml", self.writeFolder, currentUnixTime, self.txCounter)
     local xmlFile = XMLFile.create("gmTransaction", xmlPath, "gmDataSync")
 
     if xmlFile ~= nil then
         xmlFile:setString("gmDataSync#action", "transaction")
         xmlFile:setString("gmDataSync.entry(0)#fillType", fillType)
-        xmlFile:setInt("gmDataSync.entry(0)#amount", amount)
+        xmlFile:setInt("gmDataSync.entry(0)#amount", math.floor(amount))
         xmlFile:setString("gmDataSync.entry(0)#type", transactionType)
 
         xmlFile:save()
@@ -500,4 +628,27 @@ function GlobalMarket:consoleCommandTestStatus(val)
     end
     self:updateHudIconState()
     return string.format("GM Status Test Mode: %d", state)
+end
+
+function GlobalMarket:consoleCommandToggleOnlineSync(val)
+    if val ~= nil and val ~= "" then
+        GlobalMarket.ENABLE_ONLINE_SYNC = (val == "true" or val == "1")
+    else
+        GlobalMarket.ENABLE_ONLINE_SYNC = not GlobalMarket.ENABLE_ONLINE_SYNC
+    end
+
+    if not GlobalMarket.ENABLE_ONLINE_SYNC then
+        self.isExeRunningLocal = false
+        self.hasBackendConnection = false
+        self.isDataHost = false
+        self.isOnline = false
+        self.dataHostConnection = nil
+        self.clientExeStates = {}
+        self:updateHudIconState()
+        if g_currentMission:getIsServer() and self.refreshMarketPrices ~= nil then
+            self:refreshMarketPrices()
+        end
+    end
+
+    return string.format("GlobalMarket.ENABLE_ONLINE_SYNC = %s", tostring(GlobalMarket.ENABLE_ONLINE_SYNC))
 end
