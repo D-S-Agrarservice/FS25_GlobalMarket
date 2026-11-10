@@ -26,6 +26,8 @@ function MarketDataSyncEvent:writeStream(streamId, connection)
         streamWriteInt32(streamId, item.fillLevel or 0)
         streamWriteFloat32(streamId, item.trend or 0)
         streamWriteBool(streamId, item.isGreatDemand == true)
+        streamWriteFloat32(streamId, item.greatDemandBonus or 0)
+        streamWriteInt32(streamId, item.greatDemandRemainingLiters or 0)
     end
 end
 
@@ -37,12 +39,16 @@ function MarketDataSyncEvent:readStream(streamId, connection)
         local ftLevel = streamReadInt32(streamId)
         local ftTrend = streamReadFloat32(streamId)
         local ftGreatDemand = streamReadBool(streamId)
+        local ftGdBonus = streamReadFloat32(streamId)
+        local ftGdRemaining = streamReadInt32(streamId)
 
         table.insert(self.marketData, {
             fillType = ftName,
             fillLevel = ftLevel,
             trend = (ftTrend > 0) and ftTrend or nil,
-            isGreatDemand = ftGreatDemand
+            isGreatDemand = ftGreatDemand,
+            greatDemandBonus = (ftGdBonus > 0) and ftGdBonus or nil,
+            greatDemandRemainingLiters = (ftGdRemaining > 0) and ftGdRemaining or nil
         })
     end
     self:run(connection)

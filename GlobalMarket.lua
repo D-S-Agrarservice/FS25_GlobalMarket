@@ -15,6 +15,7 @@ GlobalMarket.modName = g_currentModName
 GlobalMarket.DELIVER_COST = 0
 GlobalMarket.DELIVER_COST_PERLITER = 0
 GlobalMarket.STORAGE_DECAY_MONTHS = 6
+GlobalMarket.GREAT_DEMAND_MODE = 1 -- 1 = Scarcity (Stock-based), 2 = Random, 3 = Off
 
 -- Master switch for external C# EXE file polling & online market synchronization (#3).
 -- Kept false by default while the external companion EXE and backend are finalized.
@@ -320,6 +321,10 @@ function GlobalMarket:update(dt)
 
     if self.runSyncUpdateLogic ~= nil then
         self:runSyncUpdateLogic(dt)
+    end
+
+    if g_currentMission ~= nil and g_currentMission:getIsServer() and self.updateOfflineGreatDemands ~= nil then
+        self:updateOfflineGreatDemands(dt)
     end
 end
 

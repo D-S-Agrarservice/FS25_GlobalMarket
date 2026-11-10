@@ -29,9 +29,18 @@ function GlobalMarket:saveToXmlFile()
             xmlFile:setFloat(key .. "#level", info.fillLevel)
             if info.greatDemandBonus ~= nil and info.greatDemandBonus > 0 then
                 xmlFile:setFloat(key .. "#greatDemandBonus", info.greatDemandBonus)
-            end
-            if info.greatDemandHours ~= nil and info.greatDemandHours > 0 then
-                xmlFile:setInt(key .. "#greatDemandHours", info.greatDemandHours)
+                if info.greatDemandHours ~= nil and info.greatDemandHours > 0 then
+                    xmlFile:setFloat(key .. "#greatDemandHours", info.greatDemandHours)
+                end
+                if info.greatDemandRemainingMinutes ~= nil and info.greatDemandRemainingMinutes > 0 then
+                    xmlFile:setInt(key .. "#greatDemandRemainingMinutes", math.floor(info.greatDemandRemainingMinutes))
+                end
+                if info.greatDemandRemainingLiters ~= nil and info.greatDemandRemainingLiters > 0 then
+                    xmlFile:setInt(key .. "#greatDemandRemainingLiters", math.floor(info.greatDemandRemainingLiters))
+                end
+                if info.greatDemandOriginMode ~= nil and info.greatDemandOriginMode > 0 then
+                    xmlFile:setInt(key .. "#greatDemandOriginMode", info.greatDemandOriginMode)
+                end
             end
         end)
 
@@ -162,7 +171,12 @@ function GlobalMarket:loadFromXMLFile()
                     if ft.fillType == fillType then
                         ft.fillLevel = level
                         ft.greatDemandBonus = xmlFile:getFloat(baseKey .. "#greatDemandBonus") or 0
-                        ft.greatDemandHours = xmlFile:getInt(baseKey .. "#greatDemandHours") or 0
+                        ft.greatDemandHours = xmlFile:getFloat(baseKey .. "#greatDemandHours") or 0
+                        ft.greatDemandRemainingMinutes = xmlFile:getInt(baseKey .. "#greatDemandRemainingMinutes") or 0
+                        ft.greatDemandRemainingLiters = xmlFile:getInt(baseKey .. "#greatDemandRemainingLiters")
+                            or ((ft.greatDemandBonus > 0) and (GlobalMarketOffline.DEFAULT_GREAT_DEMAND_VOLUME or 200000) or 0)
+                        ft.greatDemandOriginMode = xmlFile:getInt(baseKey .. "#greatDemandOriginMode") or 0
+                        ft.isGreatDemand = (ft.greatDemandBonus > 0)
                         -- Logged as TRACE to prevent massive log spam when loading 100+ fillTypes
                         if self.debugManager ~= nil then
                             self.debugManager:trace("Loaded %s: Level=%.2f", fillType, level)

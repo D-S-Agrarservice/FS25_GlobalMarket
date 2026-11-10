@@ -321,7 +321,16 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                                 local ftLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0
                                 local ftTrend = xmlFile:getFloat(baseKey .. "#trend")
                                 local ftGreatDemand = xmlFile:getBool(baseKey .. "#greatDemand", false)
-                                table.insert(newMarketData, { fillType = ftName, fillLevel = ftLevel, trend = ftTrend, isGreatDemand = ftGreatDemand })
+                                local ftGdBonus = xmlFile:getFloat(baseKey .. "#greatDemandBonus")
+                                local ftGdRemaining = xmlFile:getInt(baseKey .. "#greatDemandRemaining")
+                                table.insert(newMarketData, {
+                                    fillType = ftName,
+                                    fillLevel = ftLevel,
+                                    trend = ftTrend,
+                                    isGreatDemand = ftGreatDemand,
+                                    greatDemandBonus = ftGdBonus,
+                                    greatDemandRemainingLiters = ftGdRemaining
+                                })
                             end)
                         end
                         xmlFile:delete()
@@ -448,6 +457,7 @@ function GlobalMarket:assignNextDataHost()
             for _, item in pairs(self.offlineMarketFillTypes) do
                 item.trend = nil
                 item.greatDemandFromServer = nil
+                item.onlineGreatDemandBonus = nil
             end
         end
 
@@ -533,6 +543,10 @@ function GlobalMarket:applySyncedMarketData(marketData)
                     localItem.fillLevel = incomingItem.fillLevel
                     localItem.trend = incomingItem.trend
                     localItem.greatDemandFromServer = (incomingItem.isGreatDemand == true)
+                    localItem.onlineGreatDemandBonus = incomingItem.greatDemandBonus
+                    if incomingItem.greatDemandRemainingLiters ~= nil then
+                        localItem.greatDemandRemainingLiters = incomingItem.greatDemandRemainingLiters
+                    end
                     break
                 end
             end

@@ -46,9 +46,16 @@ function GlobalMarketOnline:updateOnlinePrices(fillTypeTable)
         end
 
         -- ===============================================================
-        -- 3. GREAT DEMAND DETECTION (#14): Server flag or high scarcity trend
+        -- 3. GREAT DEMAND DETECTION (#14): Strictly authoritative from Backend Server
         -- ===============================================================
-        data.isGreatDemand = (data.greatDemandFromServer == true) or (serverTrend >= gdThreshold)
+        data.isGreatDemand = (data.greatDemandFromServer == true)
+        if data.isGreatDemand then
+            -- Apply optional server Great Demand bonus (or +25% fallback if backend only sent fillLevel without pre-boosted trend)
+            local serverBonus = (data.onlineGreatDemandBonus ~= nil and data.onlineGreatDemandBonus > 0)
+                and data.onlineGreatDemandBonus
+                or ((data.trend == nil or data.trend <= 0) and 0.25 or 0)
+            serverTrend = serverTrend + serverBonus
+        end
 
         -- Final Price: NormalMapPrice * ServerTrend
         data.price = data.normalPrice * serverTrend

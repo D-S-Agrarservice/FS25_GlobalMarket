@@ -53,6 +53,11 @@
         <e k="ui_gm_settings_decay_off"                            v="Wył." />
         <e k="ui_gm_settings_storageDecay"                         v="Magazyn GM: Limit czasu i ubytek" />
         <e k="ui_gm_settings_storageDecay_desc"                    v="Określa, po ilu miesiącach towary w publicznym centrum logistycznym GM zostaną usunięte (1. miesiąc darmowy, opłaty od 2. miesiąca, ubytek luzem w połowie okresu)." />
+        <e k="ui_gm_settings_greatDemandMode"                      v="Duży popyt: Tryb" />
+        <e k="ui_gm_settings_greatDemandMode_desc"                 v="Steruje dużym popytem na rynku offline (niezależnie od pełnych godzin, maks. 2). Według stanu: Przy niskim stanie. Losowy: Losowe towary poniżej limitu (2h / 200 000 L, stan bez zmian). Wył.: Wyłączony." />
+        <e k="ui_gm_settings_gd_scarcity"                          v="Według stanu" />
+        <e k="ui_gm_settings_gd_random"                            v="Losowy" />
+        <e k="ui_gm_settings_gd_off"                               v="Wył." />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: Koszty dostawy zaktualizowane! (Statystyki finansowe wymagają restartu)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: Pojemność rynku została zaktualizowana! Ceny będą się stopniowo dostosowywać." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Koszty dostawy zostały zaktualizowane!" />

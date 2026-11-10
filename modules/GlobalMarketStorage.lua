@@ -656,6 +656,9 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
 
         local marketChange = (mode == 2) and (level * -1) or level
         marketItem.fillLevel = math.max(marketItem.fillLevel + marketChange, 0)
+        if mode == 1 and self.onMarketGoodsSold ~= nil then
+            self:onMarketGoodsSold(filltypeName, level)
+        end
 
         if self.debugManager ~= nil then
             self.debugManager:trace("Bulk transaction completed. Price: %.2f, Delivery: %.2f, New Silo Level: %.2f", math.abs(finalAccountBalance), deliveryCosts, newSiloLevel)
@@ -890,6 +893,9 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                     ft.fillLevel = math.max(ft.fillLevel + processedLiters, 0)
                     break
                 end
+            end
+            if self.onMarketGoodsSold ~= nil then
+                self:onMarketGoodsSold(filltypeName, processedLiters)
             end
 
             if self.debugManager ~= nil then self.debugManager:debug("Sold %.2f Liters of objects. Total Earnings: %.2f (Cost: %.2f)", processedLiters, totalPrice, deliveryCosts) end

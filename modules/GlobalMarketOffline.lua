@@ -9,10 +9,18 @@ GlobalMarketOffline.PRICE_MIN_FACTOR = 0.7 -- Minimum 70% of base price
 GlobalMarketOffline.PRICE_MAX_FACTOR = 1.3 -- Maximum 130% of base price
 
 -- Great Demand (#14) Configuration
+GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY = 1     -- Stock/Scarcity-driven (Default)
+GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM = 2       -- Random event-driven (Stock unchanged, 2h / 200k L limit)
+GlobalMarketOffline.GREAT_DEMAND_MODE_OFF = 3          -- Disabled
+
 GlobalMarketOffline.GREAT_DEMAND_THRESHOLD = 1.25      -- >= +25% above local normalPrice (~8.3% stock saturation or lower)
-GlobalMarketOffline.MAX_CONCURRENT_GREAT_DEMANDS = 2   -- Maximum simultaneous NPC bulk-buyout events
-GlobalMarketOffline.GREAT_DEMAND_HOURLY_CHANCE = 0.08  -- 8% chance per daytime hour (07:00 - 19:00)
-GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS = 18        -- Auto-replenish after 18h if players do not supply the good
+GlobalMarketOffline.MAX_CONCURRENT_GREAT_DEMANDS = 2   -- Maximum simultaneous Great Demand events
+GlobalMarketOffline.GREAT_DEMAND_HOURLY_CHANCE = 0.08  -- Legacy constant kept for compatibility
+GlobalMarketOffline.GREAT_DEMAND_CHECK_CHANCE = 0.12   -- 12% chance per decoupled check interval (23-67 ingame min)
+GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS = 18        -- Auto-replenish after 18h in Scarcity mode if players do not supply
+GlobalMarketOffline.RANDOM_GREAT_DEMAND_MINUTES = 120  -- 2 ingame hours duration for Random mode Great Demand
+GlobalMarketOffline.DEFAULT_GREAT_DEMAND_VOLUME = 200000 -- 200,000 L target delivery quota before demand ends early
+GlobalMarketOffline.MIN_CAPACITY_BUFFER = 200000       -- Items within 200k of MARKET_CAPACITY cannot get Random Great Demand
 GlobalMarketOffline.NOTIFY_COOLDOWN_MS = 600000        -- 10 min real-time cooldown per product to prevent notification spam
 
 -- Initialize the simulated market. Fetches valid fillTypes and sets random starting stocks.
@@ -21,6 +29,8 @@ function GlobalMarket:initOfflineMarket()
     self.knownGreatDemands = {}
     self.lastGreatDemandNotifyTime = {}
     self.hasInitializedGreatDemands = false
+    self.gdIngameMinuteTimerMs = 0
+    self.nextGdCheckMinutes = math.random(23, 67)
 
     local addedCount = 0
 
@@ -32,9 +42,9 @@ function GlobalMarket:initOfflineMarket()
 
                 -- Dynamic starting stock based on the server's configured capacity limit
                 local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
-                -- Start between 10% and 50% of the maximum capacity
-                local minStart = currentLimit * 0.10
-                local maxStart = currentLimit * 0.50
+                -- Start between 20% and 60% of the maximum capacity so a fresh market does not start at scarcity
+                local minStart = currentLimit * 0.20
+                local maxStart = currentLimit * 0.60
 
                 -- math.random needs integers, so we round the values
                 local startLevel = math.random(math.floor(minStart), math.floor(maxStart))
@@ -49,7 +59,10 @@ function GlobalMarket:initOfflineMarket()
                     price = 0, -- Calculated on demand/update
                     isGreatDemand = false,
                     greatDemandBonus = 0,
-                    greatDemandHours = 0
+                    greatDemandHours = 0,
+                    greatDemandRemainingMinutes = 0,
+                    greatDemandRemainingLiters = 0,
+                    greatDemandOriginMode = 0
                 })
                 addedCount = addedCount + 1
             end
@@ -146,20 +159,51 @@ function GlobalMarket:updateOfflinePrices()
         local saturation = math.min((data.fillLevel or 0) / currentSaturationLimit, 1.0)
         local demandFactor = GlobalMarketOffline.PRICE_MAX_FACTOR - (priceRange * saturation)
 
-        -- 3. GREAT DEMAND BONUS (#14): Scales down smoothly as players supply the market up to 12% capacity
-        if data.greatDemandBonus ~= nil and data.greatDemandBonus > 0 then
-            if saturation >= 0.12 then
-                data.greatDemandBonus = 0
-                data.greatDemandHours = 0
-            else
-                local activeBonus = data.greatDemandBonus * (1.0 - (saturation / 0.12))
-                demandFactor = demandFactor + activeBonus
-            end
-        end
-
-        data.isGreatDemand = (demandFactor >= GlobalMarketOffline.GREAT_DEMAND_THRESHOLD) or ((data.greatDemandBonus or 0) > 0)
-        if not data.isGreatDemand then
+        -- 3. GREAT DEMAND BONUS (#14): Controlled strictly by active Great Demand slots & selected mode
+        local gdMode = GlobalMarket.GREAT_DEMAND_MODE or GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY
+        if gdMode == GlobalMarketOffline.GREAT_DEMAND_MODE_OFF then
+            data.isGreatDemand = false
+            data.greatDemandBonus = 0
             data.greatDemandHours = 0
+            data.greatDemandRemainingMinutes = 0
+            data.greatDemandRemainingLiters = 0
+            data.greatDemandOriginMode = 0
+        elseif data.greatDemandBonus ~= nil and data.greatDemandBonus > 0 then
+            local originMode = data.greatDemandOriginMode or gdMode
+            if originMode == GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM then
+                -- Random mode: Stock stays at normal level; full bonus applies until 200k quota or 2h timer ends
+                if saturation >= 0.95 or (data.greatDemandRemainingLiters ~= nil and data.greatDemandRemainingLiters <= 0) then
+                    data.isGreatDemand = false
+                    data.greatDemandBonus = 0
+                    data.greatDemandHours = 0
+                    data.greatDemandRemainingMinutes = 0
+                    data.greatDemandRemainingLiters = 0
+                    data.greatDemandOriginMode = 0
+                else
+                    demandFactor = demandFactor + data.greatDemandBonus
+                    data.isGreatDemand = true
+                end
+            else
+                -- Scarcity mode: Scales down smoothly as players supply the market up to 12% capacity or 200k quota
+                if saturation >= 0.12 or (data.greatDemandRemainingLiters ~= nil and data.greatDemandRemainingLiters <= 0) then
+                    data.isGreatDemand = false
+                    data.greatDemandBonus = 0
+                    data.greatDemandHours = 0
+                    data.greatDemandRemainingMinutes = 0
+                    data.greatDemandRemainingLiters = 0
+                    data.greatDemandOriginMode = 0
+                else
+                    local activeBonus = data.greatDemandBonus * math.max(0.25, 1.0 - (saturation / 0.12))
+                    demandFactor = demandFactor + activeBonus
+                    data.isGreatDemand = true
+                end
+            end
+        else
+            data.isGreatDemand = false
+            data.greatDemandHours = 0
+            data.greatDemandRemainingMinutes = 0
+            data.greatDemandRemainingLiters = 0
+            data.greatDemandOriginMode = 0
         end
 
         -- Final Price: NormalMapPrice * Demand
@@ -231,7 +275,250 @@ function GlobalMarket:checkAndAnnounceGreatDemands(suppressNotifications)
     end
 end
 
--- Simulation of NPC trading (Hourly). Adjusts stock levels, manages NPC bulk buyouts (#14), and recalculates prices.
+-- Triggers a Great Demand for a candidate fillType according to the selected mode (#14).
+function GlobalMarket:triggerDecoupledOfflineGreatDemand(mode, forcedTargetData)
+    if self.offlineMarketFillTypes == nil or #self.offlineMarketFillTypes == 0 then
+        return nil
+    end
+
+    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+    local minBuffer = math.min(GlobalMarketOffline.MIN_CAPACITY_BUFFER or 200000, math.floor(currentLimit * 0.25))
+    local maxAllowedStock = currentLimit - minBuffer
+    local chosen = forcedTargetData
+
+    if chosen == nil then
+        local candidates = {}
+
+        if mode == GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM then
+            -- Random mode: Any non-GreatDemand product that is at least 200k L (or 15-25%) below MARKET_CAPACITY
+            for _, data in ipairs(self.offlineMarketFillTypes) do
+                if not data.isGreatDemand and (data.fillLevel or 0) <= maxAllowedStock and (data.fillLevel or 0) <= (currentLimit * 0.85) then
+                    table.insert(candidates, data)
+                end
+            end
+        else
+            -- Scarcity mode: Prefer items already in low stock (<= 15%), otherwise moderate/low stock (<= 45%)
+            local scarceCandidates = {}
+            local moderateCandidates = {}
+            for _, data in ipairs(self.offlineMarketFillTypes) do
+                if not data.isGreatDemand then
+                    local lvl = data.fillLevel or 0
+                    if lvl <= (currentLimit * 0.15) then
+                        table.insert(scarceCandidates, data)
+                    elseif lvl <= (currentLimit * 0.45) then
+                        table.insert(moderateCandidates, data)
+                    end
+                end
+            end
+            candidates = (#scarceCandidates > 0) and scarceCandidates or moderateCandidates
+        end
+
+        if #candidates > 0 then
+            chosen = candidates[math.random(1, #candidates)]
+        end
+    end
+
+    if chosen == nil then
+        return nil
+    end
+
+    local defaultQuota = GlobalMarketOffline.DEFAULT_GREAT_DEMAND_VOLUME or 200000
+
+    if mode == GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM then
+        -- Keep current stock level unchanged; apply strong price bonus for 2 ingame hours (120 min) or 200,000 L delivered
+        chosen.greatDemandOriginMode = GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM
+        chosen.greatDemandBonus = math.random(20, 32) / 100
+        chosen.greatDemandRemainingMinutes = GlobalMarketOffline.RANDOM_GREAT_DEMAND_MINUTES or 120
+        chosen.greatDemandHours = 0
+        chosen.greatDemandRemainingLiters = math.min(defaultQuota, math.max(50000, math.floor(currentLimit - (chosen.fillLevel or 0))))
+        chosen.isGreatDemand = true
+
+        if self.debugManager ~= nil then
+            self.debugManager:info("OfflineMarket (Random GD): Triggered Great Demand for %s (Stock=%d L unchanged, Bonus=+%.0f%%, Quota=%d L, Duration=%d min).",
+                tostring(chosen.fillType), math.floor(chosen.fillLevel or 0), chosen.greatDemandBonus * 100, chosen.greatDemandRemainingLiters, chosen.greatDemandRemainingMinutes)
+        end
+    else
+        -- Scarcity / NPC Bulk Buyout mode: Stock drops to 0-2%, demand lasts until 12% saturation, 200k L delivered, or max hours
+        chosen.fillLevel = math.random(0, math.floor(currentLimit * 0.02))
+        chosen.greatDemandOriginMode = GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY
+        chosen.greatDemandBonus = math.random(10, 18) / 100
+        chosen.greatDemandRemainingMinutes = (GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS or 18) * 60
+        chosen.greatDemandHours = 0
+        chosen.greatDemandRemainingLiters = math.min(defaultQuota, math.max(50000, math.floor(currentLimit * 0.15)))
+        chosen.isGreatDemand = true
+
+        if self.debugManager ~= nil then
+            self.debugManager:info("OfflineMarket (Scarcity GD): Triggered Great Demand for %s (Stock=%d L, Bonus=+%.0f%%, Quota=%d L).",
+                tostring(chosen.fillType), math.floor(chosen.fillLevel or 0), chosen.greatDemandBonus * 100, chosen.greatDemandRemainingLiters)
+        end
+    end
+
+    return chosen
+end
+
+-- Decoupled ingame-minute timer for Great Demands (#14).
+-- Evaluates expirations and triggers new Great Demands at random non-hourly timestamps (e.g. 09:23 -> 11:23).
+function GlobalMarket:updateOfflineGreatDemands(dt)
+    if not g_currentMission:getIsServer() or self:getIsMarketOnline() then
+        return
+    end
+    if self.offlineMarketFillTypes == nil or g_currentMission.paused then
+        return
+    end
+
+    local timeScale = (g_currentMission.getEffectiveTimeScale ~= nil and g_currentMission:getEffectiveTimeScale())
+        or (g_currentMission.missionInfo ~= nil and g_currentMission.missionInfo.timeScale)
+        or 1
+    if timeScale <= 0 then
+        return
+    end
+
+    self.gdIngameMinuteTimerMs = (self.gdIngameMinuteTimerMs or 0) + (dt * timeScale)
+    if self.gdIngameMinuteTimerMs < 60000 then
+        return
+    end
+
+    local elapsedMinutes = math.floor(self.gdIngameMinuteTimerMs / 60000)
+    self.gdIngameMinuteTimerMs = self.gdIngameMinuteTimerMs - (elapsedMinutes * 60000)
+
+    local gdMode = GlobalMarket.GREAT_DEMAND_MODE or GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY
+    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+    local activeGreatDemands = 0
+    local stateChanged = false
+
+    -- 1. Evaluate active Great Demands minute-by-minute
+    for _, data in ipairs(self.offlineMarketFillTypes) do
+        if data.isGreatDemand or (data.greatDemandBonus or 0) > 0 then
+            if gdMode == GlobalMarketOffline.GREAT_DEMAND_MODE_OFF then
+                data.isGreatDemand = false
+                data.greatDemandBonus = 0
+                data.greatDemandHours = 0
+                data.greatDemandRemainingMinutes = 0
+                data.greatDemandRemainingLiters = 0
+                data.greatDemandOriginMode = 0
+                stateChanged = true
+            else
+                if (data.greatDemandRemainingMinutes or 0) <= 0 then
+                    local defaultTotalMin = ((data.greatDemandOriginMode or gdMode) == GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM)
+                        and (GlobalMarketOffline.RANDOM_GREAT_DEMAND_MINUTES or 120)
+                        or ((GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS or 18) * 60)
+                    local elapsedMin = math.floor((data.greatDemandHours or 0) * 60)
+                    data.greatDemandRemainingMinutes = math.max(15, defaultTotalMin - elapsedMin)
+                end
+
+                data.greatDemandRemainingMinutes = data.greatDemandRemainingMinutes - elapsedMinutes
+                data.greatDemandHours = (data.greatDemandHours or 0) + (elapsedMinutes / 60.0)
+
+                if data.greatDemandRemainingMinutes <= 0 or (data.greatDemandRemainingLiters ~= nil and data.greatDemandRemainingLiters <= 0) then
+                    -- Replenish stock only if this was a Scarcity buyout that remained empty
+                    if (data.greatDemandOriginMode or gdMode) == GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY and (data.fillLevel or 0) < (currentLimit * 0.12) then
+                        data.fillLevel = math.random(math.floor(currentLimit * 0.18), math.floor(currentLimit * 0.30))
+                    end
+                    data.isGreatDemand = false
+                    data.greatDemandBonus = 0
+                    data.greatDemandHours = 0
+                    data.greatDemandRemainingMinutes = 0
+                    data.greatDemandRemainingLiters = 0
+                    data.greatDemandOriginMode = 0
+                    stateChanged = true
+
+                    if self.debugManager ~= nil then
+                        self.debugManager:info("OfflineMarket: Great Demand for %s expired (decoupled timer).", tostring(data.fillType))
+                    end
+                else
+                    activeGreatDemands = activeGreatDemands + 1
+                end
+            end
+        end
+    end
+
+    -- 2. Check decoupled random spawn timer (every 23 to 67 ingame minutes, never locked to full hours)
+    self.nextGdCheckMinutes = (self.nextGdCheckMinutes or math.random(23, 67)) - elapsedMinutes
+    if self.nextGdCheckMinutes <= 0 then
+        self.nextGdCheckMinutes = math.random(23, 67)
+
+        if gdMode ~= GlobalMarketOffline.GREAT_DEMAND_MODE_OFF and activeGreatDemands < GlobalMarketOffline.MAX_CONCURRENT_GREAT_DEMANDS then
+            local currentHour = (g_currentMission.environment ~= nil and g_currentMission.environment.currentHour) or 12
+            if currentHour >= 7 and currentHour <= 19 and math.random() < (GlobalMarketOffline.GREAT_DEMAND_CHECK_CHANCE or 0.12) then
+                local triggeredItem = self:triggerDecoupledOfflineGreatDemand(gdMode)
+                if triggeredItem ~= nil then
+                    stateChanged = true
+                end
+            end
+        end
+    end
+
+    if stateChanged then
+        self.hasInitializedGreatDemands = true
+        self:refreshMarketPrices()
+        if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
+            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+        end
+    end
+end
+
+-- Tracks player sales against active Great Demand volume quotas (e.g. 200,000 L limit) (#14).
+function GlobalMarket:onMarketGoodsSold(fillTypeName, soldLiters)
+    if not g_currentMission:getIsServer() or self:getIsMarketOnline() then
+        return
+    end
+    if self.offlineMarketFillTypes == nil or fillTypeName == nil or (soldLiters or 0) <= 0 then
+        return
+    end
+
+    for _, data in ipairs(self.offlineMarketFillTypes) do
+        if data.fillType == fillTypeName and data.isGreatDemand then
+            local remaining = (data.greatDemandRemainingLiters or GlobalMarketOffline.DEFAULT_GREAT_DEMAND_VOLUME or 200000) - soldLiters
+            data.greatDemandRemainingLiters = math.max(0, math.floor(remaining))
+
+            if data.greatDemandRemainingLiters <= 0 then
+                data.isGreatDemand = false
+                data.greatDemandBonus = 0
+                data.greatDemandHours = 0
+                data.greatDemandRemainingMinutes = 0
+                data.greatDemandRemainingLiters = 0
+                data.greatDemandOriginMode = 0
+
+                if self.debugManager ~= nil then
+                    self.debugManager:info("OfflineMarket: Great Demand for %s fulfilled and ended early (target delivery quota reached).", tostring(fillTypeName))
+                end
+            end
+            break
+        end
+    end
+end
+
+-- Invoked when the Admin changes the Great Demand Mode in GlobalMarketSettings (#14).
+function GlobalMarket:onGreatDemandModeChanged(newMode)
+    if not g_currentMission:getIsServer() or self.offlineMarketFillTypes == nil then
+        return
+    end
+
+    local changed = false
+    if newMode == GlobalMarketOffline.GREAT_DEMAND_MODE_OFF then
+        for _, data in ipairs(self.offlineMarketFillTypes) do
+            if data.isGreatDemand or (data.greatDemandBonus or 0) > 0 then
+                data.isGreatDemand = false
+                data.greatDemandBonus = 0
+                data.greatDemandHours = 0
+                data.greatDemandRemainingMinutes = 0
+                data.greatDemandRemainingLiters = 0
+                data.greatDemandOriginMode = 0
+                changed = true
+            end
+        end
+    end
+
+    if changed then
+        self:refreshMarketPrices()
+        if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
+            g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+        end
+    end
+end
+
+-- Simulation of NPC trading (Hourly). Adjusts stock levels and recalculates prices.
+-- Note: Great Demand spawning and expiration are handled time-decoupled in updateOfflineGreatDemands(dt).
 function GlobalMarket:runOfflineSimulation()
     if not g_currentMission:getIsServer() then
         return
@@ -253,63 +540,32 @@ function GlobalMarket:runOfflineSimulation()
 
     -- Fetch current capacity to scale the NPC trade volume
     local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
-    local activeGreatDemands = 0
-    local candidates = {}
 
     for _, data in pairs(self.offlineMarketFillTypes) do
         -- Scale fluctuation between -2.5% and +2.25% of the total market capacity.
         -- This ensures the market remains dynamic regardless of the chosen size.
-        -- Higher minus to "bleed out" the market over time.
         local minFluct = currentLimit * -0.025
         local maxFluct = currentLimit * 0.0225
 
         local fluctuation = math.random(math.floor(minFluct), math.floor(maxFluct))
-        data.fillLevel = math.max(data.fillLevel + fluctuation, 0)
 
-        -- Track active Great Demands and auto-replenish after MAX_GREAT_DEMAND_HOURS so unproduced items never block slots forever
+        -- While a Great Demand is active, prevent NPC upward stock fluctuation from ending the demand prematurely
         if data.isGreatDemand then
-            data.greatDemandHours = (data.greatDemandHours or 0) + 1
-            if data.greatDemandHours >= GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS then
-                data.fillLevel = math.random(math.floor(currentLimit * 0.18), math.floor(currentLimit * 0.30))
-                data.greatDemandBonus = 0
-                data.greatDemandHours = 0
-                data.isGreatDemand = false
-                if self.debugManager ~= nil then
-                    self.debugManager:info("OfflineMarket: Great Demand for %s expired after %dh (replenished by NPCs).", tostring(data.fillType), GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS)
-                end
+            if (data.greatDemandOriginMode or 1) == GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY then
+                fluctuation = math.min(fluctuation, 0)
             else
-                activeGreatDemands = activeGreatDemands + 1
+                fluctuation = 0
             end
-        else
-            table.insert(candidates, data)
         end
+
+        data.fillLevel = math.clamp(data.fillLevel + fluctuation, 0, currentLimit)
 
         if self.debugManager ~= nil then
             self.debugManager:trace("OfflineMarket Fluctuation - %s: %+d L. New Level: %d L", data.fillType, fluctuation, data.fillLevel)
         end
     end
 
-    -- Daytime NPC Bulk Buyout Event (07:00 - 19:00): Triggers a Great Demand if slots are available
-    local currentHour = (g_currentMission.environment ~= nil and g_currentMission.environment.currentHour) or 12
-    if currentHour >= 7 and currentHour <= 19
-        and activeGreatDemands < GlobalMarketOffline.MAX_CONCURRENT_GREAT_DEMANDS
-        and #candidates > 0
-        and math.random() < GlobalMarketOffline.GREAT_DEMAND_HOURLY_CHANCE then
-
-        local chosen = candidates[math.random(1, #candidates)]
-        if chosen ~= nil then
-            chosen.fillLevel = math.random(0, math.floor(currentLimit * 0.02))
-            chosen.greatDemandBonus = math.random(5, 12) / 100
-            chosen.greatDemandHours = 0
-            chosen.isGreatDemand = true
-
-            if self.debugManager ~= nil then
-                self.debugManager:info("OfflineMarket: NPC bulk buyout triggered Great Demand for %s (Stock=%d L, Bonus=+%.0f%%).", tostring(chosen.fillType), chosen.fillLevel, chosen.greatDemandBonus * 100)
-            end
-        end
-    end
-
-    -- Ensure baseline is marked initialized before hourly evaluation so new demands announce properly
+    -- Ensure baseline is marked initialized before hourly evaluation
     self.hasInitializedGreatDemands = true
     self:refreshMarketPrices()
 
@@ -357,22 +613,24 @@ function GlobalMarket:consoleCommandTriggerGreatDemand(fillTypeArg)
         if targetData == nil then
             return string.format("FillType '%s' not found in GlobalMarket.", tostring(fillTypeArg))
         end
-    else
-        targetData = self.offlineMarketFillTypes[math.random(1, #self.offlineMarketFillTypes)]
     end
 
-    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
-    targetData.fillLevel = math.random(0, math.floor(currentLimit * 0.01))
-    targetData.greatDemandBonus = 0.10
-    targetData.greatDemandHours = 0
-    targetData.isGreatDemand = false
+    local activeMode = GlobalMarket.GREAT_DEMAND_MODE or GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY
+    if activeMode == GlobalMarketOffline.GREAT_DEMAND_MODE_OFF then
+        activeMode = GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY
+    end
 
     self.hasInitializedGreatDemands = true
+    local chosen = self:triggerDecoupledOfflineGreatDemand(activeMode, targetData)
+    if chosen == nil then
+        return "Error: No eligible FillType found for Great Demand."
+    end
+
     if self.knownGreatDemands ~= nil then
-        self.knownGreatDemands[targetData.fillType] = false
+        self.knownGreatDemands[chosen.fillType] = false
     end
     if self.lastGreatDemandNotifyTime ~= nil then
-        self.lastGreatDemandNotifyTime[targetData.fillType] = nil
+        self.lastGreatDemandNotifyTime[chosen.fillType] = nil
     end
 
     self:refreshMarketPrices()
@@ -381,7 +639,8 @@ function GlobalMarket:consoleCommandTriggerGreatDemand(fillTypeArg)
         g_server:broadcastEvent(SynchOfflineMarketEvent.new())
     end
 
-    return string.format("Triggered Great Demand for %s (Stock=%d L, Price=%.0f).", tostring(targetData.fillType), targetData.fillLevel, targetData.price or 0)
+    return string.format("Triggered Great Demand (Mode %d) for %s (Stock=%d L, Quota=%d L, Duration=%d min, Price=%.0f).",
+        activeMode, tostring(chosen.fillType), math.floor(chosen.fillLevel or 0), chosen.greatDemandRemainingLiters or 0, chosen.greatDemandRemainingMinutes or 0, chosen.price or 0)
 end
 
 -- Retrieves the offline price by fillType name.

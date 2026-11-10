@@ -53,6 +53,11 @@
         <e k="ui_gm_settings_decay_off"                            v="Désactivé" />
         <e k="ui_gm_settings_storageDecay"                         v="Entrepôt GM : Délai et perte" />
         <e k="ui_gm_settings_storageDecay_desc"                    v="Définit après combien de mois les marchandises du centre logistique GM sont évacuées (1er mois gratuit, frais dès le 2e mois, perte en vrac à mi-parcours)." />
+        <e k="ui_gm_settings_greatDemandMode"                      v="Forte demande : Mode" />
+        <e k="ui_gm_settings_greatDemandMode_desc"                 v="Contrôle les fortes demandes hors ligne (découplé des heures pleines, max. 2). Selon le stock : En cas de pénurie. Aléatoire : Produits aléatoires sous la limite (2h / 200 000 L, stock inchangé). Désactivé : Aucune forte demande." />
+        <e k="ui_gm_settings_gd_scarcity"                          v="Selon le stock" />
+        <e k="ui_gm_settings_gd_random"                            v="Aléatoire" />
+        <e k="ui_gm_settings_gd_off"                               v="Désactivé" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket : Frais de livraison mis à jour ! (Les statistiques financières nécessitent un redémarrage)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket : La capacité du marché a été mise à jour ! Les prix s'ajusteront progressivement." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket : Les frais de livraison ont été mis à jour !" />
