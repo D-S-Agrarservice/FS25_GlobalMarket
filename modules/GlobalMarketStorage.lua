@@ -530,7 +530,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
-        if self:getIsMarketOnline() and self.checkOnlineTransactionCooldown ~= nil and not self:checkOnlineTransactionCooldown() then
+        if self:getIsMarketOnline() and self.checkOnlineTransactionCooldown ~= nil and not self:checkOnlineTransactionCooldown(filltypeName) then
             return
         end
 
@@ -701,7 +701,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
-        if self:getIsMarketOnline() and self.checkOnlineTransactionCooldown ~= nil and not self:checkOnlineTransactionCooldown() then
+        if self:getIsMarketOnline() and self.checkOnlineTransactionCooldown ~= nil and not self:checkOnlineTransactionCooldown(filltypeName) then
             return
         end
 

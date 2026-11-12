@@ -58,6 +58,10 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Por existencias" />
         <e k="ui_gm_settings_gd_random"                            v="Aleatorio" />
         <e k="ui_gm_settings_gd_off"                               v="Desactivado" />
+        <e k="ui_gm_online_pending_short"                          v="(Revisión)" />
+        <e k="ui_gm_online_pending_dialog"                         v="(Revisión pendiente / Offline)" />
+        <e k="ui_gm_online_rejected_short"                         v="(Solo offline)" />
+        <e k="ui_gm_online_rejected_dialog"                        v="(Solo offline)" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: ¡Costes de envío actualizados! (Las estadísticas financieras requieren reiniciar el juego)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: ¡Se ha actualizado la capacidad del mercado! Los precios se ajustarán gradualmente." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: ¡Los costes de envío han sido actualizados!" />

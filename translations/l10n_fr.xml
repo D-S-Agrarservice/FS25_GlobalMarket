@@ -58,6 +58,10 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Selon le stock" />
         <e k="ui_gm_settings_gd_random"                            v="Aléatoire" />
         <e k="ui_gm_settings_gd_off"                               v="Désactivé" />
+        <e k="ui_gm_online_pending_short"                          v="(En attente)" />
+        <e k="ui_gm_online_pending_dialog"                         v="(Validation en attente / Hors ligne)" />
+        <e k="ui_gm_online_rejected_short"                         v="(Hors ligne)" />
+        <e k="ui_gm_online_rejected_dialog"                        v="(Hors ligne uniquement)" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket : Frais de livraison mis à jour ! (Les statistiques financières nécessitent un redémarrage)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket : La capacité du marché a été mise à jour ! Les prix s'ajusteront progressivement." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket : Les frais de livraison ont été mis à jour !" />

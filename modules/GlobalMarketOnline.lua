@@ -37,31 +37,45 @@ function GlobalMarketOnline:updateOnlinePrices(fillTypeTable)
         data.normalPrice = currentBasePricePerLiter * 1000
 
         -- ===============================================================
-        -- 2. TREND / SATURATION INJECTION: Apply EXE trend or stock saturation
+        -- 2. HYBRID ROUTING: Online APPROVED vs. Local PENDING / REJECTED
         -- ===============================================================
-        local serverTrend = data.trend
-        if serverTrend == nil or serverTrend <= 0 then
+        if data.onlineStatus == "APPROVED" then
+            -- Online APPROVED: Apply EXE trend (or online stock saturation) + authoritative Backend Great Demand
+            local serverTrend = data.trend
+            if serverTrend == nil or serverTrend <= 0 then
+                local saturation = math.min((data.fillLevel or 0) / currentSaturationLimit, 1.0)
+                serverTrend = maxFactor - (priceRange * saturation)
+            end
+
+            data.isGreatDemand = (data.greatDemandFromServer == true)
+            if data.isGreatDemand then
+                -- Apply optional server Great Demand bonus (or +25% fallback if backend only sent fillLevel without pre-boosted trend)
+                local serverBonus = (data.onlineGreatDemandBonus ~= nil and data.onlineGreatDemandBonus > 0)
+                    and data.onlineGreatDemandBonus
+                    or ((data.trend == nil or data.trend <= 0) and 0.25 or 0)
+                serverTrend = serverTrend + serverBonus
+            end
+
+            data.price = data.normalPrice * serverTrend
+
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:trace("OnlineMarket Price Update (APPROVED) - %s: MapNormal=%.2f, Trend=%.2f, GD=%s, Final=%.2f",
+                    tostring(data.fillType), data.normalPrice, serverTrend, tostring(data.isGreatDemand), data.price)
+            end
+        elseif GlobalMarketOffline ~= nil and GlobalMarketOffline.applyLocalDemandFactor ~= nil then
+            -- Hybrid Mode (PENDING / REJECTED): Calculate local saturation & local Great Demand price
+            local localDemand = GlobalMarketOffline.applyLocalDemandFactor(data, currentSaturationLimit)
+            data.price = data.normalPrice * localDemand
+
+            if GlobalMarket.debugManager ~= nil then
+                GlobalMarket.debugManager:trace("OnlineMarket Price Update (HYBRID %s) - %s: MapNormal=%.2f, LocalDemand=%.2f, GD=%s, Final=%.2f",
+                    tostring(data.onlineStatus or "PENDING"), tostring(data.fillType), data.normalPrice, localDemand, tostring(data.isGreatDemand), data.price)
+            end
+        else
             local saturation = math.min((data.fillLevel or 0) / currentSaturationLimit, 1.0)
-            serverTrend = maxFactor - (priceRange * saturation)
-        end
-
-        -- ===============================================================
-        -- 3. GREAT DEMAND DETECTION (#14): Strictly authoritative from Backend Server
-        -- ===============================================================
-        data.isGreatDemand = (data.greatDemandFromServer == true)
-        if data.isGreatDemand then
-            -- Apply optional server Great Demand bonus (or +25% fallback if backend only sent fillLevel without pre-boosted trend)
-            local serverBonus = (data.onlineGreatDemandBonus ~= nil and data.onlineGreatDemandBonus > 0)
-                and data.onlineGreatDemandBonus
-                or ((data.trend == nil or data.trend <= 0) and 0.25 or 0)
-            serverTrend = serverTrend + serverBonus
-        end
-
-        -- Final Price: NormalMapPrice * ServerTrend
-        data.price = data.normalPrice * serverTrend
-
-        if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:trace("OnlineMarket Price Update - %s: MapNormal=%.2f, Trend=%.2f, GD=%s, Final=%.2f", tostring(data.fillType), data.normalPrice, serverTrend, tostring(data.isGreatDemand), data.price)
+            local fallbackDemand = maxFactor - (priceRange * saturation)
+            data.isGreatDemand = false
+            data.price = data.normalPrice * fallbackDemand
         end
     end
 end

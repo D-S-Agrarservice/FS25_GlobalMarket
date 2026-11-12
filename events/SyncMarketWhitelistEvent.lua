@@ -23,9 +23,12 @@ function SyncMarketWhitelistEvent:writeStream(streamId, connection)
     streamWriteInt32(streamId, #self.whitelist)
     for i = 1, #self.whitelist do
         local item = self.whitelist[i]
-        streamWriteString(streamId, item.name)
-        streamWriteString(streamId, item.title)
-        streamWriteFloat32(streamId, item.basePrice)
+        streamWriteString(streamId, item.name or "")
+        streamWriteString(streamId, item.title or "")
+        streamWriteString(streamId, item.category or "PRODUCTS_PALLETS")
+        streamWriteString(streamId, item.type or "BULK")
+        streamWriteFloat32(streamId, item.basePrice or 0)
+        streamWriteString(streamId, item.source or "BASEGAME")
     end
 end
 
@@ -36,7 +39,10 @@ function SyncMarketWhitelistEvent:readStream(streamId, connection)
         table.insert(self.whitelist, {
             name = streamReadString(streamId),
             title = streamReadString(streamId),
-            basePrice = streamReadFloat32(streamId)
+            category = streamReadString(streamId),
+            type = streamReadString(streamId),
+            basePrice = streamReadFloat32(streamId),
+            source = streamReadString(streamId)
         })
     end
     self:run(connection)

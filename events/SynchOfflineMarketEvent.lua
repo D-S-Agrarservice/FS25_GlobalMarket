@@ -41,6 +41,7 @@ function SynchOfflineMarketEvent:writeStream(streamId, connection)
         streamWriteFloat32(streamId, ft.normalPrice or 0)
         streamWriteFloat32(streamId, ft.price)
         streamWriteBool(streamId, ft.isGreatDemand == true)
+        streamWriteString(streamId, ft.onlineStatus or "")
     end
 end
 
@@ -62,6 +63,7 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
         local normalPrice = streamReadFloat32(streamId)
         local price = streamReadFloat32(streamId)
         local isGreatDemand = streamReadBool(streamId)
+        local rawOnlineStatus = streamReadString(streamId)
 
         local fillTypeDesc = (g_fillTypeManager ~= nil and fillType ~= nil) and g_fillTypeManager:getFillTypeByName(fillType) or nil
 
@@ -72,7 +74,8 @@ function SynchOfflineMarketEvent:readStream(streamId, connection)
             fillLevel = fillLevel,
             normalPrice = normalPrice,
             price = price,
-            isGreatDemand = isGreatDemand
+            isGreatDemand = isGreatDemand,
+            onlineStatus = (rawOnlineStatus ~= "") and rawOnlineStatus or nil
         })
     end
 

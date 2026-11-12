@@ -58,6 +58,10 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Stock-based" />
         <e k="ui_gm_settings_gd_random"                            v="Random" />
         <e k="ui_gm_settings_gd_off"                               v="Off" />
+        <e k="ui_gm_online_pending_short"                          v="(Pending)" />
+        <e k="ui_gm_online_pending_dialog"                         v="(Pending review / Offline)" />
+        <e k="ui_gm_online_rejected_short"                         v="(Offline only)" />
+        <e k="ui_gm_online_rejected_dialog"                        v="(Offline only)" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: Delivery costs updated! (Finance stats require restart)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: Market capacity has been updated! Prices will adjust gradually." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Delivery costs have been updated!" />

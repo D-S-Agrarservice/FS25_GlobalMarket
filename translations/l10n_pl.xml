@@ -58,6 +58,10 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Według stanu" />
         <e k="ui_gm_settings_gd_random"                            v="Losowy" />
         <e k="ui_gm_settings_gd_off"                               v="Wył." />
+        <e k="ui_gm_online_pending_short"                          v="(Weryfikacja)" />
+        <e k="ui_gm_online_pending_dialog"                         v="(Oczekuje na weryfikację / Offline)" />
+        <e k="ui_gm_online_rejected_short"                         v="(Tylko offline)" />
+        <e k="ui_gm_online_rejected_dialog"                        v="(Tylko offline)" />
         <e k="ui_gm_notification_settings_both"                    v="GlobalMarket: Koszty dostawy zaktualizowane! (Statystyki finansowe wymagają restartu)" />
         <e k="ui_gm_notification_settings_capacity"                v="GlobalMarket: Pojemność rynku została zaktualizowana! Ceny będą się stopniowo dostosowywać." />
         <e k="ui_gm_notification_settings_delivery"                v="GlobalMarket: Koszty dostawy zostały zaktualizowane!" />

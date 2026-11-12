@@ -83,7 +83,7 @@
                     <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
                         <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                         <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                        <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="210px 32px" name="name" />
+                        <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="235px 32px" textLayoutMode="resize" name="name" />
                         <Text profile="globalMarketRowCellRight" position="260px 0px" size="150px 32px" name="price" />
                         <Bitmap profile="globalMarketRowCellArrow" position="452px 2px" name="trend" />
                         <Text profile="globalMarketRowCellRight" position="510px 0px" size="180px 32px" name="amount" />

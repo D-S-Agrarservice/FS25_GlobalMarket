@@ -43,10 +43,18 @@ function GlobalMarket:initSync()
     self.clientExeStates = {}
     self.serverWhitelist = {}
 
-    -- Transaction Management
-    self.lastTransactionTime = 0 -- Unix timestamp of the last executed transaction
-    self.transactionCooldown = 15 -- 15 seconds rate limit for market actions
+    -- Sandbox-safe Heartbeat / Anti-Zombie tracking (os.time() is nil in FS25 Lua sandbox)
+    self.lastSeenExeTimestamp = nil
+    self.exeHeartbeatVerified = false
+    self.exeStaleMs = 0
+    self.hasCheckedOnlineFileOnce = false
+    self.pendingReadFiles = {}
+
+    -- Transaction Management (g_time in milliseconds)
+    self.lastTransactionTime = -999999 -- Engine timestamp (g_time in ms) of the last executed online transaction
+    self.transactionCooldown = 15000 -- 15,000 ms (15 seconds) rate limit for online market actions
     self.txCounter = 0
+    self.wlCounter = 0
 
     -- Polling management
     self.timerData = 0
@@ -230,9 +238,17 @@ local function isVersionSufficient(currentVersion, minVersion)
     return true
 end
 
+-- Callback for native GIANTS getFiles(folderPath, callbackName, target) directory enumeration.
+-- Collects bare *.xml filenames inside modSettings/FS25_GlobalMarket/read/ without per-tick wrapper allocations.
+function GlobalMarket:onReadFolderFileFound(filename, isDirectory)
+    if not isDirectory and filename ~= nil and string.find(string.lower(filename), "%.xml$") ~= nil then
+        table.insert(self.pendingReadFiles, filename)
+    end
+end
+
 function GlobalMarket:runSyncUpdateLogic(dt)
-    -- Master switch guard & Dedicated Server exclusion (the desktop EXE never runs on a Dedicated Server)
-    if not GlobalMarket.ENABLE_ONLINE_SYNC or g_dedicatedServer ~= nil then
+    -- Master switch guard, Dedicated Server exclusion & Mission-Ready check (wait until onFinishedLoading + onStartMission completed)
+    if not GlobalMarket.ENABLE_ONLINE_SYNC or g_dedicatedServer ~= nil or g_currentMission == nil or not g_currentMission.isMissionStarted then
         return
     end
 
@@ -241,6 +257,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
     -- Phase 1: Heartbeat - Update local EXE status (SP, local MP-Host, and MP-Clients)
     if self.timerStatus >= self.intervalStatus then
+        local statusElapsedMs = self.timerStatus
         self.timerStatus = 0
         local exeRunningNow = false
         local backendConnectedNow = false
@@ -264,9 +281,38 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                     end
                 end
 
-                -- Anti-Zombie Check: Ensure the file was written within the last 10 seconds
-                local currentUnixTime = os.time()
-                local isTimestampActive = (exeTimestamp > 0 and math.abs(currentUnixTime - exeTimestamp) <= 10)
+                -- Sandbox-safe Anti-Zombie Check (os.time() is unavailable in the FS25 Lua sandbox):
+                -- Verify that globalMarketOnline#timestamp advances within 10,000 ms.
+                local isTimestampActive = false
+                if exeTimestamp <= 0 then
+                    -- Clean EXE shutdown signal (timestamp="0") -> immediately offline
+                    self.lastSeenExeTimestamp = nil
+                    self.exeHeartbeatVerified = false
+                    self.exeStaleMs = 0
+                elseif self.lastSeenExeTimestamp == nil then
+                    self.lastSeenExeTimestamp = exeTimestamp
+                    self.exeStaleMs = 0
+                    if self.hasCheckedOnlineFileOnce then
+                        -- File newly appeared during an active polling session -> immediately active
+                        self.exeHeartbeatVerified = true
+                        isTimestampActive = true
+                    else
+                        -- File already existed before initial poll -> wait for first timestamp advance to rule out a leftover crash file
+                        self.exeHeartbeatVerified = false
+                        isTimestampActive = false
+                    end
+                elseif exeTimestamp ~= self.lastSeenExeTimestamp then
+                    self.lastSeenExeTimestamp = exeTimestamp
+                    self.exeStaleMs = 0
+                    self.exeHeartbeatVerified = true
+                    isTimestampActive = true
+                else
+                    self.exeStaleMs = (self.exeStaleMs or 0) + statusElapsedMs
+                    isTimestampActive = (self.exeHeartbeatVerified == true and self.exeStaleMs <= 10000)
+                end
+
+                self.hasCheckedOnlineFileOnce = true
+
                 local isVersionValid = isVersionSufficient(exeVersion, self.minExeVersion)
 
                 if not isTimestampActive then
@@ -283,7 +329,24 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 elseif isVersionValid then
                     self.hasShownVersionWarning = false
                 end
+            else
+                -- XML temporarily unreadable (e.g. mid-rename on Windows); tolerate up to 10s if previously verified
+                self.exeStaleMs = (self.exeStaleMs or 0) + statusElapsedMs
+                if self.exeHeartbeatVerified and self.exeStaleMs <= 10000 then
+                    exeRunningNow = self.isExeRunningLocal
+                    backendConnectedNow = self.hasBackendConnection
+                else
+                    self.lastSeenExeTimestamp = nil
+                    self.exeHeartbeatVerified = false
+                end
+                self.hasCheckedOnlineFileOnce = true
             end
+        else
+            -- Heartbeat file absent (clean EXE shutdown or EXE not running) -> immediately offline
+            self.lastSeenExeTimestamp = nil
+            self.exeHeartbeatVerified = false
+            self.exeStaleMs = 0
+            self.hasCheckedOnlineFileOnce = true
         end
 
         -- Check if either EXE status or backend connection state changed
@@ -304,40 +367,86 @@ function GlobalMarket:runSyncUpdateLogic(dt)
     end
 
     -- Phase 2: Processing - backend IO (Data-Host only)
+    -- Note: fileExists() returns false on directory paths in GIANTS Engine, and getFiles() uses a callback (see dataS/scripts/Files.lua).
     if self.isDataHost and self.timerData >= self.intervalData then
         self.timerData = 0
-        if fileExists(self.readFolder) then
-            local files = getFiles(self.readFolder)
-            if files ~= nil and #files > 0 then
+        if self.readFolder ~= nil then
+            local files = self.pendingReadFiles
+            if files == nil then
+                files = {}
+                self.pendingReadFiles = files
+            else
+                for i = #files, 1, -1 do
+                    files[i] = nil
+                end
+            end
+
+            getFiles(self.readFolder, "onReadFolderFileFound", self)
+
+            if #files > 0 then
+                if #files > 1 then
+                    table.sort(files)
+                end
+
                 local newMarketData = {}
-                for _, filename in pairs(files) do
+                local marketDataIndexByName = {}
+                local hasMarketDataPacket = false
+
+                for _, filename in ipairs(files) do
                     local fullPath = self.readFolder .. filename
                     local xmlFile = XMLFile.load("gmDataSync", fullPath)
                     if xmlFile ~= nil then
                         local action = xmlFile:getString("gmDataSync#action", "")
                         if action == "marketData" then
+                            hasMarketDataPacket = true
                             xmlFile:iterate("gmDataSync.fillTypes.fillType", function (_, baseKey)
                                 local ftName = xmlFile:getString(baseKey .. "#fillType")
-                                local ftLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0
-                                local ftTrend = xmlFile:getFloat(baseKey .. "#trend")
-                                local ftGreatDemand = xmlFile:getBool(baseKey .. "#greatDemand", false)
-                                local ftGdBonus = xmlFile:getFloat(baseKey .. "#greatDemandBonus")
-                                local ftGdRemaining = xmlFile:getInt(baseKey .. "#greatDemandRemaining")
-                                table.insert(newMarketData, {
-                                    fillType = ftName,
-                                    fillLevel = ftLevel,
-                                    trend = ftTrend,
-                                    isGreatDemand = ftGreatDemand,
-                                    greatDemandBonus = ftGdBonus,
-                                    greatDemandRemainingLiters = ftGdRemaining
-                                })
+                                if ftName ~= nil and ftName ~= "" then
+                                    ftName = string.upper(ftName)
+                                    local ftLevel = xmlFile:getInt(baseKey .. "#fillLevel") or 0
+                                    local ftTrend = xmlFile:getFloat(baseKey .. "#trend")
+                                    local ftGreatDemand = xmlFile:getBool(baseKey .. "#greatDemand", false)
+                                    local ftGdBonus = xmlFile:getFloat(baseKey .. "#greatDemandBonus")
+                                    local ftGdRemaining = xmlFile:getInt(baseKey .. "#greatDemandRemaining")
+
+                                    local rawStatus = xmlFile:getString(baseKey .. "#status")
+                                    local ftStatus = "APPROVED"
+                                    if rawStatus ~= nil and rawStatus ~= "" then
+                                        local upperStatus = string.upper(rawStatus)
+                                        if upperStatus == "PENDING" or upperStatus == "NEED_REVIEW" then
+                                            ftStatus = "PENDING"
+                                        elseif upperStatus == "REJECTED" then
+                                            ftStatus = "REJECTED"
+                                        else
+                                            ftStatus = "APPROVED"
+                                        end
+                                    end
+
+                                    local entry = {
+                                        fillType = ftName,
+                                        status = ftStatus,
+                                        fillLevel = ftLevel,
+                                        trend = ftTrend,
+                                        isGreatDemand = ftGreatDemand,
+                                        greatDemandBonus = ftGdBonus,
+                                        greatDemandRemainingLiters = ftGdRemaining
+                                    }
+
+                                    local existingIdx = marketDataIndexByName[ftName]
+                                    if existingIdx ~= nil then
+                                        newMarketData[existingIdx] = entry
+                                    else
+                                        table.insert(newMarketData, entry)
+                                        marketDataIndexByName[ftName] = #newMarketData
+                                    end
+                                end
                             end)
                         end
                         xmlFile:delete()
                         deleteFile(fullPath)
                     end
                 end
-                if #newMarketData > 0 then
+                if hasMarketDataPacket then
                     if g_currentMission:getIsServer() then
                         -- Local Host / Server applies immediately and broadcasts to clients
                         self:applySyncedMarketData(newMarketData)
@@ -345,7 +454,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                             g_server:broadcastEvent(MarketDataSyncEvent.new(newMarketData))
                         end
                     elseif MarketDataSyncEvent ~= nil and g_client ~= nil then
-                        -- Remote Data-Host Client sends payload to Server
+                        -- Remote Data-Host Client sends payload to Server (Server broadcasts back to all clients)
                         g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData))
                     end
                 end
@@ -379,29 +488,47 @@ end
 function GlobalMarket:initServerWhitelist()
     if not g_currentMission:getIsServer() or self.serverWhitelistFile == nil then return end
 
+    local sourceMap, activeModPrefixes = nil, nil
+    if GlobalMarketAPI ~= nil and GlobalMarketAPI.buildFillTypeSourceMap ~= nil then
+        sourceMap, activeModPrefixes = GlobalMarketAPI.buildFillTypeSourceMap()
+    end
+    local lang = (g_languageShort ~= nil and g_languageShort ~= "") and string.lower(g_languageShort) or "en"
+
     self.serverWhitelist = {}
     if self.offlineMarketFillTypes ~= nil then
         for _, data in pairs(self.offlineMarketFillTypes) do
             if data.fillType ~= nil then
                 local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
                 local title = fillTypeDesc ~= nil and fillTypeDesc.title or data.fillType
+                local category, itemType, source = "PRODUCTS_PALLETS", "BULK", "BASEGAME"
+                if GlobalMarketAPI ~= nil and GlobalMarketAPI.resolveWhitelistMetadata ~= nil then
+                    category, itemType, source = GlobalMarketAPI.resolveWhitelistMetadata(fillTypeDesc, sourceMap, activeModPrefixes)
+                end
+
                 table.insert(self.serverWhitelist, {
                     name = data.fillType,
                     title = title,
-                    basePrice = data.basePrice or 0
+                    category = category,
+                    type = itemType,
+                    basePrice = data.basePrice or 0,
+                    source = source
                 })
             end
         end
     end
 
-    -- Write whitelist for external EXE discovery
+    -- Write static reference whitelist for external EXE discovery (Spec Section 3.2)
     local xmlFile = XMLFile.create("gmServerWhitelist", self.serverWhitelistFile, "gmServerWhitelist")
     if xmlFile ~= nil then
+        xmlFile:setString("gmServerWhitelist#lang", lang)
         for i, item in ipairs(self.serverWhitelist) do
             local key = string.format("gmServerWhitelist.item(%d)", i - 1)
             xmlFile:setString(key .. "#name", item.name)
             xmlFile:setString(key .. "#title", item.title)
+            xmlFile:setString(key .. "#category", item.category)
+            xmlFile:setString(key .. "#type", item.type)
             xmlFile:setFloat(key .. "#basePrice", item.basePrice)
+            xmlFile:setString(key .. "#source", item.source)
         end
         xmlFile:save()
         xmlFile:delete()
@@ -432,6 +559,15 @@ function GlobalMarket:assignNextDataHost()
         self.dataHostConnection = nextConn
         self.isOnline = true
 
+        -- Hybrid Mode initialization: Treat all local fillTypes as PENDING until the backend confirms APPROVED/REJECTED
+        if self.offlineMarketFillTypes ~= nil then
+            for _, item in pairs(self.offlineMarketFillTypes) do
+                if item.onlineStatus == nil then
+                    item.onlineStatus = "PENDING"
+                end
+            end
+        end
+
         if nextConn == "LOCAL_HOST" then
             self:receiveDataHostToken(self.serverWhitelist)
         else
@@ -455,6 +591,7 @@ function GlobalMarket:assignNextDataHost()
 
         if self.offlineMarketFillTypes ~= nil then
             for _, item in pairs(self.offlineMarketFillTypes) do
+                item.onlineStatus = nil
                 item.trend = nil
                 item.greatDemandFromServer = nil
                 item.onlineGreatDemandBonus = nil
@@ -514,17 +651,27 @@ function GlobalMarket:receiveDataHostToken(whitelist)
 
     if self.writeFolder == nil then return end
 
-    -- Notify backend about becoming the host utilizing Unix Timestamp (UTC)
-    local unixTimestamp = os.time()
-    local xmlPath = self.writeFolder .. "whitelist_" .. tostring(unixTimestamp) .. ".xml"
+    local lang = (g_languageShort ~= nil and g_languageShort ~= "") and string.lower(g_languageShort) or "en"
+
+    -- Notify backend about becoming the Data-Host using GIANTS getDate() (sandbox-safe)
+    local dateStamp = getDate("%Y%m%d_%H%M%S")
+    self.wlCounter = (self.wlCounter or 0) + 1
+    local xmlPath = string.format("%swhitelist_%s_%d.xml", self.writeFolder, dateStamp, self.wlCounter)
     local xmlFile = XMLFile.create("gmWhitelist", xmlPath, "gmDataSync")
     if xmlFile ~= nil then
         xmlFile:setString("gmDataSync#action", "updateWhitelist")
-        for i, item in ipairs(whitelist) do
+        xmlFile:setString("gmDataSync#lang", lang)
+        for i, item in ipairs(whitelist or {}) do
             local key = string.format("gmDataSync.whitelist.item(%d)", i - 1)
-            xmlFile:setString(key .. "#name", item.name)
-            xmlFile:setString(key .. "#title", item.title)
-            xmlFile:setFloat(key .. "#basePrice", item.basePrice)
+            local ftDesc = (g_fillTypeManager ~= nil and item.name ~= nil) and g_fillTypeManager:getFillTypeByName(item.name) or nil
+            local localizedTitle = (ftDesc ~= nil and ftDesc.title ~= nil and ftDesc.title ~= "") and ftDesc.title or item.title or item.name or ""
+
+            xmlFile:setString(key .. "#name", item.name or "")
+            xmlFile:setString(key .. "#title", localizedTitle)
+            xmlFile:setString(key .. "#category", item.category or "PRODUCTS_PALLETS")
+            xmlFile:setString(key .. "#type", item.type or "BULK")
+            xmlFile:setFloat(key .. "#basePrice", item.basePrice or 0)
+            xmlFile:setString(key .. "#source", item.source or "BASEGAME")
         end
         xmlFile:save()
         xmlFile:delete()
@@ -536,39 +683,98 @@ function GlobalMarket:applySyncedMarketData(marketData)
     self.syncPulseTimer = g_time + 2000
     self.isOnline = true
 
-    if self.offlineMarketFillTypes ~= nil then
+    local incomingByFillType = {}
+    if marketData ~= nil then
         for _, incomingItem in ipairs(marketData) do
-            for _, localItem in pairs(self.offlineMarketFillTypes) do
-                if localItem.fillType == incomingItem.fillType then
-                    localItem.fillLevel = incomingItem.fillLevel
+            if incomingItem.fillType ~= nil then
+                incomingByFillType[incomingItem.fillType] = incomingItem
+            end
+        end
+    end
+
+    if self.offlineMarketFillTypes ~= nil then
+        for _, localItem in pairs(self.offlineMarketFillTypes) do
+            local incomingItem = incomingByFillType[localItem.fillType]
+            if incomingItem ~= nil then
+                local status = incomingItem.status or "APPROVED"
+                localItem.onlineStatus = status
+
+                if status == "APPROVED" then
+                    localItem.fillLevel = incomingItem.fillLevel or 0
                     localItem.trend = incomingItem.trend
                     localItem.greatDemandFromServer = (incomingItem.isGreatDemand == true)
                     localItem.onlineGreatDemandBonus = incomingItem.greatDemandBonus
                     if incomingItem.greatDemandRemainingLiters ~= nil then
                         localItem.greatDemandRemainingLiters = incomingItem.greatDemandRemainingLiters
                     end
-                    break
+                    -- Clear any local offline Great Demand state when an item transitions to authoritative APPROVED online trading
+                    localItem.greatDemandBonus = 0
+                    localItem.greatDemandHours = 0
+                    localItem.greatDemandRemainingMinutes = 0
+                    localItem.greatDemandOriginMode = 0
+                else
+                    -- Hybrid Mode (PENDING / REJECTED): Preserve local simulated fillLevel and local Great Demand state
+                    localItem.trend = nil
+                    localItem.greatDemandFromServer = nil
+                    localItem.onlineGreatDemandBonus = nil
                 end
+            else
+                -- Local FillType missing from incoming online packet -> automatically treat as PENDING (Spec Section 3.3)
+                localItem.onlineStatus = "PENDING"
+                localItem.trend = nil
+                localItem.greatDemandFromServer = nil
+                localItem.onlineGreatDemandBonus = nil
             end
         end
     end
-    if self.updateOfflinePrices ~= nil then self:refreshMarketPrices() end
-    if g_currentMission.globalMarketUi ~= nil then g_currentMission.globalMarketUi:updateContent() end
+
+    if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
+    if g_currentMission.globalMarketUi ~= nil and g_currentMission.globalMarketUi:getIsVisible() then
+        g_currentMission.globalMarketUi:updateContent()
+    end
+end
+
+-- Returns the online moderation status ("APPROVED", "PENDING", "REJECTED") for a fillType while Online, or nil when Offline.
+function GlobalMarket:getFillTypeOnlineStatus(fillTypeName)
+    if not self:getIsMarketOnline() or fillTypeName == nil then
+        return nil
+    end
+
+    if self.offlineMarketFillTypes ~= nil then
+        for _, item in pairs(self.offlineMarketFillTypes) do
+            if item.fillType == fillTypeName then
+                return item.onlineStatus or "PENDING"
+            end
+        end
+    end
+
+    return "PENDING"
+end
+
+-- Returns true strictly when the market is Online AND the fillType is approved for global backend trading.
+function GlobalMarket:getIsFillTypeOnlineApproved(fillTypeName)
+    return self:getFillTypeOnlineStatus(fillTypeName) == "APPROVED"
 end
 
 -- =========================================================================
 -- EXPORT FUNCTIONS (Lua -> EXE)
 -- =========================================================================
 
--- Server-side rate-limit check: blocks any player from buying/selling on the Online Market
--- within 15 seconds after the previous online transaction.
-function GlobalMarket:checkOnlineTransactionCooldown()
+-- Server-side rate-limit check: blocks any player from buying/selling APPROVED online goods
+-- within 15 seconds after the previous online transaction. Hybrid (PENDING/REJECTED) goods bypass this cooldown.
+function GlobalMarket:checkOnlineTransactionCooldown(fillType)
     if not self:getIsMarketOnline() then
         return true
     end
 
-    local currentUnixTime = os.time()
-    if (currentUnixTime - (self.lastTransactionTime or 0)) < (self.transactionCooldown or 15) then
+    if fillType ~= nil and not self:getIsFillTypeOnlineApproved(fillType) then
+        return true
+    end
+
+    local currentTimeMs = g_time or 0
+    local lastTxMs = self.lastTransactionTime or -999999
+    local cooldownMs = self.transactionCooldown or 15000
+    if lastTxMs >= 0 and currentTimeMs >= lastTxMs and (currentTimeMs - lastTxMs) < cooldownMs then
         if self.debugManager ~= nil then
             self.debugManager:warning("Sync: Online transaction blocked (15s global cooldown active). Please wait.")
         end
@@ -590,8 +796,17 @@ function GlobalMarket:dispatchOnlineTransaction(fillType, amountLiters, transact
         return false
     end
 
-    -- Lock global 15-second cooldown on the authoritative server for all players
-    self.lastTransactionTime = os.time()
+    -- Hybrid Mode guard: PENDING and REJECTED goods remain purely local and never generate transaction_*.xml or trigger the 15s cooldown
+    if not self:getIsFillTypeOnlineApproved(fillType) then
+        if self.debugManager ~= nil then
+            self.debugManager:trace("Sync: Skipped online transaction export for '%s' (Hybrid status: %s).",
+                tostring(fillType), tostring(self:getFillTypeOnlineStatus(fillType)))
+        end
+        return false
+    end
+
+    -- Lock global 15-second (15,000 ms) cooldown on the authoritative server for all players
+    self.lastTransactionTime = g_time or 0
 
     if self.isDataHost then
         return self:exportTransaction(fillType, cleanAmount, transactionType)
@@ -616,9 +831,9 @@ end
 function GlobalMarket:exportTransaction(fillType, amount, transactionType)
     if not self.isDataHost or self.writeFolder == nil then return false end
 
-    local currentUnixTime = os.time()
+    local dateStamp = getDate("%Y%m%d_%H%M%S")
     self.txCounter = (self.txCounter or 0) + 1
-    local xmlPath = string.format("%stransaction_%d_%d.xml", self.writeFolder, currentUnixTime, self.txCounter)
+    local xmlPath = string.format("%stransaction_%s_%d.xml", self.writeFolder, dateStamp, self.txCounter)
     local xmlFile = XMLFile.create("gmTransaction", xmlPath, "gmDataSync")
 
     if xmlFile ~= nil then
@@ -630,7 +845,7 @@ function GlobalMarket:exportTransaction(fillType, amount, transactionType)
         xmlFile:save()
         xmlFile:delete()
 
-        self.lastTransactionTime = currentUnixTime
+        self.lastTransactionTime = g_time or 0
 
         if self.debugManager ~= nil then
             self.debugManager:info(string.format("Sync: Exported transaction (%s %s %s)", transactionType, tostring(amount), fillType))
@@ -675,16 +890,37 @@ function GlobalMarket:consoleCommandToggleOnlineSync(val)
         GlobalMarket.ENABLE_ONLINE_SYNC = not GlobalMarket.ENABLE_ONLINE_SYNC
     end
 
-    if not GlobalMarket.ENABLE_ONLINE_SYNC then
+    self.lastSeenExeTimestamp = nil
+    self.exeHeartbeatVerified = false
+    self.exeStaleMs = 0
+    self.hasCheckedOnlineFileOnce = false
+
+    if GlobalMarket.ENABLE_ONLINE_SYNC then
+        -- Trigger immediate status poll on the next update tick
+        self.timerStatus = self.intervalStatus or 2000
+    else
         self.isExeRunningLocal = false
         self.hasBackendConnection = false
         self.isDataHost = false
         self.isOnline = false
         self.dataHostConnection = nil
         self.clientExeStates = {}
+        if self.offlineMarketFillTypes ~= nil then
+            for _, item in pairs(self.offlineMarketFillTypes) do
+                item.onlineStatus = nil
+                item.trend = nil
+                item.greatDemandFromServer = nil
+                item.onlineGreatDemandBonus = nil
+            end
+        end
         self:updateHudIconState()
-        if g_currentMission:getIsServer() and self.refreshMarketPrices ~= nil then
-            self:refreshMarketPrices()
+        if g_currentMission:getIsServer() then
+            if self.refreshMarketPrices ~= nil then
+                self:refreshMarketPrices()
+            end
+            if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
+                g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+            end
         end
     end
 

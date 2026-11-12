@@ -22,7 +22,8 @@ end
 function MarketDataSyncEvent:writeStream(streamId, connection)
     streamWriteInt32(streamId, #self.marketData)
     for _, item in ipairs(self.marketData) do
-        streamWriteString(streamId, item.fillType)
+        streamWriteString(streamId, item.fillType or "")
+        streamWriteString(streamId, item.status or "APPROVED")
         streamWriteInt32(streamId, item.fillLevel or 0)
         streamWriteFloat32(streamId, item.trend or 0)
         streamWriteBool(streamId, item.isGreatDemand == true)
@@ -36,6 +37,7 @@ function MarketDataSyncEvent:readStream(streamId, connection)
     local count = streamReadInt32(streamId)
     for i = 1, count do
         local ftName = streamReadString(streamId)
+        local ftStatus = streamReadString(streamId)
         local ftLevel = streamReadInt32(streamId)
         local ftTrend = streamReadFloat32(streamId)
         local ftGreatDemand = streamReadBool(streamId)
@@ -44,6 +46,7 @@ function MarketDataSyncEvent:readStream(streamId, connection)
 
         table.insert(self.marketData, {
             fillType = ftName,
+            status = (ftStatus ~= "") and ftStatus or "APPROVED",
             fillLevel = ftLevel,
             trend = (ftTrend > 0) and ftTrend or nil,
             isGreatDemand = ftGreatDemand,
@@ -58,9 +61,9 @@ function MarketDataSyncEvent:run(connection)
     if g_currentMission.globalMarket == nil then return end
 
     if not connection:getIsServer() then
-        -- Server processes incoming Data-Host payload and broadcasts it
+        -- Server processes incoming Data-Host payload and broadcasts it to all clients (including Data-Host)
         g_currentMission.globalMarket:applySyncedMarketData(self.marketData)
-        g_server:broadcastEvent(MarketDataSyncEvent.new(self.marketData), nil, connection)
+        g_server:broadcastEvent(MarketDataSyncEvent.new(self.marketData))
     else
         -- Standard Client receives data
         g_currentMission.globalMarket:applySyncedMarketData(self.marketData)

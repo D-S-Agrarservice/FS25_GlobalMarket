@@ -17,9 +17,9 @@ GlobalMarket.DELIVER_COST_PERLITER = 0
 GlobalMarket.STORAGE_DECAY_MONTHS = 6
 GlobalMarket.GREAT_DEMAND_MODE = 1 -- 1 = Scarcity (Stock-based), 2 = Random, 3 = Off
 
--- Master switch for external C# EXE file polling & online market synchronization (#3).
--- Kept false by default while the external companion EXE and backend are finalized.
-GlobalMarket.ENABLE_ONLINE_SYNC = false
+-- Master switch for external companion EXE file polling & online market synchronization (#3).
+-- Active by default; can be toggled live via the console command 'gmToggleOnlineSync' for testing/debugging.
+GlobalMarket.ENABLE_ONLINE_SYNC = true
 
 -- =========================================================================
 -- DEBUG MANAGER INITIALIZATION (Highest Priority)

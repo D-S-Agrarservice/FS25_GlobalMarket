@@ -307,5 +307,234 @@ function GlobalMarketAPI.getIsContainerAllowedForFillType(fillType, unitKey)
     return table.hasElement(allowedContainers, upperUnitKey)
 end
 
+-- =========================================================================
+-- BACKEND WHITELIST METADATA RESOLUTION (EXE Spec Section 3.2)
+-- =========================================================================
+
+GlobalMarketAPI.WHITELIST_ROOT_VEG = {
+    POTATO = true, SUGARBEET = true, SUGARBEET_CUT = true, BEETROOT = true,
+    CARROT = true, PARSNIP = true, ONION = true, GARLIC = true,
+    CABBAGE = true, REDCABBAGE = true
+}
+
+GlobalMarketAPI.WHITELIST_GREENS_SPECIAL = {
+    SPINACH = true, GREENBEAN = true, PEA = true, OLIVE = true, GRAPE = true,
+    SUGARCANE = true, HOPS = true, LAVENDER = true, POPLAR = true,
+    WOODCHIPS = true, WOOD = true, TREE = true, STONE = true
+}
+
+GlobalMarketAPI.WHITELIST_BALES_SILAGE = {
+    GRASS = true, GRASS_WINDROW = true, DRYGRASS = true, DRYGRASS_WINDROW = true,
+    STRAW = true, SILAGE = true, CHAFF = true, FORAGE = true, FORAGE_MIXING = true,
+    COTTON = true, ALFALFA = true, ALFALFA_WINDROW = true, DRYALFALFA = true, DRYALFALFA_WINDROW = true,
+    CLOVER = true, CLOVER_WINDROW = true, DRYCLOVER = true, DRYCLOVER_WINDROW = true,
+    MAIZESILAGE = true, WETGRASS_WINDROW = true,
+    ROUNDBALE = true, ROUNDBALE_GRASS = true, ROUNDBALE_DRYGRASS = true, ROUNDBALE_COTTON = true, ROUNDBALE_WOOD = true,
+    SQUAREBALE = true, SQUAREBALE_GRASS = true, SQUAREBALE_DRYGRASS = true, SQUAREBALE_COTTON = true, SQUAREBALE_WOOD = true
+}
+
+GlobalMarketAPI.WHITELIST_INPUTS_FERT = {
+    SEEDS = true, FERTILIZER = true, LIME = true, MANURE = true, COMPOST = true,
+    PIGFOOD = true, MINERAL_FEED = true, CHICKENFOOD = true, HORSEFOOD = true,
+    BALE_NET = true, BALE_TWINE = true, BALE_WRAP = true,
+    RICESAPLINGS = true, TREESAPLINGS = true, ROADSALT = true
+}
+
+-- Builds a deterministic origin map ("BASEGAME" or exact mod folder name) for all registered fillTypes.
+function GlobalMarketAPI.buildFillTypeSourceMap()
+    local sourceMap = {}
+
+    -- 1. Basegame ground truth from data/maps/maps_fillTypes.xml
+    local baseXml = XMLFile.load("gmBaseFillTypes", "data/maps/maps_fillTypes.xml")
+    if baseXml ~= nil then
+        local rootName = baseXml:getRootName() or "map"
+        baseXml:iterate(rootName .. ".fillTypes.fillType", function(_, ftKey)
+            local ftName = baseXml:getString(ftKey .. "#name")
+            if ftName ~= nil and ftName ~= "" then
+                sourceMap[string.upper(ftName)] = "BASEGAME"
+            end
+        end)
+        baseXml:delete()
+    end
+
+    -- 2. Mod fillTypes registered via g_fillTypeManager.modsToLoad ({ xmlFilename, baseDirectory, customEnvironment })
+    if g_fillTypeManager ~= nil and g_fillTypeManager.modsToLoad ~= nil then
+        for _, modData in ipairs(g_fillTypeManager.modsToLoad) do
+            local xmlFilename = modData[1]
+            local customEnv = modData[3]
+            if xmlFilename ~= nil and customEnv ~= nil and customEnv ~= "" then
+                local modXml = XMLFile.loadIfExists("gmModFillTypes", xmlFilename)
+                if modXml ~= nil then
+                    local rootName = modXml:getRootName() or "map"
+                    modXml:iterate(rootName .. ".fillTypes.fillType", function(_, ftKey)
+                        local ftName = modXml:getString(ftKey .. "#name")
+                        if ftName ~= nil and ftName ~= "" then
+                            local upperName = string.upper(ftName)
+                            if sourceMap[upperName] == nil then
+                                sourceMap[upperName] = customEnv
+                            end
+                        end
+                    end)
+                    modXml:delete()
+                end
+            end
+        end
+    end
+
+    -- 3. Active mod directory prefixes for asset/store path matching on remaining fillTypes
+    local activeModPrefixes = {}
+    if g_modManager ~= nil and g_modManager.getActiveMods ~= nil then
+        for _, mod in ipairs(g_modManager:getActiveMods()) do
+            if mod.modDir ~= nil and mod.modName ~= nil then
+                table.insert(activeModPrefixes, {
+                    modDirLower = string.lower(mod.modDir),
+                    modName = mod.modName
+                })
+            end
+        end
+    end
+
+    return sourceMap, activeModPrefixes
+end
+
+-- Resolves Spec Section 3.2 attributes (category, type, source) for a given FillTypeDesc.
+function GlobalMarketAPI.resolveWhitelistMetadata(fillTypeDesc, sourceMap, activeModPrefixes)
+    if fillTypeDesc == nil or fillTypeDesc.name == nil then
+        return "PRODUCTS_PALLETS", "BULK", "BASEGAME"
+    end
+
+    local nameUpper = string.upper(fillTypeDesc.name)
+    local ftIndex = fillTypeDesc.index
+
+    -- 1. Resolve #type ("BULK" | "BALE" | "PALLET")
+    local itemType = "BULK"
+    local isPalletSupply = (GlobalMarketUI ~= nil and GlobalMarketUI.LOOKUP_PALLET_SUPPLIES ~= nil and GlobalMarketUI.LOOKUP_PALLET_SUPPLIES[nameUpper] == true)
+
+    if fillTypeDesc.isBulkType == true then
+        itemType = "BULK"
+    elseif not isPalletSupply and (
+        fillTypeDesc.isBaleType == true
+        or nameUpper == "COTTON"
+        or string.find(nameUpper, "BALE", 1, true) ~= nil
+        or (ftIndex ~= nil and g_baleManager ~= nil and g_baleManager.getIsFillTypeSupported ~= nil and g_baleManager:getIsFillTypeSupported(ftIndex))
+    ) then
+        itemType = "BALE"
+    elseif fillTypeDesc.isPalletType == true
+        or isPalletSupply
+        or (fillTypeDesc.palletFilename ~= nil and fillTypeDesc.palletFilename ~= "")
+        or (GlobalMarketStoreCache ~= nil and GlobalMarketStoreCache.cache ~= nil and GlobalMarketStoreCache.cache[nameUpper] ~= nil) then
+        itemType = "PALLET"
+    end
+
+    -- 2. Resolve #category ("GRAINS" | "ROOT_VEG" | "GREENS_SPECIAL" | "BALES_SILAGE" | "LIQUIDS" | "INPUTS_FERT" | "PRODUCTS_PALLETS")
+    local category = "PRODUCTS_PALLETS"
+    local isLiquid = (GlobalMarketUI ~= nil and GlobalMarketUI.LOOKUP_LIQUIDS ~= nil and GlobalMarketUI.LOOKUP_LIQUIDS[nameUpper] == true)
+
+    if not isLiquid and ftIndex ~= nil and g_fillTypeManager ~= nil then
+        if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "LIQUID")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SPRAYER")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SLURRYTANK") then
+            isLiquid = true
+        else
+            for _, catName in ipairs(GlobalMarketAPI.getLiquidCategories()) do
+                if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, catName) then
+                    isLiquid = true
+                    break
+                end
+            end
+            if not isLiquid and GlobalMarketAPI.containerRestrictions ~= nil and GlobalMarketAPI.containerRestrictions[nameUpper] ~= nil then
+                if table.hasElement(GlobalMarketAPI.containerRestrictions[nameUpper], "UI_GM_UNIT_IBC") then
+                    isLiquid = true
+                end
+            end
+        end
+    end
+
+    if isLiquid then
+        category = "LIQUIDS"
+    elseif GlobalMarketAPI.WHITELIST_ROOT_VEG[nameUpper] then
+        category = "ROOT_VEG"
+    elseif GlobalMarketAPI.WHITELIST_GREENS_SPECIAL[nameUpper] then
+        category = "GREENS_SPECIAL"
+    elseif GlobalMarketAPI.WHITELIST_BALES_SILAGE[nameUpper] then
+        category = "BALES_SILAGE"
+    elseif GlobalMarketAPI.WHITELIST_INPUTS_FERT[nameUpper] then
+        category = "INPUTS_FERT"
+    elseif GlobalMarketUI ~= nil and GlobalMarketUI.LOOKUP_GRAINS ~= nil and GlobalMarketUI.LOOKUP_GRAINS[nameUpper] then
+        category = "GRAINS"
+    elseif GlobalMarketUI ~= nil and GlobalMarketUI.LOOKUP_ANIMAL ~= nil and GlobalMarketUI.LOOKUP_ANIMAL[nameUpper] then
+        category = "PRODUCTS_PALLETS"
+    elseif ftIndex ~= nil and g_fillTypeManager ~= nil then
+        if g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "COMBINE")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "FARMSILO") then
+            category = "GRAINS"
+        elseif g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "ROOT_CROPS")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "VEGETABLES")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "TOPLIFTINGHARVESTER") then
+            category = "ROOT_VEG"
+        elseif g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "PLANTER_SMALL") then
+            category = "GREENS_SPECIAL"
+        elseif g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "FORAGEWAGON")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "MIXERWAGON")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "WINDROW")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "HAYLOFT")
+            or itemType == "BALE" then
+            category = "BALES_SILAGE"
+        elseif g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "SPREADER")
+            or g_fillTypeManager:getIsFillTypeInCategory(ftIndex, "MANURESPREADER") then
+            category = "INPUTS_FERT"
+        elseif itemType == "BULK" then
+            category = "GREENS_SPECIAL"
+        else
+            category = "PRODUCTS_PALLETS"
+        end
+    end
+
+    -- 3. Resolve #source ("BASEGAME" or exact mod folder name)
+    local source = (sourceMap ~= nil and sourceMap[nameUpper]) or nil
+    if source == nil then
+        local candidatePaths = {
+            fillTypeDesc.hudOverlayFilename,
+            fillTypeDesc.palletFilename,
+            fillTypeDesc.layerTextures ~= nil and fillTypeDesc.layerTextures.diffuseMapFilename or nil
+        }
+
+        if GlobalMarketStoreCache ~= nil and GlobalMarketStoreCache.cache ~= nil and GlobalMarketStoreCache.cache[nameUpper] ~= nil then
+            local firstCached = GlobalMarketStoreCache.cache[nameUpper][1]
+            if firstCached ~= nil and firstCached.xmlFilename ~= nil then
+                table.insert(candidatePaths, firstCached.xmlFilename)
+            end
+        end
+
+        if activeModPrefixes ~= nil then
+            for _, rawPath in ipairs(candidatePaths) do
+                if rawPath ~= nil and rawPath ~= "" then
+                    local lowerPath = string.lower(rawPath)
+                    for _, modEntry in ipairs(activeModPrefixes) do
+                        if string.startsWith(lowerPath, modEntry.modDirLower) then
+                            source = modEntry.modName
+                            break
+                        end
+                    end
+                    if source ~= nil then
+                        break
+                    end
+                end
+            end
+        end
+
+        if source == nil then
+            local mapEnv = g_currentMission ~= nil and g_currentMission.missionInfo ~= nil and g_currentMission.missionInfo.customEnvironment or nil
+            if mapEnv ~= nil and mapEnv ~= "" then
+                source = mapEnv
+            else
+                source = "BASEGAME"
+            end
+        end
+    end
+
+    return category, itemType, source
+end
+
 -- Self-execution fallback (call this from your main init logic)
 GlobalMarketAPI.init()

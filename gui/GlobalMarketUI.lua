@@ -756,9 +756,26 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     local trend = cell:getAttribute("trend")
 
     local fillTypeDesc = g_fillTypeManager:getFillTypeByName(data.fillType)
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
 
     if name and fillTypeDesc then
-        name:setText(fillTypeDesc.title)
+        local displayTitle = fillTypeDesc.title or data.fillType
+        name:setTextColor(1, 1, 1, 1)
+
+        if list == self.gmTableMarket and gm ~= nil and gm:getIsMarketOnline() then
+            local onlineStatus = data.onlineStatus or (gm.getFillTypeOnlineStatus ~= nil and gm:getFillTypeOnlineStatus(data.fillType)) or "PENDING"
+            if onlineStatus == "REJECTED" then
+                local suffix = self.i18n:hasText("ui_gm_online_rejected_short") and self.i18n:getText("ui_gm_online_rejected_short") or "(Offline only)"
+                displayTitle = string.format("%s %s", displayTitle, suffix)
+                name:setTextColor(0.72, 0.72, 0.72, 1.0)
+            elseif onlineStatus ~= "APPROVED" then
+                local suffix = self.i18n:hasText("ui_gm_online_pending_short") and self.i18n:getText("ui_gm_online_pending_short") or "(Pending)"
+                displayTitle = string.format("%s %s", displayTitle, suffix)
+                name:setTextColor(1.0, 0.82, 0.45, 1.0)
+            end
+        end
+
+        name:setText(displayTitle)
     end
 
     -- Icon logic for both lists
@@ -914,8 +931,20 @@ function GlobalMarketUI:onButtonAction(list, section, index)
         local silos = gm:getAvailableStorages(data.fillType, farmId, isSelling)
 
         if #silos > 0 then
+            local dialogTitle = (fillTypeDesc ~= nil and fillTypeDesc.title) or data.fillType
+            if gm:getIsMarketOnline() then
+                local onlineStatus = (gm.getFillTypeOnlineStatus ~= nil and gm:getFillTypeOnlineStatus(data.fillType)) or data.onlineStatus
+                if onlineStatus == "REJECTED" then
+                    local tag = self.i18n:hasText("ui_gm_online_rejected_dialog") and self.i18n:getText("ui_gm_online_rejected_dialog") or "(Offline only)"
+                    dialogTitle = string.format("%s %s", dialogTitle, tag)
+                elseif onlineStatus ~= nil and onlineStatus ~= "APPROVED" then
+                    local tag = self.i18n:hasText("ui_gm_online_pending_dialog") and self.i18n:getText("ui_gm_online_pending_dialog") or "(Pending review / Offline)"
+                    dialogTitle = string.format("%s %s", dialogTitle, tag)
+                end
+            end
+
             -- Calls the popup dialog to select the specific storage and amount
-            gm.dialog:show(self, self.onDialogResult, actionType, fillTypeDesc.title, data.fillType, data.price, silos)
+            gm.dialog:show(self, self.onDialogResult, actionType, dialogTitle, data.fillType, data.price, silos)
         else
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:warning("UI Action failed: No suitable storage found for %s of %s (Farm ID: %d).", actionType, tostring(data.fillType), farmId)
