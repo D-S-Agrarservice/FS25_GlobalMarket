@@ -241,7 +241,8 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage transfers, storage fees & decay
 │   ├── GlobalMarketStoreCache.lua            # 2-phase deep XML scanner for pallets, BigBags & IBCs
 │   └── GlobalMarketSync.lua                  # Companion App XML bridge, token failover & HUD icon
-└── translations/             # Localized strings (DE, EN, ES, FR, PL)
+├── translations/             # Localized strings (DE, EN, ES, FR, PL)
+└── xml/                      # In-game help configuration (helpLine_globalMarket.xml)
 ```
 
 ---

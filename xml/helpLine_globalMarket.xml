@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!--
+    FS25 - GlobalMarket In-Game Help Configuration
+    Loaded via HelpLineManager.loadMapData hook in GlobalMarket.lua
+-->
+<helpLines>
+    <category title="$l10n_gm_help_cat_basics">
+        <page title="$l10n_gm_help_p1_title" iconSliceId="firstSteps_howToStart">
+            <paragraph>
+                <title text="$l10n_gm_help_p1_intro_title"/>
+                <text text="$l10n_gm_help_p1_intro_text"/>
+                <image sliceId="custom" filename="icon_GM.dds" size="512 512" uvs="0px 0px 512px 512px" displaySize="160px 160px" aspectRatio="1"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p1_modes_title"/>
+                <text text="$l10n_gm_help_p1_modes_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p1_hud_title"/>
+                <text text="$l10n_gm_help_p1_hud_text"/>
+            </paragraph>
+        </page>
+        <page title="$l10n_gm_help_p2_title" iconSliceId="basicEconomy_makingMoney">
+            <paragraph>
+                <title text="$l10n_gm_help_p2_pricing_title"/>
+                <text text="$l10n_gm_help_p2_pricing_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p2_fees_title"/>
+                <text text="$l10n_gm_help_p2_fees_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p2_demand_title"/>
+                <text text="$l10n_gm_help_p2_demand_text"/>
+            </paragraph>
+        </page>
+    </category>
+    <category title="$l10n_gm_help_cat_logistics">
+        <page title="$l10n_gm_help_p3_title" iconSliceId="misc_transport">
+            <paragraph>
+                <title text="$l10n_gm_help_p3_storages_title"/>
+                <text text="$l10n_gm_help_p3_storages_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p3_terminals_title"/>
+                <text text="$l10n_gm_help_p3_terminals_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p3_decay_title"/>
+                <text text="$l10n_gm_help_p3_decay_text"/>
+            </paragraph>
+        </page>
+        <page title="$l10n_gm_help_p4_title" iconSliceId="firstSteps_shop">
+            <paragraph>
+                <title text="$l10n_gm_help_p4_finances_title"/>
+                <text text="$l10n_gm_help_p4_finances_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p4_settings_title"/>
+                <text text="$l10n_gm_help_p4_settings_text"/>
+            </paragraph>
+        </page>
+    </category>
+</helpLines>

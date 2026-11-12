@@ -651,5 +651,25 @@ local function onConnectionClosed(mission, connection)
 end
 FSBaseMission.onConnectionClosed = Utils.appendedFunction(FSBaseMission.onConnectionClosed, onConnectionClosed)
 
+-- =========================================================================
+-- IN-GAME HELP (ESC Help Menu / HelpLineManager)
+-- =========================================================================
+if HelpLineManager ~= nil and HelpLineManager.loadMapData ~= nil then
+    HelpLineManager.loadMapData = Utils.overwrittenFunction(
+        HelpLineManager.loadMapData,
+        function(self, superFunc, xmlFile, missionInfo)
+            local ret = superFunc(self, xmlFile, missionInfo)
+            local modEnv = GlobalMarket.modName or "FS25_GlobalMarket"
+            if self.customEnvironmentToCategory ~= nil and self.customEnvironmentToCategory[modEnv] == nil then
+                local helpXmlPath = Utils.getFilename("xml/helpLine_globalMarket.xml", GlobalMarket.dir)
+                if helpXmlPath ~= nil and fileExists(helpXmlPath) then
+                    self:loadFromXML(helpXmlPath, missionInfo)
+                end
+            end
+            return ret
+        end
+    )
+end
+
 -- Register the mod with the engine
 addModEventListener(GlobalMarket)
