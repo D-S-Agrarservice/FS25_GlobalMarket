@@ -1,7 +1,8 @@
---
--- FS25 - GlobalMarket - InitGlobalMarketSettingsEvent
--- Description: Client ping to request current admin settings upon joining.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - InitGlobalMarketSettingsEvent.lua
+-- Client-to-server handshake event requesting active global market settings upon joining.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 InitGlobalMarketSettingsEvent = {}
 local InitGlobalMarketSettingsEvent_mt = Class(InitGlobalMarketSettingsEvent, Event)

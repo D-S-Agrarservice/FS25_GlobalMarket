@@ -1,14 +1,14 @@
---
--- FS25 - GlobalMarket (Offline Market Module)
--- Description: Handles local market simulation, Map Spy baseline price resolution,
--- saturation pricing, and Great Demand announcements (#5 & #14).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketOffline.lua
+-- Simulated offline market engine, local baseline pricing, and Great Demand scheduling.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketOffline = {}
 GlobalMarketOffline.PRICE_MIN_FACTOR = 0.7 -- Minimum 70% of base price
 GlobalMarketOffline.PRICE_MAX_FACTOR = 1.3 -- Maximum 130% of base price
 
--- Great Demand (#14) Configuration
+-- Great Demand Configuration
 GlobalMarketOffline.GREAT_DEMAND_MODE_SCARCITY = 1     -- Stock/Scarcity-driven (Default)
 GlobalMarketOffline.GREAT_DEMAND_MODE_RANDOM = 2       -- Random event-driven (Stock unchanged, 2h / 200k L limit)
 GlobalMarketOffline.GREAT_DEMAND_MODE_OFF = 3          -- Disabled
@@ -190,7 +190,7 @@ function GlobalMarket:getMapBasePricePerLiter(fillTypeIndex, fallbackBasePrice)
     return rawBase * diffMult
 end
 
--- Calculates the price considering Season Factors, Map SellingStations, Market Saturation, and Great Demand (#14).
+-- Calculates the price considering Season Factors, Map SellingStations, Market Saturation, and Great Demand.
 function GlobalMarket:updateOfflinePrices()
     if self.offlineMarketFillTypes == nil then
         return
@@ -212,7 +212,7 @@ function GlobalMarket:updateOfflinePrices()
         -- Store the neutral 1000L map reference price (demandFactor = 1.0) for accurate UI trend arrows & MP sync
         data.normalPrice = currentBasePricePerLiter * 1000
 
-        -- 2. GM DEMAND FACTOR & GREAT DEMAND BONUS (#14)
+        -- 2. GM DEMAND FACTOR & GREAT DEMAND BONUS
         local demandFactor = GlobalMarketOffline.applyLocalDemandFactor(data, currentSaturationLimit)
 
         -- Final Price: NormalMapPrice * Demand
@@ -227,7 +227,7 @@ function GlobalMarket:updateOfflinePrices()
     end
 end
 
--- Checks for newly started Great Demands (both Offline & Online) and triggers the native FS25 HUD notification (#14).
+-- Checks for newly started Great Demands (both Offline & Online) and triggers the native FS25 HUD notification.
 function GlobalMarket:checkAndAnnounceGreatDemands(suppressNotifications)
     if self.offlineMarketFillTypes == nil then
         return
@@ -287,7 +287,7 @@ function GlobalMarket:checkAndAnnounceGreatDemands(suppressNotifications)
     end
 end
 
--- Triggers a Great Demand for a candidate fillType according to the selected mode (#14).
+-- Triggers a Great Demand for a candidate fillType according to the selected mode.
 function GlobalMarket:triggerDecoupledOfflineGreatDemand(mode, forcedTargetData)
     if self.offlineMarketFillTypes == nil or #self.offlineMarketFillTypes == 0 then
         return nil
@@ -374,7 +374,7 @@ function GlobalMarket:triggerDecoupledOfflineGreatDemand(mode, forcedTargetData)
     return chosen
 end
 
--- Decoupled ingame-minute timer for Great Demands (#14).
+-- Decoupled ingame-minute timer for Great Demands.
 -- Evaluates expirations and triggers new Great Demands at random non-hourly timestamps (e.g. 09:23 -> 11:23).
 -- In Online Hybrid Mode, APPROVED items are controlled by the backend while PENDING/REJECTED items continue locally.
 function GlobalMarket:updateOfflineGreatDemands(dt)
@@ -485,7 +485,7 @@ function GlobalMarket:updateOfflineGreatDemands(dt)
     end
 end
 
--- Tracks player sales against active local/Hybrid Great Demand volume quotas (e.g. 200,000 L limit) (#14).
+-- Tracks player sales against active local/Hybrid Great Demand volume quotas (e.g. 200,000 L limit).
 function GlobalMarket:onMarketGoodsSold(fillTypeName, soldLiters)
     if not g_currentMission:getIsServer() then
         return
@@ -519,7 +519,7 @@ function GlobalMarket:onMarketGoodsSold(fillTypeName, soldLiters)
     end
 end
 
--- Invoked when the Admin changes the Great Demand Mode in GlobalMarketSettings (#14).
+-- Invoked when the Admin changes the Great Demand Mode in GlobalMarketSettings.
 function GlobalMarket:onGreatDemandModeChanged(newMode)
     if not g_currentMission:getIsServer() or self.offlineMarketFillTypes == nil then
         return
@@ -556,7 +556,7 @@ function GlobalMarket:runOfflineSimulation()
         return
     end
 
-    -- Evaluate GM Logistics Center storage fees, natural bulk decay, warnings, and expiration (#13)
+    -- Evaluate GM Logistics Center storage fees, natural bulk decay, warnings, and expiration
     -- Runs hourly in both Offline and Online modes!
     if self.updateGmStorageFeesAndDecay ~= nil then
         self:updateGmStorageFeesAndDecay()

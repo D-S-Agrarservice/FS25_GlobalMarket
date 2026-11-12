@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket (Access & Permission Module)
--- Description: Handles engine hooks for multi-farm access to GM Terminals.
--- Note: Modifies native base game permission checks and ObjectStorage handling.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketAccess.lua
+-- Multi-farm access hooks, per-farm shadow array isolation, and InfoTrigger integration.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketAccess = {}
 
@@ -300,14 +300,14 @@ function GlobalMarketAccess.init()
                     self.gmSyncTimer = self.gmSyncTimer or 0
                     self.gmSyncAccumulator = (self.gmSyncAccumulator or 0) + math.abs(delta)
 
-                    -- FIX: Use g_time (real engine uptime ms) for reliable network debouncing instead of mission time
+                    -- Use g_time (engine uptime in ms) for reliable network debouncing
                     local currentTime = g_time
                     if self.gmSyncAccumulator >= 100 or currentTime > (self.gmSyncTimer + 1000) then
                         g_server:broadcastEvent(SyncGmSiloEvent.new(self, self.gmTempFarmId, fillType, self.gmFarmFillLevels[self.gmTempFarmId][fillType]))
                         self.gmSyncTimer = currentTime
                         self.gmSyncAccumulator = 0
 
-                        -- FIX: Local Multiplayer Host UI Update
+                        -- Local Multiplayer Host UI Update
                         -- The host broadcasts to clients but doesn't receive the event back. Update local UI directly.
                         if not g_dedicatedServer and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.ui ~= nil then
                             g_currentMission.globalMarket.ui:updateContent()
@@ -632,7 +632,7 @@ function GlobalMarketAccess.init()
             end
         end
     end
-    -- Crucial fix for Dedi Servers: onStartMission fires after stream reading!
+    -- Dedicated Server guarantee: onStartMission fires after initial placeable stream reading
     FSBaseMission.onStartMission = Utils.appendedFunction(FSBaseMission.onStartMission, retroactiveGmDoorSweep)
 
     if GlobalMarket.debugManager ~= nil then
@@ -645,7 +645,7 @@ end
 -- Manipulates the updateInfo to group foreign items while keeping total capacity accurate
 -- =========================================================================
 
--- FIX: Adjusted signature to account for Specialization superFunc chaining
+-- Specialization superFunc hook for ObjectStorage InfoTrigger display
 local function updateInfoHook(self, superFunc, engineSuperFunc, infoTable)
     -- Check if it's a GM Market
     local isGmMarket = self.isGmMarket or (self.owningPlaceable ~= nil and self.owningPlaceable.isGmMarket)
@@ -715,7 +715,7 @@ if PlaceableObjectStorage ~= nil then
 end
 
 -- =========================================================================
--- Hook 12: PlaceableSilo InfoTrigger UI Fix (FS25 Adjusted)
+-- Hook 12: PlaceableSilo InfoTrigger Multi-Farm Display
 -- Adds Capacity (Used/Total) and Foreign Goods summary.
 -- Relies on Hook 7 to natively filter the player's owned goods.
 -- =========================================================================

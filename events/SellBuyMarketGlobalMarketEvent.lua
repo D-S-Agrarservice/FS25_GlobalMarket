@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - SellBuyMarketGlobalMarketEvent
--- Description: Handles network synchronization for buying/selling online market objects.
--- Routes client requests to the server, and broadcasts updates back to clients.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SellBuyMarketGlobalMarketEvent.lua
+-- Network event synchronizing online market object transactions (pallets and bales).
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SellBuyMarketGlobalMarketEvent = {}
 local SellBuyMarketGlobalMarketEvent_mt = Class(SellBuyMarketGlobalMarketEvent, Event)
@@ -43,7 +43,7 @@ function SellBuyMarketGlobalMarketEvent:writeStream(streamId, connection)
         return
     end
     streamWriteInt32(streamId, self.price)
-    streamWriteInt16(streamId, self.playerFarmId) -- FIX: Datatype matched to Int16
+    streamWriteInt16(streamId, self.playerFarmId) -- Farm ID serialized as Int16
     streamWriteInt32(streamId, self.count)
     streamWriteString(streamId, self.attributes)
     NetworkUtil.writeNodeObject(streamId, self.storage)
@@ -61,7 +61,7 @@ function SellBuyMarketGlobalMarketEvent:readStream(streamId, connection)
         return
     end
     self.price = streamReadInt32(streamId)
-    self.playerFarmId = streamReadInt16(streamId) -- FIX: Datatype matched to Int16
+    self.playerFarmId = streamReadInt16(streamId) -- Farm ID deserialized as Int16
     self.count = streamReadInt32(streamId)
     self.attributes = streamReadString(streamId)
     self.storage = NetworkUtil.readNodeObject(streamId)
@@ -97,11 +97,11 @@ function SellBuyMarketGlobalMarketEvent:run(connection)
                 g_currentMission.globalMarket:buyObject(self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId)
             end
 
-            -- Broadcast the successful transaction to all OTHER clients for UI sync
+            -- Broadcast the successful transaction to all clients for UI sync
             if GlobalMarket.debugManager ~= nil then
                 GlobalMarket.debugManager:debug("Network (Server): Transaction processed. Broadcasting update to all clients.")
             end
-            -- FIX: Removed connection exclusion in broadcast so the sender also gets unlocked
+            -- Include sender in broadcast so the initiating client also unlocks its UI
             g_server:broadcastEvent(SellBuyMarketGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.count, self.attributes, self.storage, self.playerUserId))
         else
             if GlobalMarket.debugManager ~= nil then

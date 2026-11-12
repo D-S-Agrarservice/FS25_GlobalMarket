@@ -1,6 +1,8 @@
---
--- FS25 - GlobalMarket (Savegame Module)
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketSavegame.lua
+-- Savegame XML persistence for offline market stock, GM shadow arrays, and storage timers.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 -- Saves the current offline market fill levels, silo shadow arrays, and GM storage age trackers to the active savegame directory.
 function GlobalMarket:saveToXmlFile()
@@ -98,7 +100,7 @@ function GlobalMarket:saveToXmlFile()
                     siloIndex = siloIndex + 1
                 end
 
-                -- Save GM ObjectStorage Age Trackers (#13)
+                -- Save GM ObjectStorage Age Trackers
                 if uid ~= nil and placeable.spec_objectStorage ~= nil and placeable.gmObjectTracker ~= nil then
                     local objKey = string.format("globalMarket.objectStorages.storage(%d)", objStorageIndex)
                     local fIndex = 0
@@ -245,7 +247,7 @@ function GlobalMarket:loadFromXMLFile()
                 end
             end)
 
-            -- Load GM ObjectStorage Age Trackers (#13) via uniqueId
+            -- Load GM ObjectStorage Age Trackers via uniqueId
             xmlFile:iterate("globalMarket.objectStorages.storage", function(_, objKey)
                 local uid = xmlFile:getString(objKey .. "#uniqueId")
                 if uid ~= nil then

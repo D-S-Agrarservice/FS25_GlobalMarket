@@ -1,15 +1,14 @@
---
--- FS25 - GlobalMarket (Finance Module)
--- Description: Handles custom money types, UI injections, and dynamic transaction routing.
--- Executed at root level. Uses an I18N hook to reliably bypass load-order race conditions.
--- Now relies on GlobalMarketAPI for external data.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketFinance.lua
+-- Custom MoneyType registration, finance UI routing, and GM storage fee/decay evaluation.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketFinance = {}
 GlobalMarketFinance.isDetailedCached = false
 
 -- =========================================================================
--- THE ULTIMATE FIX: I18N Text Hook
+-- GLOBAL I18N TEXT HOOK
 -- =========================================================================
 -- The basegame UI calls g_i18n:getText() without specifying our mod name.
 -- We intercept this call and forcefully append our customEnv so the engine finds our texts.
@@ -249,13 +248,12 @@ if InGameMenuStatisticsFrame ~= nil and not GlobalMarketFinance.uiHooked then
     GlobalMarketFinance.uiHooked = true
 end
 
--- Dummy init function so we don't crash GlobalMarket:loadMap when it calls this
+-- Synchronizes cached UI preference after GlobalMarketSettings finishes loading
 function GlobalMarketFinance.init()
     -- Sync cached UI preference with the loaded environment profile from GlobalMarketSettings.
     if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
         GlobalMarketFinance.isDetailedCached = (GlobalMarketSettings.current.isDetailedFinance == true)
     end
-    -- External data is now handled entirely by GlobalMarketAPI.
 end
 
 -- =========================================================================
@@ -309,7 +307,7 @@ function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPal
     local hasPalletXML = (fillType.palletFilename ~= nil and fillType.palletFilename ~= "")
     local isPieceCategory = g_fillTypeManager:getIsFillTypeInCategory(fillTypeIndex, "PIECE")
 
-    -- FIX: Prevent items that are BOTH Bulk and Pallet (like Potatoes/Carrots in FS25)
+    -- Prevent items flagged as both Bulk and Pallet (such as Potatoes/Carrots in FS25)
     -- from being wrongly categorized as Pieces when handled in a bulk terminal.
     local isStrictlyPiece = (fillType.isPalletType or hasPalletXML) and not fillType.isBulkType
 
@@ -317,7 +315,7 @@ function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPal
         return isBuying and MoneyType.GM_BUY_PIECE or MoneyType.GM_SELL_PIECE
     end
 
-    -- FIX: Prevent items that are BOTH Bulk and Bale (like Straw/Hay/Silage) from being booked as Bales in bulk silos
+    -- Prevent items flagged as both Bulk and Bale (such as Straw/Hay/Silage) from being booked as Bales in bulk silos
     if fillType.isBaleType and not fillType.isBulkType then
         return isBuying and MoneyType.GM_BUY_BALE or MoneyType.GM_SELL_BALE
     end
@@ -328,7 +326,7 @@ function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPal
 end
 
 -- =========================================================================
--- GM STORAGE FEES, DECAY & CLEARANCE LIFECYCLE (#13)
+-- GM STORAGE FEES, DECAY & CLEARANCE LIFECYCLE
 -- =========================================================================
 -- Notification types for GM Storage events
 GlobalMarketFinance.NOTIFY_HALFWAY_INFO      = 1 -- Halfway reached (e.g., 3 months): Fees + bulk decay info
@@ -484,7 +482,7 @@ function GlobalMarketFinance.removeExpiredObjectsFromStorage(placeable, farmId, 
     return removedLiters
 end
 
--- Core hourly evaluation of GM Storage Fees, Bulk Decay, Warnings, and Expiration Clearance (#13)
+-- Core hourly evaluation of GM Storage Fees, Bulk Decay, Warnings, and Expiration Clearance
 function GlobalMarket:updateGmStorageFeesAndDecay(customMonthDelta)
     if not g_currentMission:getIsServer() then
         return 0

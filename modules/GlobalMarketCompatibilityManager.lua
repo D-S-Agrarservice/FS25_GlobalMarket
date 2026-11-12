@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket Compatibility Manager
--- Description: Handles dynamic conflict resolution via an updatable XML in the modSettings folder.
--- Includes dynamic firewalls for invasive third-party mods.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketCompatibilityManager.lua
+-- Dynamic third-party mod conflict detection, XML persistence, and runtime UI firewalls.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GMCompatibilityManager = {}
 local GMCompatibilityManager_mt = Class(GMCompatibilityManager)

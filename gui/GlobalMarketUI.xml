@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- ========================================================================================= -->
+<!-- FS25_GlobalMarket - GlobalMarketUI.xml                                                    -->
+<!-- Main InGameMenu layout for farm storage overview and Global Market trading lists.         -->
+<!-- Author: D-S-Agrarservice                                                                  -->
+<!-- ========================================================================================= -->
 <GUI name="GlobalMarketUI">
     <GuiElement profile="fs25_menuContainer" id="mainContainer">
 
@@ -17,7 +22,7 @@
         <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="700px 750px" position="20px 40px">
             <Text profile="globalMarketHeaderBright" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="10px 715px" size="680px 30px" textSize="22px" />
 
-            <!-- Shared Search Toolbar (#12) -->
+            <!-- Shared Search Toolbar -->
             <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="700px 34px">
                 <Text profile="globalMarketHeader" position="10px 5px" size="90px 24px" text="$l10n_ui_gm_search_label" />
                 <GuiElement profile="emptyPanel" position="105px 0px" size="330px 32px" with="anchorMiddleLeft">
@@ -61,7 +66,7 @@
             <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="690px 30px" textSize="22px" />
             <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="690px 24px" textSize="16px" textColor="0.7 0.7 0.7 1" />
 
-            <!-- Category View Mode Switcher Toolbar (#19) -->
+            <!-- Category View Mode Switcher Toolbar -->
             <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">
                 <Button profile="globalMarketToolbarBtnMode" id="btnCategoryMode" position="450px 0px" text="$l10n_ui_gm_cat_mode_detailed" onClick="onClickToggleCategoryMode">
                     <ThreePartBitmap profile="globalMarketToolbarBtnBg" />

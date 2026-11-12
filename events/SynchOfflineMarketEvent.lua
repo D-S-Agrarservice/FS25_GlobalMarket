@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - SynchOfflineMarketEvent
--- Description: Server-to-Client event. Pushes the authoritative state (prices, fill levels, Great Demand status)
--- of the entire offline market to joining or active clients to keep UIs and HUD notifications synchronized.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SynchOfflineMarketEvent.lua
+-- Server-to-client event broadcasting offline market stock levels, prices, and demands.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SynchOfflineMarketEvent = {}
 local SynchOfflineMarketEvent_mt = Class(SynchOfflineMarketEvent, Event)
@@ -86,7 +86,7 @@ end
 -- Executes the core synchronization logic based on network authority
 function SynchOfflineMarketEvent:run(connection)
     -- If we are on the client, apply the read data to the local instance and refresh the UI
-    -- FIX: Removed 'not'. For a Server-to-Client event, getIsServer() returns true on the client.
+    -- On a Server-to-Client event, connection:getIsServer() returns true on the receiving client
     if connection:getIsServer() then
         if g_currentMission.globalMarket ~= nil then
             local gm = g_currentMission.globalMarket

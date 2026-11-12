@@ -1,7 +1,8 @@
---
--- FS25 - GlobalMarket (Storage Module)
--- Note: Handles physical storage interaction, delivery costs, and GM Terminal logic.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketStorage.lua
+-- Physical storage discovery, bulk/object market transactions, and GM terminal handling.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 -- =========================================================================
 -- UI Helper Functions
@@ -526,7 +527,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
         return
     end
 
-    -- FIX: Money and Ownership MUST strictly belong to the acting player, regardless of who owns the physical silo building.
+    -- Enforce acting player farm authority regardless of physical silo building ownership
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
@@ -644,7 +645,7 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
 
         local newSiloLevel = (mode == 2) and (physicalSiloLevel + level) or (physicalSiloLevel - level)
 
-        -- Inject tempFarmId to force Hook 6 (access.lua) to update the Shadow Array for the BUYING/SELLING farm
+        -- Inject tempFarmId so Hook 6 (GlobalMarketAccess.lua) updates the Shadow Array for the acting farm
         if isGmMarket then
             targetStorage.gmTempFarmId = targetFarmId
         end
@@ -698,7 +699,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         return
     end
 
-    -- FIX: Money and Ownership MUST strictly belong to the acting player.
+    -- Enforce acting player farm authority for payment and object ownership
     local targetFarmId = playerFarmId
 
     if g_server ~= nil then
@@ -792,11 +793,11 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                     objFarmId = sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.ownerFarmId or FarmManager.SPECTATOR_FARM_ID
                 end
 
-                -- FIX: Ensure we only sell items that actually belong to the acting player
+                -- Only sell stored objects owned by the acting player's farm
                 if objFillType == fillTypeIndex and not isFermenting and objFarmId == targetFarmId then
                     local isFormatMatch = true
 
-                    -- FIX: Compare against decoded xmlFilename, not the raw integer payload
+                    -- Match against the resolved xmlFilename
                     if xmlFilename ~= nil and objXml ~= nil then
                         -- Extract the filename from the absolute path to ensure compatibility with custom mod maps
                         local function getFileName(path)
@@ -1032,8 +1033,7 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
         end
     else
         -- CLIENT SEND EVENT (Objects)
-        -- FIX: Decoupled from useSync config to ensure the Offline Market works in MP
-        -- even if the external sync tool is disabled or currently unavailable.
+        -- Transmit offline object transaction request to the authoritative server
         if SellBuyOfflineMarketEvent ~= nil then
 
             -- SMART TRANSMISSION: Default to the original string (for pallets)

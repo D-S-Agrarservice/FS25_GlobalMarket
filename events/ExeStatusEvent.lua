@@ -1,7 +1,8 @@
---
--- FS25 - GlobalMarket - ExeStatusEvent
--- Description: Client notifies the server about the status of their local external EXE.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - ExeStatusEvent.lua
+-- Client-to-server event reporting local companion client and backend connection status.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 ExeStatusEvent = {}
 local ExeStatusEvent_mt = Class(ExeStatusEvent, Event)

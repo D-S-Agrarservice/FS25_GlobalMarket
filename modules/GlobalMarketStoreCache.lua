@@ -1,9 +1,8 @@
---
--- FS25 - GlobalMarketStoreCache
--- Description: Pre-caches available shop items (BigBags, Pallets, IBCs) at mission start.
--- PHASE 1: Store Item Scan (Strict XML parsing, parentFile inheritance, consumable slots, deduplication, upgrade logic).
--- PHASE 2: Engine FillType Bridge (Injects engine-defined fallback pallets if allowed by API).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketStoreCache.lua
+-- Store item scanner and fillType fallback bridge for pallets, BigBags, and IBC containers.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketStoreCache = {}
 GlobalMarketStoreCache.cache = {}

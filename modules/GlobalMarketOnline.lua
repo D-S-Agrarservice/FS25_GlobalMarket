@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket (Online Market Module)
--- Description: Handles price calculations based on external EXE trend factors / stock levels.
--- Uses the "Map Spy" logic to align global trends with local map economy (#5 & #14).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketOnline.lua
+-- Online market pricing engine combining global trend/stock data with local map baselines.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketOnline = {}
 

@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - InitOfflineMarketEvent
--- Description: Client-to-Server event. Requests the current market state upon joining a multiplayer session,
--- and optionally relays an Admin Great Demand test trigger to the Dedicated Server (#14).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - InitOfflineMarketEvent.lua
+-- Client-to-server handshake event requesting market state or relaying Great Demand tests.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 InitOfflineMarketEvent = {}
 local InitOfflineMarketEvent_mt = Class(InitOfflineMarketEvent, Event)

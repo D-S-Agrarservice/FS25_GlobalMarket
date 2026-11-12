@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - SyncMarketWhitelistEvent
--- Description: Server assigns Data-Host role to a client and provides the enriched map whitelist.
--- Transmits name, localized title, and base price for backend discovery.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SyncMarketWhitelistEvent.lua
+-- Server-to-client event assigning the Data-Host role and transmitting the map whitelist.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SyncMarketWhitelistEvent = {}
 local SyncMarketWhitelistEvent_mt = Class(SyncMarketWhitelistEvent, Event)

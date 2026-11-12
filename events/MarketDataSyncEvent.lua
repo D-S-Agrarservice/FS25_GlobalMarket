@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - MarketDataSyncEvent
--- Description: Distributes parsed XML market stock levels, trends, and Great Demand flags across the network.
--- Note: Raw price is omitted to enforce local economic calculation (prevent arbitrage).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - MarketDataSyncEvent.lua
+-- Network event distributing online market stock levels, trends, and Great Demand states.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 MarketDataSyncEvent = {}
 local MarketDataSyncEvent_mt = Class(MarketDataSyncEvent, Event)

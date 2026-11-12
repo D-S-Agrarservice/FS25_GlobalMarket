@@ -1,10 +1,8 @@
---
--- FS25 - GlobalMarketAPI
--- Description: Central API module acting as the single source of truth for external data.
--- Handles custom liquid categories, market whitelists, blacklists, container restrictions,
--- and optional UI category overrides (#19).
--- Priority: 1. Basegame (Hardcode) -> 2. Mods (gm_customs.xml) -> 3. Player Fallback (gm_fallback.xml)
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketAPI.lua
+-- Central 3-tier registry for fillType allowances, container rules, and metadata exports.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketAPI = {}
 GlobalMarketAPI.liquidCategories = {}
@@ -15,7 +13,7 @@ GlobalMarketAPI.uiCategoryOverrides = {}
 
 -- Main initialization function
 function GlobalMarketAPI.init()
-    -- FIX: Clear memory tables to prevent "Ghost-Data" from previous savegames
+    -- Clear memory tables to prevent residual data from previous savegames
     -- when a player leaves a server or switches maps without restarting the game.
     GlobalMarketAPI.liquidCategories = {}
     GlobalMarketAPI.marketWhitelist = {}
@@ -324,7 +322,7 @@ function GlobalMarketAPI.getIsContainerAllowedForFillType(fillType, unitKey)
 end
 
 -- =========================================================================
--- BACKEND WHITELIST METADATA RESOLUTION (EXE Spec Section 3.2)
+-- BACKEND WHITELIST METADATA RESOLUTION
 -- =========================================================================
 
 GlobalMarketAPI.WHITELIST_ROOT_VEG = {
@@ -413,7 +411,7 @@ function GlobalMarketAPI.buildFillTypeSourceMap()
     return sourceMap, activeModPrefixes
 end
 
--- Resolves Spec Section 3.2 attributes (category, type, source) for a given FillTypeDesc.
+-- Resolves backend whitelist metadata attributes (category, type, source) for a given FillTypeDesc.
 function GlobalMarketAPI.resolveWhitelistMetadata(fillTypeDesc, sourceMap, activeModPrefixes)
     if fillTypeDesc == nil or fillTypeDesc.name == nil then
         return "PRODUCTS_PALLETS", "BULK", "BASEGAME"
@@ -552,5 +550,5 @@ function GlobalMarketAPI.resolveWhitelistMetadata(fillTypeDesc, sourceMap, activ
     return category, itemType, source
 end
 
--- Self-execution fallback (call this from your main init logic)
+-- Initialize basegame defaults on script load (re-initialized with map/mod scan during loadMap)
 GlobalMarketAPI.init()

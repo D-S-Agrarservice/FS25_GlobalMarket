@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket (SyncGmSiloEvent)
--- Syncs dynamic changes in the GM shadow array (dumping/loading/decay) from Server to Clients,
--- and delivers farm-specific GM Storage Fee / Decay / Clearance HUD notifications (#13).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SyncGmSiloEvent.lua
+-- Synchronizes per-farm GM terminal shadow arrays and storage lifecycle notifications.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SyncGmSiloEvent = {}
 local SyncGmSiloEvent_mt = Class(SyncGmSiloEvent, Event)

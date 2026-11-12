@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- ========================================================================================= -->
+<!-- FS25_GlobalMarket - guiProfiles.xml                                                       -->
+<!-- Custom GUI presets and element profiles for Global Market menus, lists, and toolbars.     -->
+<!-- Author: D-S-Agrarservice                                                                  -->
+<!-- ========================================================================================= -->
 <GUIProfiles>
     <Presets>
         <Preset name="colorWhite" value="1 1 1 1"/>
@@ -148,7 +153,7 @@
         <startImageColor value="$preset_fs25_colorMainHighlight"/>
         <endImageColor value="$preset_fs25_colorMainHighlight"/>
     </Profile>
-    <!-- Section Header Profiles for Categorized SmoothLists (#19) -->
+    <!-- Section Header Profiles for Categorized SmoothLists -->
     <Profile name="globalMarketSectionHeader" extends="baseReference" with="anchorTopStretchingX">
         <height value="28px"/>
         <imageColor value="0.06 0.07 0.08 0.92"/>
@@ -166,7 +171,7 @@
         <textColor value="$preset_fs25_colorMainHighlight"/>
     </Profile>
 
-    <!-- Search Input & Category Mode Toolbar Profiles (#12 & #19) -->
+    <!-- Search Input & Category Mode Toolbar Profiles -->
     <Profile name="globalMarketSearchInputBg" extends="baseReference" with="anchorStretchingYStretchingX">
         <size value="100% 100%"/>
         <imageSliceId value="gui.3dShop_button_middle"/>

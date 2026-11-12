@@ -1,7 +1,8 @@
---
--- FS25 - GlobalMarket - SyncGlobalMarketSettingsEvent
--- Description: Synchronizes admin settings from the UI to the server and all clients.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SyncGlobalMarketSettingsEvent.lua
+-- Network event synchronizing global admin market settings across server and clients.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SyncGlobalMarketSettingsEvent = {}
 local SyncGlobalMarketSettingsEvent_mt = Class(SyncGlobalMarketSettingsEvent, Event)

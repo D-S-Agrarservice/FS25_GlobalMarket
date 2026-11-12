@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket
--- Event: SyncGlobalMarketCompatibilityEvent
--- Description: Transmits the updated compatibility XML data from an Admin client to the Server.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SyncGlobalMarketCompatibilityEvent.lua
+-- Admin-to-server event transmitting updated mod compatibility definitions.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SyncGlobalMarketCompatibilityEvent = {}
 local SyncGlobalMarketCompatibilityEvent_mt = Class(SyncGlobalMarketCompatibilityEvent, Event)

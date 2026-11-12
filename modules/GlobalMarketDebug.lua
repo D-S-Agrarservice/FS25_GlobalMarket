@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket Debug Module
--- Description: Professional logging and table dumping system with recursion protection.
--- Uses XML-based Round-Robin file rotation to comply with Giants Engine OS sandboxing.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketDebug.lua
+-- Structured logging and circular-safe table dumping with round-robin XML log rotation.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketDebug = {}
 local GlobalMarketDebug_mt = Class(GlobalMarketDebug)
@@ -80,8 +80,7 @@ function GlobalMarketDebug:enableDeepLogging(durationHours)
     local hours = durationHours or 1
     self.deepLogActive = true
 
-    -- FIX: Use a simple real-world countdown timer in milliseconds
-    -- instead of the easily breakable in-game dayTime.
+    -- Use a real-time millisecond countdown timer independent of in-game time scale
     self.deepLogTimerLeft = hours * 60 * 60 * 1000
 
     self:info("Deep logging activated for %d hour(s) real-time.", hours)

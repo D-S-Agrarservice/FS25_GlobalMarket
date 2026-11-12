@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarketDialog
--- Description: Interactive popup dialog handling user input for transactions.
--- Manages bulk/liquid inputs as well as dynamic format selection (Bales/Pallets).
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketDialog.lua
+-- Interactive transaction dialog for storage selection, packaging formats, and fee preview.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketDialog = {}
 local GlobalMarketDialog_mt = Class(GlobalMarketDialog, YesNoDialog)
@@ -420,7 +420,7 @@ function GlobalMarketDialog:onClickMaxAmount()
         if currentMoney <= 0 then
             fillAmount = 0
         else
-            -- BUGFIX/QOL: Account for dealer markup and delivery costs in max calculation to avoid liquidity overshoot
+            -- Account for dealer markup and delivery costs in max calculation to avoid liquidity overshoot
             local baseDeliveryFee = isGmMarket and 0 or ((GlobalMarket.DELIVER_COST or 0) * EconomyManager.getCostMultiplier())
             local feePerLiter = isGmMarket and 0 or ((GlobalMarket.DELIVER_COST_PERLITER or 0) * EconomyManager.getCostMultiplier())
             local markupFactor = 1 + ((GlobalMarket.DEALER_MARKUP or 0) / 100)
@@ -491,7 +491,7 @@ function GlobalMarketDialog:updateTotalValue()
     local totalLiters = self.currentAmount * self.currentCountFactor
     local baseValue = (totalLiters / 1000) * self.pricePer1000
 
-    -- QOL FEATURE: Real-time calculation of dealer markup (on BUY) and dynamic delivery costs
+    -- Real-time calculation of dealer markup (on BUY) and dynamic delivery costs
     local markupPct = (self.actionType == "BUY") and (GlobalMarket.DEALER_MARKUP or 0) or 0
     local dealerCosts = (totalLiters > 0 and markupPct > 0) and (baseValue * (markupPct / 100)) or 0
 
@@ -533,7 +533,7 @@ function GlobalMarketDialog:updateTotalValue()
         end
     end
 
-    -- BUGFIX: Ensure liquidity validation considers base value, dealer markup, AND delivery costs when buying
+    -- Ensure liquidity validation includes base value, dealer markup, and delivery costs when buying
     local hasEnoughMoney = true
     if self.actionType == "BUY" then
         hasEnoughMoney = g_currentMission:getMoney() >= finalTotal
@@ -551,7 +551,7 @@ function GlobalMarketDialog:updateTotalValue()
             g_i18n:formatMoney(finalTotal, 0, true, true),
             g_i18n:formatVolume(totalLiters, 0))
 
-        -- CRITICAL UX FEATURE: Show Engine Limit Warning
+        -- Display warning when reaching the per-transaction physical object spawn cap
         if self.currentCountFactor > 1 and self.currentAmount == GlobalMarketDialog.MAX_OBJECTS_PER_TX and self.currentMaxPieces > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
             local limitWarning = string.format(g_i18n:getText("ui_gm_warning_engineLimit"), GlobalMarketDialog.MAX_OBJECTS_PER_TX)
 
@@ -571,7 +571,7 @@ function GlobalMarketDialog:onClickOk()
     local selectedStorage = self.storageLocations[self.storageSelectionElement:getState()]
 
     if self.callbackFunc ~= nil and selectedStorage ~= nil then
-        -- BUGFIX: Backend expects Liters! Convert pieces to total liters before sending.
+        -- Backend expects volume in liters; convert object piece count to total liters before sending
         local litersToProcess = self.currentAmount
         if self.currentCountFactor > 1 then
             litersToProcess = self.currentAmount * self.currentCountFactor

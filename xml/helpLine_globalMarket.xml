@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<!--
-    FS25 - GlobalMarket In-Game Help Configuration
-    Loaded via HelpLineManager.loadMapData hook in GlobalMarket.lua
--->
+<!-- ========================================================================================= -->
+<!-- FS25_GlobalMarket - helpLine_globalMarket.xml                                             -->
+<!-- In-game ESC help menu categories and pages loaded via HelpLineManager.                    -->
+<!-- Author: D-S-Agrarservice                                                                  -->
+<!-- ========================================================================================= -->
 <helpLines>
     <category title="$l10n_gm_help_cat_basics">
         <page title="$l10n_gm_help_p1_title" iconSliceId="firstSteps_howToStart">

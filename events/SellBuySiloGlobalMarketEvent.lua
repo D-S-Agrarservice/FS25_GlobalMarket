@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - SellBuySiloGlobalMarketEvent
--- Description: Handles network synchronization for buying/selling bulk goods (Silos).
--- Routes client requests to the server, and broadcasts updates back to clients.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SellBuySiloGlobalMarketEvent.lua
+-- Network event synchronizing bulk and liquid silo market transactions.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SellBuySiloGlobalMarketEvent = {}
 local SellBuySiloGlobalMarketEvent_mt = Class(SellBuySiloGlobalMarketEvent, Event)
@@ -25,11 +25,11 @@ function SellBuySiloGlobalMarketEvent.new(action, price, playerFarmId, fillType,
     self.price = math.floor(price)
     self.playerFarmId = playerFarmId
     self.fillType = fillType
-    -- Safety fix: Ensure fillLevel is an integer before sending via streamWriteInt32
+    -- Ensure fillLevel is an integer before sending via streamWriteInt32
     self.fillLevel = math.floor(fillLevel)
     self.playerUserId = playerUserId
 
-    -- FIX: Store direct registered Network Object (Storage/ManureHeap) AND resolve owning Placeable fallback
+    -- Store direct registered Network Object (Storage/ManureHeap) and resolve owning Placeable fallback
     self.storage = storage
     self.targetPlaceable = nil
     self.storageIndex = 1
@@ -49,7 +49,7 @@ end
 function SellBuySiloGlobalMarketEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.action)
     streamWriteInt32(streamId, self.price)
-    streamWriteInt16(streamId, self.playerFarmId) -- FIX: Datatype matched to Int16
+    streamWriteInt16(streamId, self.playerFarmId) -- Farm ID serialized as Int16
     streamWriteString(streamId, self.fillType)
     streamWriteInt32(streamId, self.fillLevel)
 
@@ -75,7 +75,7 @@ end
 function SellBuySiloGlobalMarketEvent:readStream(streamId, connection)
     self.action = streamReadInt8(streamId)
     self.price = streamReadInt32(streamId)
-    self.playerFarmId = streamReadInt16(streamId) -- FIX: Datatype matched to Int16
+    self.playerFarmId = streamReadInt16(streamId) -- Farm ID deserialized as Int16
     self.fillType = streamReadString(streamId)
     self.fillLevel = streamReadInt32(streamId)
 
@@ -136,11 +136,11 @@ function SellBuySiloGlobalMarketEvent:run(connection)
                     g_currentMission.globalMarket:buySilo(self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId)
                 end
 
-                -- Broadcast the successful transaction to all OTHER clients to keep UI in sync
+                -- Broadcast the successful transaction to all clients to keep UI in sync
                 if GlobalMarket.debugManager ~= nil then
                     GlobalMarket.debugManager:debug("Network (Server): Silo transaction processed. Broadcasting update to all clients.")
                 end
-                -- FIX: Removed connection exclusion in broadcast so the sender also gets unlocked
+                -- Include sender in broadcast so the initiating client also unlocks its UI
                 g_server:broadcastEvent(SellBuySiloGlobalMarketEvent.new(self.action, self.price, self.playerFarmId, self.fillType, self.fillLevel, self.storage, self.playerUserId))
             else
                 if GlobalMarket.debugManager ~= nil then

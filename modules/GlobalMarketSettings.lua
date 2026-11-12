@@ -1,7 +1,8 @@
---
--- FS25 - GlobalMarketSettings
--- Handles admin settings, XML storage in modSettings, and UI injection
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketSettings.lua
+-- Multi-profile modSettings persistence (SP/MP/Dedi) and InGameMenu settings injection.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketSettings = {}
 GlobalMarketSettings.MOD_NAME = g_currentModName
@@ -19,7 +20,7 @@ GlobalMarketSettings.OPTIONS = {
     STORAGE_DECAY = {0, 3, 6, 9, 12},
     -- 1=Scarcity (Stock-based), 2=Random (Time/Quota-based), 3=Off
     GREAT_DEMAND_MODE = {1, 2, 3},
-    -- Reordered array: Starts with Info on the far left
+    -- Log severity levels ordered from Info to Trace
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
     -- 1=Ignore, 2=Warn Only, 3=Smart (Default), 4=Paranoia
@@ -166,7 +167,6 @@ function GlobalMarketSettings:loadFromXML()
         self.current.storageDecayIndex = xmlFile:getInt(prefix .. "#storageDecayIndex", 3)
         self.current.greatDemandModeIndex = xmlFile:getInt(prefix .. "#greatDemandModeIndex", 1)
 
-        -- Load Detailed Finance Setting
         -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
         if GlobalMarketFinance ~= nil then
@@ -522,7 +522,7 @@ function GlobalMarketSettings:broadcastChanges()
 
     local c = self.current
 
-    -- FIX: Force local save immediately for everyone (SP, Dedi, or MP Client).
+    -- Save locally immediately across all environments (SP, Dedi, or MP Client).
     -- This ensures the client admin saves their own changes before the network sync,
     -- bypassing the issue where the sender is ignored by the server's broadcast echo.
     if self.saveToXML ~= nil then

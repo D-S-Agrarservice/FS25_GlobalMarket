@@ -1,7 +1,8 @@
---
--- FS25 - GlobalMarket (Core)
--- Description: Main module registry and initialization hub.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarket.lua
+-- Core module registry, mission lifecycle orchestrator, and InGameMenu integration.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarket = {}
 GlobalMarket.dir = g_currentModDirectory
@@ -17,7 +18,7 @@ GlobalMarket.DELIVER_COST_PERLITER = 0
 GlobalMarket.STORAGE_DECAY_MONTHS = 6
 GlobalMarket.GREAT_DEMAND_MODE = 1 -- 1 = Scarcity (Stock-based), 2 = Random, 3 = Off
 
--- Master switch for external companion EXE file polling & online market synchronization (#3).
+-- Master switch for external companion client file polling and online market synchronization.
 -- Active by default; can be toggled live via the console command 'gmToggleOnlineSync' for testing/debugging.
 GlobalMarket.ENABLE_ONLINE_SYNC = true
 
@@ -35,7 +36,7 @@ if GlobalMarketDebug ~= nil then
 end
 
 -- =========================================================================
--- ENGINE FIX: GUI $moddir$ PATH RESOLVER
+-- GUI $moddir$ PATH RESOLVER
 -- =========================================================================
 -- The native UI engine cannot resolve $moddir$ paths for external UI images.
 -- This global hook intercepts the path resolution and fixes it for all mods.
@@ -93,7 +94,7 @@ end
 -- =========================================================================
 -- MODULE INJECTIONS
 -- =========================================================================
--- ALL modules are now loaded unconditionally to ensure maximum stability.
+-- Load all core modules unconditionally in dependency order
 
 -- Load the central API first so it is available to all other modules
 source(GlobalMarket.dir .. "modules/GlobalMarketAPI.lua")
@@ -135,7 +136,7 @@ source(GlobalMarket.dir .. "events/MarketDataSyncEvent.lua")
 -- Compatibility Sync Events
 source(GlobalMarket.dir .. "events/SyncGlobalMarketCompatibilityEvent.lua")
 
---Collect storeData Module
+-- Store Cache Module
 source(GlobalMarket.dir .. "modules/GlobalMarketStoreCache.lua")
 
 -- External Sync Module
@@ -174,7 +175,7 @@ function GlobalMarket:loadMap(name)
         g_gui:loadProfiles(GlobalMarket.dir .. "gui/guiProfiles.xml")
 
         -- =========================================================
-        -- UI INJECTION (Moved to early map load to prevent FocusManager corruption)
+        -- UI INJECTION (Executed during map load to preserve FocusManager state)
         -- =========================================================
         if GlobalMarketUI ~= nil then
             if self.debugManager ~= nil then
@@ -298,7 +299,7 @@ function GlobalMarket:refreshMarketPrices(skipUiUpdate)
         end
     end
 
-    -- Check for newly started Great Demands and announce via HUD notification (#14)
+    -- Check for newly started Great Demands and announce via HUD notification
     if self.checkAndAnnounceGreatDemands ~= nil then
         self:checkAndAnnounceGreatDemands(skipUiUpdate)
     end
@@ -374,10 +375,10 @@ function GlobalMarket:isMarketEnabled()
 end
 
 -- =========================================================================
--- UI MENU HACKS (FS25 Compatibility)
+-- IN-GAME MENU TAB INJECTION
 -- =========================================================================
 
--- Manual Tab Injection to prevent InGameMenu crashes and fix Tab-Jumping (#18 / #11)
+-- Injects the Global Market frame into InGameMenu with separate element and page index mapping
 function GlobalMarket:fixInGameMenu(frame, pageName)
     local inGameMenu = g_gui.screenControllers[InGameMenu]
     if inGameMenu == nil or inGameMenu.pagingElement == nil then
@@ -455,7 +456,7 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
 end
 
 -- =========================================================================
--- INPUT BINDINGS (Reverted to original working state)
+-- INPUT BINDINGS
 -- =========================================================================
 
 -- Triggered via the custom input binding to open/close the market

@@ -1,8 +1,8 @@
---
--- FS25 - GlobalMarket - SellBuyOfflineMarketEvent
--- Description: Client-to-Server event. Transmits player transaction requests (buying/selling)
--- for the simulated offline market to the server for authoritative processing.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - SellBuyOfflineMarketEvent.lua
+-- Client-to-server event transmitting offline market buy and sell transaction requests.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 SellBuyOfflineMarketEvent = {}
 local SellBuyOfflineMarketEvent_mt = Class(SellBuyOfflineMarketEvent, Event)
@@ -25,11 +25,11 @@ function SellBuyOfflineMarketEvent.new(mode, filltypeName, level, storageObject,
     self.isObjectStorage = isObjectStorage or false
     self.playerFarmId = playerFarmId
 
-    -- NEW: formatXml can now be either a String (Pallet Path) OR a Number (Bale Index)
+    -- formatXml can be either a String (Pallet Path) or a Number (Bale Index)
     self.formatXml = formatXml
     self.capacityPerObject = capacityPerObject or 0
 
-    -- FIX: Store direct registered Network Object (Storage/ManureHeap/Placeable) AND resolve owning Placeable fallback
+    -- Store direct registered Network Object (Storage/ManureHeap/Placeable) and resolve owning Placeable fallback
     self.storageObject = storageObject
     self.targetPlaceable = nil
     self.storageIndex = 1
@@ -165,7 +165,7 @@ function SellBuyOfflineMarketEvent:run(connection)
                 local capToPass = (self.capacityPerObject > 0) and self.capacityPerObject or nil
 
                 -- Route the client's request through the server's authoritative transaction backend
-                -- FIX: Pass the actual storage object table instead of just the rootNode ID
+                -- Pass the resolved storage object table to the transaction handler
                 g_currentMission.globalMarket:onSellBuy(
                     self.mode, self.filltypeName, self.level, self.storageObject, self.count,
                     nil, nil, self.isObjectStorage, self.playerFarmId, xmlToPass, capToPass

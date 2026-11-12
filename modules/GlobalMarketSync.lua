@@ -1,10 +1,8 @@
---
--- FS25 - GlobalMarket (Sync Module)
--- Description: Handles dynamic token assignment for external EXE synchronization.
--- Implements semantic version checking, enriched whitelist generation, and HUD status integration.
--- Enhanced: Instance-Injection method to safely bypass FS25 HUD initialization timing issues.
--- Added: Unix Timestamp validation (Anti-Zombie) and Transaction Cooldown handling.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketSync.lua
+-- External companion client synchronization, Data-Host failover, and HUD status indicator.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 function GlobalMarket:initFileSystem()
     if self.debugManager ~= nil then
@@ -66,7 +64,7 @@ function GlobalMarket:initSync()
     self.minExeVersion = "1.0.0.0"
     self.hasShownVersionWarning = false
 
-    -- Note: HUD injection (self:initStatusHudHooks()) has been moved to onFinishedLoading in gm.lua
+    -- Note: HUD injection (self:initStatusHudHooks()) is executed during onFinishedLoading in GlobalMarket.lua
     -- to ensure g_currentMission.hud.gameInfoDisplay is fully initialized before access.
 
     addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
@@ -517,7 +515,7 @@ function GlobalMarket:initServerWhitelist()
         end
     end
 
-    -- Write static reference whitelist for external EXE discovery (Spec Section 3.2)
+    -- Write static reference whitelist for external companion client discovery
     local xmlFile = XMLFile.create("gmServerWhitelist", self.serverWhitelistFile, "gmServerWhitelist")
     if xmlFile ~= nil then
         xmlFile:setString("gmServerWhitelist#lang", lang)
@@ -719,7 +717,7 @@ function GlobalMarket:applySyncedMarketData(marketData)
                     localItem.onlineGreatDemandBonus = nil
                 end
             else
-                -- Local FillType missing from incoming online packet -> automatically treat as PENDING (Spec Section 3.3)
+                -- Local FillType missing from incoming online packet -> automatically treat as PENDING
                 localItem.onlineStatus = "PENDING"
                 localItem.trend = nil
                 localItem.greatDemandFromServer = nil

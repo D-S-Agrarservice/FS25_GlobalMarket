@@ -1,4 +1,9 @@
-<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- ========================================================================================= -->
+<!-- FS25_GlobalMarket - GlobalMarketDialog.xml                                                -->
+<!-- Modal transaction dialog layout and dialog-specific GUI profiles.                         -->
+<!-- Author: D-S-Agrarservice                                                                  -->
+<!-- ========================================================================================= -->
 <GUI name="GlobalMarketDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
     <GuiElement profile="newLayer" />
     <Bitmap profile="dialogFullscreenBg" id="dialogBg" />
@@ -21,7 +26,7 @@
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
-            <!-- Reverted to absolute positioning to prevent engine layout glitches -->
+            <!-- Fixed-offset input group container for amount field, MAX button, and unit label -->
             <GuiElement profile="globalMarketInputGroup" with="anchorTopCenter">
                 <GuiElement profile="emptyPanel" position="0px 0px" size="200px 40px" with="anchorMiddleLeft">
                     <ThreePartBitmap profile="globalMarketTextInputBg" />
@@ -35,7 +40,7 @@
                 <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
 
-            <!-- Reverted to absolute positioning with enough vertical clearance -->
+            <!-- Total value and fee breakdown summary labels -->
             <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
             <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
         </GuiElement>

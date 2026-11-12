@@ -1,14 +1,13 @@
---
--- FS25 - GlobalMarketUI
--- Description: Main UI Frame for the GlobalMarket. Handles data rendering,
--- search filtering (#12), switchable product categorization (#19),
--- user input routing, and triggers the transaction dialog.
---
+-- =========================================================================================
+-- FS25_GlobalMarket - GlobalMarketUI.lua
+-- Main InGameMenu frame controller for storage/market lists, search, and category views.
+-- Author: D-S-Agrarservice
+-- =========================================================================================
 
 GlobalMarketUI = {}
 local GlobalMarketUI_mt = Class(GlobalMarketUI, TabbedMenuFrameElement)
 
--- Switchable Category View Modes (#19)
+-- Switchable Category View Modes
 GlobalMarketUI.CATEGORY_MODE_DETAILED = 1
 GlobalMarketUI.CATEGORY_MODE_COMPACT  = 2
 GlobalMarketUI.CATEGORY_MODE_FLAT     = 3
@@ -664,7 +663,7 @@ function GlobalMarketUI:updateContent()
 end
 
 -- =========================================================================
--- SEARCH & CATEGORY TOOLBAR CALLBACKS (#12 & #19)
+-- SEARCH & CATEGORY TOOLBAR CALLBACKS
 -- =========================================================================
 
 function GlobalMarketUI:onSearchTextChanged(element, text)
