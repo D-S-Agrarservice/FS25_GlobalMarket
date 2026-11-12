@@ -166,7 +166,10 @@ function SellBuyOfflineMarketEvent:run(connection)
 
                 -- Route the client's request through the server's authoritative transaction backend
                 -- FIX: Pass the actual storage object table instead of just the rootNode ID
-                g_currentMission.globalMarket:onSellBuy(self.mode, self.filltypeName, self.level, self.storageObject, self.count, nil, nil, self.isObjectStorage, self.playerFarmId, xmlToPass, capToPass)
+                g_currentMission.globalMarket:onSellBuy(
+                    self.mode, self.filltypeName, self.level, self.storageObject, self.count,
+                    nil, nil, self.isObjectStorage, self.playerFarmId, xmlToPass, capToPass
+                )
             else
                 if GlobalMarket.debugManager ~= nil then
                     GlobalMarket.debugManager:error("Network (Server): Transaction aborted. Received storageObject is nil (Sync mismatch).")

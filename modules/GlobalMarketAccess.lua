@@ -60,8 +60,12 @@ function GlobalMarketAccess.init()
     -- Prevent merging of Bales
     local function baleGetIsIdenticalHook(self, superFunc, otherAbstractObject)
         -- Extract farmId. Fallback to SPECTATOR_FARM_ID if none exists.
-        local myFarmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId) or (self.baleAttributes ~= nil and self.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
-        local otherFarmId = (otherAbstractObject.baleObject ~= nil and otherAbstractObject.baleObject.ownerFarmId) or (otherAbstractObject.baleAttributes ~= nil and otherAbstractObject.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+        local myFarmId = (self.baleObject ~= nil and self.baleObject.ownerFarmId)
+            or (self.baleAttributes ~= nil and self.baleAttributes.farmId)
+            or FarmManager.SPECTATOR_FARM_ID
+        local otherFarmId = (otherAbstractObject.baleObject ~= nil and otherAbstractObject.baleObject.ownerFarmId)
+            or (otherAbstractObject.baleAttributes ~= nil and otherAbstractObject.baleAttributes.farmId)
+            or FarmManager.SPECTATOR_FARM_ID
 
         if myFarmId ~= otherFarmId then
             return false
@@ -285,7 +289,10 @@ function GlobalMarketAccess.init()
                 self.gmFarmFillLevels[self.gmTempFarmId][fillType] = math.max(0, currentFarmLevel + delta)
 
                 if GlobalMarket.debugManager ~= nil then
-                    GlobalMarket.debugManager:trace("Storage Tracker: Farm %s | FillType: %d | Delta: %.2f | New Owned Total: %.2f", tostring(self.gmTempFarmId), fillType, delta, self.gmFarmFillLevels[self.gmTempFarmId][fillType])
+                    GlobalMarket.debugManager:trace(
+                        "Storage Tracker: Farm %s | FillType: %d | Delta: %.2f | New Owned Total: %.2f",
+                        tostring(self.gmTempFarmId), fillType, delta, self.gmFarmFillLevels[self.gmTempFarmId][fillType]
+                    )
                 end
 
                 -- Broadcast with Network Debounce (Prevents Dedi Spam during tipping)

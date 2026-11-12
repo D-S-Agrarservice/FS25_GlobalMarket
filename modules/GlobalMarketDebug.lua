@@ -103,19 +103,43 @@ function GlobalMarketDebug:update(dt)
     end
 end
 
--- Helper: Formats strings safely, maintaining variable types for %d and %.2f
+-- Helper: Formats strings safely with explicit type guards (LuaJIT & ModHub compliant)
 local function formatMessage(text, ...)
-    local arg = {...}
-    if #arg > 0 then
-        local success, result = pcall(string.format, tostring(text), table.unpack(arg))
-        if not success then
-            local fallback = tostring(text)
-            for _, v in ipairs(arg) do fallback = fallback .. " | " .. tostring(v) end
-            return fallback .. " [Format Error Recovered]"
-        end
-        return result
+    local fmt = tostring(text)
+    local numArgs = select("#", ...)
+    if numArgs == 0 then
+        return fmt
     end
-    return tostring(text)
+
+    local args = { ... }
+    local argIdx = 0
+
+    local formatted = string.gsub(fmt, "%%([%-+%s#0]*%d*%.?%d*[cdiouxXeEfgGqs%%])", function(spec)
+        if spec == "%" then
+            return "%"
+        end
+
+        argIdx = argIdx + 1
+        local val = args[argIdx]
+        local conv = string.sub(spec, -1)
+
+        if conv == "s" or conv == "q" then
+            return string.format("%" .. spec, tostring(val))
+        end
+
+        local num = tonumber(val)
+        if num == nil or num ~= num or num == math.huge or num == -math.huge then
+            return tostring(val)
+        end
+
+        if conv == "d" or conv == "i" or conv == "u" or conv == "o" or conv == "x" or conv == "X" or conv == "c" then
+            num = (num >= 0) and math.floor(num) or math.ceil(num)
+        end
+
+        return string.format("%" .. spec, num)
+    end)
+
+    return formatted
 end
 
 -- Helper: Safely dumps a table with circular reference checks

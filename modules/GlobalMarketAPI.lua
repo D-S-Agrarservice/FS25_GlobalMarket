@@ -109,14 +109,30 @@ end
 function GlobalMarketAPI.registerSchemaElements(schema)
     schema:register(XMLValueType.STRING, "globalMarket.finance.liquidCategories.category(?)#name", "Name of the custom liquid category")
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#name", "Name of the fillType to whitelist")
-    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#category", "Optional UI Detailed Category ID (GRAINS, ROOTS, FORAGE, SUPPLIES, ANIMAL, PALLETS, OTHER)")
-    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.whitelist.fillType(?)#compactCategory", "Optional UI Compact Category ID (CROPS_BULK, BALES_FORAGE, LIQUIDS, PALLETS_PRODUCTS)")
+    schema:register(
+        XMLValueType.STRING,
+        "globalMarket.marketRegistration.whitelist.fillType(?)#category",
+        "Optional UI Detailed Category ID (GRAINS, ROOTS, FORAGE, SUPPLIES, ANIMAL, PALLETS, OTHER)"
+    )
+    schema:register(
+        XMLValueType.STRING,
+        "globalMarket.marketRegistration.whitelist.fillType(?)#compactCategory",
+        "Optional UI Compact Category ID (CROPS_BULK, BALES_FORAGE, LIQUIDS, PALLETS_PRODUCTS)"
+    )
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.blacklist.fillType(?)#name", "Name of the fillType to blacklist")
 
     -- Optional standalone UI category overrides for fillTypes that already have showOnPriceTable="true"
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.uiCategories.fillType(?)#name", "Name of the fillType")
-    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.uiCategories.fillType(?)#category", "UI Detailed Category ID (GRAINS, ROOTS, FORAGE, SUPPLIES, ANIMAL, PALLETS, OTHER)")
-    schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.uiCategories.fillType(?)#compactCategory", "UI Compact Category ID (CROPS_BULK, BALES_FORAGE, LIQUIDS, PALLETS_PRODUCTS)")
+    schema:register(
+        XMLValueType.STRING,
+        "globalMarket.marketRegistration.uiCategories.fillType(?)#category",
+        "UI Detailed Category ID (GRAINS, ROOTS, FORAGE, SUPPLIES, ANIMAL, PALLETS, OTHER)"
+    )
+    schema:register(
+        XMLValueType.STRING,
+        "globalMarket.marketRegistration.uiCategories.fillType(?)#compactCategory",
+        "UI Compact Category ID (CROPS_BULK, BALES_FORAGE, LIQUIDS, PALLETS_PRODUCTS)"
+    )
 
     -- Schema elements for container restrictions
     schema:register(XMLValueType.STRING, "globalMarket.marketRegistration.containerRestrictions.restriction(?)#fillType", "Name of the fillType to restrict")

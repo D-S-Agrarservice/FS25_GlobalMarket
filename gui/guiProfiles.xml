@@ -16,7 +16,7 @@
         <imageUVs value="0 0 1 1"/>
         <imageColor value="0 0 0 1"/>
         <imageSliceId value="noSlice"/>
-        <imageFilename value="$moddir$FS25_GlobalMarket/images/storageList.png"/>
+        <imageFilename value="$moddir$FS25_GlobalMarket/images/storageList.dds"/>
     </Profile>
 
     <Profile name="globalMarketHeader" extends="baseReference">

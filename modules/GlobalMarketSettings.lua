@@ -380,7 +380,10 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
             (g_i18n ~= nil and g_i18n:hasText("ui_gm_settings_gd_random")) and g_i18n:getText("ui_gm_settings_gd_random") or "Random",
             (g_i18n ~= nil and g_i18n:hasText("ui_gm_settings_gd_off")) and g_i18n:getText("ui_gm_settings_gd_off") or "Off"
         }
-        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsGreatDemandMode", "ui_gm_settings_greatDemandMode", "ui_gm_settings_greatDemandMode_desc", gdModeTexts, "onGreatDemandModeChanged")
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsGreatDemandMode", "ui_gm_settings_greatDemandMode",
+            "ui_gm_settings_greatDemandMode_desc", gdModeTexts, "onGreatDemandModeChanged"
+        )
 
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
@@ -389,12 +392,21 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_system_header")
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsShowIcon", "ui_gm_settings_showIcon", "ui_gm_settings_showIcon_desc", "onShowIconChanged")
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsIconPulse", "ui_gm_settings_iconPulse", "ui_gm_settings_iconPulse_desc", "onIconPulseChanged")
-        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode", "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged")
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode",
+            "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged"
+        )
 
         -- 4. DEBUG MODE
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDebugMode", "ui_gm_settings_debugMode", "ui_gm_settings_debugMode_desc", "onDebugModeChanged")
-        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel", "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged")
-        GlobalMarketSettings:addMultiOption(settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration", "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged")
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsDebugLevel", "ui_gm_settings_debugLevel",
+            "ui_gm_settings_debugLevel_desc", GlobalMarketSettings.OPTIONS.DEBUG_LEVEL, "onDebugLevelChanged"
+        )
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsDebugDuration", "ui_gm_settings_debugDuration",
+            "ui_gm_settings_debugDuration_desc", GlobalMarketSettings.OPTIONS.DEBUG_DURATION, "onDebugDurationChanged"
+        )
 
         settingsFrame.gameSettingsLayout:invalidateLayout()
 
@@ -524,10 +536,18 @@ function GlobalMarketSettings:broadcastChanges()
     end
     if g_server ~= nil then
         -- Server broadcasts the changes to all connected clients
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex, c.greatDemandModeIndex))
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(
+            c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive,
+            c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
+            c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex, c.greatDemandModeIndex
+        ))
     else
         -- Client admin sends the changes to the dedicated server
-        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive, c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive, c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex, c.greatDemandModeIndex))
+        g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(
+            c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive,
+            c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
+            c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex, c.greatDemandModeIndex
+        ))
     end
 end
 

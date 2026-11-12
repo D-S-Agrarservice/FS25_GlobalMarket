@@ -112,7 +112,7 @@ function GlobalMarket:initStatusHudHooks()
             self.gmStatusBg = g_overlayManager:createOverlay("gui.whiteCircleFilled", 0, 0, 0, 0)
 
             -- Create icon overlay from local mod file
-            local iconPath = Utils.getFilename("images/menuIcon.png", GlobalMarket.dir)
+            local iconPath = Utils.getFilename("images/menuIcon.dds", GlobalMarket.dir)
             self.gmStatusIcon = Overlay.new(iconPath, 0, 0, 0, 0)
         end
 

@@ -95,7 +95,9 @@ function GlobalMarketDialog:onOpen()
         self.amountInput:setText("0")
     end
 
-    local titlePrefix = self.actionType == "SELL" and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderStorage") .. ": ") or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderMarket") .. ": ")
+    local titlePrefix = self.actionType == "SELL"
+        and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderStorage") .. ": ")
+        or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderMarket") .. ": ")
     self.dialogTitleElement:setText(titlePrefix .. tostring(self.fillTypeTitle))
 
     local actionText = self.actionType == "SELL" and g_i18n:getText("ui_btn_sell") or g_i18n:getText("ui_btn_buy")
@@ -274,7 +276,9 @@ function GlobalMarketDialog:onClickStorage(state)
                                         unitKey = "ui_gm_unit_bale"
                                         if g_baleManager ~= nil then
                                             local isRound, width, height, length, diameter = g_baleManager:getBaleInfoByXMLFilename(objXml)
-                                            title = isRound and string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_roundbale"), diameter or width or 1.25) or string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_squarebale"), length or 2.40)
+                                            title = isRound
+                                                and string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_roundbale"), diameter or width or 1.25)
+                                                or string.format("%s (%.2fm)", g_i18n:getText("ui_gm_format_squarebale"), length or 2.40)
                                         end
                                     else
                                         unitKey = "ui_gm_unit_pallet"

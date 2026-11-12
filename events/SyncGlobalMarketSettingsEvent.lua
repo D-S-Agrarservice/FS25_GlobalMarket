@@ -11,7 +11,10 @@ function SyncGlobalMarketSettingsEvent.emptyNew()
     return Event.new(SyncGlobalMarketSettingsEvent_mt)
 end
 
-function SyncGlobalMarketSettingsEvent.new(baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex, isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex, greatDemandModeIndex)
+function SyncGlobalMarketSettingsEvent.new(
+    baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex,
+    isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex, greatDemandModeIndex
+)
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
     self.literIndex = literIndex
@@ -149,7 +152,11 @@ function SyncGlobalMarketSettingsEvent:run(connection)
             GlobalMarketSettings:saveToXML()
         end
 
-        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur, self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex, self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex), nil, connection, nil)
+        g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(
+            self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur,
+            self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex,
+            self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex
+        ), nil, connection, nil)
     else
         -- CLIENT SIDE
         if GlobalMarketSettings.saveToXML ~= nil then

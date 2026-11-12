@@ -126,7 +126,11 @@ function SyncGmSiloEvent:run(connection)
     -- Relay for Admin Console Command `gmAdvanceStorageAge` from Dedicated Server Client to Server
     if not connection:getIsServer() then
         if self.notifyType == 99 and g_currentMission.globalMarket ~= nil then
-            local isMaster = (g_currentMission.userManager ~= nil and g_currentMission.userManager.getIsConnectionMasterUser ~= nil and g_currentMission.userManager:getIsConnectionMasterUser(connection))
+            local isMaster = (
+                g_currentMission.userManager ~= nil
+                and g_currentMission.userManager.getIsConnectionMasterUser ~= nil
+                and g_currentMission.userManager:getIsConnectionMasterUser(connection)
+            )
             if isMaster and g_currentMission.globalMarket.updateGmStorageFeesAndDecay ~= nil then
                 g_currentMission.globalMarket:updateGmStorageFeesAndDecay(self.notifyParamA)
             end

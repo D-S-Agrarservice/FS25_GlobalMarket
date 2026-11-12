@@ -175,7 +175,8 @@ function GlobalMarket:getMapBasePricePerLiter(fillTypeIndex, fallbackBasePrice)
 
     -- FALLBACK: If no station on the map accepts this fillType (e.g. custom productions or early map load),
     -- fallback to the native EconomyManager calculation (includes Difficulty & Season).
-    if fillTypeIndex ~= nil and g_currentMission ~= nil and g_currentMission.economyManager ~= nil and g_currentMission.economyManager.getPricePerLiter ~= nil and g_currentMission.environment ~= nil then
+    if fillTypeIndex ~= nil and g_currentMission ~= nil and g_currentMission.economyManager ~= nil
+        and g_currentMission.economyManager.getPricePerLiter ~= nil and g_currentMission.environment ~= nil then
         local econPrice = g_currentMission.economyManager:getPricePerLiter(fillTypeIndex)
         if econPrice ~= nil and econPrice > 0 then
             return econPrice
@@ -183,7 +184,9 @@ function GlobalMarket:getMapBasePricePerLiter(fillTypeIndex, fallbackBasePrice)
     end
 
     local rawBase = (fillTypeDesc ~= nil and fillTypeDesc.pricePerLiter) or fallbackBasePrice or 0.5
-    local diffMult = (EconomyManager ~= nil and EconomyManager.getPriceMultiplier ~= nil and g_currentMission ~= nil and g_currentMission.missionInfo ~= nil) and (EconomyManager.getPriceMultiplier() or 1) or 1
+    local hasEconMult = (EconomyManager ~= nil and EconomyManager.getPriceMultiplier ~= nil
+        and g_currentMission ~= nil and g_currentMission.missionInfo ~= nil)
+    local diffMult = hasEconMult and (EconomyManager.getPriceMultiplier() or 1) or 1
     return rawBase * diffMult
 end
 
@@ -216,7 +219,10 @@ function GlobalMarket:updateOfflinePrices()
         data.price = data.normalPrice * demandFactor
 
         if self.debugManager ~= nil then
-            self.debugManager:trace("OfflineMarket Price Update - %s: MapNormal=%.2f, Demand=%.2f, GD=%s, Final=%.2f", tostring(data.fillType), data.normalPrice, demandFactor, tostring(data.isGreatDemand), data.price)
+            self.debugManager:trace(
+                "OfflineMarket Price Update - %s: MapNormal=%.2f, Demand=%.2f, GD=%s, Final=%.2f",
+                tostring(data.fillType), data.normalPrice, demandFactor, tostring(data.isGreatDemand), data.price
+            )
         end
     end
 end

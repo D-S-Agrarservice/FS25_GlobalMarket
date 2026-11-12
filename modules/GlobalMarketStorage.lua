@@ -586,7 +586,8 @@ function GlobalMarket:onSellBuyBulk(mode, filltypeName, level, targetStorageObj,
 
         -- If GM Market, validate strictly against the Shadow Array
         if isGmMarket then
-            availableForFarm = (targetStorage.gmFarmFillLevels ~= nil and targetStorage.gmFarmFillLevels[playerFarmId] ~= nil) and (targetStorage.gmFarmFillLevels[playerFarmId][fillTypeIndex] or 0) or 0
+            availableForFarm = (targetStorage.gmFarmFillLevels ~= nil and targetStorage.gmFarmFillLevels[playerFarmId] ~= nil)
+                and (targetStorage.gmFarmFillLevels[playerFarmId][fillTypeIndex] or 0) or 0
         end
 
         if mode == 1 then
@@ -778,7 +779,9 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
                     objFillType = (sampleObj.baleObject ~= nil) and sampleObj.baleObject:getFillType() or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillType)
                     objLevel = (sampleObj.baleObject ~= nil) and sampleObj.baleObject:getFillLevel() or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillLevel)
                     objXml = (sampleObj.baleObject ~= nil) and sampleObj.baleObject.xmlFilename or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.xmlFilename)
-                    objFarmId = (sampleObj.baleObject ~= nil and sampleObj.baleObject.ownerFarmId) or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                    objFarmId = (sampleObj.baleObject ~= nil and sampleObj.baleObject.ownerFarmId)
+                        or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.farmId)
+                        or FarmManager.SPECTATOR_FARM_ID
 
                     if sampleObj.baleObject ~= nil and sampleObj.baleObject.isFermenting then isFermenting = true end
                     if sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.isFermenting then isFermenting = true end
@@ -1050,7 +1053,10 @@ function GlobalMarket:onSellBuyObjects(mode, filltypeName, requestedLiters, targ
             end
 
             -- Pass payloadData (which is now either a String for Pallets or a Number for Bales)
-            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(mode, filltypeName, requestedLiters, targetPlaceableObj, requestedLiters, true, playerFarmId, payloadData, capacityPerObject))
+            g_client:getServerConnection():sendEvent(SellBuyOfflineMarketEvent.new(
+                mode, filltypeName, requestedLiters, targetPlaceableObj,
+                requestedLiters, true, playerFarmId, payloadData, capacityPerObject
+            ))
         end
     end
 end

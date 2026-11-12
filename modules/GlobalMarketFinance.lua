@@ -156,7 +156,9 @@ if InGameMenuStatisticsFrame ~= nil and not GlobalMarketFinance.uiHooked then
     end)
 
     -- 2. Hook the row population to handle filtering and dynamic aggregation
-    InGameMenuStatisticsFrame.populateCellForItemInSection = Utils.overwrittenFunction(InGameMenuStatisticsFrame.populateCellForItemInSection, function(self, superFunc, list, section, index, cell)
+    InGameMenuStatisticsFrame.populateCellForItemInSection = Utils.overwrittenFunction(
+        InGameMenuStatisticsFrame.populateCellForItemInSection,
+        function(self, superFunc, list, section, index, cell)
         if list == self.financesList then
             local visibleStats = GlobalMarketFinance.getVisibleFinanceStats()
             local actualStatName = visibleStats[index]
@@ -433,7 +435,9 @@ function GlobalMarketFinance.removeExpiredObjectsFromStorage(placeable, farmId, 
                 isBaleType = true
                 objFillType = (sampleObj.baleObject ~= nil and sampleObj.baleObject:getFillType()) or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillType)
                 objLevel = (sampleObj.baleObject ~= nil and sampleObj.baleObject:getFillLevel()) or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.fillLevel) or 0
-                objFarmId = (sampleObj.baleObject ~= nil and sampleObj.baleObject.ownerFarmId) or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.farmId) or FarmManager.SPECTATOR_FARM_ID
+                objFarmId = (sampleObj.baleObject ~= nil and sampleObj.baleObject.ownerFarmId)
+                    or (sampleObj.baleAttributes ~= nil and sampleObj.baleAttributes.farmId)
+                    or FarmManager.SPECTATOR_FARM_ID
             elseif sampleObj.REFERENCE_CLASS_NAME == "Vehicle" then
                 objFillType = sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.fillType
                 objLevel = (sampleObj.palletAttributes ~= nil and sampleObj.palletAttributes.fillLevel) or 0
@@ -564,7 +568,10 @@ function GlobalMarket:updateGmStorageFeesAndDecay(customMonthDelta)
                                             anyUiChange = true
 
                                             if self.debugManager ~= nil then
-                                                self.debugManager:info("GM Storage Clearance: Removed %.0f L (FillType %d) for Farm %d after %d months.", removedLiters, fillTypeIndex, farmId, maxMonths)
+                                                self.debugManager:info(
+                                                    "GM Storage Clearance: Removed %.0f L (FillType %d) for Farm %d after %d months.",
+                                                    removedLiters, fillTypeIndex, farmId, maxMonths
+                                                )
                                             end
 
                                             GlobalMarketFinance.notifyFarm(farmId, fillTypeIndex, GlobalMarketFinance.NOTIFY_CLEARED, removedLiters, maxMonths, storage, 0)
@@ -642,7 +649,10 @@ function GlobalMarket:updateGmStorageFeesAndDecay(customMonthDelta)
                                             end
 
                                             if pendingNotifyType ~= nil or levelChanged then
-                                                GlobalMarketFinance.notifyFarm(farmId, fillTypeIndex, pendingNotifyType, pendingParamA, pendingParamB, levelChanged and storage or nil, currentLevel)
+                                                GlobalMarketFinance.notifyFarm(
+                                                    farmId, fillTypeIndex, pendingNotifyType, pendingParamA,
+                                                    pendingParamB, levelChanged and storage or nil, currentLevel
+                                                )
                                             end
                                         end
                                     end
@@ -736,7 +746,10 @@ function GlobalMarket:updateGmStorageFeesAndDecay(customMonthDelta)
                                 anyUiChange = true
 
                                 if self.debugManager ~= nil then
-                                    self.debugManager:info("GM ObjectStorage Clearance: Removed %.0f L (FillType %d) for Farm %d after %d months.", removedLiters, fillTypeIndex, farmId, maxMonths)
+                                    self.debugManager:info(
+                                        "GM ObjectStorage Clearance: Removed %.0f L (FillType %d) for Farm %d after %d months.",
+                                        removedLiters, fillTypeIndex, farmId, maxMonths
+                                    )
                                 end
 
                                 GlobalMarketFinance.notifyFarm(farmId, fillTypeIndex, GlobalMarketFinance.NOTIFY_CLEARED, removedLiters > 0 and removedLiters or currentLevel, maxMonths, nil, 0)
