@@ -231,6 +231,7 @@ FS25_GlobalMarket/
 ├── modules/                  # Specialized domain modules:
 │   ├── GlobalMarketAPI.lua                   # 3-Tier whitelist/blacklist/category & metadata API
 │   ├── GlobalMarketAccess.lua                # Multi-farm access & isolation hooks for GM Terminals
+│   ├── GlobalMarketBranding.lua              # 3-Tier online market branding (synced name & local logo)
 │   ├── GlobalMarketCompatibilityManager.lua  # Dynamic mod conflict firewall & mitigation rules
 │   ├── GlobalMarketDebug.lua                 # Leveled logger with round-robin dump rotation
 │   ├── GlobalMarketFinance.lua               # Unconditional MoneyType registration & ledger routing

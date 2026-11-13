@@ -134,6 +134,7 @@
         <e k="ui_gm_warning_engineLimit"                           v=" | Máx. %s objetos por transacción (Rendimiento)" />
         <e k="ui_gm_warning_exe_outdated"                          v="GlobalMarket: ¡El archivo .exe externo está desactualizado! Por favor, actualiza tu versión para poder comerciar en línea." />
         <e k="ui_gm_warning_fatal_conflict"                        v="CONFLICTO FATAL: El mod '%s' es incompatible. El juego se bloqueará para proteger tu partida." />
+        <e k="ui_gm_warning_restart_required"                      v="GlobalMarket: Lista de compatibilidad actualizada – ¡conflicto de mods activo detectado! Por favor, reinicia el servidor pronto." />
         <e k="ui_gm_warning_smart_conflict"                        v="Advertencia de GlobalMarket: ¡El mod '%s' podría causar conflictos!" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Cantidad disponible" />
@@ -144,6 +145,8 @@
         <e k="ui_ingameMenuGlobalMarketOffline"                    v="Mercado Global - Desconectado" />
         <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="El mercado no está conectado actualmente al servidor y se está simulando." />
         <e k="ui_ingameMenuGlobalMarketOnline"                     v="Mercado Global - Conectado" />
+        <e k="ui_ingameMenuGlobalMarketOnlineCustom"               v="%s - Conectado" />
+        <e k="ui_ingameMenuGlobalMarketOnlineCustomDesc"           v="¡Conectado al mercado privado en línea!" />
         <e k="ui_ingameMenuGlobalMarketOnlineDesc"                 v="¡El mercado está conectado al servidor!" />
         <e k="ui_ingameMenuGlobalMarketPrice"                      v="Precio" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Comprar" />

@@ -617,15 +617,9 @@ function GlobalMarketUI:updateContent()
         end
     end
 
-    -- Update Online/Offline Status Texts
-    if self.marketStatusTitle ~= nil and self.marketStatusDesc ~= nil then
-        if gm:getIsMarketOnline() then
-            self.marketStatusTitle:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOnline"))
-            self.marketStatusDesc:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOnlineDesc"))
-        else
-            self.marketStatusTitle:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOffline"))
-            self.marketStatusDesc:setText(self.i18n:getText("ui_ingameMenuGlobalMarketOfflineDesc"))
-        end
+    -- Update Online/Offline Status Header & 3-Tier Market Branding (Name + Local Logo)
+    if GlobalMarketBranding ~= nil then
+        GlobalMarketBranding.updateMenuHeader(self, gm)
     end
 
     local farmId = g_currentMission:getFarmId()

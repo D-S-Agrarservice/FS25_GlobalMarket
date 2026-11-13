@@ -30,6 +30,8 @@ function SynchOfflineMarketEvent:writeStream(streamId, connection)
     end
 
     streamWriteBool(streamId, market.isOnline == true)
+    streamWriteString(streamId, market.onlineMarketName or "")
+    streamWriteBool(streamId, market.isPrivateOnlineMarket == true)
     streamWriteInt16(streamId, numEntries)
 
     -- Loop through all active fillTypes and send their current simulated state
@@ -48,6 +50,9 @@ end
 -- Deserializes the market state from the network stream (Client side)
 function SynchOfflineMarketEvent:readStream(streamId, connection)
     self.isOnline = streamReadBool(streamId)
+    local rawMarketName = streamReadString(streamId)
+    self.onlineMarketName = (rawMarketName ~= "") and rawMarketName or nil
+    self.isPrivateOnlineMarket = streamReadBool(streamId)
     local n = streamReadInt16(streamId)
 
     if GlobalMarket.debugManager ~= nil then
@@ -98,6 +103,13 @@ function SynchOfflineMarketEvent:run(connection)
             end
 
             gm.isOnline = (self.isOnline == true)
+            if gm.applySyncedBranding ~= nil then
+                if gm.isOnline then
+                    gm:applySyncedBranding(self.onlineMarketName, self.isPrivateOnlineMarket)
+                else
+                    gm:clearOnlineMarketBranding()
+                end
+            end
             gm.offlineMarketFillTypes = self.offlineMarketFillTypes
 
             -- Check for newly started Great Demands on the client (suppress on initial join sync)

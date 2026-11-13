@@ -13,24 +13,28 @@ function ExeStatusEvent.emptyNew()
     return Event.new(ExeStatusEvent_mt)
 end
 
-function ExeStatusEvent.new(isExeRunning, hasBackendConnection)
+function ExeStatusEvent.new(isExeRunning, hasBackendConnection, marketName, isPrivateMarket)
     local self = ExeStatusEvent.emptyNew()
-    self.isExeRunning = isExeRunning
-    -- Add the backend connection state
-    self.hasBackendConnection = hasBackendConnection
+    self.isExeRunning = isExeRunning == true
+    self.hasBackendConnection = hasBackendConnection == true
+    self.marketName = marketName
+    self.isPrivateMarket = isPrivateMarket == true
     return self
 end
 
 function ExeStatusEvent:writeStream(streamId, connection)
-    streamWriteBool(streamId, self.isExeRunning)
-    -- Transmit the backend connection state
-    streamWriteBool(streamId, self.hasBackendConnection)
+    streamWriteBool(streamId, self.isExeRunning == true)
+    streamWriteBool(streamId, self.hasBackendConnection == true)
+    streamWriteString(streamId, self.marketName or "")
+    streamWriteBool(streamId, self.isPrivateMarket == true)
 end
 
 function ExeStatusEvent:readStream(streamId, connection)
     self.isExeRunning = streamReadBool(streamId)
-    -- Receive the backend connection state
     self.hasBackendConnection = streamReadBool(streamId)
+    local rawName = streamReadString(streamId)
+    self.marketName = (rawName ~= "") and rawName or nil
+    self.isPrivateMarket = streamReadBool(streamId)
     self:run(connection)
 end
 
@@ -38,7 +42,12 @@ function ExeStatusEvent:run(connection)
     if connection:getIsServer() then return end
 
     if g_currentMission.globalMarket ~= nil then
-        -- Forward both states to the core handler
-        g_currentMission.globalMarket:handleClientExeStatus(connection, self.isExeRunning, self.hasBackendConnection)
+        g_currentMission.globalMarket:handleClientExeStatus(
+            connection,
+            self.isExeRunning,
+            self.hasBackendConnection,
+            self.marketName,
+            self.isPrivateMarket
+        )
     end
 end

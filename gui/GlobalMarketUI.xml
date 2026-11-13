@@ -63,8 +63,9 @@
         </GuiElement>
 
         <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="710px 750px" position="790px 40px">
-            <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="690px 30px" textSize="22px" />
-            <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="690px 24px" textSize="16px" textColor="0.7 0.7 0.7 1" />
+            <Bitmap profile="globalMarketCustomLogo" id="marketCustomLogo" position="10px 748px" size="240px 120px" visible="false" />
+            <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="690px 30px" textSize="22px" textLayoutMode="resize" />
+            <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="690px 24px" textSize="16px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
 
             <!-- Category View Mode Switcher Toolbar -->
             <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">

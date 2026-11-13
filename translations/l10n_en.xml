@@ -134,6 +134,7 @@
         <e k="ui_gm_warning_engineLimit"                           v=" | Max. %s objects per transaction (Performance)" />
         <e k="ui_gm_warning_exe_outdated"                          v="GlobalMarket: Your external .exe is outdated! Please update to trade online." />
         <e k="ui_gm_warning_fatal_conflict"                        v="FATAL CONFLICT: Mod '%s' is incompatible. Game will be blocked to prevent corruption." />
+        <e k="ui_gm_warning_restart_required"                      v="GlobalMarket: Compatibility list updated – active mod conflict detected! Please restart the server soon." />
         <e k="ui_gm_warning_smart_conflict"                        v="GlobalMarket Warning: Mod '%s' might cause conflicts!" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Available Amount" />
@@ -144,6 +145,8 @@
         <e k="ui_ingameMenuGlobalMarketOffline"                    v="Global Market - Offline" />
         <e k="ui_ingameMenuGlobalMarketOfflineDesc"                v="The market is currently not connected to the server and is being simulated." />
         <e k="ui_ingameMenuGlobalMarketOnline"                     v="Global Market - Online" />
+        <e k="ui_ingameMenuGlobalMarketOnlineCustom"               v="%s - Online" />
+        <e k="ui_ingameMenuGlobalMarketOnlineCustomDesc"           v="Connected to private online market!" />
         <e k="ui_ingameMenuGlobalMarketOnlineDesc"                 v="The market is connected to the server!" />
         <e k="ui_ingameMenuGlobalMarketPrice"                      v="Price" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Buy" />

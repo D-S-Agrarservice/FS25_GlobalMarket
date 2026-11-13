@@ -136,7 +136,8 @@ source(GlobalMarket.dir .. "events/SyncGlobalMarketCompatibilityEvent.lua")
 -- Store Cache Module
 source(GlobalMarket.dir .. "modules/GlobalMarketStoreCache.lua")
 
--- External Sync Module
+-- External Branding & Sync Modules
+source(GlobalMarket.dir .. "modules/GlobalMarketBranding.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 
 
@@ -273,7 +274,7 @@ function GlobalMarket:loadMap(name)
     self:syncDebugConsoleCommands(false)
 end
 
----Registers or removes the four developer console commands dynamically based on GM Debug Mode
+---Registers or removes the developer console commands dynamically based on GM Debug Mode
 ---@param forceRemove boolean|nil If true, unconditionally unregisters all GM debug console commands
 function GlobalMarket:syncDebugConsoleCommands(forceRemove)
     local shouldEnable = (not forceRemove)
@@ -287,6 +288,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmAdvanceStorageAge", "Advances GM storage age in months to test fees/decay/clearance", "consoleCommandAdvanceStorageAge", self)
             addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
             addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
+            addConsoleCommand("gmTestBranding", "Previews 3-tier online market branding (0/off, 1, 2, 3)", "consoleCommandTestBranding", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -295,6 +297,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmAdvanceStorageAge")
             removeConsoleCommand("gmTestStatus")
             removeConsoleCommand("gmToggleOnlineSync")
+            removeConsoleCommand("gmTestBranding")
             self.debugCommandsRegistered = false
         end
     end

@@ -1,7 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Exclude GitHub / repository metadata when exporting release ZIP archives
+# Exclude GitHub / repository / build metadata when exporting release ZIP archives
 README.md export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
+.agents export-ignore
+.releases export-ignore
+build_release.ps1 export-ignore
+dist export-ignore

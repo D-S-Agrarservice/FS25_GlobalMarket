@@ -13,6 +13,7 @@ function GlobalMarket:initFileSystem()
     local settingsPath = getUserProfileAppPath() .. "modSettings/" .. GlobalMarket.modName .. "/"
 
     -- File definitions (all consolidated inside modSettings/FS25_GlobalMarket/)
+    self.settingsFolder = settingsPath
     self.isOnlineFile = settingsPath .. "globalMarketOnline.xml"
     self.serverWhitelistFile = settingsPath .. "server_whitelist.xml"
     self.readFolder = settingsPath .. "read/"
@@ -60,9 +61,10 @@ function GlobalMarket:initSync()
     self.intervalData = 1000
     self.intervalStatus = 2000
 
-    -- Versioning
+    -- Versioning & Market Branding state
     self.minExeVersion = "1.0.0.0"
     self.hasShownVersionWarning = false
+    if self.initBrandingState ~= nil then self:initBrandingState() end
 
     -- Note: HUD injection (self:initStatusHudHooks()) is executed during onFinishedLoading in GlobalMarket.lua
     -- to ensure g_currentMission.hud.gameInfoDisplay is fully initialized before access.
@@ -126,27 +128,12 @@ function GlobalMarket:initStatusHudHooks()
             self.gmStatusBg:setColor(0, 0, 0, 0.8) -- Fallback
         end
 
-        -- =========================================================
-        -- STRICT BACKGROUND-EDGE ANCHOR
-        -- =========================================================
-        -- We anchor to the absolute left edge of the UI background box (infoBgLeft),
-        -- NOT the weather icon. The background cap extends further left than the icon itself.
-
+        -- Anchor strictly to the left edge of the HUD background box (infoBgLeft), including mod offsets (e.g. eGID)
         local anchorX = 0
-
         if self.infoBgLeft ~= nil then
-            -- Read the original vanilla position of the left background cap
-            local baseBgX = self.infoBgLeft.x or 0
-            -- Read any offsets injected by other mods (like eGID)
-            local modBgOffset = self.infoBgLeft.offsetX or 0
-
-            -- The true, visible X-coordinate of the absolute left HUD edge
-            anchorX = baseBgX + modBgOffset
+            anchorX = (self.infoBgLeft.x or 0) + (self.infoBgLeft.offsetX or 0)
         elseif self.weatherIcon ~= nil then
-            -- Fallback just in case infoBgLeft is ever unavailable
-            local baseWx = self.weatherIcon.x or 0
-            local modWxOffset = self.weatherIcon.offsetX or 0
-            anchorX = baseWx + modWxOffset
+            anchorX = (self.weatherIcon.x or 0) + (self.weatherIcon.offsetX or 0)
         end
 
         local paddingX = self:scalePixelToScreenWidth(15)
@@ -177,17 +164,10 @@ function GlobalMarket:initStatusHudHooks()
         -- Apply color state and alpha
         self.gmStatusIcon:setColor(syncModule.iconColorR, syncModule.iconColorG, syncModule.iconColorB, alpha)
 
-        -- =========================================================
-        -- VISIBILITY TOGGLE (ON THE FLY)
-        -- =========================================================
-        -- Check if the user has disabled the HUD icon in the mod settings.
-        -- Default to true (visible) if the setting is missing or nil.
+        -- Live HUD icon visibility toggle from Mod Settings (defaults to true)
         local isVisible = true
-        
-        if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil then
-            if type(GlobalMarketSettings.current.showStatusIcon) == "boolean" then
-                isVisible = GlobalMarketSettings.current.showStatusIcon
-            end
+        if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil and type(GlobalMarketSettings.current.showStatusIcon) == "boolean" then
+            isVisible = GlobalMarketSettings.current.showStatusIcon
         end
 
         -- Render the overlays (background first, then icon) only if permitted
@@ -256,6 +236,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
         self.timerStatus = 0
         local exeRunningNow = false
         local backendConnectedNow = false
+        local brandingChanged = false
 
         if fileExists(self.isOnlineFile) then
             local xmlFile = XMLFile.load("globalMarketOnline", self.isOnlineFile)
@@ -266,7 +247,6 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
                 -- Read backend connection state (default to true for legacy support)
                 backendConnectedNow = xmlFile:getBool("globalMarketOnline#isConnected", true)
-                xmlFile:delete()
 
                 -- Dynamic minimum version enforcement from backend:
                 -- If the backend reports a higher required EXE version than the mod's local baseline, enforce it immediately.
@@ -317,6 +297,11 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                     exeRunningNow = isVersionValid
                 end
 
+                if exeRunningNow and backendConnectedNow and self.readHeartbeatBranding ~= nil then
+                    brandingChanged = self:readHeartbeatBranding(xmlFile)
+                end
+                xmlFile:delete()
+
                 -- Show outdated warning only if the EXE is actively running (fresh timestamp) but fails the version check
                 if isTimestampActive and not isVersionValid and not self.hasShownVersionWarning then
                     g_currentMission:showBlinkingWarning(g_i18n:getText("ui_gm_warning_exe_outdated"), 8000)
@@ -344,19 +329,24 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             self.hasCheckedOnlineFileOnce = true
         end
 
-        -- Check if either EXE status or backend connection state changed
-        if exeRunningNow ~= self.isExeRunningLocal or backendConnectedNow ~= self.hasBackendConnection then
+        if not exeRunningNow or not backendConnectedNow then
+            brandingChanged = (self.clearLocalBranding ~= nil and self:clearLocalBranding()) or brandingChanged
+        end
+
+        -- Check if EXE status, backend connection, or token market branding changed
+        if exeRunningNow ~= self.isExeRunningLocal or backendConnectedNow ~= self.hasBackendConnection or brandingChanged then
             self.isExeRunningLocal = exeRunningNow
             self.hasBackendConnection = backendConnectedNow
 
             self:updateHudIconState()
+            if self.refreshBrandingUiIfOpen ~= nil then self:refreshBrandingUiIfOpen() end
 
             if g_currentMission:getIsServer() then
                 -- SP / MP-Host / Dedicated Server running local EXE directly
-                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection)
+                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket)
             elseif ExeStatusEvent ~= nil and g_client ~= nil then
                 -- Remote MP-Client notifies the authoritative server
-                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection))
+                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket))
             end
         end
     end
@@ -394,6 +384,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                         local action = xmlFile:getString("gmDataSync#action", "")
                         if action == "marketData" then
                             hasMarketDataPacket = true
+                            if self.readMarketSyncBranding ~= nil then self:readMarketSyncBranding(xmlFile) end
                             xmlFile:iterate("gmDataSync.fillTypes.fillType", function (_, baseKey)
                                 local ftName = xmlFile:getString(baseKey .. "#fillType")
                                 if ftName ~= nil and ftName ~= "" then
@@ -444,13 +435,16 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 if hasMarketDataPacket then
                     if g_currentMission:getIsServer() then
                         -- Local Host / Server applies immediately and broadcasts to clients
+                        if self.applySyncedBranding ~= nil then
+                            self:applySyncedBranding(self.localExeMarketName, self.localExeIsPrivateMarket)
+                        end
                         self:applySyncedMarketData(newMarketData)
                         if g_server ~= nil and MarketDataSyncEvent ~= nil then
-                            g_server:broadcastEvent(MarketDataSyncEvent.new(newMarketData))
+                            g_server:broadcastEvent(MarketDataSyncEvent.new(newMarketData, self.onlineMarketName, self.isPrivateOnlineMarket))
                         end
                     elseif MarketDataSyncEvent ~= nil and g_client ~= nil then
                         -- Remote Data-Host Client sends payload to Server (Server broadcasts back to all clients)
-                        g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData))
+                        g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData, self.localExeMarketName, self.localExeIsPrivateMarket))
                     end
                 end
             end
@@ -553,6 +547,7 @@ function GlobalMarket:assignNextDataHost()
     if nextConn ~= nil then
         self.dataHostConnection = nextConn
         self.isOnline = true
+        if self.applyDataHostBranding ~= nil then self:applyDataHostBranding(self.clientExeStates[nextConn]) end
 
         -- Hybrid Mode initialization: Treat all local fillTypes as PENDING until the backend confirms APPROVED/REJECTED
         if self.offlineMarketFillTypes ~= nil then
@@ -628,6 +623,7 @@ end
 
 -- Restores all market entries from Online stock back to their local Offline simulation state
 function GlobalMarket:restoreOfflineMarketState()
+    if self.clearOnlineMarketBranding ~= nil then self:clearOnlineMarketBranding() end
     local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
     if self.offlineMarketFillTypes ~= nil then
         for _, item in pairs(self.offlineMarketFillTypes) do
@@ -636,19 +632,23 @@ function GlobalMarket:restoreOfflineMarketState()
     end
 end
 
-function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection)
+function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection, marketName, isPrivateMarket)
     if not g_currentMission:getIsServer() or connection == nil then return end
 
     self.clientExeStates = self.clientExeStates or {}
     local isReady = (isExeRunning == true) and (hasBackendConnection ~= false)
     self.clientExeStates[connection] = {
         isExeRunning = (isExeRunning == true),
-        hasBackendConnection = (hasBackendConnection ~= false)
+        hasBackendConnection = (hasBackendConnection ~= false),
+        marketName = marketName,
+        isPrivateMarket = (isPrivateMarket == true)
     }
 
     if isReady then
         if self.dataHostConnection == nil then
             self:assignNextDataHost()
+        elseif self.dataHostConnection == connection and self.updateActiveDataHostBranding ~= nil then
+            self:updateActiveDataHostBranding(connection)
         end
     else
         if self.dataHostConnection == connection then
@@ -966,6 +966,7 @@ function GlobalMarket:consoleCommandToggleOnlineSync(val)
         self.isOnline = false
         self.dataHostConnection = nil
         self.clientExeStates = {}
+        if self.clearLocalBranding ~= nil then self:clearLocalBranding() end
         self:restoreOfflineMarketState()
         self:updateHudIconState()
         if g_currentMission:getIsServer() then

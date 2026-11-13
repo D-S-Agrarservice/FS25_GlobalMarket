@@ -13,13 +13,17 @@ function MarketDataSyncEvent.emptyNew()
     return Event.new(MarketDataSyncEvent_mt)
 end
 
-function MarketDataSyncEvent.new(marketData)
+function MarketDataSyncEvent.new(marketData, marketName, isPrivateMarket)
     local self = MarketDataSyncEvent.emptyNew()
     self.marketData = marketData or {}
+    self.marketName = marketName
+    self.isPrivateMarket = isPrivateMarket == true
     return self
 end
 
 function MarketDataSyncEvent:writeStream(streamId, connection)
+    streamWriteString(streamId, self.marketName or "")
+    streamWriteBool(streamId, self.isPrivateMarket == true)
     streamWriteInt32(streamId, #self.marketData)
     for _, item in ipairs(self.marketData) do
         streamWriteString(streamId, item.fillType or "")
@@ -33,6 +37,9 @@ function MarketDataSyncEvent:writeStream(streamId, connection)
 end
 
 function MarketDataSyncEvent:readStream(streamId, connection)
+    local rawMarketName = streamReadString(streamId)
+    self.marketName = (rawMarketName ~= "") and rawMarketName or nil
+    self.isPrivateMarket = streamReadBool(streamId)
     self.marketData = {}
     local count = streamReadInt32(streamId)
     for i = 1, count do
@@ -58,14 +65,21 @@ function MarketDataSyncEvent:readStream(streamId, connection)
 end
 
 function MarketDataSyncEvent:run(connection)
-    if g_currentMission.globalMarket == nil then return end
+    local gm = g_currentMission.globalMarket
+    if gm == nil then return end
 
     if not connection:getIsServer() then
         -- Server processes incoming Data-Host payload and broadcasts it to all clients (including Data-Host)
-        g_currentMission.globalMarket:applySyncedMarketData(self.marketData)
-        g_server:broadcastEvent(MarketDataSyncEvent.new(self.marketData))
+        if gm.applySyncedBranding ~= nil then
+            gm:applySyncedBranding(self.marketName, self.isPrivateMarket)
+        end
+        gm:applySyncedMarketData(self.marketData)
+        g_server:broadcastEvent(MarketDataSyncEvent.new(self.marketData, gm.onlineMarketName, gm.isPrivateOnlineMarket))
     else
-        -- Standard Client receives data
-        g_currentMission.globalMarket:applySyncedMarketData(self.marketData)
+        -- Standard Client receives authoritative branding and market data
+        if gm.applySyncedBranding ~= nil then
+            gm:applySyncedBranding(self.marketName, self.isPrivateMarket)
+        end
+        gm:applySyncedMarketData(self.marketData)
     end
 end
