@@ -583,19 +583,55 @@ function GlobalMarket:assignNextDataHost()
         self.isOnline = false
         self.isDataHost = false
         self:updateHudIconState()
-
-        if self.offlineMarketFillTypes ~= nil then
-            for _, item in pairs(self.offlineMarketFillTypes) do
-                item.onlineStatus = nil
-                item.trend = nil
-                item.greatDemandFromServer = nil
-                item.onlineGreatDemandBonus = nil
-            end
-        end
+        self:restoreOfflineMarketState()
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
         if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
+        end
+    end
+end
+
+-- Restores a single market entry back to its snapshotted pre-online Offline stock & Great Demand state
+function GlobalMarket:restoreItemOfflineState(item, currentLimit)
+    if item == nil then return end
+    local limit = currentLimit or GlobalMarket.MARKET_CAPACITY or 2000000
+
+    if item.savedOfflineFillLevel ~= nil then
+        item.fillLevel = math.clamp(item.savedOfflineFillLevel, 0, limit)
+        item.greatDemandBonus = item.savedOfflineGdBonus or 0
+        item.greatDemandHours = item.savedOfflineGdHours or 0
+        item.greatDemandRemainingMinutes = item.savedOfflineGdRemainingMinutes or 0
+        item.greatDemandRemainingLiters = item.savedOfflineGdRemainingLiters or 0
+        item.greatDemandOriginMode = item.savedOfflineGdOriginMode or 0
+        item.isGreatDemand = (item.greatDemandBonus > 0)
+
+        item.savedOfflineFillLevel = nil
+        item.savedOfflineGdBonus = nil
+        item.savedOfflineGdHours = nil
+        item.savedOfflineGdRemainingMinutes = nil
+        item.savedOfflineGdRemainingLiters = nil
+        item.savedOfflineGdOriginMode = nil
+    else
+        item.fillLevel = math.clamp(item.fillLevel or 0, 0, limit)
+        if item.greatDemandFromServer then
+            item.isGreatDemand = false
+            item.greatDemandRemainingLiters = 0
+        end
+    end
+
+    item.onlineStatus = nil
+    item.trend = nil
+    item.greatDemandFromServer = nil
+    item.onlineGreatDemandBonus = nil
+end
+
+-- Restores all market entries from Online stock back to their local Offline simulation state
+function GlobalMarket:restoreOfflineMarketState()
+    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+    if self.offlineMarketFillTypes ~= nil then
+        for _, item in pairs(self.offlineMarketFillTypes) do
+            self:restoreItemOfflineState(item, currentLimit)
         end
     end
 end
@@ -687,6 +723,7 @@ function GlobalMarket:applySyncedMarketData(marketData)
         end
     end
 
+    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
     if self.offlineMarketFillTypes ~= nil then
         for _, localItem in pairs(self.offlineMarketFillTypes) do
             local incomingItem = incomingByFillType[localItem.fillType]
@@ -695,6 +732,16 @@ function GlobalMarket:applySyncedMarketData(marketData)
                 localItem.onlineStatus = status
 
                 if status == "APPROVED" then
+                    -- Snapshot pre-online Offline stock & Great Demand state before overwriting with global backend data
+                    if localItem.savedOfflineFillLevel == nil then
+                        localItem.savedOfflineFillLevel = math.clamp(localItem.fillLevel or 0, 0, currentLimit)
+                        localItem.savedOfflineGdBonus = localItem.greatDemandBonus or 0
+                        localItem.savedOfflineGdHours = localItem.greatDemandHours or 0
+                        localItem.savedOfflineGdRemainingMinutes = localItem.greatDemandRemainingMinutes or 0
+                        localItem.savedOfflineGdRemainingLiters = localItem.greatDemandRemainingLiters or 0
+                        localItem.savedOfflineGdOriginMode = localItem.greatDemandOriginMode or 0
+                    end
+
                     localItem.fillLevel = incomingItem.fillLevel or 0
                     localItem.trend = incomingItem.trend
                     localItem.greatDemandFromServer = (incomingItem.isGreatDemand == true)
@@ -702,19 +749,27 @@ function GlobalMarket:applySyncedMarketData(marketData)
                     if incomingItem.greatDemandRemainingLiters ~= nil then
                         localItem.greatDemandRemainingLiters = incomingItem.greatDemandRemainingLiters
                     end
-                    -- Clear any local offline Great Demand state when an item transitions to authoritative APPROVED online trading
+                    -- Clear any local offline Great Demand state while authoritative APPROVED online trading is active
                     localItem.greatDemandBonus = 0
                     localItem.greatDemandHours = 0
                     localItem.greatDemandRemainingMinutes = 0
                     localItem.greatDemandOriginMode = 0
                 else
-                    -- Hybrid Mode (PENDING / REJECTED): Preserve local simulated fillLevel and local Great Demand state
-                    localItem.trend = nil
-                    localItem.greatDemandFromServer = nil
-                    localItem.onlineGreatDemandBonus = nil
+                    -- Hybrid Mode (PENDING / REJECTED): Restore local offline state if previously APPROVED, otherwise preserve it
+                    if localItem.savedOfflineFillLevel ~= nil then
+                        self:restoreItemOfflineState(localItem, currentLimit)
+                        localItem.onlineStatus = status
+                    else
+                        localItem.trend = nil
+                        localItem.greatDemandFromServer = nil
+                        localItem.onlineGreatDemandBonus = nil
+                    end
                 end
             else
                 -- Local FillType missing from incoming online packet -> automatically treat as PENDING
+                if localItem.savedOfflineFillLevel ~= nil then
+                    self:restoreItemOfflineState(localItem, currentLimit)
+                end
                 localItem.onlineStatus = "PENDING"
                 localItem.trend = nil
                 localItem.greatDemandFromServer = nil
@@ -911,14 +966,7 @@ function GlobalMarket:consoleCommandToggleOnlineSync(val)
         self.isOnline = false
         self.dataHostConnection = nil
         self.clientExeStates = {}
-        if self.offlineMarketFillTypes ~= nil then
-            for _, item in pairs(self.offlineMarketFillTypes) do
-                item.onlineStatus = nil
-                item.trend = nil
-                item.greatDemandFromServer = nil
-                item.onlineGreatDemandBonus = nil
-            end
-        end
+        self:restoreOfflineMarketState()
         self:updateHudIconState()
         if g_currentMission:getIsServer() then
             if self.refreshMarketPrices ~= nil then

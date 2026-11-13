@@ -25,23 +25,34 @@ function GlobalMarket:saveToXmlFile()
 
     local xmlFile = XMLFile.create("globalMarket", fullPath, "globalMarket")
     if xmlFile ~= nil then
-        -- Save Offline Market stock levels
+        -- Save Offline Market stock levels (always persist snapshotted Offline state if saved while Online)
+        local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
         xmlFile:setTable("globalMarket.offlineMarket.fillTypes.fillType", self.offlineMarketFillTypes, function (key, info, _)
+            local hasSavedOffline = (info.savedOfflineFillLevel ~= nil)
+            local offlineLevel = hasSavedOffline and info.savedOfflineFillLevel or (info.fillLevel or 0)
+            offlineLevel = math.clamp(offlineLevel, 0, currentLimit)
+
+            local gdBonus = hasSavedOffline and (info.savedOfflineGdBonus or 0) or (info.greatDemandBonus or 0)
+            local gdHours = hasSavedOffline and (info.savedOfflineGdHours or 0) or (info.greatDemandHours or 0)
+            local gdRemMin = hasSavedOffline and (info.savedOfflineGdRemainingMinutes or 0) or (info.greatDemandRemainingMinutes or 0)
+            local gdRemLiters = hasSavedOffline and (info.savedOfflineGdRemainingLiters or 0) or (info.greatDemandRemainingLiters or 0)
+            local gdOrigin = hasSavedOffline and (info.savedOfflineGdOriginMode or 0) or (info.greatDemandOriginMode or 0)
+
             xmlFile:setString(key .. "#fillType", info.fillType)
-            xmlFile:setFloat(key .. "#level", info.fillLevel)
-            if info.greatDemandBonus ~= nil and info.greatDemandBonus > 0 then
-                xmlFile:setFloat(key .. "#greatDemandBonus", info.greatDemandBonus)
-                if info.greatDemandHours ~= nil and info.greatDemandHours > 0 then
-                    xmlFile:setFloat(key .. "#greatDemandHours", info.greatDemandHours)
+            xmlFile:setFloat(key .. "#level", offlineLevel)
+            if gdBonus > 0 then
+                xmlFile:setFloat(key .. "#greatDemandBonus", gdBonus)
+                if gdHours > 0 then
+                    xmlFile:setFloat(key .. "#greatDemandHours", gdHours)
                 end
-                if info.greatDemandRemainingMinutes ~= nil and info.greatDemandRemainingMinutes > 0 then
-                    xmlFile:setInt(key .. "#greatDemandRemainingMinutes", math.floor(info.greatDemandRemainingMinutes))
+                if gdRemMin > 0 then
+                    xmlFile:setInt(key .. "#greatDemandRemainingMinutes", math.floor(gdRemMin))
                 end
-                if info.greatDemandRemainingLiters ~= nil and info.greatDemandRemainingLiters > 0 then
-                    xmlFile:setInt(key .. "#greatDemandRemainingLiters", math.floor(info.greatDemandRemainingLiters))
+                if gdRemLiters > 0 then
+                    xmlFile:setInt(key .. "#greatDemandRemainingLiters", math.floor(gdRemLiters))
                 end
-                if info.greatDemandOriginMode ~= nil and info.greatDemandOriginMode > 0 then
-                    xmlFile:setInt(key .. "#greatDemandOriginMode", info.greatDemandOriginMode)
+                if gdOrigin > 0 then
+                    xmlFile:setInt(key .. "#greatDemandOriginMode", gdOrigin)
                 end
             end
         end)
@@ -164,14 +175,15 @@ function GlobalMarket:loadFromXMLFile()
     if fileExists(fullPath) then
         local xmlFile = XMLFile.load("globalMarket", fullPath)
         if xmlFile ~= nil then
-            -- Iterates through saved fillTypes and applies the loaded stock levels
+            -- Iterates through saved fillTypes and applies the loaded stock levels (clamped to MARKET_CAPACITY)
+            local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
             xmlFile:iterate("globalMarket.offlineMarket.fillTypes.fillType", function (_, baseKey)
                 local fillType = xmlFile:getString(baseKey .. "#fillType")
-                local level = xmlFile:getFloat(baseKey .. "#level")
+                local level = xmlFile:getFloat(baseKey .. "#level") or 0
 
                 for _, ft in pairs(self.offlineMarketFillTypes) do
                     if ft.fillType == fillType then
-                        ft.fillLevel = level
+                        ft.fillLevel = math.clamp(level, 0, currentLimit)
                         ft.greatDemandBonus = xmlFile:getFloat(baseKey .. "#greatDemandBonus") or 0
                         ft.greatDemandHours = xmlFile:getFloat(baseKey .. "#greatDemandHours") or 0
                         ft.greatDemandRemainingMinutes = xmlFile:getInt(baseKey .. "#greatDemandRemainingMinutes") or 0
