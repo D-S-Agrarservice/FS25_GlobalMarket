@@ -8,12 +8,6 @@
     <Presets>
         <Preset name="colorWhite" value="1 1 1 1"/>
         <Preset name="colorRed" value="1 0 0 1"/>
-        <Preset name="colorGrayHeader" value="0.4 0.4 0.4 1"/>
-        <Preset name="colorListHeaderBackground" value="0 0 0 0.35"/>
-        <Preset name="colorGlassLight" value="0.715 0.715 0.718 0.25"/>
-        <Preset name="colorMainUI" value="0.0227 0.5346 0.8519 1.0"/>
-        <Preset name="colorMainUI_80" value="0.0227 0.5346 0.8519 0.8"/>
-        <Preset name="colorUVs" value="10px 1010px 4px 4px"/>
     </Presets>
 
     <Profile name="globalMarketMenuHeaderIcon" with="anchorMiddleCenter">
@@ -46,16 +40,6 @@
 
     <Profile name="globalMarketHeaderRightBright" extends="globalMarketHeaderRight">
         <textColor value="$preset_colorWhite"/>
-    </Profile>
-
-    <Profile name="globalMarketHeaderBox" extends="emptyPanel" with="anchorTopLeft">
-        <imageColor value="$preset_colorListHeaderBackground"/>
-        <hasFrame value="false"/>
-    </Profile>
-
-    <Profile name="globalMarketList" extends="emptyPanel" with="anchorStretchingYLeft pivotTopLeft">
-        <position value="0px -40px"/>
-        <absoluteSizeOffset value="0px 80px"/>
     </Profile>
 
     <Profile name="globalMarketListItem" extends="baseReference" with="anchorTopStretchingX alternating">
@@ -113,37 +97,8 @@
         <animationMode value="blink"/>
     </Profile>
 
-    <Profile name="globalMarketListSliderBox1" extends="fs25_listSliderBox" with="anchorTopStretchingX pivotTopRight">
-        <position value="28px -40px"/>
-        <absoluteSizeOffset value="0px 80px"/>
-    </Profile>
-
     <Profile name="globalMarketFooterBox1" extends="baseReference" with="anchorBottomStretchingX">
         <size value="100% 50px"/>
-    </Profile>
-
-    <Profile name="ingameMenuGmHeaderBtnToggle" extends="buttonBase" with="anchorTopLeft" size="250px 45px" position="450px 0px" imageColor="$preset_colorGlassLight" imageUVs="$preset_colorUVs" imageFocusedColor="$colorMainUI" imageHighlightedColor="$colorMainUI_80" imageSelectedColor="$colorMainUI_80"/>
-    <Profile name="ingameMenuGmHeaderBtnToggleText" extends="baseReference" with="anchorMiddleCenter" position="0px 0px" size="250px 45px" textColor="$preset_colorWhite" textHighlightedColor="$preset_colorWhite" textFocusedColor="$preset_colorWhite" textSize="18px" textAlignment="center"/>
-
-    <Profile name="ingameMenuSettingsBoxLeft" extends="fs25_menuContentContainer" with="anchorTopLeft" size="500px 756px" position="0px 0px"/>
-    <Profile name="ingameMenuSettingsBoxRight" extends="fs25_menuContentContainer" with="anchorTopLeft" size="800px 756px" position="700px 0px"/>
-
-    <Profile name="selectLevelFrame" extends="fs25_dialogBg" size="600px 500px" position="0px 0px"/>
-    <Profile name="selectLevelFrameRight" extends="fs25_dialogBg" size="400px 500px" position="550px 0px"/>
-    <Profile name="selectLevelFrameLoading" extends="fs25_dialogBg" size="500px 300px" position="0px 0px"/>
-
-    <Profile name="selectLevelHeaderBox" extends="emptyPanel" with="anchorTopCenter" size="500px 50px" position="0px -70px" alignmentX="left" alignmentY="middle" imageColor="$preset_colorListHeaderBackground" flowDirection="horizontal" wrapAround="true" lateralFlowSize="250px" fitToElements="false" autoValidateLayout="true" hasFrame="false"/>
-    <Profile name="selectLevelHeaderCell" extends="fs25_textDefault" with="anchorMiddleLeft" textSize="20px" textBold="false" textUpperCase="false" textColor="$preset_colorGrayHeader" textAlignment="left" textVerticalAlignment="middle"/>
-    <Profile name="selectLevelHeaderCellR" extends="selectLevelHeaderCell" textColor="$preset_colorRed"/>
-    <Profile name="selectLevelHeaderCell2" extends="selectLevelHeaderCell" textAlignment="center"/>
-
-    <Profile name="selectLevelTextInput" extends="textInput" with="anchorMiddleLeft" handleFocus="true" position="20px 0" size="350px 48px" margin="30px 28px 49px 16px" maxInputTextWidth="290px" textSize="18px" textBold="false" textAlignment="center" textVerticalAlignment="middle" enterWhenClickOutside="true"/>
-
-    <Profile name="ingameMenuGlobalMarketSelectListLeft" extends="emptyPanel" with="anchorTopLeft" size="350px 350px" position="20px -140.77px"/>
-    <Profile name="ingameMenuGlobalMarketSelectListLeftItem" extends="baseReference" with="anchorTopLeft" size="350px 40.77px"/>
-
-    <Profile name="ingameMenuGlobalMarketSelectLoadingAnimation" extends="baseReference" with="anchorTopCenter" size="127px 127px" pivot="0.5 0.5" position="0px -100px" imageUVs="293px 495px 127px 127px" imageColor="$preset_colorMainUI" animationMode="rotate" animationSpeed="1000">
-        <Variant name="mobile" size="60px 60px"/>
     </Profile>
 
     <!-- FS25 - Global Market Custom Slider Profiles -->

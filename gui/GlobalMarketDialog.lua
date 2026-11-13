@@ -45,42 +45,6 @@ function GlobalMarketDialog:show(target, callbackFunc, actionType, fillTypeTitle
     g_gui:showDialog("GlobalMarketDialog")
 end
 
--- Triggers the native FS25 ObjectStorageDialog for Bales/Pallets (Fallback for generic interactions)
-function GlobalMarketDialog:showNativeObjectStorageDialog(storage)
-    local p = g_currentMission.placeableSystem.placeables[storage.id]
-    if p ~= nil and p.spec_objectStorage ~= nil then
-        local spec = p.spec_objectStorage
-
-        -- Filter objectInfos for the requested fillType
-        local filteredInfos = {}
-        for _, info in ipairs(spec.objectInfos) do
-            local obj = info.objects[1]
-            local fillType = nil
-            if obj.baleObject ~= nil then fillType = obj.baleObject:getFillType()
-            elseif obj.baleAttributes ~= nil then fillType = obj.baleAttributes.fillType
-            elseif obj.palletAttributes ~= nil then fillType = obj.palletAttributes.fillType end
-
-            if fillType == g_fillTypeManager:getFillTypeByName(self.fillTypeName).index then
-                table.insert(filteredInfos, info)
-            end
-        end
-
-        if #filteredInfos > 0 then
-            ObjectStorageDialog.show(self.onNativeObjectStorageCallback, self, self.fillTypeTitle, filteredInfos)
-        end
-    end
-end
-
--- Callback receiver for the native Giants Dialog
-function GlobalMarketDialog:onNativeObjectStorageCallback(selectedInfoIndex, amount)
-    if selectedInfoIndex ~= nil and amount ~= nil and amount > 0 then
-        -- Native dialog returns amount of objects. Total liters must be calculated by the backend.
-        if self.callbackFunc ~= nil then
-            self.callbackFunc(self.target, amount, self.storageLocations[1].id, self.actionType, self.fillTypeName)
-        end
-    end
-end
-
 -- Native UI hook triggered right before the dialog becomes visible
 function GlobalMarketDialog:onOpen()
     GlobalMarketDialog:superClass().onOpen(self)

@@ -260,22 +260,12 @@ end
 -- ROUTING LOGIC
 -- =========================================================================
 function GlobalMarketFinance.getMoneyType(fillTypeIndex, isBuying, isBale, isPallet)
-    local isDetailed = GlobalMarketFinance.isDetailedCached
-
     -- Always book into the 8 detailed categories on the server so every client can
     -- freely toggle between simple (aggregated) and detailed finance views at runtime.
-            -- (no-op branch)
-        if false then
-        return isBuying and MoneyType.GM_BUY or MoneyType.GM_SELL
-    end
-
     local fillType = g_fillTypeManager:getFillTypeByIndex(fillTypeIndex)
     if fillType == nil then
         -- Failsafe fallback: default to Bulk
-        if true then return isBuying and MoneyType.GM_BUY_BULK or MoneyType.GM_SELL_BULK end
-    end -- close fillType == nil
-        -- (no-op branch)
-        if false then
+        return isBuying and MoneyType.GM_BUY_BULK or MoneyType.GM_SELL_BULK
     end
 
     -- 1. Check for Liquids (Absolute Content Priority)
@@ -829,6 +819,9 @@ end
 
 -- Developer / Admin console command to test GM storage fees, decay, warnings, and clearance (`gmAdvanceStorageAge [months]`)
 function GlobalMarket:consoleCommandAdvanceStorageAge(monthsArg)
+    if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
+        return "GM Debug Mode is disabled."
+    end
     if not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
         return "Permission denied: Only Server or MasterUser can advance GM storage age."
     end
@@ -845,10 +838,4 @@ function GlobalMarket:consoleCommandAdvanceStorageAge(monthsArg)
 
     local count = self:updateGmStorageFeesAndDecay(monthsToAdd)
     return string.format("Advanced GM storage age by +%.2f month(s) across %d stored item stack(s) (Limit: %d months).", monthsToAdd, count, GlobalMarket.STORAGE_DECAY_MONTHS or 6)
-end -- End of consoleCommandAdvanceStorageAge
-
--- End of file
--- (Fallback handled above)
-        -- (no-op branch)
-        if false then
 end

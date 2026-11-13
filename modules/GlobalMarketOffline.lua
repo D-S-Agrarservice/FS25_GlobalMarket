@@ -15,7 +15,6 @@ GlobalMarketOffline.GREAT_DEMAND_MODE_OFF = 3          -- Disabled
 
 GlobalMarketOffline.GREAT_DEMAND_THRESHOLD = 1.25      -- >= +25% above local normalPrice (~8.3% stock saturation or lower)
 GlobalMarketOffline.MAX_CONCURRENT_GREAT_DEMANDS = 2   -- Maximum simultaneous Great Demand events
-GlobalMarketOffline.GREAT_DEMAND_HOURLY_CHANCE = 0.08  -- Legacy constant kept for compatibility
 GlobalMarketOffline.GREAT_DEMAND_CHECK_CHANCE = 0.12   -- 12% chance per decoupled check interval (23-67 ingame min)
 GlobalMarketOffline.MAX_GREAT_DEMAND_HOURS = 18        -- Auto-replenish after 18h in Scarcity mode if players do not supply
 GlobalMarketOffline.RANDOM_GREAT_DEMAND_MINUTES = 120  -- 2 ingame hours duration for Random mode Great Demand
@@ -197,7 +196,6 @@ function GlobalMarket:updateOfflinePrices()
     end
 
     local currentSaturationLimit = GlobalMarket.MARKET_CAPACITY or 2000000
-    local priceRange = GlobalMarketOffline.PRICE_MAX_FACTOR - GlobalMarketOffline.PRICE_MIN_FACTOR
 
     for _, data in pairs(self.offlineMarketFillTypes) do
         local fillTypeIndex = data.fillTypeIndex
@@ -618,6 +616,9 @@ end
 
 -- Developer / Admin console command to test Great Demand announcements immediately (`gmTriggerGreatDemand [fillType]`)
 function GlobalMarket:consoleCommandTriggerGreatDemand(fillTypeArg)
+    if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
+        return "GM Debug Mode is disabled."
+    end
     if not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
         return "Permission denied: Only Server or MasterUser can trigger a Great Demand."
     end

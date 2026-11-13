@@ -74,6 +74,11 @@ function GlobalMarketSettings:applyDebugSettings()
     -- Toggle master switch
     GlobalMarket.debugManager.isActive = self.current.isDebugActive
 
+    -- Keep developer console commands synchronized with the active GM Debug Mode
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.syncDebugConsoleCommands ~= nil then
+        g_currentMission.globalMarket:syncDebugConsoleCommands(false)
+    end
+
     -- If disabled, ensure deep logging is turned off
     if not GlobalMarket.debugManager.isActive then
         GlobalMarket.debugManager.deepLogActive = false
@@ -591,12 +596,6 @@ function GlobalMarketSettings:onGreatDemandModeChanged(state)
     if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onGreatDemandModeChanged ~= nil then
         g_currentMission.globalMarket:onGreatDemandModeChanged(GlobalMarket.GREAT_DEMAND_MODE)
     end
-    self:broadcastChanges()
-end
-
-function GlobalMarketSettings:onCapacityChanged_unused(state)
-    self.current.capacityIndex = state
-    GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[state]
     self:broadcastChanges()
 end
 

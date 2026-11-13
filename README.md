@@ -225,7 +225,7 @@ Placeable modders can turn custom silos or object storages into official **Globa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Lean lifecycle orchestrator, InGameMenu injection & input bindings
 ├── modDesc.xml               # FS25 mod descriptor (descVersion 116)
-├── events/                   # 14 dedicated Multiplayer synchronization & transaction events
+├── events/                   # 11 dedicated Multiplayer synchronization & transaction events
 ├── gui/                      # GlobalMarketUI & GlobalMarketDialog controllers, XML layouts & profiles
 ├── images/                   # Menu & UI texture assets (.dds)
 ├── modules/                  # Specialized domain modules:

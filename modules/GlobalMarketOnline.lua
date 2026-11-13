@@ -15,7 +15,6 @@ function GlobalMarketOnline:updateOnlinePrices(fillTypeTable)
     local currentSaturationLimit = GlobalMarket.MARKET_CAPACITY or 2000000
     local minFactor = (GlobalMarketOffline ~= nil and GlobalMarketOffline.PRICE_MIN_FACTOR) or 0.7
     local maxFactor = (GlobalMarketOffline ~= nil and GlobalMarketOffline.PRICE_MAX_FACTOR) or 1.3
-    local gdThreshold = (GlobalMarketOffline ~= nil and GlobalMarketOffline.GREAT_DEMAND_THRESHOLD) or 1.25
     local priceRange = maxFactor - minFactor
 
     for _, data in pairs(fillTypeTable) do

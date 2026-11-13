@@ -88,8 +88,6 @@ if BuyingStation ~= nil and BuyingStation.getEffectiveFillTypePrice ~= nil then
         return origBuyingStationGetEffectivePrice(stationSelf, fillTypeIndex)
     end
 end
-if false then
-end
 
 -- =========================================================================
 -- MODULE INJECTIONS
@@ -127,7 +125,6 @@ source(GlobalMarket.dir .. "events/SyncGlobalMarketSettingsEvent.lua")
 source(GlobalMarket.dir .. "events/SyncGmSiloEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
-source(GlobalMarket.dir .. "events/SellBuySiloGlobalMarketEvent.lua")
 -- Online Events
 source(GlobalMarket.dir .. "events/ExeStatusEvent.lua")
 source(GlobalMarket.dir .. "events/SyncMarketWhitelistEvent.lua")
@@ -151,6 +148,10 @@ source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 ---@param name string The name of the map being loaded
 function GlobalMarket:loadMap(name)
     if self.debugManager ~= nil then
+        if self.debugManager.currentLogFile == nil and self.debugManager.openNewLogFile ~= nil then
+            self.debugManager:rotateLogs()
+            self.debugManager:openNewLogFile()
+        end
         self.debugManager:info("Map loading detected. Initializing GlobalMarket core systems...")
     end
 
@@ -158,7 +159,7 @@ function GlobalMarket:loadMap(name)
     self.fillTypes = {}
     self.offlineMarketFillTypes = {}
     self.isOnline = false
-    self.closeSelectLevelUi = 0
+    self.debugCommandsRegistered = false
     self.syncModule = self
 
     -- Register global reference
@@ -257,8 +258,6 @@ function GlobalMarket:loadMap(name)
 
         -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
-        addConsoleCommand("gmTriggerGreatDemand", "Triggers a GlobalMarket Great Demand for testing", "consoleCommandTriggerGreatDemand", self)
-        addConsoleCommand("gmAdvanceStorageAge", "Advances GM storage age in months to test fees/decay/clearance", "consoleCommandAdvanceStorageAge", self)
     end
 
     -- =========================================================
@@ -270,7 +269,61 @@ function GlobalMarket:loadMap(name)
         self:initSync()
     end
 
-   -- self:dumpFillTypeData()
+    -- Register developer console commands only when GM Debug Mode is enabled
+    self:syncDebugConsoleCommands(false)
+end
+
+---Registers or removes the four developer console commands dynamically based on GM Debug Mode
+---@param forceRemove boolean|nil If true, unconditionally unregisters all GM debug console commands
+function GlobalMarket:syncDebugConsoleCommands(forceRemove)
+    local shouldEnable = (not forceRemove)
+        and GlobalMarketSettings ~= nil
+        and GlobalMarketSettings.current ~= nil
+        and GlobalMarketSettings.current.isDebugActive == true
+
+    if shouldEnable then
+        if not self.debugCommandsRegistered then
+            addConsoleCommand("gmTriggerGreatDemand", "Triggers a GlobalMarket Great Demand for testing", "consoleCommandTriggerGreatDemand", self)
+            addConsoleCommand("gmAdvanceStorageAge", "Advances GM storage age in months to test fees/decay/clearance", "consoleCommandAdvanceStorageAge", self)
+            addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
+            addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
+            self.debugCommandsRegistered = true
+        end
+    else
+        if self.debugCommandsRegistered or forceRemove then
+            removeConsoleCommand("gmTriggerGreatDemand")
+            removeConsoleCommand("gmAdvanceStorageAge")
+            removeConsoleCommand("gmTestStatus")
+            removeConsoleCommand("gmToggleOnlineSync")
+            self.debugCommandsRegistered = false
+        end
+    end
+end
+
+---Cleans up console commands, MessageCenter subscriptions, HUD overlays, and log handles on mission exit
+function GlobalMarket:deleteMap()
+    self:syncDebugConsoleCommands(true)
+
+    if g_messageCenter ~= nil then
+        g_messageCenter:unsubscribeAll(self)
+    end
+
+    if g_currentMission ~= nil and g_currentMission.hud ~= nil and g_currentMission.hud.gameInfoDisplay ~= nil then
+        local display = g_currentMission.hud.gameInfoDisplay
+        if display.gmStatusBg ~= nil then
+            display.gmStatusBg:delete()
+            display.gmStatusBg = nil
+        end
+        if display.gmStatusIcon ~= nil then
+            display.gmStatusIcon:delete()
+            display.gmStatusIcon = nil
+        end
+        display.hasGlobalMarketIcon = nil
+    end
+
+    if self.debugManager ~= nil then
+        self.debugManager:close()
+    end
 end
 
 -- Used by the UI to check if the external EXE is currently connected
@@ -365,7 +418,6 @@ local function onFinishedLoading(mission)
             end
         end
     end
-    -- GlobalMarket.dumpShopItems()
 end
 FSBaseMission.onFinishedLoading = Utils.appendedFunction(FSBaseMission.onFinishedLoading, onFinishedLoading)
 
@@ -501,104 +553,6 @@ local function registerGlobalPlayerActionEvents(playerInputComponent, contextNam
     end
 end
 PlayerInputComponent.registerGlobalPlayerActionEvents = Utils.appendedFunction(PlayerInputComponent.registerGlobalPlayerActionEvents, registerGlobalPlayerActionEvents)
-
--- =========================================================================
--- TEMPORARY DEBUG: FillType & Manager Dump (ALL FillTypes)
--- =========================================================================
-function GlobalMarket:dumpFillTypeData()
-    if g_fillTypeManager == nil or g_fillTypeManager.fillTypes == nil then
-        print("[GM Debug] WARNING: g_fillTypeManager is not available yet!")
-        return
-    end
-
-    print("==============================================================")
-    print("[GM Debug] INITIATING MASSIVE FILLTYPE DUMP")
-    print("==============================================================")
-
-    for _, fillType in pairs(g_fillTypeManager.fillTypes) do
-        if fillType ~= nil and fillType.name ~= nil then
-            print("--------------------------------------------------------------")
-            print("[GM Debug] DUMPING FILLTYPE FROM MANAGER: " .. tostring(fillType.name))
-            print("--------------------------------------------------------------")
-
-            -- Dump the fillType table directly (depth 5 to prevent infinite loops)
-            DebugUtil.printTableRecursively(fillType, "--> ", 0, 5)
-
-            -- Check the BaleManager for references to this fillType
-            if g_baleManager ~= nil then
-                print("--------------------------------------------------------------")
-                print("[GM Debug] BALE MANAGER DATA FOR: " .. tostring(fillType.name))
-                print("--------------------------------------------------------------")
-
-                -- Check if the basic support boolean function exists and returns true
-                if g_baleManager.getIsFillTypeSupported ~= nil then
-                    local isSupported = g_baleManager:getIsFillTypeSupported(fillType.index)
-                    print("--> getIsFillTypeSupported: " .. tostring(isSupported))
-                end
-
-                -- Dump the specific registered bale array for this fillType if it exists
-                if g_baleManager.fillTypes ~= nil and g_baleManager.fillTypes[fillType.index] ~= nil then
-                    print("--> Registered Bales for this FillType:")
-                    DebugUtil.printTableRecursively(g_baleManager.fillTypes[fillType.index], "----> ", 0, 5)
-                else
-                    print("--> No specific bale arrays found in g_baleManager.fillTypes for this index.")
-                end
-            end
-        end
-    end
-    print("==============================================================")
-    print("[GM Debug] MASSIVE FILLTYPE DUMP COMPLETE!")
-    print("==============================================================")
-end
-
--- ============================================================================
--- DEV-TOOL: Analyze Shop Items (BigBags & Pallets)
--- ============================================================================
-function GlobalMarket.dumpShopItems()
-    if g_storeManager ~= nil and g_storeManager.items ~= nil then
-        print("================== START GM MEGA DUMP (PALLETS & BIGBAGS) ==================")
-
-        local count = 0
-        for _, item in ipairs(g_storeManager:getItems()) do
-            local cat = item.categoryName and string.lower(item.categoryName) or ""
-            local xmlLower = item.xmlFilename and string.lower(item.xmlFilename) or ""
-
-            -- Catch everything in relevant categories OR containing "bag"/"pallet" in the xml path
-            if cat == "bigbags" or cat == "pallets" or cat == "bigbagpallets" or string.find(xmlLower, "bag") or string.find(xmlLower, "pallet") then
-                count = count + 1
-                print("--------------------------------------------------")
-                print("Item Name:      " .. tostring(item.name))
-                print("XML Path:       " .. tostring(item.xmlFilename))
-                print("Category:       " .. tostring(item.categoryName))
-                print("showInStore:    " .. tostring(item.showInStore))
-
-                -- Ruthlessly dig through all specs
-                if item.specs ~= nil then
-                    print("SPECS found:")
-                    for specName, specValue in pairs(item.specs) do
-                        print("  -> " .. tostring(specName) .. ": " .. tostring(specValue))
-                    end
-                else
-                    print("No specs found in item table.")
-                end
-
-                -- Output functions (sometimes hidden info is stored here)
-                if item.functions ~= nil and #item.functions > 0 then
-                    print("FUNCTIONS found:")
-                    for i, func in ipairs(item.functions) do
-                        print("  -> F" .. i .. ": " .. tostring(func))
-                    end
-                else
-                    print("No functions found.")
-                end
-            end
-        end
-        print("--- DUMP END --- (Total items analyzed: " .. count .. ")")
-        print("============================================================================")
-    else
-        print("[GM-DUMP] Error: g_storeManager is not initialized!")
-    end
-end
 
 -- =========================================================================
 -- SAFE NETWORK INITIALIZATION

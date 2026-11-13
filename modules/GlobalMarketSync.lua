@@ -66,9 +66,6 @@ function GlobalMarket:initSync()
 
     -- Note: HUD injection (self:initStatusHudHooks()) is executed during onFinishedLoading in GlobalMarket.lua
     -- to ensure g_currentMission.hud.gameInfoDisplay is fully initialized before access.
-
-    addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
-    addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
 end
 
 -- =========================================================================
@@ -99,8 +96,8 @@ function GlobalMarket:initStatusHudHooks()
 
     -- Hook into the draw method of GameInfoDisplay
     display.draw = Utils.appendedFunction(display.draw, function(self)
-        -- Only render if the HUD is actually visible
-        if not self.getVisible or not self:getVisible() then
+        -- Only render while mission and HUD status integration are active and visible
+        if g_currentMission == nil or not self.hasGlobalMarketIcon or not self.getVisible or not self:getVisible() then
             return
         end
 
@@ -859,6 +856,10 @@ end
 -- =========================================================================
 
 function GlobalMarket:consoleCommandTestStatus(val)
+    if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
+        return "GM Debug Mode is disabled."
+    end
+
     local state = tonumber(val)
     if state == 0 then
         self.isExeRunningLocal = false
@@ -882,6 +883,13 @@ function GlobalMarket:consoleCommandTestStatus(val)
 end
 
 function GlobalMarket:consoleCommandToggleOnlineSync(val)
+    if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
+        return "GM Debug Mode is disabled."
+    end
+    if g_currentMission ~= nil and not (g_currentMission:getIsServer() or g_currentMission.isMasterUser) then
+        return "Permission denied (Server/Admin required)."
+    end
+
     if val ~= nil and val ~= "" then
         GlobalMarket.ENABLE_ONLINE_SYNC = (val == "true" or val == "1")
     else
