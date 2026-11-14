@@ -6,6 +6,7 @@
 
 GlobalMarketOnline = {}
 GlobalMarket.DEFAULT_MIN_EXE_VERSION = "0.9.9"
+GlobalMarket.EXE_SWITCH_GRACE_MS = 4500
 
 -- Validates and normalizes a numeric SemVer / 4-part version string (e.g. "0.9.9", "1.0.0", or "1.0.0.0")
 function GlobalMarket.sanitizeExeVersion(rawVersion)

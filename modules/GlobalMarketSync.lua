@@ -61,6 +61,7 @@ function GlobalMarket:initSync()
     self.timerStatus = 0
     self.intervalData = 1000
     self.intervalStatus = 2000
+    self.exeSwitchGraceMs = 0
 
     -- Versioning & Market Branding state
     self.minExeVersion = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.9"
@@ -244,6 +245,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
         local exeRunningNow = false
         local backendConnectedNow = false
         local brandingChanged = false
+        local isHardVersionLock = false
 
         if fileExists(self.isOnlineFile) then
             local xmlFile = XMLFile.load("globalMarketOnline", self.isOnlineFile)
@@ -312,9 +314,12 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 xmlFile:delete()
 
                 -- Tier 1 (Mandatory): Show outdated warning if the EXE is actively running (fresh timestamp) but fails minExeVersion
-                if isTimestampActive and not isVersionValid and not self.hasShownVersionWarning then
-                    g_currentMission:showBlinkingWarning(g_i18n:getText("ui_gm_warning_exe_outdated"), 8000)
-                    self.hasShownVersionWarning = true
+                if isTimestampActive and not isVersionValid then
+                    isHardVersionLock = true
+                    if not self.hasShownVersionWarning then
+                        g_currentMission:showBlinkingWarning(g_i18n:getText("ui_gm_warning_exe_outdated"), 8000)
+                        self.hasShownVersionWarning = true
+                    end
                 elseif isVersionValid then
                     self.hasShownVersionWarning = false
                     -- Tier 2 (Optional): Non-blocking once-per-session hint when a newer recommended client version is available
@@ -335,11 +340,27 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 self.hasCheckedOnlineFileOnce = true
             end
         else
-            -- Heartbeat file absent (clean EXE shutdown or EXE not running) -> immediately offline
+            -- Heartbeat file absent (clean EXE shutdown, token switch restart, or EXE not running)
             self.lastSeenExeTimestamp = nil
             self.exeHeartbeatVerified = false
             self.exeStaleMs = 0
             self.hasCheckedOnlineFileOnce = true
+        end
+
+        -- Token-switch & transient reconnect grace window (~4.5s / 2 polls): prevents premature Data-Host failover while switching profiles
+        if exeRunningNow and backendConnectedNow then
+            self.exeSwitchGraceMs = 0
+        elseif not isHardVersionLock and self.isExeRunningLocal and self.hasBackendConnection then
+            self.exeSwitchGraceMs = (self.exeSwitchGraceMs or 0) + statusElapsedMs
+            if self.exeSwitchGraceMs <= (GlobalMarket.EXE_SWITCH_GRACE_MS or 4500) then
+                exeRunningNow = true
+                backendConnectedNow = true
+                brandingChanged = false
+            else
+                self.exeSwitchGraceMs = 0
+            end
+        else
+            self.exeSwitchGraceMs = 0
         end
 
         local wasDataHost = (self.isDataHost == true)
