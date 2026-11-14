@@ -78,3 +78,85 @@ function GlobalMarketOnline:updateOnlinePrices(fillTypeTable)
         end
     end
 end
+
+-- Applies authoritative Server-computed online/hybrid stock levels, Map-Spy prices, and Great Demand states on MP clients.
+-- Prevents MP clients from recalculating prices locally or wiping server-side Hybrid Great Demands.
+function GlobalMarketOnline.applyAuthoritativeClientSync(gm, incomingByFillType)
+    if gm == nil then return end
+
+    if gm.offlineMarketFillTypes ~= nil and incomingByFillType ~= nil then
+        for _, localItem in pairs(gm.offlineMarketFillTypes) do
+            local incomingItem = incomingByFillType[localItem.fillType]
+            if incomingItem ~= nil then
+                localItem.onlineStatus = incomingItem.status or "PENDING"
+                localItem.fillLevel = incomingItem.fillLevel or 0
+                localItem.trend = incomingItem.trend
+                localItem.isGreatDemand = (incomingItem.isGreatDemand == true)
+                localItem.onlineGreatDemandBonus = incomingItem.greatDemandBonus
+                localItem.greatDemandRemainingLiters = incomingItem.greatDemandRemainingLiters or 0
+                if incomingItem.normalPrice ~= nil then
+                    localItem.normalPrice = incomingItem.normalPrice
+                end
+                if incomingItem.price ~= nil then
+                    localItem.price = incomingItem.price
+                end
+            end
+        end
+    end
+
+    if gm.checkAndAnnounceGreatDemands ~= nil then
+        local isInitialSync = not gm.hasInitializedGreatDemands
+        gm:checkAndAnnounceGreatDemands(isInitialSync)
+        gm.hasInitializedGreatDemands = true
+    end
+
+    local ui = gm.ui or (g_currentMission ~= nil and g_currentMission.globalMarketUi or nil)
+    if ui ~= nil and ui:getIsVisible() then
+        ui:updateContent()
+    end
+end
+
+-- Restores a single market entry back to its snapshotted pre-online Offline stock & Great Demand state
+function GlobalMarket:restoreItemOfflineState(item, currentLimit)
+    if item == nil then return end
+    local limit = currentLimit or GlobalMarket.MARKET_CAPACITY or 2000000
+
+    if item.savedOfflineFillLevel ~= nil then
+        item.fillLevel = math.clamp(item.savedOfflineFillLevel, 0, limit)
+        item.greatDemandBonus = item.savedOfflineGdBonus or 0
+        item.greatDemandHours = item.savedOfflineGdHours or 0
+        item.greatDemandRemainingMinutes = item.savedOfflineGdRemainingMinutes or 0
+        item.greatDemandRemainingLiters = item.savedOfflineGdRemainingLiters or 0
+        item.greatDemandOriginMode = item.savedOfflineGdOriginMode or 0
+        item.isGreatDemand = (item.greatDemandBonus > 0)
+
+        item.savedOfflineFillLevel = nil
+        item.savedOfflineGdBonus = nil
+        item.savedOfflineGdHours = nil
+        item.savedOfflineGdRemainingMinutes = nil
+        item.savedOfflineGdRemainingLiters = nil
+        item.savedOfflineGdOriginMode = nil
+    else
+        item.fillLevel = math.clamp(item.fillLevel or 0, 0, limit)
+        if item.greatDemandFromServer then
+            item.isGreatDemand = false
+            item.greatDemandRemainingLiters = 0
+        end
+    end
+
+    item.onlineStatus = nil
+    item.trend = nil
+    item.greatDemandFromServer = nil
+    item.onlineGreatDemandBonus = nil
+end
+
+-- Restores all market entries from Online stock back to their local Offline simulation state
+function GlobalMarket:restoreOfflineMarketState()
+    if self.clearOnlineMarketBranding ~= nil then self:clearOnlineMarketBranding() end
+    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
+    if self.offlineMarketFillTypes ~= nil then
+        for _, item in pairs(self.offlineMarketFillTypes) do
+            self:restoreItemOfflineState(item, currentLimit)
+        end
+    end
+end

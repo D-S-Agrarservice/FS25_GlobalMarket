@@ -201,6 +201,14 @@ function GlobalMarket:updateActiveDataHostBranding(connection)
         self.onlineMarketName = newName
         self.isPrivateOnlineMarket = newPriv
         self:refreshBrandingUiIfOpen()
+        -- Re-export server map whitelist so a newly selected market backend receives all active map fillTypes
+        if connection == "LOCAL_HOST" then
+            if self.receiveDataHostToken ~= nil then
+                self:receiveDataHostToken(self.serverWhitelist)
+            end
+        elseif SyncMarketWhitelistEvent ~= nil and type(connection) == "table" and connection.sendEvent ~= nil then
+            connection:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist, true))
+        end
         if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end

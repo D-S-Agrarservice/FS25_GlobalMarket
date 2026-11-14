@@ -329,12 +329,14 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             self.hasCheckedOnlineFileOnce = true
         end
 
+        local wasDataHost = (self.isDataHost == true)
         if not exeRunningNow or not backendConnectedNow then
+            if not g_currentMission:getIsServer() then self.isDataHost = false end
             brandingChanged = (self.clearLocalBranding ~= nil and self:clearLocalBranding()) or brandingChanged
         end
 
-        -- Check if EXE status, backend connection, or token market branding changed
-        if exeRunningNow ~= self.isExeRunningLocal or backendConnectedNow ~= self.hasBackendConnection or brandingChanged then
+        -- Check if EXE status, backend connection, Data-Host state, or token market branding changed
+        if exeRunningNow ~= self.isExeRunningLocal or backendConnectedNow ~= self.hasBackendConnection or (self.isDataHost ~= wasDataHost) or brandingChanged then
             self.isExeRunningLocal = exeRunningNow
             self.hasBackendConnection = backendConnectedNow
 
@@ -440,7 +442,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                         end
                         self:applySyncedMarketData(newMarketData)
                         if g_server ~= nil and MarketDataSyncEvent ~= nil then
-                            g_server:broadcastEvent(MarketDataSyncEvent.new(newMarketData, self.onlineMarketName, self.isPrivateOnlineMarket))
+                            g_server:broadcastEvent(MarketDataSyncEvent.newFromServerState(self))
                         end
                     elseif MarketDataSyncEvent ~= nil and g_client ~= nil then
                         -- Remote Data-Host Client sends payload to Server (Server broadcasts back to all clients)
@@ -544,6 +546,13 @@ function GlobalMarket:assignNextDataHost()
         end
     end
 
+    local prevConn = self.dataHostConnection
+    if prevConn ~= nil and prevConn ~= "LOCAL_HOST" and prevConn ~= nextConn then
+        if SyncMarketWhitelistEvent ~= nil and type(prevConn) == "table" and prevConn.sendEvent ~= nil then
+            prevConn:sendEvent(SyncMarketWhitelistEvent.new(nil, false))
+        end
+    end
+
     if nextConn ~= nil then
         self.dataHostConnection = nextConn
         self.isOnline = true
@@ -563,8 +572,11 @@ function GlobalMarket:assignNextDataHost()
         else
             self.isDataHost = false
             self:updateHudIconState()
+            if self.debugManager ~= nil then
+                self.debugManager:info("Sync: Assigned Data-Host token to client connection (%d whitelist items).", #(self.serverWhitelist or {}))
+            end
             if SyncMarketWhitelistEvent ~= nil and type(nextConn) == "table" and nextConn.sendEvent ~= nil then
-                nextConn:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist))
+                nextConn:sendEvent(SyncMarketWhitelistEvent.new(self.serverWhitelist, true))
             end
         end
 
@@ -574,60 +586,19 @@ function GlobalMarket:assignNextDataHost()
         end
     else
         -- No active EXE connection remaining -> seamless fallback to Offline Market
+        local wasOnline = (self.isOnline == true)
         self.dataHostConnection = nil
         self.isOnline = false
         self.isDataHost = false
         self:updateHudIconState()
         self:restoreOfflineMarketState()
+        if wasOnline and self.debugManager ~= nil then
+            self.debugManager:info("Sync: No active companion client available. Restored Offline Market state.")
+        end
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
         if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
-        end
-    end
-end
-
--- Restores a single market entry back to its snapshotted pre-online Offline stock & Great Demand state
-function GlobalMarket:restoreItemOfflineState(item, currentLimit)
-    if item == nil then return end
-    local limit = currentLimit or GlobalMarket.MARKET_CAPACITY or 2000000
-
-    if item.savedOfflineFillLevel ~= nil then
-        item.fillLevel = math.clamp(item.savedOfflineFillLevel, 0, limit)
-        item.greatDemandBonus = item.savedOfflineGdBonus or 0
-        item.greatDemandHours = item.savedOfflineGdHours or 0
-        item.greatDemandRemainingMinutes = item.savedOfflineGdRemainingMinutes or 0
-        item.greatDemandRemainingLiters = item.savedOfflineGdRemainingLiters or 0
-        item.greatDemandOriginMode = item.savedOfflineGdOriginMode or 0
-        item.isGreatDemand = (item.greatDemandBonus > 0)
-
-        item.savedOfflineFillLevel = nil
-        item.savedOfflineGdBonus = nil
-        item.savedOfflineGdHours = nil
-        item.savedOfflineGdRemainingMinutes = nil
-        item.savedOfflineGdRemainingLiters = nil
-        item.savedOfflineGdOriginMode = nil
-    else
-        item.fillLevel = math.clamp(item.fillLevel or 0, 0, limit)
-        if item.greatDemandFromServer then
-            item.isGreatDemand = false
-            item.greatDemandRemainingLiters = 0
-        end
-    end
-
-    item.onlineStatus = nil
-    item.trend = nil
-    item.greatDemandFromServer = nil
-    item.onlineGreatDemandBonus = nil
-end
-
--- Restores all market entries from Online stock back to their local Offline simulation state
-function GlobalMarket:restoreOfflineMarketState()
-    if self.clearOnlineMarketBranding ~= nil then self:clearOnlineMarketBranding() end
-    local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
-    if self.offlineMarketFillTypes ~= nil then
-        for _, item in pairs(self.offlineMarketFillTypes) do
-            self:restoreItemOfflineState(item, currentLimit)
         end
     end
 end
@@ -645,7 +616,7 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackend
     }
 
     if isReady then
-        if self.dataHostConnection == nil then
+        if self.dataHostConnection == nil or (connection == "LOCAL_HOST" and self.dataHostConnection ~= "LOCAL_HOST") then
             self:assignNextDataHost()
         elseif self.dataHostConnection == connection and self.updateActiveDataHostBranding ~= nil then
             self:updateActiveDataHostBranding(connection)
@@ -678,7 +649,12 @@ end
 function GlobalMarket:receiveDataHostToken(whitelist)
     self.isDataHost = true
     self.isOnline = true
+    self.timerData = self.intervalData or 1000
     self:updateHudIconState()
+    if self.refreshBrandingUiIfOpen ~= nil then self:refreshBrandingUiIfOpen() end
+    if self.debugManager ~= nil then
+        self.debugManager:info("Sync: Data-Host token active (%d whitelist items). Exporting whitelist to companion client.", #(whitelist or {}))
+    end
 
     if self.writeFolder == nil then return end
 
@@ -721,6 +697,12 @@ function GlobalMarket:applySyncedMarketData(marketData)
                 incomingByFillType[incomingItem.fillType] = incomingItem
             end
         end
+    end
+
+    -- MP Clients apply authoritative server-computed prices and Hybrid states directly without local recalculation
+    if not g_currentMission:getIsServer() and GlobalMarketOnline ~= nil and GlobalMarketOnline.applyAuthoritativeClientSync ~= nil then
+        GlobalMarketOnline.applyAuthoritativeClientSync(self, incomingByFillType)
+        return
     end
 
     local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
@@ -862,15 +844,9 @@ function GlobalMarket:dispatchOnlineTransaction(fillType, amountLiters, transact
         return self:exportTransaction(fillType, cleanAmount, transactionType)
     elseif self.dataHostConnection ~= nil and type(self.dataHostConnection) == "table" and SellBuyMarketGlobalMarketEvent ~= nil then
         local txCode = (transactionType == "BUY") and SellBuyMarketGlobalMarketEvent.ACTION_BUY or SellBuyMarketGlobalMarketEvent.ACTION_SELL
-        self.dataHostConnection:sendEvent(SellBuyMarketGlobalMarketEvent.new(
-            SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX,
-            txCode,
-            0,
-            cleanAmount,
-            fillType,
-            nil,
-            0
-        ))
+        self.dataHostConnection:sendEvent(
+            SellBuyMarketGlobalMarketEvent.new(SellBuyMarketGlobalMarketEvent.ACTION_EXPORT_TX, txCode, 0, cleanAmount, fillType)
+        )
         return true
     end
 
