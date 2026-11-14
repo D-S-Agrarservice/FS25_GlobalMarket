@@ -73,6 +73,7 @@
         <e k="ui_gm_format_pallet"                                 v="Pallet" />
         <e k="ui_gm_format_roundbale"                              v="Round Bale" />
         <e k="ui_gm_format_squarebale"                             v="Square Bale" />
+        <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket: A new client version (v%s) is available – update recommended." />
         <e k="ui_gm_notification_greatDemand"                      v="Great demand for %s on the Global Market!" />
         <e k="ui_gm_notification_storage_cleared"                  v="GM Storage Cleared: %s (%s) was removed after %d months storage limit!" />
         <e k="ui_gm_notification_storage_final"                    v="FINAL WARNING: %s (%s) in GM Storage expires soon! Please pick up or sell immediately!" />

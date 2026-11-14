@@ -5,6 +5,121 @@
 -- =========================================================================================
 
 GlobalMarketOnline = {}
+GlobalMarket.DEFAULT_MIN_EXE_VERSION = "0.9.9"
+
+-- Validates and normalizes a numeric SemVer / 4-part version string (e.g. "0.9.9", "1.0.0", or "1.0.0.0")
+function GlobalMarket.sanitizeExeVersion(rawVersion)
+    if type(rawVersion) ~= "string" then
+        return nil
+    end
+    local trimmed = string.match(rawVersion, "^%s*(%d+%.%d+[%.%d]*)%s*$")
+    if trimmed == nil or string.len(trimmed) > 32 then
+        return nil
+    end
+    return trimmed
+end
+
+-- Compares two numeric version strings up to 4 segments (missing segments pad with 0)
+function GlobalMarket.isExeVersionSufficient(currentVersion, minVersion)
+    local cleanCurrent = GlobalMarket.sanitizeExeVersion(currentVersion)
+    local cleanMin = GlobalMarket.sanitizeExeVersion(minVersion)
+    if cleanCurrent == nil then return false end
+    if cleanMin == nil then return true end
+
+    local currentParts = {}
+    for p in string.gmatch(cleanCurrent, "%d+") do table.insert(currentParts, tonumber(p)) end
+    local minParts = {}
+    for p in string.gmatch(cleanMin, "%d+") do table.insert(minParts, tonumber(p)) end
+    for i = 1, 4 do
+        local cVal = currentParts[i] or 0
+        local mVal = minParts[i] or 0
+        if cVal > mVal then return true end
+        if cVal < mVal then return false end
+    end
+    return true
+end
+
+-- Loads any previously raised minimum client version floor from modSettings/FS25_GlobalMarket/clientVersionState.xml (Client/Host only)
+function GlobalMarket:loadPersistedMinExeVersion()
+    if g_dedicatedServer ~= nil or self.clientVersionStateFile == nil or not fileExists(self.clientVersionStateFile) then
+        return
+    end
+
+    local xmlFile = XMLFile.load("gmClientVersionState", self.clientVersionStateFile)
+    if xmlFile ~= nil then
+        local rawSaved = xmlFile:getString("gmClientVersionState#minExeVersion") or xmlFile:getString("gmClientVersionState.minExeVersion")
+        xmlFile:delete()
+
+        local savedMin = GlobalMarket.sanitizeExeVersion(rawSaved)
+        if savedMin ~= nil and not GlobalMarket.isExeVersionSufficient(self.minExeVersion, savedMin) then
+            self.minExeVersion = savedMin
+            if self.debugManager ~= nil then
+                self.debugManager:info("Sync: Loaded persisted minimum client version floor '%s' from clientVersionState.xml.", savedMin)
+            end
+        end
+    end
+end
+
+-- Persists a newly raised minimum client version floor to modSettings/FS25_GlobalMarket/clientVersionState.xml (Client/Host only)
+function GlobalMarket:savePersistedMinExeVersion(newMinVersion)
+    if g_dedicatedServer ~= nil or self.clientVersionStateFile == nil then
+        return
+    end
+
+    local cleanMin = GlobalMarket.sanitizeExeVersion(newMinVersion)
+    if cleanMin == nil then
+        return
+    end
+
+    local xmlFile = XMLFile.create("gmClientVersionState", self.clientVersionStateFile, "gmClientVersionState")
+    if xmlFile ~= nil then
+        xmlFile:setString("gmClientVersionState#minExeVersion", cleanMin)
+        xmlFile:setString("gmClientVersionState#updatedAt", getDate("%Y-%m-%d %H:%M:%S"))
+        xmlFile:save()
+        xmlFile:delete()
+
+        if self.debugManager ~= nil then
+            self.debugManager:info("Sync: Persisted raised minimum client version floor '%s' to clientVersionState.xml.", cleanMin)
+        end
+    end
+end
+
+-- Displays a non-blocking, once-per-session HUD info notification when an optional GlobalMarketClient update is available
+function GlobalMarket:notifyOptionalExeUpdate(exeVersion, latestVersion)
+    if g_dedicatedServer ~= nil or g_currentMission == nil then
+        return
+    end
+
+    local cleanLatest = GlobalMarket.sanitizeExeVersion(latestVersion)
+    if cleanLatest == nil or GlobalMarket.isExeVersionSufficient(exeVersion, cleanLatest) then
+        return
+    end
+
+    self.shownOptionalUpdateVersions = self.shownOptionalUpdateVersions or {}
+    if self.shownOptionalUpdateVersions[cleanLatest] == true then
+        return
+    end
+
+    self.shownOptionalUpdateVersions[cleanLatest] = true
+    self.hasShownOptionalUpdateHint = true
+
+    local fmt = (g_i18n ~= nil and g_i18n:hasText("ui_gm_info_exe_update_optional"))
+        and g_i18n:getText("ui_gm_info_exe_update_optional")
+        or "GlobalMarket: A new client version (v%s) is available - update recommended."
+    local hintMsg = string.format(fmt, cleanLatest)
+
+    if g_currentMission.hud ~= nil and g_currentMission.hud.addSideNotification ~= nil then
+        local notifType = (FSBaseMission ~= nil and FSBaseMission.INGAME_NOTIFICATION_INFO) or { 1, 1, 1, 1 }
+        local sound = (GuiSoundPlayer ~= nil and GuiSoundPlayer.SOUND_SAMPLES ~= nil) and GuiSoundPlayer.SOUND_SAMPLES.NOTIFICATION or nil
+        g_currentMission.hud:addSideNotification(notifType, hintMsg, 12000, sound)
+    else
+        g_currentMission:showBlinkingWarning(hintMsg, 6000)
+    end
+
+    if self.debugManager ~= nil then
+        self.debugManager:info("Sync: Optional GlobalMarketClient update v%s available (running v%s).", cleanLatest, tostring(exeVersion))
+    end
+end
 
 -- Updates the prices for all fillTypes using the server-provided trend factor or online stock level.
 -- @param fillTypeTable table: The shared market data table (usually self.offlineMarketFillTypes)

@@ -73,6 +73,7 @@
         <e k="ui_gm_format_pallet"                                 v="Palé" />
         <e k="ui_gm_format_roundbale"                              v="Paca redonda" />
         <e k="ui_gm_format_squarebale"                             v="Paca cuadrada" />
+        <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket: Una nueva versión del cliente (v%s) está disponible – actualización recomendada." />
         <e k="ui_gm_notification_greatDemand"                      v="¡Gran demanda de %s en el Mercado Global!" />
         <e k="ui_gm_notification_storage_cleared"                  v="Almacén GM vaciado: ¡%s (%s) fue eliminado tras el límite de %d meses!" />
         <e k="ui_gm_notification_storage_final"                    v="ÚLTIMO AVISO: ¡%s (%s) en el almacén GM caduca pronto! ¡Recógelo o véndelo de inmediato!" />

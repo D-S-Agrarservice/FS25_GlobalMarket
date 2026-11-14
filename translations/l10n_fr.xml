@@ -73,6 +73,7 @@
         <e k="ui_gm_format_pallet"                                 v="Palette" />
         <e k="ui_gm_format_roundbale"                              v="Balle ronde" />
         <e k="ui_gm_format_squarebale"                             v="Balle carrée" />
+        <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket : Une nouvelle version du client (v%s) est disponible – mise à jour recommandée." />
         <e k="ui_gm_notification_greatDemand"                      v="Forte demande pour %s sur le Marché Mondial !" />
         <e k="ui_gm_notification_storage_cleared"                  v="Entrepôt GM vidé : %s (%s) a été retiré après la limite de %d mois !" />
         <e k="ui_gm_notification_storage_final"                    v="DERNIER AVERTISSEMENT : %s (%s) dans l'entrepôt GM expire bientôt ! Récupérez ou vendez immédiatement !" />

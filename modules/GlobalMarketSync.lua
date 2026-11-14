@@ -15,6 +15,7 @@ function GlobalMarket:initFileSystem()
     -- File definitions (all consolidated inside modSettings/FS25_GlobalMarket/)
     self.settingsFolder = settingsPath
     self.isOnlineFile = settingsPath .. "globalMarketOnline.xml"
+    self.clientVersionStateFile = settingsPath .. "clientVersionState.xml"
     self.serverWhitelistFile = settingsPath .. "server_whitelist.xml"
     self.readFolder = settingsPath .. "read/"
     self.writeFolder = settingsPath .. "write/"
@@ -62,8 +63,11 @@ function GlobalMarket:initSync()
     self.intervalStatus = 2000
 
     -- Versioning & Market Branding state
-    self.minExeVersion = "1.0.0.0"
+    self.minExeVersion = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.9"
     self.hasShownVersionWarning = false
+    self.hasShownOptionalUpdateHint = false
+    self.shownOptionalUpdateVersions = {}
+    if self.loadPersistedMinExeVersion ~= nil then self:loadPersistedMinExeVersion() end
     if self.initBrandingState ~= nil then self:initBrandingState() end
 
     -- Note: HUD injection (self:initStatusHudHooks()) is executed during onFinishedLoading in GlobalMarket.lua
@@ -199,6 +203,9 @@ end
 -- =========================================================================
 
 local function isVersionSufficient(currentVersion, minVersion)
+    if GlobalMarket.isExeVersionSufficient ~= nil then
+        return GlobalMarket.isExeVersionSufficient(currentVersion, minVersion)
+    end
     if currentVersion == nil or currentVersion == "" then return false end
     local currentParts = {}
     for p in string.gmatch(currentVersion, "%d+") do table.insert(currentParts, tonumber(p)) end
@@ -242,17 +249,22 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             local xmlFile = XMLFile.load("globalMarketOnline", self.isOnlineFile)
             if xmlFile ~= nil then
                 local exeVersion = xmlFile:getString("globalMarketOnline.version")
-                local backendMinVersion = xmlFile:getString("globalMarketOnline.minVersion")
+                local rawMinVer = xmlFile:getString("globalMarketOnline.minVersion") or xmlFile:getString("globalMarketOnline#minVersion")
+                local rawLatestVer = xmlFile:getString("globalMarketOnline.latestVersion") or xmlFile:getString("globalMarketOnline#latestVersion")
+                local backendMinVersion = (GlobalMarket.sanitizeExeVersion ~= nil) and GlobalMarket.sanitizeExeVersion(rawMinVer) or rawMinVer
+                local backendLatestVersion = (GlobalMarket.sanitizeExeVersion ~= nil) and GlobalMarket.sanitizeExeVersion(rawLatestVer) or rawLatestVer
                 local exeTimestamp = xmlFile:getInt("globalMarketOnline#timestamp") or 0
 
                 -- Read backend connection state (default to true for legacy support)
                 backendConnectedNow = xmlFile:getBool("globalMarketOnline#isConnected", true)
 
-                -- Dynamic minimum version enforcement from backend:
-                -- If the backend reports a higher required EXE version than the mod's local baseline, enforce it immediately.
+                -- Tier 1 (Mandatory): Dynamic minimum version enforcement & persistent floor outside the .zip
                 if backendMinVersion ~= nil and backendMinVersion ~= "" then
                     if not isVersionSufficient(self.minExeVersion, backendMinVersion) then
                         self.minExeVersion = backendMinVersion
+                        if self.savePersistedMinExeVersion ~= nil then
+                            self:savePersistedMinExeVersion(backendMinVersion)
+                        end
                     end
                 end
 
@@ -302,12 +314,16 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 end
                 xmlFile:delete()
 
-                -- Show outdated warning only if the EXE is actively running (fresh timestamp) but fails the version check
+                -- Tier 1 (Mandatory): Show outdated warning if the EXE is actively running (fresh timestamp) but fails minExeVersion
                 if isTimestampActive and not isVersionValid and not self.hasShownVersionWarning then
                     g_currentMission:showBlinkingWarning(g_i18n:getText("ui_gm_warning_exe_outdated"), 8000)
                     self.hasShownVersionWarning = true
                 elseif isVersionValid then
                     self.hasShownVersionWarning = false
+                    -- Tier 2 (Optional): Non-blocking once-per-session hint when a newer recommended client version is available
+                    if isTimestampActive and backendLatestVersion ~= nil and self.notifyOptionalExeUpdate ~= nil then
+                        self:notifyOptionalExeUpdate(exeVersion, backendLatestVersion)
+                    end
                 end
             else
                 -- XML temporarily unreadable (e.g. mid-rename on Windows); tolerate up to 10s if previously verified
