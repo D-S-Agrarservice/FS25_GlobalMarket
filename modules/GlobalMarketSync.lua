@@ -258,16 +258,6 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 -- Read backend connection state (default to true for legacy support)
                 backendConnectedNow = xmlFile:getBool("globalMarketOnline#isConnected", true)
 
-                -- Tier 1 (Mandatory): Dynamic minimum version enforcement & persistent floor outside the .zip
-                if backendMinVersion ~= nil and backendMinVersion ~= "" then
-                    if not isVersionSufficient(self.minExeVersion, backendMinVersion) then
-                        self.minExeVersion = backendMinVersion
-                        if self.savePersistedMinExeVersion ~= nil then
-                            self:savePersistedMinExeVersion(backendMinVersion)
-                        end
-                    end
-                end
-
                 -- Sandbox-safe Anti-Zombie Check (os.time() is unavailable in the FS25 Lua sandbox):
                 -- Verify that globalMarketOnline#timestamp advances within 10,000 ms.
                 local isTimestampActive = false
@@ -299,6 +289,13 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 end
 
                 self.hasCheckedOnlineFileOnce = true
+
+                -- Tier 1 (Mandatory): Reconcile dynamic minimum version floor (raises immediately; allows rollback when isConnected="true")
+                if self.reconcileMinExeVersion ~= nil then
+                    self:reconcileMinExeVersion(backendMinVersion, isTimestampActive, backendConnectedNow)
+                elseif isTimestampActive and backendMinVersion ~= nil and backendMinVersion ~= "" and not isVersionSufficient(self.minExeVersion, backendMinVersion) then
+                    self.minExeVersion = backendMinVersion
+                end
 
                 local isVersionValid = isVersionSufficient(exeVersion, self.minExeVersion)
 

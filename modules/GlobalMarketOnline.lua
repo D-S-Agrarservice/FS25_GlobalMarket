@@ -84,6 +84,35 @@ function GlobalMarket:savePersistedMinExeVersion(newMinVersion)
     end
 end
 
+-- Reconciles self.minExeVersion against globalMarketOnline.minVersion from an active client heartbeat:
+-- 1. Any higher backendMinVersion immediately raises and persists the floor (even when isConnected="false" due to version lock).
+-- 2. When an active server handshake (isConnected="true") reports a lower minVersion (admin rollback), lowers the floor back to max(DEFAULT_MIN_EXE_VERSION, backendMinVersion).
+function GlobalMarket:reconcileMinExeVersion(backendMinVersion, isTimestampActive, backendConnectedNow)
+    if not isTimestampActive then
+        return
+    end
+
+    local cleanBackendMin = GlobalMarket.sanitizeExeVersion(backendMinVersion)
+    if cleanBackendMin == nil then
+        return
+    end
+
+    if not GlobalMarket.isExeVersionSufficient(self.minExeVersion, cleanBackendMin) then
+        self.minExeVersion = cleanBackendMin
+        self:savePersistedMinExeVersion(cleanBackendMin)
+    elseif backendConnectedNow == true then
+        local baseFloor = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.9"
+        local effectiveFloor = GlobalMarket.isExeVersionSufficient(cleanBackendMin, baseFloor) and cleanBackendMin or baseFloor
+        if not GlobalMarket.isExeVersionSufficient(effectiveFloor, self.minExeVersion) then
+            self.minExeVersion = effectiveFloor
+            self:savePersistedMinExeVersion(effectiveFloor)
+            if self.debugManager ~= nil then
+                self.debugManager:info("Sync: Server rolled back mandatory client version floor to '%s'.", effectiveFloor)
+            end
+        end
+    end
+end
+
 -- Displays a non-blocking, once-per-session HUD info notification when an optional GlobalMarketClient update is available
 function GlobalMarket:notifyOptionalExeUpdate(exeVersion, latestVersion)
     if g_dedicatedServer ~= nil or g_currentMission == nil then
