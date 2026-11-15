@@ -5,10 +5,10 @@
 -- =========================================================================================
 
 GlobalMarketOnline = {}
-GlobalMarket.DEFAULT_MIN_EXE_VERSION = "0.9.9"
+GlobalMarket.DEFAULT_MIN_EXE_VERSION = "0.9.10"
 GlobalMarket.EXE_SWITCH_GRACE_MS = 4500
 
--- Validates and normalizes a numeric SemVer / 4-part version string (e.g. "0.9.9", "1.0.0", or "1.0.0.0")
+-- Validates and normalizes a numeric SemVer / 4-part version string (e.g. "0.9.10", "1.0.0", or "1.0.0.0")
 function GlobalMarket.sanitizeExeVersion(rawVersion)
     if type(rawVersion) ~= "string" then
         return nil
@@ -102,7 +102,7 @@ function GlobalMarket:reconcileMinExeVersion(backendMinVersion, isTimestampActiv
         self.minExeVersion = cleanBackendMin
         self:savePersistedMinExeVersion(cleanBackendMin)
     elseif backendConnectedNow == true then
-        local baseFloor = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.9"
+        local baseFloor = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.10"
         local effectiveFloor = GlobalMarket.isExeVersionSufficient(cleanBackendMin, baseFloor) and cleanBackendMin or baseFloor
         if not GlobalMarket.isExeVersionSufficient(effectiveFloor, self.minExeVersion) then
             self.minExeVersion = effectiveFloor

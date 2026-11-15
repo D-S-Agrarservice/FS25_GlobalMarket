@@ -64,7 +64,7 @@ function GlobalMarket:initSync()
     self.exeSwitchGraceMs = 0
 
     -- Versioning & Market Branding state
-    self.minExeVersion = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.9"
+    self.minExeVersion = GlobalMarket.DEFAULT_MIN_EXE_VERSION or "0.9.10"
     self.hasShownVersionWarning = false
     self.hasShownOptionalUpdateHint = false
     self.shownOptionalUpdateVersions = {}
