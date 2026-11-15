@@ -470,13 +470,10 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 end
                 if hasMarketDataPacket then
                     if g_currentMission:getIsServer() then
-                        -- Local Host / Server applies immediately and broadcasts to clients
-                        if self.applySyncedBranding ~= nil then
-                            self:applySyncedBranding(self.localExeMarketName, self.localExeIsPrivateMarket)
-                        end
-                        self:applySyncedMarketData(newMarketData)
-                        if g_server ~= nil and MarketDataSyncEvent ~= nil then
-                            g_server:broadcastEvent(MarketDataSyncEvent.newFromServerState(self))
+                        -- Local Host / Server validates session market lock before applying and broadcasting
+                        if self.applyAndBroadcastServerMarketPacket ~= nil then
+                            self:applyAndBroadcastServerMarketPacket(
+                                "LOCAL_HOST", newMarketData, self.localExeMarketName, self.localExeIsPrivateMarket)
                         end
                     elseif MarketDataSyncEvent ~= nil and g_client ~= nil then
                         -- Remote Data-Host Client sends payload to Server (Server broadcasts back to all clients)
@@ -565,20 +562,7 @@ function GlobalMarket:assignNextDataHost()
     if not g_currentMission:getIsServer() then return end
 
     self.clientExeStates = self.clientExeStates or {}
-    local nextConn = nil
-
-    -- Prefer LOCAL_HOST (SP / MP-Host / Dedicated Server local EXE) if active
-    local localState = self.clientExeStates["LOCAL_HOST"]
-    if localState ~= nil and localState.isExeRunning and localState.hasBackendConnection then
-        nextConn = "LOCAL_HOST"
-    else
-        for conn, state in pairs(self.clientExeStates) do
-            if conn ~= "LOCAL_HOST" and state ~= nil and state.isExeRunning and state.hasBackendConnection then
-                nextConn = conn
-                break
-            end
-        end
-    end
+    local nextConn = (self.selectNextDataHostConnection ~= nil) and self:selectNextDataHostConnection() or nil
 
     local prevConn = self.dataHostConnection
     if prevConn ~= nil and prevConn ~= "LOCAL_HOST" and prevConn ~= nextConn then
@@ -588,9 +572,14 @@ function GlobalMarket:assignNextDataHost()
     end
 
     if nextConn ~= nil then
+        local prevWasOnline = (self.isOnline == true)
         self.dataHostConnection = nextConn
         self.isOnline = true
-        if self.applyDataHostBranding ~= nil then self:applyDataHostBranding(self.clientExeStates[nextConn]) end
+        if self.onDataHostSelectedBranding ~= nil then
+            self:onDataHostSelectedBranding(self.clientExeStates[nextConn], prevWasOnline)
+        elseif self.applyDataHostBranding ~= nil then
+            self:applyDataHostBranding(self.clientExeStates[nextConn])
+        end
 
         -- Hybrid Mode initialization: Treat all local fillTypes as PENDING until the backend confirms APPROVED/REJECTED
         if self.offlineMarketFillTypes ~= nil then
@@ -619,7 +608,7 @@ function GlobalMarket:assignNextDataHost()
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
     else
-        -- No active EXE connection remaining -> seamless fallback to Offline Market
+        -- No eligible EXE connection remaining -> seamless fallback to Offline Market
         local wasOnline = (self.isOnline == true)
         self.dataHostConnection = nil
         self.isOnline = false
@@ -627,7 +616,12 @@ function GlobalMarket:assignNextDataHost()
         self:updateHudIconState()
         self:restoreOfflineMarketState()
         if wasOnline and self.debugManager ~= nil then
-            self.debugManager:info("Sync: No active companion client available. Restored Offline Market state.")
+            if self.sessionLockedMarketName ~= nil then
+                self.debugManager:info("Sync: No eligible client for locked market '%s'. Restored Offline Market state.",
+                    tostring(self.sessionLockedMarketName))
+            else
+                self.debugManager:info("Sync: No active companion client available. Restored Offline Market state.")
+            end
         end
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
@@ -642,24 +636,24 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackend
 
     self.clientExeStates = self.clientExeStates or {}
     local isReady = (isExeRunning == true) and (hasBackendConnection ~= false)
-    self.clientExeStates[connection] = {
+    local state = {
         isExeRunning = (isExeRunning == true),
         hasBackendConnection = (hasBackendConnection ~= false),
         marketName = marketName,
         isPrivateMarket = (isPrivateMarket == true)
     }
+    self.clientExeStates[connection] = state
 
     if isReady then
-        if self.dataHostConnection == nil or (connection == "LOCAL_HOST" and self.dataHostConnection ~= "LOCAL_HOST") then
+        local eligible = (self.isClientEligibleForSessionMarket == nil) or self:isClientEligibleForSessionMarket(state)
+        if (self.dataHostConnection == nil and eligible)
+            or (self.shouldPreemptActiveDataHost ~= nil and self:shouldPreemptActiveDataHost(connection, state)) then
             self:assignNextDataHost()
         elseif self.dataHostConnection == connection and self.updateActiveDataHostBranding ~= nil then
             self:updateActiveDataHostBranding(connection)
         end
-    else
-        if self.dataHostConnection == connection then
-            self.dataHostConnection = nil
-            self:assignNextDataHost()
-        end
+    elseif self.dataHostConnection == connection then
+        self:assignNextDataHost()
     end
 end
 
@@ -671,11 +665,18 @@ function GlobalMarket:onClientDisconnected(connection)
         self.clientExeStates[connection] = nil
     end
 
-    if self.dataHostConnection == connection then
+    local wasDataHost = (self.dataHostConnection == connection)
+    if wasDataHost then
         if self.debugManager ~= nil then
             self.debugManager:info("Sync: Active Data-Host disconnected. Reassigning token or falling back to Offline mode...")
         end
         self.dataHostConnection = nil
+    end
+
+    local lockCleared = (self.clearSessionMarketLockIfServerEmpty ~= nil)
+        and self:clearSessionMarketLockIfServerEmpty() or false
+    if wasDataHost or (lockCleared and self.dataHostConnection == nil
+        and self.clientExeStates ~= nil and self.clientExeStates["LOCAL_HOST"] ~= nil) then
         self:assignNextDataHost()
     end
 end
@@ -976,6 +977,7 @@ function GlobalMarket:consoleCommandToggleOnlineSync(val)
         self.isOnline = false
         self.dataHostConnection = nil
         self.clientExeStates = {}
+        if self.resetSessionMarketLock ~= nil then self:resetSessionMarketLock() end
         if self.clearLocalBranding ~= nil then self:clearLocalBranding() end
         self:restoreOfflineMarketState()
         self:updateHudIconState()

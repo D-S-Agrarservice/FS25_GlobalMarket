@@ -340,8 +340,8 @@ end
 -- Decides dynamically which module calculates the prices based on connection state.
 -- This function can be safely called by any module (Sync, Offline, UI) to refresh prices.
 function GlobalMarket:refreshMarketPrices(skipUiUpdate)
-    -- Check heartbeat flags provided by the Sync module
-    local useOnline = (self.isExeRunningLocal and self.hasBackendConnection) or (self.isOnline == true)
+    -- Follow authoritative online state so standby clients never override a locked/offline server
+    local useOnline = (self.isOnline == true)
 
     if useOnline then
         -- EXE is active and connected -> Online Module takes over

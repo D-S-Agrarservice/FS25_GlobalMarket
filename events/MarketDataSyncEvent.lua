@@ -107,6 +107,14 @@ function MarketDataSyncEvent:run(connection)
             end
             return
         end
+        if gm.applyAndBroadcastServerMarketPacket ~= nil then
+            gm:applyAndBroadcastServerMarketPacket(connection, self.marketData, self.marketName, self.isPrivateMarket)
+            return
+        end
+        if gm.onDataHostPacketBranding ~= nil
+            and not gm:onDataHostPacketBranding(connection, self.marketName, self.isPrivateMarket) then
+            return
+        end
 
         if gm.applySyncedBranding ~= nil then
             gm:applySyncedBranding(self.marketName, self.isPrivateMarket)
