@@ -316,6 +316,7 @@ function GlobalMarketUI.new(target, custom_mt)
 
     self.searchFilterText = ""
     self.categoryMode = GlobalMarketUI.CATEGORY_MODE_DETAILED
+    self.activeSubTab = 1
 
     self.i18n = g_i18n
     self.currentListFocus = "storage"
@@ -336,6 +337,10 @@ function GlobalMarketUI:onGuiSetupFinished()
     if self.gmTableMarket ~= nil then
         self.gmTableMarket:setDataSource(self)
         self.gmTableMarket:setDelegate(self)
+    end
+
+    if self.initContractsSubTab ~= nil then
+        self:initContractsSubTab()
     end
 end
 
@@ -386,12 +391,16 @@ function GlobalMarketUI:onFrameOpen()
         disabled = false
     }
 
-    self:setMenuButtonInfo({ backButton, self.actionButtonInfo, self.categoryModeButtonInfo })
-    self:updateCategoryModeButtonVisuals()
-    self:updateContent()
+    if self.onContractsFrameOpen ~= nil then
+        self:onContractsFrameOpen()
+    else
+        self:setMenuButtonInfo({ backButton, self.actionButtonInfo, self.categoryModeButtonInfo })
+        self:updateCategoryModeButtonVisuals()
+        self:updateContent()
 
-    if self.gmTableStorage ~= nil then
-        FocusManager:setFocus(self.gmTableStorage)
+        if self.gmTableStorage ~= nil then
+            FocusManager:setFocus(self.gmTableStorage)
+        end
     end
 end
 
@@ -649,6 +658,7 @@ function GlobalMarketUI:updateContent()
     end
 
     self:applyFilterAndCategories(true)
+    if self.updateContractsSubTabContent ~= nil then self:updateContractsSubTabContent() end
 
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d (%d sections), Market items: %d (%d sections)",
@@ -663,13 +673,17 @@ end
 function GlobalMarketUI:onSearchTextChanged(element, text)
     self.searchFilterText = text or ""
     self:applyFilterAndCategories(false)
+    if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS and self.applyContractsListsFilter ~= nil then
+        self:applyContractsListsFilter(false)
+    end
 end
 
 function GlobalMarketUI:onSearchEnterPressed(element)
-    local targetList = (self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket
-    if targetList ~= nil then
-        FocusManager:setFocus(targetList)
-    end
+    local isCon = (self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS)
+    local targetList = isCon
+        and ((self.contractsListFocus == "right") and self.gmTableContractBoard or self.gmTableMyContracts)
+        or ((self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket)
+    if targetList ~= nil then FocusManager:setFocus(targetList) end
 end
 
 function GlobalMarketUI:onClickClearSearch()
@@ -678,6 +692,9 @@ function GlobalMarketUI:onClickClearSearch()
         self.searchTextInput:setText("")
     end
     self:applyFilterAndCategories(true)
+    if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS and self.applyContractsListsFilter ~= nil then
+        self:applyContractsListsFilter(true)
+    end
 end
 
 function GlobalMarketUI:onClickToggleCategoryMode()

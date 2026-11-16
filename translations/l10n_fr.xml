@@ -34,6 +34,13 @@
         <e k="gm_help_p2_fees_text"                                v="- Marge et livraison : L'achat sur le marché inclut une marge commerciale réglable. Les transferts directs depuis ou vers vos silos et entrepôts entraînent des frais de livraison (forfait de base + tarif au litre).&#xA;- Délai en ligne : En mode en ligne, un court délai global de 15 secondes s'applique entre deux transactions en ligne afin de synchroniser les stocks mondiaux." />
         <e k="gm_help_p2_demand_title"                             v="Fortes demandes et mode hybride pour les mods" />
         <e k="gm_help_p2_demand_text"                              v="- Fortes demandes : Offrent d'importants bonus de prix pendant une durée limitée, annoncés dans le HUD et mis en évidence dans la liste.&#xA;- Mode hybride en ligne : Les produits personnalisés de cartes ou mods en attente de validation ('En attente | Hors ligne') ou purement locaux ('Hors ligne uniq.') restent négociables sans interruption via la simulation locale." />
+        <e k="gm_help_p5_title"                                    v="3. Contrats, offres directes &amp; boîte de retrait" />
+        <e k="gm_help_p5_contracts_title"                          v="Contrats de livraison (PNJ &amp; entre fermes)" />
+        <e k="gm_help_p5_contracts_text"                           v="Dans le sous-onglet 'Contrats &amp; Offres', acceptez des contrats de livraison pour les acheteurs PNJ ou d'autres fermes :&#xA;- Prix de base &amp; prime finale : Chaque livraison partielle (vrac, balles ou palettes) est payée immédiatement au prix de base. À 100 %, vous touchez la prime (+5 % à +20 %).&#xA;- Limite &amp; pénalité : Maximum 3 contrats actifs par ferme. En cas d'échec à l'échéance, la prime est perdue et une pénalité de 15 % s'applique au volume manquant.&#xA;- Contrats d'achat : L'intégralité est bloquée en dépôt ; annuler avant acceptation rembourse 100 %." />
+        <e k="gm_help_p5_offers_title"                             v="Offres directes ±10 % (Tableau d'annonces)" />
+        <e k="gm_help_p5_offers_text"                              v="Proposez vos produits directement dans une fourchette de -10 % à +10 % autour du prix du marché :&#xA;- 0 % de marge système : Aucune commission système sur les achats directs.&#xA;- Achat partiel &amp; durée : Choisissez vente partielle ou lot complet et une durée de 1 à 3 mois." />
+        <e k="gm_help_p5_inbox_title"                              v="Boîte de retrait unifiée &amp; terminaux GM" />
+        <e k="gm_help_p5_inbox_text"                               v="Les offres expirées/annulées et les livraisons reçues pour vos contrats d'achat arrivent en sécurité dans votre boîte de retrait :&#xA;- Retrait flexible : Transférez vers vos silos, entrepôts ou sans frais (0 $CURRENCY_SYMBOL) vers un terminal GM.&#xA;- Délai de grâce : Après 2 mois inutilisés, liquidation automatique à -15 %." />
         <e k="gm_help_p3_title"                                    v="3. Stockages pris en charge, formats et terminaux GM" />
         <e k="gm_help_p3_storages_title"                           v="Silos de ferme, entrepôts d'objets et choix du format" />
         <e k="gm_help_p3_storages_text"                            v="Le Marché Global détecte automatiquement tous vos silos de vrac et de liquides ainsi que les entrepôts de balles et palettes basés sur les scripts standards de GIANTS.&#xA;- Choix du conditionnement : Dans la fenêtre d'échange, choisissez le stockage cible et le format souhaité (balles rondes/carrées, palette, BigBag ou cuve IBC).&#xA;- Remarque ensilage : Les balles en cours de fermentation sont verrouillées jusqu'à la fin de l'ensilage." />
@@ -141,6 +148,76 @@
         <e k="ui_gm_terminal_hint"                                 v=" (Centre logistique GM - sans frais)" />
         <e k="ui_gm_total_storage"                                 v="STOCK TOTAL :" />
         <e k="ui_gm_trend"                                         v="Tendance" />
+        <e k="ui_gm_action_acceptContract"                         v="Accepter le contrat" />
+        <e k="ui_gm_action_buyOffer"                               v="Achat direct" />
+        <e k="ui_gm_action_cancelListing"                          v="Annuler l'annonce" />
+        <e k="ui_gm_action_claimInbox"                             v="Retirer du casier" />
+        <e k="ui_gm_action_deliverContract"                        v="Livrer le contrat" />
+        <e k="ui_gm_btn_cancel"                                    v="Annuler" />
+        <e k="ui_gm_btn_claim"                                     v="Stocker" />
+        <e k="ui_gm_btn_create"                                    v="Publier" />
+        <e k="ui_gm_btn_deliver"                                   v="Livrer" />
+        <e k="ui_gm_btn_newContract"                               v="+ Contrat d'achat" />
+        <e k="ui_gm_btn_newOffer"                                  v="+ Offre directe" />
+        <e k="ui_gm_col_priceBonus"                                v="Prix / Prime" />
+        <e k="ui_gm_col_progress"                                  v="Progrès / Qté" />
+        <e k="ui_gm_col_terms"                                     v="Conditions / Délai" />
+        <e k="ui_gm_col_volumeTime"                                v="Volume / Délai" />
+        <e k="ui_gm_confirm_acceptText"                            v="Accepter le contrat pour %s de %s ?&#xA;Prix de base : %s / 1 000 L  |  Prime finale : +%d%%  |  Délai : %.1f mois&#xA;&#xA;Remarque : Si le contrat n'est pas achevé à temps, la prime est perdue et une pénalité de 15 %% s'applique au volume manquant." />
+        <e k="ui_gm_confirm_acceptTitle"                           v="Accepter le contrat de livraison" />
+        <e k="ui_gm_confirm_cancelContractText"                    v="Annuler le contrat #%d (%s %s) et rembourser 100 %% du dépôt restant ?" />
+        <e k="ui_gm_confirm_cancelOfferText"                       v="Annuler l'offre directe #%d (%s %s) et transférer le reste vers votre boîte de retrait ?" />
+        <e k="ui_gm_contracts_boardHeader"                         v="Tableau : Contrats &amp; Offres" />
+        <e k="ui_gm_contracts_boardSub"                            v="Contrats ouverts : %d  |  Offres directes : %d  (0%% marge système)" />
+        <e k="ui_gm_contracts_myHeader"                            v="Mes contrats, annonces &amp; retraits" />
+        <e k="ui_gm_contracts_mySub"                               v="Contrats actifs : %d / %d  |  Boîte de retrait : %d lot(s)" />
+        <e k="ui_gm_dlg_buyOffer"                                  v="Acheter une offre directe" />
+        <e k="ui_gm_dlg_claimInbox"                                v="Retirer de la boîte de retrait" />
+        <e k="ui_gm_dlg_createContract"                            v="Publier un contrat d'achat" />
+        <e k="ui_gm_dlg_createOffer"                               v="Créer une offre directe (±10%)" />
+        <e k="ui_gm_dlg_deliverContract"                           v="Livrer sur contrat" />
+        <e k="ui_gm_dlg_optBonus"                                  v="Prime de contrat : +%d%% (%s / 1 000 L total)" />
+        <e k="ui_gm_dlg_optDelta"                                  v="Prix : %+d%% (%s / 1 000 L)" />
+        <e k="ui_gm_dlg_optDuration"                               v="Durée : %d mois" />
+        <e k="ui_gm_dlg_optTermFull"                               v="Lot complet uniquement | %d mois" />
+        <e k="ui_gm_dlg_optTermPartial"                            v="Achats partiels autorisés | %d mois" />
+        <e k="ui_gm_filter_all"                                    v="Filtre : Tout" />
+        <e k="ui_gm_filter_contracts"                              v="Filtre : Contrats" />
+        <e k="ui_gm_filter_offers"                                 v="Filtre : Offres directes" />
+        <e k="ui_gm_hint_browse"                                   v="Sélectionnez un élément puis double-cliquez, ou créez un contrat / une offre ci-dessus." />
+        <e k="ui_gm_hint_capReached"                               v="Limite atteinte : maximum %d contrats actifs simultanés par ferme !" />
+        <e k="ui_gm_hint_contract"                                 v="Contrat #%d (%s) : %s / %s livré | Base : %s/1 000L | Prime : +%d%% (%s) | 15%% pénalité si expiré" />
+        <e k="ui_gm_hint_inbox"                                    v="Retrait #%d : %s prêt (%s port au terminal GM | liquidation -15%% dans %.1f mois)" />
+        <e k="ui_gm_hint_offer"                                    v="Offre #%d (%s) : %s dispo | %s/1 000L (%+d%%, 0%% marge) | %s" />
+        <e k="ui_gm_hint_ownContract"                              v="Contrat perso #%d : %s / %s livré | Dépôt : %s | Annulation avant acceptation = 100%%" />
+        <e k="ui_gm_months_short"                                  v="%.1f mois" />
+        <e k="ui_gm_receipt_contractBonus"                         v="Prime de contrat (+%d%%)" />
+        <e k="ui_gm_receipt_escrowTotal"                           v="DÉPÔT TOTAL" />
+        <e k="ui_gm_receipt_inboxRemain"                           v="Reste en boîte" />
+        <e k="ui_gm_receipt_inboxTarget"                           v="Boîte de retrait de la ferme" />
+        <e k="ui_gm_receipt_overfillSpot"                          v="Surplus (Prix spot)" />
+        <e k="ui_gm_receipt_ownedGoods"                            v="%s (Biens propres)" />
+        <e k="ui_gm_receipt_payoutBonus"                           v="Prime finale" />
+        <e k="ui_gm_receipt_progressAfter"                         v="Progrès après livraison" />
+        <e k="ui_gm_receipt_zeroCommission"                        v="%s (Achat direct 0%%)" />
+        <e k="ui_gm_row_emptyBoard"                                v="Aucun contrat ni offre correspondant" />
+        <e k="ui_gm_row_emptyMy"                                   v="Aucun contrat actif, annonce ou retrait" />
+        <e k="ui_gm_sec_activeContracts"                           v="Contrats acceptés" />
+        <e k="ui_gm_sec_boardContracts"                            v="Contrats de livraison ouverts" />
+        <e k="ui_gm_sec_boardOffers"                               v="Offres directes (±10 %)" />
+        <e k="ui_gm_sec_ownContracts"                              v="Mes contrats d'achat" />
+        <e k="ui_gm_sec_ownOffers"                                 v="Mes offres directes" />
+        <e k="ui_gm_sec_pickupInbox"                               v="Boîte de retrait" />
+        <e k="ui_gm_subtab_contracts"                              v="Contrats &amp; Offres" />
+        <e k="ui_gm_subtab_spot"                                   v="Marché immédiat" />
+        <e k="ui_gm_subtab_switch"                                 v="Changer d'onglet" />
+        <e k="ui_gm_tag_fullOnly"                                  v="Complet" />
+        <e k="ui_gm_tag_inboxDelivery"                             v="Livraison" />
+        <e k="ui_gm_tag_inboxReturn"                               v="Retour" />
+        <e k="ui_gm_tag_open"                                      v="Ouvert" />
+        <e k="ui_gm_tag_partial"                                   v="Partiel" />
+        <e k="ui_gm_warn_noStockForOffer"                          v="Aucun stock négociable trouvé dans vos entrepôts ou terminaux GM." />
+        <e k="ui_gm_warn_noStorage"                                v="Aucun stockage ou terminal GM compatible disponible pour cette ferme." />
         <e k="ui_gm_unit_bale"                                     v="Balles" />
         <e k="ui_gm_unit_bigbag"                                   v="Bigbag" />
         <e k="ui_gm_unit_bigbagpallet"                             v="Palette de Bigbag" />

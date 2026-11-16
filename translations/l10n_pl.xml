@@ -34,6 +34,13 @@
         <e k="gm_help_p2_fees_text"                                v="- Marża i dostawa: Przy zakupie z rynku doliczana jest konfigurowalna marża handlowa. Bezpośredni transport do lub z własnych silosów i magazynów wiąże się z kosztami dostawy (opłata bazowa + stawka za litr).&#xA;- Odstęp online: Na żywym rynku online pomiędzy dwiema transakcjami online obowiązuje krótki, 15-sekundowy czas odnowienia dla synchronizacji światowych stanów." />
         <e k="gm_help_p2_demand_title"                             v="Duży popyt i tryb hybrydowy dla towarów z modów" />
         <e k="gm_help_p2_demand_text"                              v="- Duży popyt: Aktywne promocje popytu zapewniają wyraźne premie cenowe przez ograniczony czas i są ogłaszane powiadomieniem HUD.&#xA;- Tryb hybrydowy online: Niestandardowe towary z map lub modów oczekujące na weryfikację ('Oczekujące | Offline') lub lokalne ('Tylko Offline') pozostają bez przeszkód dostępne w handlu przez lokalną symulację." />
+        <e k="gm_help_p5_title"                                    v="3. Kontrakty, oferty bezpośrednie i skrytka odbiorcza" />
+        <e k="gm_help_p5_contracts_title"                          v="Kontrakty dostaw (NPC i między graczami)" />
+        <e k="gm_help_p5_contracts_text"                           v="W zakładce 'Kontrakty i oferty' znajdziesz kontrakty dostaw od kupców NPC oraz innych gospodarstw:&#xA;- Cena bazowa i premia końcowa: Dostawy częściowe (luzem, bele lub palety) są wypłacane od razu po cenie bazowej. Po osiągnięciu 100% wypłacana jest pełna premia (+5% do +20%).&#xA;- Limit i kara umowna: Maksymalnie 3 aktywne kontrakty na gospodarstwo. Niedostarczenie 100% przed terminem skutkuje utratą premii i karą 15% za brakującą ilość.&#xA;- Kontrakty zakupu: Pełna kwota trafia do depozytu; anulowanie przed przyjęciem zwraca 100%." />
+        <e k="gm_help_p5_offers_title"                             v="Oferty bezpośrednie ±10% (Tablica ogłoszeń)" />
+        <e k="gm_help_p5_offers_text"                              v="Wystawiaj towary bezpośrednio w przedziale od -10% do +10% względem bieżącej ceny rynkowej:&#xA;- 0% marży systemowej: Brak systemowej marży handlowej przy zakupach bezpośrednich.&#xA;- Zakup częściowy i czas: Wybierz sprzedaż częściową lub całościową oraz czas trwania 1–3 miesięcy." />
+        <e k="gm_help_p5_inbox_title"                              v="Skrytka odbiorcza i terminale GM" />
+        <e k="gm_help_p5_inbox_text"                               v="Wygasłe lub anulowane oferty oraz dostawy z własnych kontraktów zakupu trafiają bezpiecznie do skrytki odbiorczej:&#xA;- Elastyczny odbiór: Przenieś towar do silosu, magazynu obiektów lub bezpłatnie (0 $CURRENCY_SYMBOL) do terminala GM.&#xA;- Okres karencji: Po 2 miesiącach nieodebrany towar zostaje automatycznie spieniężony z rabatem -15%." />
         <e k="gm_help_p3_title"                                    v="3. Obsługiwane magazyny, formaty i terminale GM" />
         <e k="gm_help_p3_storages_title"                           v="Silosy, magazyny obiektów i wybór opakowania" />
         <e k="gm_help_p3_storages_text"                            v="Rynek Globalny automatycznie wykrywa wszystkie własne silosy na towary sypkie i płynne oraz magazyny bel i palet oparte na standardowych skryptach GIANTS.&#xA;- Wybór formatu: W oknie transakcji wybierasz magazyn docelowy, a dla magazynów obiektów także żądany format (bele okrągłe/kostki, paleta, BigBag lub zbiornik IBC).&#xA;- Uwaga dotycząca kiszonki: Bele w trakcie fermentacji są zablokowane do czasu pełnego zakiszenia." />
@@ -141,6 +148,76 @@
         <e k="ui_gm_terminal_hint"                                 v=" (Centrum Logistyczne GM - bez opłat)" />
         <e k="ui_gm_total_storage"                                 v="CAŁKOWITY ZAPAS:" />
         <e k="ui_gm_trend"                                         v="Trend" />
+        <e k="ui_gm_action_acceptContract"                         v="Przyjmij kontrakt" />
+        <e k="ui_gm_action_buyOffer"                               v="Kup bezpośrednio" />
+        <e k="ui_gm_action_cancelListing"                          v="Anuluj wpis" />
+        <e k="ui_gm_action_claimInbox"                             v="Odbierz ze skrytki" />
+        <e k="ui_gm_action_deliverContract"                        v="Dostarcz towar" />
+        <e k="ui_gm_btn_cancel"                                    v="Anuluj" />
+        <e k="ui_gm_btn_claim"                                     v="Odbierz" />
+        <e k="ui_gm_btn_create"                                    v="Wystaw" />
+        <e k="ui_gm_btn_deliver"                                   v="Dostarcz" />
+        <e k="ui_gm_btn_newContract"                               v="+ Kontrakt zakupu" />
+        <e k="ui_gm_btn_newOffer"                                  v="+ Oferta bezp." />
+        <e k="ui_gm_col_priceBonus"                                v="Cena / Premia" />
+        <e k="ui_gm_col_progress"                                  v="Postęp / Ilość" />
+        <e k="ui_gm_col_terms"                                     v="Warunki / Czas" />
+        <e k="ui_gm_col_volumeTime"                                v="Ilość / Termin" />
+        <e k="ui_gm_confirm_acceptText"                            v="Przyjąć kontrakt na %s %s?&#xA;Cena bazowa: %s / 1 000 L  |  Premia: +%d%%  |  Termin: %.1f mies.&#xA;&#xA;Uwaga: Niedostarczenie 100 %% przed terminem powoduje utratę premii i 15 %% kary za brakującą ilość." />
+        <e k="ui_gm_confirm_acceptTitle"                           v="Przyjmij kontrakt dostawy" />
+        <e k="ui_gm_confirm_cancelContractText"                    v="Anulować otwarty kontrakt #%d (%s %s) i zwrócić 100 %% pozostałego depozytu?" />
+        <e k="ui_gm_confirm_cancelOfferText"                       v="Anulować ofertę bezpośrednią #%d (%s %s) i przenieść resztę do skrytki odbiorczej?" />
+        <e k="ui_gm_contracts_boardHeader"                         v="Tablica: Kontrakty i oferty" />
+        <e k="ui_gm_contracts_boardSub"                            v="Otwarte kontrakty: %d  |  Oferty bezp.: %d  (0%% marży)" />
+        <e k="ui_gm_contracts_myHeader"                            v="Moje kontrakty, oferty i skrytka" />
+        <e k="ui_gm_contracts_mySub"                               v="Aktywne kontrakty: %d / %d  |  Skrytka: %d poz." />
+        <e k="ui_gm_dlg_buyOffer"                                  v="Kup ofertę bezpośrednią" />
+        <e k="ui_gm_dlg_claimInbox"                                v="Odbierz ze skrytki" />
+        <e k="ui_gm_dlg_createContract"                            v="Wystaw kontrakt zakupu" />
+        <e k="ui_gm_dlg_createOffer"                               v="Wystaw ofertę bezpośrednią (±10%)" />
+        <e k="ui_gm_dlg_deliverContract"                           v="Dostarcz na kontrakt" />
+        <e k="ui_gm_dlg_optBonus"                                  v="Premia kontraktu: +%d%% (%s / 1 000 L razem)" />
+        <e k="ui_gm_dlg_optDelta"                                  v="Cena: %+d%% (%s / 1 000 L)" />
+        <e k="ui_gm_dlg_optDuration"                               v="Czas trwania: %d mies." />
+        <e k="ui_gm_dlg_optTermFull"                               v="Tylko całość | %d mies." />
+        <e k="ui_gm_dlg_optTermPartial"                            v="Zakupy częściowe | %d mies." />
+        <e k="ui_gm_filter_all"                                    v="Filtr: Wszystkie" />
+        <e k="ui_gm_filter_contracts"                              v="Filtr: Kontrakty" />
+        <e k="ui_gm_filter_offers"                                 v="Filtr: Oferty bezp." />
+        <e k="ui_gm_hint_browse"                                   v="Wybierz pozycję i kliknij dwukrotnie lub utwórz nowy kontrakt/ofertę powyżej." />
+        <e k="ui_gm_hint_capReached"                               v="Osiągnięto limit: maks. %d aktywne kontrakty na gospodarstwo!" />
+        <e k="ui_gm_hint_contract"                                 v="Kontrakt #%d (%s): %s / %s dostarczono | Baza: %s/1 000L | Premia: +%d%% (%s) | 15%% kary po terminie" />
+        <e k="ui_gm_hint_inbox"                                    v="Skrytka #%d: %s gotowe (%s transport w terminalu GM | -15%% za %.1f mies.)" />
+        <e k="ui_gm_hint_offer"                                    v="Oferta #%d (%s): %s dostępne | %s/1 000L (%+d%%, 0%% marży) | %s" />
+        <e k="ui_gm_hint_ownContract"                              v="Własny kontrakt #%d: %s / %s dostarczono | Depozyt: %s | Anulowanie przed przyjęciem zwraca 100%%" />
+        <e k="ui_gm_months_short"                                  v="%.1f mies." />
+        <e k="ui_gm_receipt_contractBonus"                         v="Premia kontraktu (+%d%%)" />
+        <e k="ui_gm_receipt_escrowTotal"                           v="CAŁKOWITY DEPOZYT" />
+        <e k="ui_gm_receipt_inboxRemain"                           v="Pozostało w skrytce" />
+        <e k="ui_gm_receipt_inboxTarget"                           v="Skrytka odbiorcza farmy" />
+        <e k="ui_gm_receipt_overfillSpot"                          v="Nadwyżka (Cena rynkowa)" />
+        <e k="ui_gm_receipt_ownedGoods"                            v="%s (Towar własny)" />
+        <e k="ui_gm_receipt_payoutBonus"                           v="Premia końcowa" />
+        <e k="ui_gm_receipt_progressAfter"                         v="Postęp po dostawie" />
+        <e k="ui_gm_receipt_zeroCommission"                        v="%s (Handel bezp. 0%%)" />
+        <e k="ui_gm_row_emptyBoard"                                v="Brak pasujących kontraktów i ofert" />
+        <e k="ui_gm_row_emptyMy"                                   v="Brak aktywnych kontraktów, ofert ani odbiorów" />
+        <e k="ui_gm_sec_activeContracts"                           v="Przyjęte kontrakty dostaw" />
+        <e k="ui_gm_sec_boardContracts"                            v="Otwarte kontrakty dostaw" />
+        <e k="ui_gm_sec_boardOffers"                               v="Oferty bezpośrednie (±10%)" />
+        <e k="ui_gm_sec_ownContracts"                              v="Własne kontrakty zakupu" />
+        <e k="ui_gm_sec_ownOffers"                                 v="Własne oferty bezpośrednie" />
+        <e k="ui_gm_sec_pickupInbox"                               v="Skrytka odbiorcza" />
+        <e k="ui_gm_subtab_contracts"                              v="Kontrakty i Oferty" />
+        <e k="ui_gm_subtab_spot"                                   v="Rynek bieżący" />
+        <e k="ui_gm_subtab_switch"                                 v="Zmień widok" />
+        <e k="ui_gm_tag_fullOnly"                                  v="Całość" />
+        <e k="ui_gm_tag_inboxDelivery"                             v="Dostawa" />
+        <e k="ui_gm_tag_inboxReturn"                               v="Zwrot" />
+        <e k="ui_gm_tag_open"                                      v="Otwarty" />
+        <e k="ui_gm_tag_partial"                                   v="Częściowo" />
+        <e k="ui_gm_warn_noStockForOffer"                          v="Nie znaleziono towarów do handlu w Twoich magazynach ani terminalach GM." />
+        <e k="ui_gm_warn_noStorage"                                v="Brak odpowiedniego magazynu lub terminala GM dostępnego dla tej farmy." />
         <e k="ui_gm_unit_bale"                                     v="Bele" />
         <e k="ui_gm_unit_bigbag"                                   v="Bigbag" />
         <e k="ui_gm_unit_bigbagpallet"                             v="Paleta Bigbag" />

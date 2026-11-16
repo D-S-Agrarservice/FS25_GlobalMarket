@@ -35,6 +35,20 @@
                 <text text="$l10n_gm_help_p2_demand_text"/>
             </paragraph>
         </page>
+        <page title="$l10n_gm_help_p5_title" iconSliceId="basicEconomy_makingMoney">
+            <paragraph>
+                <title text="$l10n_gm_help_p5_contracts_title"/>
+                <text text="$l10n_gm_help_p5_contracts_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p5_offers_title"/>
+                <text text="$l10n_gm_help_p5_offers_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p5_inbox_title"/>
+                <text text="$l10n_gm_help_p5_inbox_text"/>
+            </paragraph>
+        </page>
     </category>
     <category title="$l10n_gm_help_cat_logistics">
         <page title="$l10n_gm_help_p3_title" iconSliceId="misc_transport">

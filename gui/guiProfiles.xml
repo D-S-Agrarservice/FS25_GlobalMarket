@@ -171,6 +171,37 @@
         <textSize value="15px"/>
     </Profile>
 
+    <Profile name="globalMarketToolbarBtnAction" extends="globalMarketToolbarBtnSmall">
+        <size value="214px 32px"/>
+        <textSize value="15px"/>
+        <textLayoutMode value="resize"/>
+    </Profile>
+
+    <Profile name="globalMarketSubTabBtn" extends="emptyPanel" with="anchorMiddleLeft">
+        <size value="210px 34px"/>
+        <textSize value="15px"/>
+        <textBold value="true"/>
+        <textUpperCase value="true"/>
+        <textPadding value="4px 0px"/>
+        <textAlignment value="center"/>
+        <textLayoutMode value="resize"/>
+        <textColor value="$preset_colorWhite"/>
+        <textHighlightedColor value="$preset_fs25_colorMainDark"/>
+        <textFocusedColor value="$preset_fs25_colorMainDark"/>
+    </Profile>
+
+    <Profile name="globalMarketSubTabBgActive" extends="globalMarketSearchInputBg">
+        <imageColor value="$preset_fs25_colorMainHighlight"/>
+        <startImageColor value="$preset_fs25_colorMainHighlight"/>
+        <endImageColor value="$preset_fs25_colorMainHighlight"/>
+        <imageHighlightedColor value="$preset_fs25_colorMainHighlight"/>
+        <imageFocusedColor value="$preset_fs25_colorMainHighlight"/>
+        <startImageHighlightedColor value="$preset_fs25_colorMainHighlight"/>
+        <startImageFocusedColor value="$preset_fs25_colorMainHighlight"/>
+        <endImageHighlightedColor value="$preset_fs25_colorMainHighlight"/>
+        <endImageFocusedColor value="$preset_fs25_colorMainHighlight"/>
+    </Profile>
+
     <Profile name="globalMarketCustomLogo" extends="baseReference" with="anchorBottomLeft">
         <size value="240px 120px"/>
         <imageUVs value="0 0 1 1"/>

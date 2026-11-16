@@ -100,7 +100,9 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAPI.lua")
 
 -- UI Modules
 source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketContractDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketContractsUI.lua")
 
 -- Economy & Savegame Modules
 source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
@@ -194,10 +196,14 @@ function GlobalMarket:loadMap(name)
 
             local previousFocusGui = FocusManager.currentGui
 
-            -- 1. Load Transaction Dialog
+            -- 1. Load Transaction Dialogs
             local dialogController = GlobalMarketDialog.new()
             g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketDialog.xml", "GlobalMarketDialog", dialogController)
             self.dialog = dialogController
+
+            local contractDialogController = GlobalMarketContractDialog.new()
+            g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketContractDialog.xml", "GlobalMarketContractDialog", contractDialogController)
+            self.contractDialog = contractDialogController
 
             -- 2. Load Main Market UI
             local uiController = GlobalMarketUI.new()
