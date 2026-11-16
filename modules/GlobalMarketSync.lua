@@ -616,12 +616,7 @@ function GlobalMarket:assignNextDataHost()
         self:updateHudIconState()
         self:restoreOfflineMarketState()
         if wasOnline and self.debugManager ~= nil then
-            if self.sessionLockedMarketName ~= nil then
-                self.debugManager:info("Sync: No eligible client for locked market '%s'. Restored Offline Market state.",
-                    tostring(self.sessionLockedMarketName))
-            else
-                self.debugManager:info("Sync: No active companion client available. Restored Offline Market state.")
-            end
+            self.debugManager:info("Sync: No active companion client available. Restored Offline Market state.")
         end
 
         if self.refreshMarketPrices ~= nil then self:refreshMarketPrices() end
@@ -635,19 +630,27 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackend
     if not g_currentMission:getIsServer() or connection == nil then return end
 
     self.clientExeStates = self.clientExeStates or {}
-    local isReady = (isExeRunning == true) and (hasBackendConnection ~= false)
+    local prevState = self.clientExeStates[connection]
     local state = {
         isExeRunning = (isExeRunning == true),
         hasBackendConnection = (hasBackendConnection ~= false),
         marketName = marketName,
-        isPrivateMarket = (isPrivateMarket == true)
+        isPrivateMarket = (isPrivateMarket == true),
+        readySeq = (prevState ~= nil) and prevState.readySeq or nil
     }
+    local eligible = (self.isClientEligibleForSessionMarket == nil) or self:isClientEligibleForSessionMarket(state)
+    if eligible then
+        if state.readySeq == nil then
+            self.nextExeReadySeq = (self.nextExeReadySeq or 0) + 1
+            state.readySeq = self.nextExeReadySeq
+        end
+    else
+        state.readySeq = nil
+    end
     self.clientExeStates[connection] = state
 
-    if isReady then
-        local eligible = (self.isClientEligibleForSessionMarket == nil) or self:isClientEligibleForSessionMarket(state)
-        if (self.dataHostConnection == nil and eligible)
-            or (self.shouldPreemptActiveDataHost ~= nil and self:shouldPreemptActiveDataHost(connection, state)) then
+    if eligible then
+        if self.dataHostConnection == nil then
             self:assignNextDataHost()
         elseif self.dataHostConnection == connection and self.updateActiveDataHostBranding ~= nil then
             self:updateActiveDataHostBranding(connection)
@@ -665,18 +668,11 @@ function GlobalMarket:onClientDisconnected(connection)
         self.clientExeStates[connection] = nil
     end
 
-    local wasDataHost = (self.dataHostConnection == connection)
-    if wasDataHost then
+    if self.dataHostConnection == connection then
         if self.debugManager ~= nil then
             self.debugManager:info("Sync: Active Data-Host disconnected. Reassigning token or falling back to Offline mode...")
         end
         self.dataHostConnection = nil
-    end
-
-    local lockCleared = (self.clearSessionMarketLockIfServerEmpty ~= nil)
-        and self:clearSessionMarketLockIfServerEmpty() or false
-    if wasDataHost or (lockCleared and self.dataHostConnection == nil
-        and self.clientExeStates ~= nil and self.clientExeStates["LOCAL_HOST"] ~= nil) then
         self:assignNextDataHost()
     end
 end
@@ -977,7 +973,7 @@ function GlobalMarket:consoleCommandToggleOnlineSync(val)
         self.isOnline = false
         self.dataHostConnection = nil
         self.clientExeStates = {}
-        if self.resetSessionMarketLock ~= nil then self:resetSessionMarketLock() end
+        self.nextExeReadySeq = 0
         if self.clearLocalBranding ~= nil then self:clearLocalBranding() end
         self:restoreOfflineMarketState()
         self:updateHudIconState()

@@ -457,6 +457,73 @@ end
 -- IN-GAME MENU TAB INJECTION
 -- =========================================================================
 
+local function applyTabListScrollDefaults(tabList)
+    tabList.supportsMouseScrolling = true
+    if (tabList.itemizedScrollDelta or 0) <= 0 then
+        tabList.itemizedScrollDelta = 1
+    end
+    if (tabList.selectionMarginItems or 0) <= 0 then
+        tabList.selectionMarginItems = 1
+    end
+end
+
+-- Guards InGameMenu's sidebar SmoothListElement against GIANTS's MP overflow and Spectator-alignment lock
+function GlobalMarket.ensureInGameMenuTabListScrollable(inGameMenu)
+    if inGameMenu == nil then
+        return
+    end
+
+    local tabList = inGameMenu.pagingTabList
+    if tabList ~= nil then
+        applyTabListScrollDefaults(tabList)
+
+        if not tabList.gmTabScrollHooked and Utils ~= nil and Utils.overwrittenFunction ~= nil then
+            tabList.gmTabScrollHooked = true
+            tabList.buildSectionInfo = Utils.overwrittenFunction(
+                tabList.buildSectionInfo,
+                function(listSelf, superFunc, ...)
+                    applyTabListScrollDefaults(listSelf)
+                    -- Reset before superFunc: SmoothListElement only updates listItemAlignmentOffset when contentOffset > 0
+                    listSelf.listItemAlignmentOffset = 0
+                    superFunc(listSelf, ...)
+
+                    local lengthAxis = listSelf.lengthAxis or 2
+                    local viewLen = (listSelf.absSize ~= nil and listSelf.absSize[lengthAxis]) or 0
+                    if viewLen > 0 and (listSelf.contentSize or 0) >= viewLen then
+                        listSelf.listItemAlignmentOffset = 0
+                        if (listSelf.scrollViewOffsetDelta or 0) <= 0 then
+                            if (listSelf.totalItemCount or 0) > 0 then
+                                listSelf.scrollViewOffsetDelta = listSelf.contentSize / listSelf.totalItemCount
+                            else
+                                listSelf.scrollViewOffsetDelta = viewLen / 8
+                            end
+                        end
+                    end
+                end
+            )
+        end
+    end
+
+    if not inGameMenu.gmRebuildTabListHooked and Utils ~= nil and Utils.overwrittenFunction ~= nil then
+        inGameMenu.gmRebuildTabListHooked = true
+        inGameMenu.rebuildTabList = Utils.overwrittenFunction(
+            inGameMenu.rebuildTabList,
+            function(menuSelf, superFunc, ...)
+                if menuSelf.pagingTabList ~= nil then
+                    applyTabListScrollDefaults(menuSelf.pagingTabList)
+                end
+                if menuSelf.pagingElement ~= nil and menuSelf.currentPage ~= nil then
+                    local mappedIdx = menuSelf.pagingElement:getPageMappingIndexByElement(menuSelf.currentPage)
+                    if mappedIdx ~= nil and mappedIdx > 0 then
+                        menuSelf.currentPageListIndex = mappedIdx
+                    end
+                end
+                return superFunc(menuSelf, ...)
+            end
+        )
+    end
+end
+
 -- Injects the Global Market frame into InGameMenu with separate element and page index mapping
 function GlobalMarket:fixInGameMenu(frame, pageName)
     local inGameMenu = g_gui.screenControllers[InGameMenu]
@@ -468,6 +535,28 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     end
 
     local pagingElement = inGameMenu.pagingElement
+
+    -- Clean up any prior registration for pageName so re-injection remains idempotent
+    local oldFrame = inGameMenu[pageName]
+    if oldFrame ~= nil then
+        if inGameMenu.pageFrames ~= nil then
+            for i = #inGameMenu.pageFrames, 1, -1 do
+                if inGameMenu.pageFrames[i] == oldFrame then
+                    table.remove(inGameMenu.pageFrames, i)
+                end
+            end
+        end
+        if inGameMenu.pageRoots ~= nil then
+            inGameMenu.pageRoots[oldFrame] = nil
+        end
+        if inGameMenu.pageEnablingPredicates ~= nil then
+            inGameMenu.pageEnablingPredicates[oldFrame] = nil
+        end
+        if inGameMenu.pageTabs ~= nil then
+            inGameMenu.pageTabs[oldFrame] = nil
+        end
+        pagingElement:removeElement(oldFrame)
+    end
 
     -- 1. Find visual index in pagingElement.elements (contains unused mobile/console FrameReferences in FS25)
     local targetElementPos = #pagingElement.elements + 1
@@ -527,6 +616,7 @@ function GlobalMarket:fixInGameMenu(frame, pageName)
     local iconFileName = Utils.getFilename("images/menuIcon.dds", GlobalMarket.dir)
     inGameMenu:addPageTab(frame, iconFileName, {0, 0, 0, 1, 1, 0, 1, 1})
 
+    GlobalMarket.ensureInGameMenuTabListScrollable(inGameMenu)
     inGameMenu:rebuildTabList()
 
     if GlobalMarket.debugManager ~= nil then

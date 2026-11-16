@@ -70,7 +70,6 @@ end
 function GlobalMarket:initBrandingState()
     self.onlineMarketName = nil
     self.isPrivateOnlineMarket = false
-    self.sessionLockedMarketName = nil
     self.localExeMarketName = nil
     self.localExeIsPrivateMarket = false
     self.localCustomLogoFile = nil
@@ -194,15 +193,27 @@ end
 ---@param state table|nil Entry from self.clientExeStates
 ---@return string|nil
 function GlobalMarketBranding.getStatePrivateMarketName(state)
-    if state == nil or state.isPrivateMarket == false then
+    if state == nil or state.isPrivateMarket ~= true then
         return nil
     end
     return GlobalMarketBranding.sanitizeMarketName(state.marketName)
 end
 
----Clears the server session private market lock in RAM
-function GlobalMarket:resetSessionMarketLock()
-    self.sessionLockedMarketName = nil
+---Returns true if a client state matches the given online market identity
+---@param state table|nil Entry from self.clientExeStates
+---@param targetName string|nil Active onlineMarketName (nil for Official Market)
+---@param targetIsPrivate boolean Whether the target market is a Private Market
+---@return boolean
+function GlobalMarketBranding.statesMatchMarket(state, targetName, targetIsPrivate)
+    if state == nil then
+        return false
+    end
+    local privName = GlobalMarketBranding.getStatePrivateMarketName(state)
+    local isPriv = (state.isPrivateMarket == true) or (privName ~= nil)
+    if targetIsPrivate == true then
+        return isPriv == true and privName ~= nil and privName == targetName
+    end
+    return isPriv == false and privName == nil
 end
 
 ---Restores all market items to their Offline baseline without clearing online branding
@@ -216,155 +227,54 @@ function GlobalMarket:resetMarketItemsForMarketSwitch()
     end
 end
 
----Checks whether a companion client state is permitted to act as Data-Host under the session lock
+---Checks whether a companion client state is active, connected, and carries valid branding metadata
 ---@param state table|nil Entry from self.clientExeStates
 ---@return boolean
 function GlobalMarket:isClientEligibleForSessionMarket(state)
     if not GlobalMarketBranding.isStateReady(state) then
         return false
     end
-    local privName = GlobalMarketBranding.getStatePrivateMarketName(state)
-    if state.isPrivateMarket == true and privName == nil then
+    if state.isPrivateMarket == true and GlobalMarketBranding.getStatePrivateMarketName(state) == nil then
         return false
-    end
-    if self.sessionLockedMarketName ~= nil then
-        return privName == self.sessionLockedMarketName
     end
     return true
 end
 
----Checks whether another active connection holds the locked private market token
----@param excludedConn any Connection being stepped down or evaluated
----@param lockedName string|nil Locked private market name
----@return boolean
-function GlobalMarket:hasOtherClientForLockedMarket(excludedConn, lockedName)
-    if lockedName == nil or self.clientExeStates == nil then
-        return false
-    end
-    for conn, state in pairs(self.clientExeStates) do
-        if conn ~= excludedConn and GlobalMarketBranding.isStateReady(state) then
-            if GlobalMarketBranding.getStatePrivateMarketName(state) == lockedName then
-                return true
-            end
-        end
-    end
-    return false
-end
-
----Selects the highest-priority eligible Data-Host connection for the active session
+---Selects the next Data-Host connection, preferring earliest standby clients on the same active market
 ---@return any|nil
 function GlobalMarket:selectNextDataHostConnection()
     if self.clientExeStates == nil then
         return nil
     end
 
-    local localState = self.clientExeStates["LOCAL_HOST"]
-    local localEligible = self:isClientEligibleForSessionMarket(localState)
-    local localPrivName = GlobalMarketBranding.getStatePrivateMarketName(localState)
+    local targetName = self.onlineMarketName
+    local targetIsPrivate = (self.isPrivateOnlineMarket == true)
 
-    if localEligible and (self.sessionLockedMarketName ~= nil or localPrivName ~= nil) then
-        return "LOCAL_HOST"
-    end
-
-    for conn, state in pairs(self.clientExeStates) do
-        if conn ~= "LOCAL_HOST" and self:isClientEligibleForSessionMarket(state) then
-            if GlobalMarketBranding.getStatePrivateMarketName(state) ~= nil then
-                return conn
+    local function pickBestCandidate(matchSameMarketOnly)
+        local bestConn = nil
+        local bestSeq = math.huge
+        for conn, state in pairs(self.clientExeStates) do
+            local matches = (not matchSameMarketOnly)
+                or GlobalMarketBranding.statesMatchMarket(state, targetName, targetIsPrivate)
+            if matches and self:isClientEligibleForSessionMarket(state) then
+                local seq = state.readySeq or math.huge
+                if bestConn == nil or seq < bestSeq or (seq == bestSeq and conn == "LOCAL_HOST") then
+                    bestConn = conn
+                    bestSeq = seq
+                end
             end
         end
+        return bestConn
     end
 
-    if localEligible then
-        return "LOCAL_HOST"
-    end
-
-    for conn, state in pairs(self.clientExeStates) do
-        if conn ~= "LOCAL_HOST" and self:isClientEligibleForSessionMarket(state) then
-            return conn
+    if self.isOnline == true then
+        local sameMarketConn = pickBestCandidate(true)
+        if sameMarketConn ~= nil then
+            return sameMarketConn
         end
     end
 
-    return nil
-end
-
----Determines whether an incoming ready connection should preempt the current Data-Host
----@param connection any Incoming connection key ("LOCAL_HOST" or MP Connection)
----@param state table|nil Incoming client state entry
----@return boolean
-function GlobalMarket:shouldPreemptActiveDataHost(connection, state)
-    if self.dataHostConnection == nil or self.dataHostConnection == connection then
-        return false
-    end
-    if not self:isClientEligibleForSessionMarket(state) then
-        return false
-    end
-
-    local activeState = (self.clientExeStates ~= nil) and self.clientExeStates[self.dataHostConnection] or nil
-    local activePrivName = GlobalMarketBranding.getStatePrivateMarketName(activeState)
-    local incomingPrivName = GlobalMarketBranding.getStatePrivateMarketName(state)
-
-    if connection == "LOCAL_HOST" then
-        if activePrivName ~= nil and incomingPrivName == nil then
-            return false
-        end
-        return true
-    end
-
-    return self.sessionLockedMarketName == nil and activePrivName == nil and incomingPrivName ~= nil
-end
-
----Checks whether any remote player remains connected on the server
----@return boolean
-function GlobalMarket:hasRemainingRemotePlayers()
-    if g_currentMission ~= nil and g_currentMission.userManager ~= nil then
-        local userManager = g_currentMission.userManager
-        if userManager.getNumberOfUsers ~= nil then
-            local userCount = userManager:getNumberOfUsers()
-            if userCount ~= nil then
-                return userCount > 1
-            end
-        end
-    end
-    if g_currentMission ~= nil and g_currentMission.connectionsToPlayer ~= nil then
-        if next(g_currentMission.connectionsToPlayer) ~= nil then
-            return true
-        end
-    end
-    if self.clientExeStates ~= nil then
-        for conn, _ in pairs(self.clientExeStates) do
-            if conn ~= "LOCAL_HOST" then
-                return true
-            end
-        end
-    end
-    return false
-end
-
----Releases the session private market lock when a Dedicated Server becomes completely empty
----@return boolean released
-function GlobalMarket:clearSessionMarketLockIfServerEmpty()
-    if g_dedicatedServer == nil or self.sessionLockedMarketName == nil then
-        return false
-    end
-    if self.dataHostConnection == "LOCAL_HOST" then
-        local localState = (self.clientExeStates ~= nil) and self.clientExeStates["LOCAL_HOST"] or nil
-        if self:isClientEligibleForSessionMarket(localState) then
-            return false
-        end
-    end
-    if self:hasRemainingRemotePlayers() then
-        return false
-    end
-
-    local previousLock = self.sessionLockedMarketName
-    self.sessionLockedMarketName = nil
-    if self.debugManager ~= nil then
-        self.debugManager:info(string.format(
-            "Sync: Dedicated server is empty. Released session market lock '%s'.",
-            tostring(previousLock)
-        ))
-    end
-    return true
+    return pickBestCandidate(false)
 end
 
 ---Dispatches the server map whitelist to the specified Data-Host connection
@@ -383,12 +293,8 @@ end
 ---@param hostState table|nil Entry from self.clientExeStates[nextConn]
 function GlobalMarket:applyDataHostBranding(hostState)
     local privName = GlobalMarketBranding.getStatePrivateMarketName(hostState)
-    local cleanName = (hostState ~= nil) and GlobalMarketBranding.sanitizeMarketName(hostState.marketName) or nil
-    if privName ~= nil then
-        self.sessionLockedMarketName = privName
-    end
-    self.onlineMarketName = cleanName
-    self.isPrivateOnlineMarket = (hostState ~= nil and hostState.isPrivateMarket == true) or (cleanName ~= nil)
+    self.onlineMarketName = privName
+    self.isPrivateOnlineMarket = (privName ~= nil)
 end
 
 ---Applies host branding on failover or promotion and clears stale items if market identity changed
@@ -405,43 +311,27 @@ function GlobalMarket:onDataHostSelectedBranding(hostState, prevWasOnline)
     self:refreshBrandingUiIfOpen()
 end
 
----Updates server branding live if the active Data-Host changes its token/marketName mid-session
+---Updates server branding live when the active Data-Host switches markets mid-session
 ---@param connection any Active Data-Host connection key ("LOCAL_HOST" or MP Connection)
 function GlobalMarket:updateActiveDataHostBranding(connection)
     local hostState = (self.clientExeStates ~= nil) and self.clientExeStates[connection] or nil
+    if not self:isClientEligibleForSessionMarket(hostState) then
+        if self.assignNextDataHost ~= nil then
+            self:assignNextDataHost()
+        end
+        return
+    end
+
     local newPrivName = GlobalMarketBranding.getStatePrivateMarketName(hostState)
-    local newName = (hostState ~= nil) and GlobalMarketBranding.sanitizeMarketName(hostState.marketName) or nil
-    local newPriv = (hostState ~= nil and hostState.isPrivateMarket == true) or (newName ~= nil)
+    local newPriv = (newPrivName ~= nil)
 
-    if newPriv and newName == nil then
-        if self.assignNextDataHost ~= nil then
-            self:assignNextDataHost()
-        end
+    if newPrivName == self.onlineMarketName and newPriv == self.isPrivateOnlineMarket then
         return
     end
 
-    if newName == self.onlineMarketName and newPriv == self.isPrivateOnlineMarket
-        and newPrivName == self.sessionLockedMarketName then
-        return
-    end
-
-    local lockedName = self.sessionLockedMarketName
-    if lockedName ~= nil and newPrivName ~= lockedName and self:hasOtherClientForLockedMarket(connection, lockedName) then
-        if self.assignNextDataHost ~= nil then
-            self:assignNextDataHost()
-        end
-        return
-    end
-
-    local identityChanged = (newName ~= self.onlineMarketName or newPriv ~= self.isPrivateOnlineMarket)
-    self.sessionLockedMarketName = newPrivName
-    self.onlineMarketName = newName
+    self.onlineMarketName = newPrivName
     self.isPrivateOnlineMarket = newPriv
-
-    if identityChanged then
-        self:resetMarketItemsForMarketSwitch()
-    end
-
+    self:resetMarketItemsForMarketSwitch()
     self:refreshBrandingUiIfOpen()
     self:dispatchDataHostWhitelist(connection)
 
@@ -453,11 +343,11 @@ function GlobalMarket:updateActiveDataHostBranding(connection)
     end
 end
 
----Validates incoming Data-Host market sync branding against the active session lock
+---Validates incoming Data-Host market sync branding and refreshes whitelist if market changed
 ---@param connection any Active Data-Host connection ("LOCAL_HOST" or MP Connection)
 ---@param marketName string|nil Market name carried by sync payload
 ---@param isPrivateMarket boolean|nil Private market flag carried by sync payload
----@return boolean isAllowed True if packet branding is accepted and payload may be applied
+---@return boolean isAllowed True if packet branding is valid and accepted
 function GlobalMarket:onDataHostPacketBranding(connection, marketName, isPrivateMarket)
     if self.dataHostConnection ~= connection then
         return false
@@ -468,42 +358,15 @@ function GlobalMarket:onDataHostPacketBranding(connection, marketName, isPrivate
     if newPriv and cleanName == nil then
         return false
     end
-
-    local packetState = {
-        isExeRunning = true,
-        hasBackendConnection = true,
-        marketName = cleanName,
-        isPrivateMarket = newPriv
-    }
-    local packetPrivName = GlobalMarketBranding.getStatePrivateMarketName(packetState)
+    local effectiveName = newPriv and cleanName or nil
 
     if self.clientExeStates ~= nil and self.clientExeStates[connection] ~= nil then
-        self.clientExeStates[connection].marketName = cleanName
+        self.clientExeStates[connection].marketName = effectiveName
         self.clientExeStates[connection].isPrivateMarket = newPriv
     end
 
-    if self.sessionLockedMarketName ~= nil and packetPrivName ~= self.sessionLockedMarketName then
-        if self:hasOtherClientForLockedMarket(connection, self.sessionLockedMarketName) then
-            if self.assignNextDataHost ~= nil then
-                self:assignNextDataHost()
-            end
-            return false
-        end
-        self.sessionLockedMarketName = packetPrivName
-        self:resetMarketItemsForMarketSwitch()
+    if effectiveName ~= self.onlineMarketName or newPriv ~= self.isPrivateOnlineMarket then
         self:dispatchDataHostWhitelist(connection)
-        return true
-    end
-
-    if self.sessionLockedMarketName == nil and packetPrivName ~= nil then
-        self.sessionLockedMarketName = packetPrivName
-        self:resetMarketItemsForMarketSwitch()
-        self:dispatchDataHostWhitelist(connection)
-        return true
-    end
-
-    if cleanName ~= self.onlineMarketName or newPriv ~= self.isPrivateOnlineMarket then
-        self:resetMarketItemsForMarketSwitch()
     end
 
     return true
