@@ -45,7 +45,8 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.dealerMarkupIndex,
                 s.capacityIndex,
                 s.storageDecayIndex,
-                s.greatDemandModeIndex
+                s.greatDemandModeIndex,
+                s.npcActivityModeIndex
             ))
         end
     end

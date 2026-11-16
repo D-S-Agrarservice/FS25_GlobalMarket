@@ -14,7 +14,8 @@ end
 
 function SyncGlobalMarketSettingsEvent.new(
     baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex,
-    isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex, greatDemandModeIndex
+    isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex,
+    greatDemandModeIndex, npcActivityModeIndex
 )
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
@@ -30,6 +31,7 @@ function SyncGlobalMarketSettingsEvent.new(
     self.capacityIndex = capacityIndex
     self.storageDecayIndex = storageDecayIndex or 3
     self.greatDemandModeIndex = greatDemandModeIndex or 1
+    self.npcActivityModeIndex = npcActivityModeIndex or 1
     return self
 end
 
@@ -47,6 +49,7 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.capacityIndex)
     streamWriteInt8(streamId, self.storageDecayIndex or 3)
     streamWriteInt8(streamId, self.greatDemandModeIndex or 1)
+    streamWriteInt8(streamId, self.npcActivityModeIndex or 1)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -63,6 +66,7 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.capacityIndex = streamReadInt8(streamId)
     self.storageDecayIndex = streamReadInt8(streamId)
     self.greatDemandModeIndex = streamReadInt8(streamId)
+    self.npcActivityModeIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -84,6 +88,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     local compatChanged = false
     local capacityChanged = false
     local gdModeChanged = false
+    local npcModeChanged = false
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = false
@@ -94,6 +99,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         compatChanged = (GlobalMarketSettings.current.compatModeIndex ~= self.compatModeIndex)
         capacityChanged = (GlobalMarketSettings.current.capacityIndex ~= self.capacityIndex)
         gdModeChanged = (GlobalMarketSettings.current.greatDemandModeIndex ~= self.greatDemandModeIndex)
+        npcModeChanged = (GlobalMarketSettings.current.npcActivityModeIndex ~= self.npcActivityModeIndex)
     end
 
     -- 2. APPLY SETTINGS LOCALLY
@@ -110,6 +116,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.capacityIndex = self.capacityIndex
     GlobalMarketSettings.current.storageDecayIndex = self.storageDecayIndex or 3
     GlobalMarketSettings.current.greatDemandModeIndex = self.greatDemandModeIndex or 1
+    GlobalMarketSettings.current.npcActivityModeIndex = self.npcActivityModeIndex or 1
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
@@ -130,8 +137,16 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         GlobalMarket.GREAT_DEMAND_MODE = GlobalMarketSettings.OPTIONS.GREAT_DEMAND_MODE[self.greatDemandModeIndex] or 1
     end
 
+    if GlobalMarketSettings.OPTIONS.NPC_ACTIVITY_MODE ~= nil then
+        GlobalMarket.NPC_ACTIVITY_MODE = GlobalMarketSettings.OPTIONS.NPC_ACTIVITY_MODE[self.npcActivityModeIndex] or 1
+    end
+
     if gdModeChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onGreatDemandModeChanged ~= nil then
         g_currentMission.globalMarket:onGreatDemandModeChanged(GlobalMarket.GREAT_DEMAND_MODE)
+    end
+
+    if npcModeChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onNpcActivityModeChanged ~= nil then
+        g_currentMission.globalMarket:onNpcActivityModeChanged(GlobalMarket.NPC_ACTIVITY_MODE)
     end
 
     if GlobalMarketSettings.applyDebugSettings ~= nil then
@@ -156,7 +171,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(
             self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur,
             self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex,
-            self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex
+            self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex, self.npcActivityModeIndex
         ), nil, connection, nil)
     else
         -- CLIENT SIDE

@@ -9,7 +9,9 @@
         <e k="finance_gmBuyBulk"                                   v="Compra GM: A granel" />
         <e k="finance_gmBuyLiquid"                                 v="Compra GM: Líquidos" />
         <e k="finance_gmBuyPiece"                                  v="Compra GM: Unidades / Palés" />
+        <e k="finance_gmContracts"                                 v="GM Contratos y primas" />
         <e k="finance_gmFee"                                       v="Gastos de envío GM" />
+        <e k="finance_gmPenalties"                                 v="GM Penalizaciones contractuales" />
         <e k="finance_gmSell"                                      v="Ventas GM (Total)" />
         <e k="finance_gmSellBale"                                  v="Venta GM: Pacas" />
         <e k="finance_gmSellBulk"                                  v="Venta GM: A granel" />
@@ -97,6 +99,11 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Por existencias" />
         <e k="ui_gm_settings_gd_random"                            v="Aleatorio" />
         <e k="ui_gm_settings_gd_off"                               v="Desactivado" />
+        <e k="ui_gm_settings_npcActivity"                          v="Contratos y ofertas NPC" />
+        <e k="ui_gm_settings_npcActivity_desc"                     v="Controla la participación de la IA en Contratos y Ofertas. Todos: Contratos, ofertas y compradores NPC activos. Solo contratos: Solo contratos NPC (ofertas directas entre jugadores). Solo jugadores: Comercio puro entre jugadores." />
+        <e k="ui_gm_settings_npc_all"                              v="Todos" />
+        <e k="ui_gm_settings_npc_contracts"                        v="Solo contratos" />
+        <e k="ui_gm_settings_npc_players"                          v="Solo jugadores" />
         <e k="ui_gm_online_pending_short"                          v="(Revisión)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Revisión pendiente / Offline)" />
         <e k="ui_gm_online_rejected_short"                         v="(Solo offline)" />

@@ -9,7 +9,9 @@
         <e k="finance_gmBuyBulk"                                   v="Achat GM : Vrac" />
         <e k="finance_gmBuyLiquid"                                 v="Achat GM : Liquides" />
         <e k="finance_gmBuyPiece"                                  v="Achat GM : Pièces / Palettes" />
+        <e k="finance_gmContracts"                                 v="GM Contrats &amp; primes" />
         <e k="finance_gmFee"                                       v="Frais de livraison GM" />
+        <e k="finance_gmPenalties"                                 v="GM Pénalités contractuelles" />
         <e k="finance_gmSell"                                      v="Ventes GM (Total)" />
         <e k="finance_gmSellBale"                                  v="Vente GM : Balles" />
         <e k="finance_gmSellBulk"                                  v="Vente GM : Vrac" />
@@ -97,6 +99,11 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Selon le stock" />
         <e k="ui_gm_settings_gd_random"                            v="Aléatoire" />
         <e k="ui_gm_settings_gd_off"                               v="Désactivé" />
+        <e k="ui_gm_settings_npcActivity"                          v="Contrats &amp; offres PNJ" />
+        <e k="ui_gm_settings_npcActivity_desc"                     v="Contrôle l'activité IA dans Contrats &amp; Offres. Tous : Contrats, offres et acheteurs PNJ actifs. Contrats seuls : Contrats PNJ uniquement (offres directes entre joueurs). Joueurs seuls : Échanges PvP purs sans PNJ." />
+        <e k="ui_gm_settings_npc_all"                              v="Tous" />
+        <e k="ui_gm_settings_npc_contracts"                        v="Contrats seuls" />
+        <e k="ui_gm_settings_npc_players"                          v="Joueurs seuls" />
         <e k="ui_gm_online_pending_short"                          v="(En attente)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Validation en attente / Hors ligne)" />
         <e k="ui_gm_online_rejected_short"                         v="(Hors ligne)" />

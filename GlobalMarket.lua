@@ -17,6 +17,7 @@ GlobalMarket.DELIVER_COST = 0
 GlobalMarket.DELIVER_COST_PERLITER = 0
 GlobalMarket.STORAGE_DECAY_MONTHS = 6
 GlobalMarket.GREAT_DEMAND_MODE = 1 -- 1 = Scarcity (Stock-based), 2 = Random, 3 = Off
+GlobalMarket.NPC_ACTIVITY_MODE = 1 -- 1 = All (Contracts+Offers), 2 = Contracts Only, 3 = Players Only
 
 -- Master switch for external companion client file polling and online market synchronization.
 -- Active by default; can be toggled live via the console command 'gmToggleOnlineSync' for testing/debugging.
@@ -140,6 +141,13 @@ source(GlobalMarket.dir .. "modules/GlobalMarketStoreCache.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketBranding.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 
+-- Contracts, Direct Offers & Pickup Inbox Modules
+source(GlobalMarket.dir .. "modules/GlobalMarketContractsStorage.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketContracts.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
+source(GlobalMarket.dir .. "events/SyncContractsStateEvent.lua")
+source(GlobalMarket.dir .. "events/ContractActionEvent.lua")
+
 
 -- =========================================================================
 -- ENGINE HOOKS & LIFECYCLE
@@ -251,6 +259,11 @@ function GlobalMarket:loadMap(name)
     if self.initOfflineMarket ~= nil then
         self:initOfflineMarket()
 
+        -- Initialize contracts, direct offers, and unified Pickup Inbox tables
+        if self.initContractsSystem ~= nil then
+            self:initContractsSystem()
+        end
+
         -- Build the Server Whitelist based on the fully evaluated offline market
         -- Requirement: getIsServer must be true to generate the external sync file
         if g_currentMission:getIsServer() and self.initServerWhitelist ~= nil then
@@ -286,6 +299,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
         if not self.debugCommandsRegistered then
             addConsoleCommand("gmTriggerGreatDemand", "Triggers a GlobalMarket Great Demand for testing", "consoleCommandTriggerGreatDemand", self)
             addConsoleCommand("gmAdvanceStorageAge", "Advances GM storage age in months to test fees/decay/clearance", "consoleCommandAdvanceStorageAge", self)
+            addConsoleCommand("gmAdvanceContracts", "Advances contract, offer & inbox timers in months for testing", "consoleCommandAdvanceContracts", self)
             addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
             addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
             addConsoleCommand("gmTestBranding", "Previews 3-tier online market branding (0/off, 1, 2, 3)", "consoleCommandTestBranding", self)
@@ -295,6 +309,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
         if self.debugCommandsRegistered or forceRemove then
             removeConsoleCommand("gmTriggerGreatDemand")
             removeConsoleCommand("gmAdvanceStorageAge")
+            removeConsoleCommand("gmAdvanceContracts")
             removeConsoleCommand("gmTestStatus")
             removeConsoleCommand("gmToggleOnlineSync")
             removeConsoleCommand("gmTestBranding")
@@ -418,6 +433,9 @@ local function onFinishedLoading(mission)
             g_currentMission.globalMarket:refreshMarketPrices(true)
             if g_currentMission.globalMarket.initServerWhitelist ~= nil then
                 g_currentMission.globalMarket:initServerWhitelist()
+            end
+            if g_currentMission.globalMarket.ensureInitialNpcBoard ~= nil then
+                g_currentMission.globalMarket:ensureInitialNpcBoard()
             end
         end
     end

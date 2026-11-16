@@ -20,6 +20,8 @@ GlobalMarketSettings.OPTIONS = {
     STORAGE_DECAY = {0, 3, 6, 9, 12},
     -- 1=Scarcity (Stock-based), 2=Random (Time/Quota-based), 3=Off
     GREAT_DEMAND_MODE = {1, 2, 3},
+    -- 1=All (Contracts+Offers), 2=Contracts Only, 3=Players Only (PvP)
+    NPC_ACTIVITY_MODE = {1, 2, 3},
     -- Log severity levels ordered from Info to Trace
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
@@ -35,6 +37,7 @@ GlobalMarketSettings.current = {
     capacityIndex = 3,       -- Default 2M Liters
     storageDecayIndex = 3,   -- Default: 6 Months (Index 3)
     greatDemandModeIndex = 1,-- Default: 1 (Stock/Scarcity-based)
+    npcActivityModeIndex = 1,-- Default: 1 (All NPC Contracts & Offers)
     isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,     -- Default: Info
     debugDurationIndex = 1,  -- Default: 1 Hour
@@ -138,6 +141,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.capacityIndex = defaultCapacity
         self.current.storageDecayIndex = 3
         self.current.greatDemandModeIndex = 1
+        self.current.npcActivityModeIndex = 1
         self.current.isDetailedFinance = false
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
@@ -155,6 +159,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex]
         GlobalMarket.STORAGE_DECAY_MONTHS = self.OPTIONS.STORAGE_DECAY[self.current.storageDecayIndex] or 6
         GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[self.current.greatDemandModeIndex] or 1
+        GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         if GlobalMarketFinance ~= nil then
             GlobalMarketFinance.isDetailedCached = false
         end
@@ -171,6 +176,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.capacityIndex = xmlFile:getInt(prefix .. "#capacityIndex", defaultCapacity)
         self.current.storageDecayIndex = xmlFile:getInt(prefix .. "#storageDecayIndex", 3)
         self.current.greatDemandModeIndex = xmlFile:getInt(prefix .. "#greatDemandModeIndex", 1)
+        self.current.npcActivityModeIndex = xmlFile:getInt(prefix .. "#npcActivityModeIndex", 1)
 
         -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
@@ -195,6 +201,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.MARKET_CAPACITY = self.OPTIONS.MARKET_CAPACITY[self.current.capacityIndex]
         GlobalMarket.STORAGE_DECAY_MONTHS = self.OPTIONS.STORAGE_DECAY[self.current.storageDecayIndex] or 6
         GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[self.current.greatDemandModeIndex] or 1
+        GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
 
         self:applyDebugSettings()
         xmlFile:delete()
@@ -229,6 +236,7 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt(prefix .. "#capacityIndex", self.current.capacityIndex)
         xmlFile:setInt(prefix .. "#storageDecayIndex", self.current.storageDecayIndex or 3)
         xmlFile:setInt(prefix .. "#greatDemandModeIndex", self.current.greatDemandModeIndex or 1)
+        xmlFile:setInt(prefix .. "#npcActivityModeIndex", self.current.npcActivityModeIndex or 1)
 
         xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
@@ -390,6 +398,16 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
             "ui_gm_settings_greatDemandMode_desc", gdModeTexts, "onGreatDemandModeChanged"
         )
 
+        local npcModeTexts = {
+            (g_i18n ~= nil and g_i18n:hasText("ui_gm_settings_npc_all")) and g_i18n:getText("ui_gm_settings_npc_all") or "All",
+            (g_i18n ~= nil and g_i18n:hasText("ui_gm_settings_npc_contracts")) and g_i18n:getText("ui_gm_settings_npc_contracts") or "Contracts Only",
+            (g_i18n ~= nil and g_i18n:hasText("ui_gm_settings_npc_players")) and g_i18n:getText("ui_gm_settings_npc_players") or "Players Only"
+        }
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsNpcActivityMode", "ui_gm_settings_npcActivity",
+            "ui_gm_settings_npcActivity_desc", npcModeTexts, "onNpcActivityModeChanged"
+        )
+
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
 
@@ -464,6 +482,11 @@ function GlobalMarketSettings.refreshMenuState()
     if gdModeControl ~= nil then
         gdModeControl:setState(GlobalMarketSettings.current.greatDemandModeIndex or 1)
         gdModeControl:setDisabled(not isAdmin)
+    end
+    local npcModeControl = GlobalMarketSettings.CONTROLS["gmSettingsNpcActivityMode"]
+    if npcModeControl ~= nil then
+        npcModeControl:setState(GlobalMarketSettings.current.npcActivityModeIndex or 1)
+        npcModeControl:setDisabled(not isAdmin)
     end
     if capacityControl ~= nil then
         capacityControl:setState(GlobalMarketSettings.current.capacityIndex)
@@ -544,14 +567,16 @@ function GlobalMarketSettings:broadcastChanges()
         g_server:broadcastEvent(SyncGlobalMarketSettingsEvent.new(
             c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive,
             c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
-            c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex, c.greatDemandModeIndex
+            c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
+            c.greatDemandModeIndex, c.npcActivityModeIndex
         ))
     else
         -- Client admin sends the changes to the dedicated server
         g_client:getServerConnection():sendEvent(SyncGlobalMarketSettingsEvent.new(
             c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive,
             c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
-            c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex, c.greatDemandModeIndex
+            c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
+            c.greatDemandModeIndex, c.npcActivityModeIndex
         ))
     end
 end
@@ -595,6 +620,15 @@ function GlobalMarketSettings:onGreatDemandModeChanged(state)
     GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[state] or 1
     if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onGreatDemandModeChanged ~= nil then
         g_currentMission.globalMarket:onGreatDemandModeChanged(GlobalMarket.GREAT_DEMAND_MODE)
+    end
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onNpcActivityModeChanged(state)
+    self.current.npcActivityModeIndex = state
+    GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[state] or 1
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onNpcActivityModeChanged ~= nil then
+        g_currentMission.globalMarket:onNpcActivityModeChanged(GlobalMarket.NPC_ACTIVITY_MODE)
     end
     self:broadcastChanges()
 end

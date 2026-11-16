@@ -9,7 +9,9 @@
         <e k="finance_gmBuyBulk"                                   v="GM Einkauf: Schüttgut" />
         <e k="finance_gmBuyLiquid"                                 v="GM Einkauf: Flüssigkeiten" />
         <e k="finance_gmBuyPiece"                                  v="GM Einkauf: Stückgut / Paletten" />
+        <e k="finance_gmContracts"                                 v="GM Verträge &amp; Prämien" />
         <e k="finance_gmFee"                                       v="GM Speditionskosten" />
+        <e k="finance_gmPenalties"                                 v="GM Vertragsstrafen" />
         <e k="finance_gmSell"                                      v="GM Verkäufe (Gesamt)" />
         <e k="finance_gmSellBale"                                  v="GM Verkauf: Ballen" />
         <e k="finance_gmSellBulk"                                  v="GM Verkauf: Schüttgut" />
@@ -97,6 +99,11 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Bestandsabhängig" />
         <e k="ui_gm_settings_gd_random"                            v="Zufällig" />
         <e k="ui_gm_settings_gd_off"                               v="Aus" />
+        <e k="ui_gm_settings_npcActivity"                          v="NPC-Verträge &amp; Angebote" />
+        <e k="ui_gm_settings_npcActivity_desc"                     v="Steuert die KI-Marktteilnahme im Reiter Verträge &amp; Angebote. Alle: NPC-Verträge sowie NPC-Angebote und -Käufer aktiv. Nur Verträge: Nur NPC-Lieferverträge (Direktangebote rein zwischen Spielern). Nur Spieler: Reiner PvP-Handel ohne NPCs." />
+        <e k="ui_gm_settings_npc_all"                              v="Alle" />
+        <e k="ui_gm_settings_npc_contracts"                        v="Nur Verträge" />
+        <e k="ui_gm_settings_npc_players"                          v="Nur Spieler" />
         <e k="ui_gm_online_pending_short"                          v="(Prüfung)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Prüfung ausstehend / Offline)" />
         <e k="ui_gm_online_rejected_short"                         v="(Nur Offline)" />

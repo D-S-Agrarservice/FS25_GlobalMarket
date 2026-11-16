@@ -560,6 +560,11 @@ function GlobalMarket:runOfflineSimulation()
         self:updateGmStorageFeesAndDecay()
     end
 
+    -- Evaluate Supply Contracts, +/-10% Direct Offers, Pickup Inbox grace/liquidation & NPC cycles
+    if self.updateContractsAndOffersHourly ~= nil then
+        self:updateContractsAndOffersHourly()
+    end
+
     if self.offlineMarketFillTypes == nil then
         return
     end

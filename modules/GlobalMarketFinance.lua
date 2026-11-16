@@ -76,10 +76,12 @@ local function setupFinanceSystemEarly()
 
     MoneyType.GM_BUY  = MoneyType.register("gmBuy", "finance_gmBuy", GlobalMarket.modName)
     MoneyType.GM_SELL = MoneyType.register("gmSell", "finance_gmSell", GlobalMarket.modName)
+    MoneyType.GM_CONTRACTS = MoneyType.register("gmContracts", "finance_gmContracts", GlobalMarket.modName)
+    MoneyType.GM_PENALTIES = MoneyType.register("gmPenalties", "finance_gmPenalties", GlobalMarket.modName)
 
     -- Update LAST_ID so FSBaseMission:initialize() -> MoneyType.reset() does not reset
     -- the internal ID counter below our registered MoneyTypes.
-    MoneyType.LAST_ID = MoneyType.GM_SELL.id
+    MoneyType.LAST_ID = MoneyType.GM_PENALTIES.id
 
     -- 3. UNCONDITIONAL FinanceStats Injection
     -- We inject ALL stats here to ensure perfect network synchronization.
@@ -103,6 +105,8 @@ local function setupFinanceSystemEarly()
         injectStat("gmBuy")
         injectStat("gmSell")
         injectStat("gmFee")
+        injectStat("gmContracts")
+        injectStat("gmPenalties")
     end
 end
 
@@ -128,9 +132,10 @@ function GlobalMarketFinance.getVisibleFinanceStats()
                 keep = false
             end
         else
-            -- In simple mode, hide all specific details
+            -- In simple mode, hide all specific details including granular contract/penalty rows
             if statName == "gmBuyBulk" or statName == "gmBuyBale" or statName == "gmBuyLiquid" or statName == "gmBuyPiece" or
-               statName == "gmSellBulk" or statName == "gmSellBale" or statName == "gmSellLiquid" or statName == "gmSellPiece" then
+               statName == "gmSellBulk" or statName == "gmSellBale" or statName == "gmSellLiquid" or statName == "gmSellPiece" or
+               statName == "gmContracts" or statName == "gmPenalties" then
                 keep = false
             end
         end
@@ -174,17 +179,26 @@ if InGameMenuStatisticsFrame ~= nil and not GlobalMarketFinance.uiHooked then
                 local function getAggregatedValue(financesTable, statName)
                     if financesTable == nil then return 0 end
                     local val = financesTable[statName] or 0
+                    local contractsVal = financesTable["gmContracts"] or 0
 
                     if statName == "gmBuy" then
                         val = val + (financesTable["gmBuyBulk"] or 0)
                                   + (financesTable["gmBuyBale"] or 0)
                                   + (financesTable["gmBuyLiquid"] or 0)
                                   + (financesTable["gmBuyPiece"] or 0)
+                        if contractsVal < 0 then
+                            val = val + contractsVal
+                        end
                     elseif statName == "gmSell" then
                         val = val + (financesTable["gmSellBulk"] or 0)
                                   + (financesTable["gmSellBale"] or 0)
                                   + (financesTable["gmSellLiquid"] or 0)
                                   + (financesTable["gmSellPiece"] or 0)
+                        if contractsVal > 0 then
+                            val = val + contractsVal
+                        end
+                    elseif statName == "gmFee" and not GlobalMarketFinance.isDetailedCached then
+                        val = val + (financesTable["gmPenalties"] or 0)
                     end
                     return val
                 end
@@ -239,6 +253,8 @@ if InGameMenuStatisticsFrame ~= nil and not GlobalMarketFinance.uiHooked then
                     text = g_i18n:getText("finance_gmBuy", GlobalMarket.modName)
                 elseif string.sub(moneyType.title, 1, 14) == "finance_gmSell" then
                     text = g_i18n:getText("finance_gmSell", GlobalMarket.modName)
+                elseif moneyType.title == "finance_gmPenalties" then
+                    text = g_i18n:getText("finance_gmFee", GlobalMarket.modName)
                 end
             end
             return superFunc(self, moneyType, text)

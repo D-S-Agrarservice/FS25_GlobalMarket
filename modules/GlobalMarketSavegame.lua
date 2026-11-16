@@ -149,6 +149,10 @@ function GlobalMarket:saveToXmlFile()
             end
         end
 
+        if self.saveContractsSystemToXml ~= nil then
+            self:saveContractsSystemToXml(xmlFile)
+        end
+
         xmlFile:save()
         xmlFile:delete()
 
@@ -299,6 +303,10 @@ function GlobalMarket:loadFromXMLFile()
                 end
             end)
 
+            if self.loadContractsSystemFromXml ~= nil then
+                self:loadContractsSystemFromXml(xmlFile)
+            end
+
             xmlFile:delete()
 
             -- Recalculate all prices once after all levels are loaded
@@ -330,6 +338,9 @@ function GlobalMarket:sendInitialClientState(connection, user, farm)
         self.debugManager:debug("Syncing initial state to joining client: %s", tostring(user:getNickname()))
     end
     connection:sendEvent(SynchOfflineMarketEvent.new())
+    if SyncContractsStateEvent ~= nil then
+        connection:sendEvent(SyncContractsStateEvent.new())
+    end
 end
 
 FSBaseMission.sendInitialClientState = Utils.appendedFunction(FSBaseMission.sendInitialClientState, function(mission, connection, user, farm)

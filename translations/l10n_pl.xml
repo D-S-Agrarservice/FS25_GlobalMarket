@@ -9,7 +9,9 @@
         <e k="finance_gmBuyBulk"                                   v="Zakup GM: Luzem" />
         <e k="finance_gmBuyLiquid"                                 v="Zakup GM: Ciecze" />
         <e k="finance_gmBuyPiece"                                  v="Zakup GM: Sztuki / Palety" />
+        <e k="finance_gmContracts"                                 v="GM Kontrakty i premie" />
         <e k="finance_gmFee"                                       v="Koszty dostawy GM" />
+        <e k="finance_gmPenalties"                                 v="GM Kary umowne" />
         <e k="finance_gmSell"                                      v="Sprzedaż GM (Suma)" />
         <e k="finance_gmSellBale"                                  v="Sprzedaż GM: Bele" />
         <e k="finance_gmSellBulk"                                  v="Sprzedaż GM: Luzem" />
@@ -97,6 +99,11 @@
         <e k="ui_gm_settings_gd_scarcity"                          v="Według stanu" />
         <e k="ui_gm_settings_gd_random"                            v="Losowy" />
         <e k="ui_gm_settings_gd_off"                               v="Wył." />
+        <e k="ui_gm_settings_npcActivity"                          v="Kontrakty i oferty NPC" />
+        <e k="ui_gm_settings_npcActivity_desc"                     v="Steruje udziałem AI w Kontraktach i Ofertach. Wszystkie: Aktywne kontrakty, oferty i kupcy NPC. Tylko kontrakty: Tylko kontrakty NPC (oferty bezpośrednie między graczami). Tylko gracze: Czysty handel PvP bez NPC." />
+        <e k="ui_gm_settings_npc_all"                              v="Wszystkie" />
+        <e k="ui_gm_settings_npc_contracts"                        v="Tylko kontrakty" />
+        <e k="ui_gm_settings_npc_players"                          v="Tylko gracze" />
         <e k="ui_gm_online_pending_short"                          v="(Weryfikacja)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Oczekuje na weryfikację / Offline)" />
         <e k="ui_gm_online_rejected_short"                         v="(Tylko offline)" />
