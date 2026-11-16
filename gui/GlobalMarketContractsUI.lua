@@ -475,9 +475,6 @@ function GlobalMarketUI:onClickCreatePlayerContract()
     if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
         return
     end
-    if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
-        return
-    end
     gm.contractDialog:show(GlobalMarketContractDialog.MODE_CREATE_CONTRACT, {
         farmId = farmId
     }, self.onContractDialogDone, self)
@@ -487,9 +484,6 @@ function GlobalMarketUI:onClickCreateDirectOffer()
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm == nil or gm.contractDialog == nil then return end
     local farmId = g_currentMission:getFarmId()
-    if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
-        return
-    end
     if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
         return
     end
@@ -552,7 +546,7 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
     if row.kind == "OWN_CONTRACT" and row.data.status == "OPEN" then
         local cId = row.data.id
         local function doCancel(yes)
-            if yes ~= false and ContractActionEvent ~= nil then
+            if yes == true and ContractActionEvent ~= nil then
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_CANCEL_CONTRACT, farmId, cId, "", 0, 0, 1, false, nil, false, nil, 0)
                 self.refreshCountdown = 200
             end
@@ -560,14 +554,14 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
         if YesNoDialog ~= nil and YesNoDialog.INSTANCE ~= nil then
             local msg = string.format(self.i18n:getText("ui_gm_confirm_cancelContractText"),
                 cId, self.i18n:formatVolume(row.data.totalLiters or 0, 0), ftTitle)
-            YesNoDialog.show(function(_, yes) doCancel(yes) end, nil, msg, self.i18n:getText("ui_gm_action_cancelListing"))
+            YesNoDialog.show(doCancel, nil, msg, self.i18n:getText("ui_gm_action_cancelListing"))
         else
             doCancel(true)
         end
     elseif row.kind == "OWN_OFFER" then
         local oId = row.data.id
         local function doCancel(yes)
-            if yes ~= false and ContractActionEvent ~= nil then
+            if yes == true and ContractActionEvent ~= nil then
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_CANCEL_OFFER, farmId, oId, "", 0, 0, 1, false, nil, false, nil, 0)
                 self.refreshCountdown = 200
             end
@@ -575,7 +569,7 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
         if YesNoDialog ~= nil and YesNoDialog.INSTANCE ~= nil then
             local msg = string.format(self.i18n:getText("ui_gm_confirm_cancelOfferText"),
                 oId, self.i18n:formatVolume(row.data.remainingLiters or 0, 0), ftTitle)
-            YesNoDialog.show(function(_, yes) doCancel(yes) end, nil, msg, self.i18n:getText("ui_gm_action_cancelListing"))
+            YesNoDialog.show(doCancel, nil, msg, self.i18n:getText("ui_gm_action_cancelListing"))
         else
             doCancel(true)
         end
@@ -621,7 +615,7 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
         end
         local c = row.data
         local function doAccept(yes)
-            if yes ~= false and ContractActionEvent ~= nil then
+            if yes == true and ContractActionEvent ~= nil then
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_ACCEPT_CONTRACT, farmId, c.id, "", 0, 0, 1, false, nil, false, nil, 0)
                 self.contractsListFocus = "left"
                 self.refreshCountdown = 200
@@ -632,7 +626,7 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
                 self.i18n:formatVolume(c.totalLiters or 0, 0), ftTitle,
                 self.i18n:formatMoney(c.basePricePer1000 or 500, 0, true, true),
                 c.bonusPct or 0, c.monthsRemaining or 1.0)
-            YesNoDialog.show(function(_, yes) doAccept(yes) end, nil, msg, self.i18n:getText("ui_gm_confirm_acceptTitle"))
+            YesNoDialog.show(doAccept, nil, msg, self.i18n:getText("ui_gm_confirm_acceptTitle"))
         else
             doAccept(true)
         end
