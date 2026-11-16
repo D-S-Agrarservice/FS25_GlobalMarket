@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <!-- ========================================================================================= -->
 <!-- FS25_GlobalMarket - GlobalMarketDialog.xml                                                -->
-<!-- Modal transaction dialog layout and dialog-specific GUI profiles.                         -->
+<!-- Modal transaction dialog with FillType icon, quick-step pills, and structured receipt.    -->
 <!-- Author: D-S-Agrarservice                                                                  -->
 <!-- ========================================================================================= -->
 <GUI name="GlobalMarketDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
@@ -15,8 +15,12 @@
         <ThreePartBitmap profile="fs25_dialogBgBottom" />
 
         <GuiElement profile="fs25_dialogContentContainer" size="100% 100%">
-            <Text profile="fs25_siloDialogTitle" id="dialogTitleElement" />
-            <Text profile="fs25_siloDialogText" id="dialogInfoTextElement" />
+            <!-- Zone A: Header with FillType icon, centered title, subtitle, and dropdown selectors -->
+            <BoxLayout profile="globalMarketDialogHeaderBox" id="headerBoxLayout">
+                <Bitmap profile="globalMarketDialogFillIcon" id="dialogFillTypeIcon" />
+                <Text profile="globalMarketDialogTitleText" id="dialogTitleElement" />
+            </BoxLayout>
+            <Text profile="globalMarketDialogInfoText" id="dialogInfoTextElement" />
 
             <MultiTextOption profile="globalMarketStorageDropdown" id="storageSelectionElement" onClick="onClickStorage">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
@@ -26,23 +30,73 @@
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
-            <!-- Fixed-offset input group container for amount field, MAX button, and unit label -->
+            <!-- Zone B Row 1: Amount input field, Reset (0), MAX, and dynamic unit label -->
             <GuiElement profile="globalMarketInputGroup" with="anchorTopCenter">
-                <GuiElement profile="emptyPanel" position="0px 0px" size="200px 40px" with="anchorMiddleLeft">
+                <GuiElement profile="emptyPanel" position="36px 0px" size="200px 40px" with="anchorMiddleLeft">
                     <ThreePartBitmap profile="globalMarketTextInputBg" />
                     <TextInput profile="globalMarketAmountInput" id="amountInput" onTextChanged="onAmountChanged" text="0" maxCharacters="10" />
                 </GuiElement>
 
-                <Button profile="globalMarketMaxButton" text="MAX" onClick="onClickMaxAmount">
+                <Button profile="globalMarketZeroButton" id="zeroButton" text="0" onClick="onClickZeroAmount">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+
+                <Button profile="globalMarketMaxButton" id="maxButton" text="MAX" onClick="onClickMaxAmount">
                     <ThreePartBitmap profile="globalMarketMaxButtonBg" />
                 </Button>
 
                 <Text profile="globalMarketInputUnitText" id="inputUnitText" text="$l10n_ui_gm_unit_liter" />
             </GuiElement>
 
-            <!-- Total value and fee breakdown summary labels -->
-            <Text profile="globalMarketTotalText" id="totalValueText" text="Total: 0" />
-            <Text profile="globalMarketDeliveryText" id="deliveryCostText" text="Delivery: 0" isVisible="false" />
+            <!-- Zone B Row 2: Symmetrical 6-button quick-step bar (- left, + right) -->
+            <GuiElement profile="globalMarketStepGroup" with="anchorTopCenter">
+                <Button profile="globalMarketStepButton" id="btnStepMinus3" position="0px 0px" text="-10k" onClick="onClickStepMinus3">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+                <Button profile="globalMarketStepButton" id="btnStepMinus2" position="88px 0px" text="-1k" onClick="onClickStepMinus2">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+                <Button profile="globalMarketStepButton" id="btnStepMinus1" position="176px 0px" text="-100" onClick="onClickStepMinus1">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+                <Button profile="globalMarketStepButton" id="btnStepPlus1" position="280px 0px" text="+100" onClick="onClickStepPlus1">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+                <Button profile="globalMarketStepButton" id="btnStepPlus2" position="368px 0px" text="+1k" onClick="onClickStepPlus2">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+                <Button profile="globalMarketStepButton" id="btnStepPlus3" position="456px 0px" text="+10k" onClick="onClickStepPlus3">
+                    <ThreePartBitmap profile="globalMarketMaxButtonBg" />
+                </Button>
+            </GuiElement>
+
+            <!-- Zone C: Structured 6-row receipt / cost calculation card -->
+            <GuiElement profile="globalMarketReceiptBox" id="receiptBox">
+                <Bitmap profile="globalMarketReceiptCardBg" />
+                <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px 0px" size="536px 2px" with="anchorTopCenter" />
+
+                <Text profile="globalMarketReceiptLabel" id="receiptRow1Label" position="18px -14px" text="" />
+                <Text profile="globalMarketReceiptValue" id="receiptRow1Value" position="-18px -14px" text="" />
+
+                <Text profile="globalMarketReceiptLabel" id="receiptRow2Label" position="18px -46px" text="" />
+                <Text profile="globalMarketReceiptValue" id="receiptRow2Value" position="-18px -46px" text="" />
+
+                <Text profile="globalMarketReceiptLabel" id="receiptRow3Label" position="18px -78px" text="" />
+                <Text profile="globalMarketReceiptValue" id="receiptRow3Value" position="-18px -78px" text="" />
+
+                <Text profile="globalMarketReceiptLabel" id="receiptRow4Label" position="18px -110px" text="" />
+                <Text profile="globalMarketReceiptValue" id="receiptRow4Value" position="-18px -110px" text="" />
+
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px -146px" size="500px 2px" with="anchorTopCenter" />
+
+                <Text profile="globalMarketReceiptTotalLabel" id="receiptTotalLabel" position="18px -158px" text="" />
+                <Text profile="globalMarketReceiptTotalValue" id="receiptTotalValue" position="-18px -158px" text="" />
+
+                <Text profile="globalMarketReceiptBalanceLabel" id="receiptBalanceLabel" position="18px -202px" text="" />
+                <Text profile="globalMarketReceiptBalanceValue" id="receiptBalanceValue" position="-18px -202px" text="" />
+
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="536px 2px" with="anchorBottomCenter" />
+            </GuiElement>
         </GuiElement>
 
         <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
@@ -54,33 +108,66 @@
 
     <GUIProfiles>
         <Profile name="globalMarketDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
-            <size value="620px 520px" />
+            <size value="620px 660px" />
         </Profile>
 
-        <Profile name="fs25_siloDialogTitle" extends="fs25_dialogTitle">
-            <width value="580px" />
-            <position value="0px -30px" />
+        <Profile name="globalMarketDialogHeaderBox" extends="emptyPanel" with="anchorTopCenter">
+            <size value="570px 36px" />
+            <position value="0px -24px" />
+            <flowDirection value="horizontal" />
+            <alignmentX value="center" />
+            <alignmentY value="middle" />
+            <elementSpacing value="10px" />
         </Profile>
 
-        <Profile name="fs25_siloDialogText" extends="fs25_dialogText">
-            <width value="580px" />
-            <position value="0px -80px" />
+        <Profile name="globalMarketDialogFillIcon" extends="baseReference">
+            <size value="32px 32px" />
+            <imageSliceId value="noSlice" />
+            <imageColor value="$preset_colorWhite" />
+        </Profile>
+
+        <Profile name="globalMarketDialogTitleText" extends="fs25_textDefault">
+            <size value="10px 36px" />
+            <textSize value="24px" />
+            <textBold value="true" />
             <textAutoWidth value="true" />
+            <textMaxWidth value="510px" />
+            <textLayoutMode value="resize" />
+            <textAlignment value="left" />
+            <textVerticalAlignment value="middle" />
+            <textColor value="$preset_colorWhite" />
+        </Profile>
+
+        <Profile name="globalMarketDialogInfoText" extends="fs25_dialogText" with="anchorTopCenter">
+            <size value="570px 26px" />
+            <position value="0px -66px" />
+            <textSize value="15px" />
+            <textAutoWidth value="false" />
+            <textLayoutMode value="resize" />
+            <textMaxNumLines value="2" />
+            <textAlignment value="center" />
+            <textVerticalAlignment value="middle" />
+            <textColor value="0.78 0.80 0.82 1" />
         </Profile>
 
         <Profile name="globalMarketStorageDropdown" extends="fs25_multiTextOption" with="anchorTopCenter">
-            <width value="400px" />
-            <position value="0px -140px" />
+            <width value="460px" />
+            <position value="0px -102px" />
         </Profile>
 
         <Profile name="globalMarketFormatDropdown" extends="fs25_multiTextOption" with="anchorTopCenter">
-            <width value="400px" />
-            <position value="0px -190px" />
+            <width value="460px" />
+            <position value="0px -150px" />
         </Profile>
 
         <Profile name="globalMarketInputGroup" extends="emptyPanel" with="anchorTopCenter">
-            <size value="400px 40px" />
-            <position value="0px -260px" />
+            <size value="536px 40px" />
+            <position value="0px -206px" />
+        </Profile>
+
+        <Profile name="globalMarketStepGroup" extends="emptyPanel" with="anchorTopCenter">
+            <size value="536px 36px" />
+            <position value="0px -256px" />
         </Profile>
 
         <Profile name="globalMarketTextInputBg" extends="baseReference" with="anchorStretchingYStretchingX">
@@ -102,15 +189,26 @@
         </Profile>
 
         <Profile name="globalMarketMaxButton" extends="emptyPanel" with="anchorMiddleLeft">
-            <size value="80px 40px" />
-            <position value="210px 0px" />
-            <textSize value="20px" />
+            <size value="76px 40px" />
+            <position value="304px 0px" />
+            <textSize value="18px" />
             <textBold value="true" />
             <textPadding value="0px 0px" />
             <textAlignment value="center" />
             <textColor value="$preset_colorWhite" />
             <textHighlightedColor value="$preset_fs25_colorMainDark" />
             <textFocusedColor value="$preset_fs25_colorMainDark" />
+        </Profile>
+
+        <Profile name="globalMarketZeroButton" extends="globalMarketMaxButton">
+            <size value="52px 40px" />
+            <position value="244px 0px" />
+        </Profile>
+
+        <Profile name="globalMarketStepButton" extends="globalMarketMaxButton">
+            <size value="80px 36px" />
+            <textSize value="16px" />
+            <textLayoutMode value="resize" />
         </Profile>
 
         <Profile name="globalMarketMaxButtonBg" extends="globalMarketTextInputBg">
@@ -123,28 +221,74 @@
         </Profile>
 
         <Profile name="globalMarketInputUnitText" extends="fs25_textDefault" with="anchorMiddleLeft">
-            <!-- Dynamic width to prevent engine cutoff (e.g. for "Bigbag-Palette") -->
-            <textAutoWidth value="true" />
-            <position value="300px 0px" />
+            <size value="144px 40px" />
+            <position value="392px 0px" />
+            <textAutoWidth value="false" />
+            <textLayoutMode value="resize" />
+            <textMaxNumLines value="1" />
             <textSize value="18px" />
             <textAlignment value="left" />
+            <textVerticalAlignment value="middle" />
             <textColor value="$preset_colorWhite" />
         </Profile>
 
-        <Profile name="globalMarketTotalText" extends="fs25_dialogText" with="anchorTopCenter">
-            <width value="580px" />
-            <position value="0px -330px" />
-            <textAlignment value="center" />
-            <textWrap value="true" />
+        <Profile name="globalMarketReceiptBox" extends="emptyPanel" with="anchorTopCenter">
+            <size value="536px 246px" />
+            <position value="0px -308px" />
         </Profile>
 
-        <!-- Static offset guarantees 50px clearance to the text above -->
-        <Profile name="globalMarketDeliveryText" extends="fs25_dialogText" with="anchorTopCenter">
-            <width value="580px" />
-            <position value="0px -380px" />
-            <textAlignment value="center" />
-            <textWrap value="true" />
-            <textColor value="0.9 0.6 0.1 1" />
+        <Profile name="globalMarketReceiptCardBg" extends="baseReference" with="anchorStretchingYStretchingX">
+            <size value="100% 100%" />
+            <imageColor value="0.06 0.07 0.08 0.86" />
+        </Profile>
+
+        <Profile name="globalMarketReceiptLabel" extends="fs25_textDefault" with="anchorTopLeft">
+            <size value="250px 26px" />
+            <textSize value="16px" />
+            <textAutoWidth value="false" />
+            <textLayoutMode value="resize" />
+            <textMaxNumLines value="1" />
+            <textAlignment value="left" />
+            <textVerticalAlignment value="middle" />
+            <textColor value="0.78 0.80 0.82 1" />
+        </Profile>
+
+        <Profile name="globalMarketReceiptValue" extends="fs25_textDefault" with="anchorTopRight">
+            <size value="240px 26px" />
+            <textSize value="16px" />
+            <textAutoWidth value="false" />
+            <textLayoutMode value="resize" />
+            <textMaxNumLines value="1" />
+            <textAlignment value="right" />
+            <textVerticalAlignment value="middle" />
+            <textColor value="$preset_colorWhite" />
+        </Profile>
+
+        <Profile name="globalMarketReceiptTotalLabel" extends="globalMarketReceiptLabel">
+            <size value="210px 32px" />
+            <textSize value="18px" />
+            <textBold value="true" />
+            <textColor value="$preset_colorWhite" />
+        </Profile>
+
+        <Profile name="globalMarketReceiptTotalValue" extends="globalMarketReceiptValue">
+            <size value="280px 32px" />
+            <textSize value="23px" />
+            <textBold value="true" />
+            <textColor value="$preset_fs25_colorMainHighlight" />
+        </Profile>
+
+        <Profile name="globalMarketReceiptBalanceLabel" extends="globalMarketReceiptLabel">
+            <size value="260px 26px" />
+            <textSize value="15px" />
+            <textColor value="0.78 0.80 0.82 1" />
+        </Profile>
+
+        <Profile name="globalMarketReceiptBalanceValue" extends="globalMarketReceiptValue">
+            <size value="230px 26px" />
+            <textSize value="16px" />
+            <textBold value="true" />
+            <textColor value="$preset_colorWhite" />
         </Profile>
     </GUIProfiles>
 </GUI>

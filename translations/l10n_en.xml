@@ -67,6 +67,15 @@
         <e k="ui_gm_cat_mode_detailed"                             v="Categories: Detailed" />
         <e k="ui_gm_cat_mode_flat"                                 v="Categories: Off (A-Z)" />
         <e k="ui_gm_search_label"                                  v="SEARCH:" />
+        <e k="ui_gm_receipt_balanceAfter"                          v="Balance After" />
+        <e k="ui_gm_receipt_freeTerminal"                          v="%s (GM Logistics Center)" />
+        <e k="ui_gm_receipt_goodsValue"                            v="Goods Value" />
+        <e k="ui_gm_receipt_quantity"                              v="Trade Quantity" />
+        <e k="ui_gm_receipt_shipping"                              v="Shipping Costs" />
+        <e k="ui_gm_receipt_shortfall"                             v="Shortfall (Insufficient funds!)" />
+        <e k="ui_gm_receipt_totalBuy"                              v="TOTAL PRICE" />
+        <e k="ui_gm_receipt_totalSell"                             v="TOTAL PROCEEDS" />
+        <e k="ui_gm_receipt_unitPrice"                             v="Unit Price" />
         <e k="ui_gm_delivery_costs"                                v="Delivery costs" />
         <e k="ui_gm_format_bulk"                                   v="Bulk (Loose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Pcs | 1 Pc = %d L" />

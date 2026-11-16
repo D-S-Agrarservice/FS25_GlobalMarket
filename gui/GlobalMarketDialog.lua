@@ -9,6 +9,18 @@ local GlobalMarketDialog_mt = Class(GlobalMarketDialog, YesNoDialog)
 
 -- SAFETY CAP: Maximum physical objects per transaction to prevent engine crashes
 GlobalMarketDialog.MAX_OBJECTS_PER_TX = 50
+GlobalMarketDialog.BULK_STEPS = { 100, 1000, 10000 }
+GlobalMarketDialog.BULK_STEP_LABELS = { "-10k", "-1k", "-100", "+100", "+1k", "+10k" }
+GlobalMarketDialog.OBJECT_STEPS = { 1, 5, 10 }
+GlobalMarketDialog.OBJECT_STEP_LABELS = { "-10", "-5", "-1", "+1", "+5", "+10" }
+
+local COLOR_LABEL = { 0.78, 0.80, 0.82, 1 }
+local COLOR_WHITE = { 1, 1, 1, 1 }
+local COLOR_MUTED = { 0.85, 0.85, 0.85, 1 }
+local COLOR_GREEN = { 0.46, 0.80, 0.15, 1 }
+local COLOR_AMBER = { 0.95, 0.68, 0.20, 1 }
+local COLOR_RED = { 0.92, 0.22, 0.22, 1 }
+local COLOR_BAL_OK = { 0.92, 0.94, 0.96, 1 }
 
 function GlobalMarketDialog.new(target, custom_mt)
     local self = YesNoDialog.new(target, custom_mt or GlobalMarketDialog_mt)
@@ -53,6 +65,7 @@ function GlobalMarketDialog:onOpen()
     self.currentCountFactor = 1
     self.currentFormatXml = nil
     self.availableFormats = {}
+    self.baseInfoText = ""
 
     -- Reset the sticky input field immediately
     if self.amountInput ~= nil then
@@ -63,6 +76,19 @@ function GlobalMarketDialog:onOpen()
         and (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderStorage") .. ": ")
         or (g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderMarket") .. ": ")
     self.dialogTitleElement:setText(titlePrefix .. tostring(self.fillTypeTitle))
+
+    if self.dialogFillTypeIcon ~= nil then
+        local fillTypeDesc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(self.fillTypeName) or nil
+        if fillTypeDesc ~= nil and fillTypeDesc.hudOverlayFilename ~= nil and fillTypeDesc.hudOverlayFilename ~= "" then
+            self.dialogFillTypeIcon:setImageFilename(fillTypeDesc.hudOverlayFilename)
+            self.dialogFillTypeIcon:setVisible(true)
+        else
+            self.dialogFillTypeIcon:setVisible(false)
+        end
+    end
+    if self.headerBoxLayout ~= nil then
+        self.headerBoxLayout:invalidateLayout()
+    end
 
     local actionText = self.actionType == "SELL" and g_i18n:getText("ui_btn_sell") or g_i18n:getText("ui_btn_buy")
     if self.yesButton ~= nil then
@@ -290,7 +316,12 @@ function GlobalMarketDialog:onClickStorage(state)
             g_i18n:getText("ui_ingameMenuGlobalMarketPrice"),
             g_i18n:formatMoney(self.pricePer1000, 0, true, true))
 
-        self.dialogInfoTextElement:setText(infoText)
+        self.baseInfoText = infoText
+        if self.dialogInfoTextElement ~= nil then
+            self.dialogInfoTextElement:setText(infoText)
+            self.dialogInfoTextElement:setTextColor(COLOR_LABEL[1], COLOR_LABEL[2], COLOR_LABEL[3], COLOR_LABEL[4])
+        end
+        self:updateStepButtonLabels()
 
         -- 4. Trigger follow-up logic
         if #self.availableFormats > 0 then
@@ -347,12 +378,19 @@ function GlobalMarketDialog:onClickFormat(state)
         self.currentMaxPieces = maxPieces
 
         if GlobalMarket.debugManager ~= nil then
-            GlobalMarket.debugManager:debug("Dialog: Format selected '%s' (Capacity: %d, MaxPieces: %d)", selectedFormat.title, self.currentCountFactor, self.currentMaxPieces)
+            GlobalMarket.debugManager:debug("Dialog: Format selected '%s' (Capacity: %d, MaxPieces: %d)",
+                selectedFormat.title, self.currentCountFactor, self.currentMaxPieces)
         end
 
         -- Update info text using strict translation system
-        local infoText = string.format(g_i18n:getText("ui_gm_format_info"), selectedFormat.title, self.currentMaxPieces, self.currentCountFactor)
-        self.dialogInfoTextElement:setText(infoText)
+        local infoText = string.format(g_i18n:getText("ui_gm_format_info"),
+            selectedFormat.title, self.currentMaxPieces, self.currentCountFactor)
+        self.baseInfoText = infoText
+        if self.dialogInfoTextElement ~= nil then
+            self.dialogInfoTextElement:setText(infoText)
+            self.dialogInfoTextElement:setTextColor(COLOR_LABEL[1], COLOR_LABEL[2], COLOR_LABEL[3], COLOR_LABEL[4])
+        end
+        self:updateStepButtonLabels()
 
         -- Reset input field and trigger calculation
         if self.amountInput ~= nil then
@@ -362,19 +400,90 @@ function GlobalMarketDialog:onClickFormat(state)
     end
 end
 
--- Triggered when the user clicks the 'MAX' button next to the input field
-function GlobalMarketDialog:onClickMaxAmount()
-    local fillAmount = self.maxAmount
-
-    -- If we are in object mode, default fillAmount is the max pieces
+-- Returns the clamped upper limit for the active storage and packaging mode
+function GlobalMarketDialog:getEffectiveMaxAmount()
+    local effectiveMax = self.maxAmount or 0
     if self.currentCountFactor > 1 and self.currentMaxPieces ~= nil then
-        fillAmount = self.currentMaxPieces
-
-        -- SAFETY CAP: Prevent Engine Crash / Spawn Lag
-        if fillAmount > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
-            fillAmount = GlobalMarketDialog.MAX_OBJECTS_PER_TX
+        effectiveMax = self.currentMaxPieces
+        if effectiveMax > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
+            effectiveMax = GlobalMarketDialog.MAX_OBJECTS_PER_TX
         end
     end
+    return math.max(0, math.floor(effectiveMax))
+end
+
+-- Updates quick-step pill button captions cleanly between bulk liters and object pieces
+function GlobalMarketDialog:updateStepButtonLabels()
+    local labels = (self.currentCountFactor > 1)
+        and GlobalMarketDialog.OBJECT_STEP_LABELS
+        or GlobalMarketDialog.BULK_STEP_LABELS
+    local buttons = {
+        self.btnStepMinus3,
+        self.btnStepMinus2,
+        self.btnStepMinus1,
+        self.btnStepPlus1,
+        self.btnStepPlus2,
+        self.btnStepPlus3
+    }
+    for i = 1, 6 do
+        if buttons[i] ~= nil and labels[i] ~= nil then
+            buttons[i]:setText(labels[i])
+        end
+    end
+end
+
+-- Applies a stepped delta from one of the 6 quick-step buttons, clamped to valid limits
+function GlobalMarketDialog:applyStepByTier(tierIndex, direction)
+    local steps = (self.currentCountFactor > 1)
+        and GlobalMarketDialog.OBJECT_STEPS
+        or GlobalMarketDialog.BULK_STEPS
+    local stepSize = steps[tierIndex] or 0
+    local currentText = (self.amountInput ~= nil) and self.amountInput:getText() or nil
+    local currentVal = tonumber(currentText) or self.currentAmount or 0
+    local effectiveMax = self:getEffectiveMaxAmount()
+    local nextVal = math.clamp(math.floor(currentVal + (stepSize * direction)), 0, effectiveMax)
+
+    if self.amountInput ~= nil then
+        self.amountInput:setText(string.format("%d", nextVal))
+    end
+    self:onAmountChanged()
+end
+
+-- Resets the quantity field cleanly back to 0
+function GlobalMarketDialog:onClickZeroAmount()
+    if self.amountInput ~= nil then
+        self.amountInput:setText("0")
+    end
+    self:onAmountChanged()
+end
+
+function GlobalMarketDialog:onClickStepMinus3()
+    self:applyStepByTier(3, -1)
+end
+
+function GlobalMarketDialog:onClickStepMinus2()
+    self:applyStepByTier(2, -1)
+end
+
+function GlobalMarketDialog:onClickStepMinus1()
+    self:applyStepByTier(1, -1)
+end
+
+function GlobalMarketDialog:onClickStepPlus1()
+    self:applyStepByTier(1, 1)
+end
+
+function GlobalMarketDialog:onClickStepPlus2()
+    self:applyStepByTier(2, 1)
+end
+
+function GlobalMarketDialog:onClickStepPlus3()
+    self:applyStepByTier(3, 1)
+end
+
+-- Triggered when the user clicks the 'MAX' button next to the input field
+function GlobalMarketDialog:onClickMaxAmount()
+    local fillAmount = self:getEffectiveMaxAmount()
 
     if self.actionType == "BUY" then
         local currentMoney = g_currentMission:getMoney()
@@ -406,32 +515,23 @@ function GlobalMarketDialog:onClickMaxAmount()
         end
     end
 
+    fillAmount = math.max(0, math.floor(fillAmount))
+
     -- Update the input field and trigger the calculation logic
     if self.amountInput ~= nil then
-        self.amountInput:setText(string.format("%d", math.floor(fillAmount)))
+        self.amountInput:setText(string.format("%d", fillAmount))
         self:onAmountChanged()
     end
 end
 
 -- Handles user keyboard input and validates against limits (No logging to prevent spam)
 function GlobalMarketDialog:onAmountChanged()
-    local text = self.amountInput:getText()
-    local amount = tonumber(text) or 0
+    local text = (self.amountInput ~= nil) and self.amountInput:getText() or "0"
+    local parsed = tonumber(text)
+    local effectiveMax = self:getEffectiveMaxAmount()
+    local amount = math.clamp(math.floor(parsed or 0), 0, effectiveMax)
 
-    local effectiveMax = self.maxAmount
-
-    -- If we are in object mode, use the exactly calculated maxPieces limit
-    if self.currentCountFactor > 1 and self.currentMaxPieces ~= nil then
-        effectiveMax = self.currentMaxPieces
-
-        -- SAFETY CAP: Prevent Engine Crash / Spawn Lag
-        if effectiveMax > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
-            effectiveMax = GlobalMarketDialog.MAX_OBJECTS_PER_TX
-        end
-    end
-
-    if amount > effectiveMax then
-        amount = effectiveMax
+    if self.amountInput ~= nil and parsed ~= nil and (parsed < 0 or parsed > effectiveMax or parsed ~= amount) then
         self.amountInput:setText(tostring(amount))
     end
     self.currentAmount = amount
@@ -449,84 +549,161 @@ function GlobalMarketDialog:onAmountChanged()
     self:updateTotalValue()
 end
 
--- Calculates the final price and toggles the OK button based on funds
+-- Populates a single label/value row inside the receipt card cleanly
+function GlobalMarketDialog:setReceiptRow(labelElem, valueElem, labelText, valueText, valueColor, labelColor)
+    local lc = labelColor or COLOR_LABEL
+    local vc = valueColor or COLOR_WHITE
+    if labelElem ~= nil then
+        labelElem:setText(labelText or "")
+        labelElem:setTextColor(lc[1], lc[2], lc[3], lc[4])
+    end
+    if valueElem ~= nil then
+        valueElem:setText(valueText or "")
+        valueElem:setTextColor(vc[1], vc[2], vc[3], vc[4])
+    end
+end
+
+-- Highlights the per-transaction physical object spawn cap in the subtitle when hit
+function GlobalMarketDialog:updateSubtitleCapWarning()
+    if self.dialogInfoTextElement == nil or self.baseInfoText == nil then
+        return
+    end
+    local capHit = self.currentCountFactor > 1
+        and self.currentAmount >= GlobalMarketDialog.MAX_OBJECTS_PER_TX
+        and (self.currentMaxPieces or 0) > GlobalMarketDialog.MAX_OBJECTS_PER_TX
+
+    if capHit then
+        local limitWarning = string.format(g_i18n:getText("ui_gm_warning_engineLimit"),
+            GlobalMarketDialog.MAX_OBJECTS_PER_TX)
+        self.dialogInfoTextElement:setText(self.baseInfoText .. limitWarning)
+        self.dialogInfoTextElement:setTextColor(COLOR_AMBER[1], COLOR_AMBER[2], COLOR_AMBER[3], COLOR_AMBER[4])
+    else
+        self.dialogInfoTextElement:setText(self.baseInfoText)
+        self.dialogInfoTextElement:setTextColor(COLOR_LABEL[1], COLOR_LABEL[2], COLOR_LABEL[3], COLOR_LABEL[4])
+    end
+end
+
+-- Calculates the final price, renders the structured 6-row receipt, and validates liquidity
 function GlobalMarketDialog:updateTotalValue()
-    -- Calculate total liters respecting the format (bulk vs pieces)
     local totalLiters = self.currentAmount * self.currentCountFactor
     local baseValue = (totalLiters / 1000) * self.pricePer1000
 
-    -- Real-time calculation of dealer markup (on BUY) and dynamic delivery costs
     local markupPct = (self.actionType == "BUY") and (GlobalMarket.DEALER_MARKUP or 0) or 0
     local dealerCosts = (totalLiters > 0 and markupPct > 0) and (baseValue * (markupPct / 100)) or 0
 
-    local deliveryCosts = 0
     local selectedSilo = self.storageLocations[self.selectedStorageIndex]
+    local isGmMarket = selectedSilo ~= nil and selectedSilo.isGmMarket == true
+    local deliveryCosts = 0
 
-    if selectedSilo ~= nil and not selectedSilo.isGmMarket and totalLiters > 0 then
+    if selectedSilo ~= nil and not isGmMarket and totalLiters > 0 then
         local baseCost = GlobalMarket.DELIVER_COST or 0
         local costPerLiter = GlobalMarket.DELIVER_COST_PERLITER or 0
         deliveryCosts = (baseCost + (costPerLiter * totalLiters)) * EconomyManager.getCostMultiplier()
     end
 
-    local finalTotal = baseValue
-    if self.actionType == "BUY" then
-        finalTotal = baseValue + dealerCosts + deliveryCosts
+    local finalTotal = (self.actionType == "BUY")
+        and (baseValue + dealerCosts + deliveryCosts)
+        or math.max(0, baseValue - deliveryCosts)
+    local currentMoney = g_currentMission:getMoney()
+
+    self:updateSubtitleCapWarning()
+
+    -- Row 1: Combined Trade Quantity (pieces + total liters for ObjectStorages, or liters for bulk)
+    local qtyValue
+    if self.currentCountFactor > 1 then
+        qtyValue = string.format("%d %s (%s)",
+            self.currentAmount,
+            g_i18n:getText(self.currentUnitKey or "ui_gm_unit_piece"),
+            g_i18n:formatVolume(totalLiters, 0))
     else
-        finalTotal = math.max(0, baseValue - deliveryCosts)
+        qtyValue = g_i18n:formatVolume(totalLiters, 0)
     end
+    self:setReceiptRow(self.receiptRow1Label, self.receiptRow1Value,
+        g_i18n:getText("ui_gm_receipt_quantity"), qtyValue, COLOR_WHITE)
 
-    -- Update the fee breakdown text visually (dealer markup & delivery costs)
-    if self.deliveryCostText ~= nil then
-        local feeParts = {}
+    -- Rows 2 & 3: Stable 2-line breakdown without layout jumps
+    if self.actionType == "BUY" and markupPct > 0 then
+        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+            g_i18n:getText("ui_gm_receipt_goodsValue"),
+            g_i18n:formatMoney(baseValue, 0, true, true), COLOR_WHITE)
 
-        if dealerCosts > 0 then
-            local markupLabel = g_i18n:getText("ui_gm_settings_markup") or "Markup"
-            table.insert(feeParts, string.format("%s (%d%%): %s", markupLabel, markupPct, g_i18n:formatMoney(dealerCosts, 0, true, true)))
-        end
-
-        if deliveryCosts > 0 then
-            local deliveryLabel = g_i18n:getText("ui_gm_delivery_costs") or "Delivery"
-            table.insert(feeParts, string.format("%s: %s", deliveryLabel, g_i18n:formatMoney(deliveryCosts, 0, true, true)))
-        end
-
-        if #feeParts > 0 then
-            self.deliveryCostText:setText(table.concat(feeParts, " | "))
-            self.deliveryCostText:setVisible(true)
+        local markupText = (dealerCosts > 0)
+            and ("+ " .. g_i18n:formatMoney(dealerCosts, 0, true, true))
+            or g_i18n:formatMoney(0, 0, true, true)
+        self:setReceiptRow(self.receiptRow3Label, self.receiptRow3Value,
+            string.format("%s (%d%%)", g_i18n:getText("ui_gm_settings_markup"), markupPct),
+            markupText, (dealerCosts > 0) and COLOR_AMBER or COLOR_MUTED)
+    else
+        local unitText
+        if self.currentCountFactor > 1 then
+            local unitPrice = (self.currentCountFactor / 1000) * self.pricePer1000
+            unitText = string.format("%s / %s",
+                g_i18n:formatMoney(unitPrice, 0, true, true),
+                g_i18n:getText(self.currentUnitKey or "ui_gm_unit_piece"))
         else
-            self.deliveryCostText:setVisible(false)
+            unitText = string.format("%s / 1.000 L", g_i18n:formatMoney(self.pricePer1000, 0, true, true))
         end
+        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+            g_i18n:getText("ui_gm_receipt_unitPrice"), unitText, COLOR_MUTED)
+        self:setReceiptRow(self.receiptRow3Label, self.receiptRow3Value,
+            g_i18n:getText("ui_gm_receipt_goodsValue"),
+            g_i18n:formatMoney(baseValue, 0, true, true), COLOR_WHITE)
     end
 
-    -- Ensure liquidity validation includes base value, dealer markup, and delivery costs when buying
-    local hasEnoughMoney = true
-    if self.actionType == "BUY" then
-        hasEnoughMoney = g_currentMission:getMoney() >= finalTotal
+    -- Row 4: Shipping costs (green GM Logistics Terminal free shipping highlight)
+    local shipText
+    local shipColor
+    if isGmMarket then
+        shipText = string.format(g_i18n:getText("ui_gm_receipt_freeTerminal"),
+            g_i18n:formatMoney(0, 0, true, true))
+        shipColor = COLOR_GREEN
+    elseif deliveryCosts > 0 then
+        local sign = (self.actionType == "BUY") and "+ " or "- "
+        shipText = sign .. g_i18n:formatMoney(deliveryCosts, 0, true, true)
+        shipColor = COLOR_AMBER
+    else
+        shipText = g_i18n:formatMoney(0, 0, true, true)
+        shipColor = COLOR_MUTED
     end
+    self:setReceiptRow(self.receiptRow4Label, self.receiptRow4Value,
+        g_i18n:getText("ui_gm_receipt_shipping"), shipText, shipColor)
+
+    -- Rows 5 & 6: Total price/proceeds and live post-transaction balance (or shortfall warning)
+    local totalLabel = g_i18n:getText((self.actionType == "SELL")
+        and "ui_gm_receipt_totalSell" or "ui_gm_receipt_totalBuy")
+    local hasEnoughMoney = (self.actionType ~= "BUY") or (finalTotal <= 0) or (currentMoney >= finalTotal)
 
     if not hasEnoughMoney then
-        self.totalValueText:setText(g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney"))
-        self.totalValueText:setTextColor(0.8, 0.05, 0.05, 1) -- Turn text red
-        self.yesButton:setDisabled(true)
-    else
-        local totalValueHeader = self.actionType == "SELL" and g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderSellPrice") or g_i18n:getText("ui_ingameMenuGlobalMarketSelectHeaderBuyPrice")
+        self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
+            totalLabel, g_i18n:formatMoney(finalTotal, 0, true, true), COLOR_RED, COLOR_WHITE)
 
-        local baseText = string.format("%s %s (%s L)",
-            totalValueHeader,
-            g_i18n:formatMoney(finalTotal, 0, true, true),
-            g_i18n:formatVolume(totalLiters, 0))
+        local shortfall = finalTotal - currentMoney
+        self:setReceiptRow(self.receiptBalanceLabel, self.receiptBalanceValue,
+            g_i18n:getText("ui_gm_receipt_shortfall"),
+            "- " .. g_i18n:formatMoney(shortfall, 0, true, true), COLOR_RED, COLOR_RED)
 
-        -- Display warning when reaching the per-transaction physical object spawn cap
-        if self.currentCountFactor > 1 and self.currentAmount == GlobalMarketDialog.MAX_OBJECTS_PER_TX and self.currentMaxPieces > GlobalMarketDialog.MAX_OBJECTS_PER_TX then
-            local limitWarning = string.format(g_i18n:getText("ui_gm_warning_engineLimit"), GlobalMarketDialog.MAX_OBJECTS_PER_TX)
-
-            self.totalValueText:setText(baseText .. limitWarning)
-            self.totalValueText:setTextColor(0.9, 0.6, 0.1, 1) -- Turn text Orange/Yellow
-        else
-            self.totalValueText:setText(baseText)
-            self.totalValueText:setTextColor(1, 1, 1, 1) -- Reset to white
+        if self.yesButton ~= nil then
+            self.yesButton:setDisabled(true)
         end
+    else
+        local totalText = g_i18n:formatMoney(finalTotal, 0, true, true)
+        if self.actionType == "SELL" and finalTotal > 0 then
+            totalText = "+ " .. totalText
+        end
+        self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
+            totalLabel, totalText, (self.currentAmount > 0) and COLOR_GREEN or COLOR_MUTED, COLOR_WHITE)
 
-        self.yesButton:setDisabled(self.currentAmount <= 0)
+        local balanceAfter = (self.actionType == "BUY")
+            and (currentMoney - finalTotal)
+            or (currentMoney + finalTotal)
+        self:setReceiptRow(self.receiptBalanceLabel, self.receiptBalanceValue,
+            g_i18n:getText("ui_gm_receipt_balanceAfter"),
+            g_i18n:formatMoney(balanceAfter, 0, true, true),
+            (balanceAfter < 0) and COLOR_RED or COLOR_BAL_OK, COLOR_LABEL)
+
+        if self.yesButton ~= nil then
+            self.yesButton:setDisabled(self.currentAmount <= 0)
+        end
     end
 end
 

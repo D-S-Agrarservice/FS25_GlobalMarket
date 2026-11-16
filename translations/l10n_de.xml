@@ -67,6 +67,15 @@
         <e k="ui_gm_cat_mode_detailed"                             v="Kategorien: Detailliert" />
         <e k="ui_gm_cat_mode_flat"                                 v="Kategorien: Aus (A-Z)" />
         <e k="ui_gm_search_label"                                  v="SUCHE:" />
+        <e k="ui_gm_receipt_balanceAfter"                          v="Kontostand danach" />
+        <e k="ui_gm_receipt_freeTerminal"                          v="%s (GM-Logistikzentrum)" />
+        <e k="ui_gm_receipt_goodsValue"                            v="Warenwert" />
+        <e k="ui_gm_receipt_quantity"                              v="Handelsmenge" />
+        <e k="ui_gm_receipt_shipping"                              v="Speditionskosten" />
+        <e k="ui_gm_receipt_shortfall"                             v="Fehlbetrag (Nicht genug Geld!)" />
+        <e k="ui_gm_receipt_totalBuy"                              v="GESAMTPREIS" />
+        <e k="ui_gm_receipt_totalSell"                             v="GESAMTERLÖS" />
+        <e k="ui_gm_receipt_unitPrice"                             v="Einzelpreis" />
         <e k="ui_gm_delivery_costs"                                v="Lieferkosten" />
         <e k="ui_gm_format_bulk"                                   v="Schüttgut (Lose)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Max: %d Stück | 1 Stück = %d L" />
