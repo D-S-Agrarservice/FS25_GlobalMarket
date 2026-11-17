@@ -618,3 +618,127 @@ function GlobalMarket:tickPickupInbox(monthDelta)
 
     return anyChanged
 end
+
+---Collects buyable bale and pallet/BigBag/IBC formats compatible with a target ObjectStorage
+function GlobalMarketContractsStorage.collectBuyableFormats(fillTypeName, selectedSilo)
+    local formats = {}
+    local fillType = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(fillTypeName) or nil
+    if fillType == nil or selectedSilo == nil or not selectedSilo.isObjectStorage then
+        return formats
+    end
+
+    if selectedSilo.supportsBales and fillType.isBaleType and g_baleManager ~= nil and g_baleManager.bales ~= nil then
+        local seenMapSizes, seenSizeCap, baleFormats, titleCounts = {}, {}, {}, {}
+        local mapCustomEnv = (g_currentMission ~= nil and g_currentMission.missionInfo ~= nil)
+            and g_currentMission.missionInfo.customEnvironment or nil
+        local mapBaseDir = g_currentMission ~= nil and g_currentMission.baseDirectory or nil
+
+        for _, bale in ipairs(g_baleManager.bales) do
+            if bale.isAvailable and bale.fillTypes ~= nil then
+                for _, ftData in ipairs(bale.fillTypes) do
+                    if ftData.fillTypeIndex == fillType.index then
+                        local isRound, width, _, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
+                        local sizeKey = isRound
+                            and string.format("ROUND_%.2f_%.2f", diameter or 0, width or 0)
+                            or string.format("SQUARE_%.2f_%.2f", length or 0, width or 0)
+                        local capInt = math.floor((ftData.capacity or 0) + 0.5)
+                        local sizeCapKey = string.format("%s_%d", sizeKey, capInt)
+                        local isMapOrBase = (bale.customEnvironment == nil)
+                            or (mapCustomEnv ~= nil and bale.customEnvironment == mapCustomEnv)
+                            or (mapBaseDir ~= nil and mapBaseDir ~= "" and bale.baseDirectory == mapBaseDir)
+
+                        local shouldAdd = false
+                        if isMapOrBase then
+                            if not seenMapSizes[sizeKey] and not seenSizeCap[sizeCapKey] then
+                                seenMapSizes[sizeKey] = true
+                                seenSizeCap[sizeCapKey] = true
+                                shouldAdd = true
+                            end
+                        elseif not seenSizeCap[sizeCapKey] then
+                            seenSizeCap[sizeCapKey] = true
+                            shouldAdd = true
+                        end
+
+                        if shouldAdd then
+                            local key = isRound and "ui_gm_format_roundbale" or "ui_gm_format_squarebale"
+                            local title = string.format("%s (%.2fm)", g_i18n:getText(key), isRound and (diameter or width or 1.25) or (length or 2.40))
+                            titleCounts[title] = (titleCounts[title] or 0) + 1
+                            table.insert(baleFormats, {
+                                title = title,
+                                xml = bale.xmlFilename,
+                                capacity = ftData.capacity,
+                                unitKey = "ui_gm_unit_bale"
+                            })
+                        end
+                    end
+                end
+            end
+        end
+
+        for _, bf in ipairs(baleFormats) do
+            if (titleCounts[bf.title] or 0) > 1 then
+                bf.title = string.format("%s - %s L", bf.title, g_i18n:formatVolume(bf.capacity or 0, 0))
+            end
+            table.insert(formats, bf)
+        end
+    end
+
+    if selectedSilo.supportsPallets and GlobalMarketStoreCache ~= nil then
+        for _, f in ipairs(GlobalMarketStoreCache.getFormatsForFillType(fillTypeName) or {}) do
+            table.insert(formats, f)
+        end
+    end
+
+    return formats
+end
+
+---Collects non-fermenting owned stacks from an ObjectStorage matching fillTypeName
+function GlobalMarketContractsStorage.collectOwnedFormats(fillTypeName, selectedSilo, farmId)
+    local formats = {}
+    local fillType = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(fillTypeName) or nil
+    if fillType == nil or selectedSilo == nil or not selectedSilo.isObjectStorage or selectedSilo.storage == nil then
+        return formats
+    end
+
+    local spec = selectedSilo.storage.spec_objectStorage
+    if spec == nil or spec.objectInfos == nil then
+        return formats
+    end
+
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    local tracker = {}
+    for _, objectInfo in ipairs(spec.objectInfos) do
+        local objFt, objCap, objXml, objFarm, isFerm, isBale = nil, 0, nil, FarmManager.SPECTATOR_FARM_ID, false, false
+        if gm ~= nil and gm.inspectObjectInfoEntry ~= nil then
+            objFt, objCap, objXml, objFarm, isFerm, isBale = gm:inspectObjectInfoEntry(objectInfo)
+        end
+        if objFt == fillType.index and objXml ~= nil and not isFerm and objFarm == farmId and objCap > 0 then
+            if tracker[objXml] == nil then
+                local title = g_i18n:getText("ui_gm_unit_piece")
+                local unitKey = isBale and "ui_gm_unit_bale" or "ui_gm_unit_pallet"
+                if isBale and g_baleManager ~= nil then
+                    local isRound, width, _, length, diameter = g_baleManager:getBaleInfoByXMLFilename(objXml)
+                    local key = isRound and "ui_gm_format_roundbale" or "ui_gm_format_squarebale"
+                    title = string.format("%s (%.2fm)", g_i18n:getText(key), isRound and (diameter or width or 1.25) or (length or 2.40))
+                else
+                    local storeItem = g_storeManager ~= nil and g_storeManager:getItemByXMLFilename(objXml) or nil
+                    title = (storeItem ~= nil and storeItem.name) or g_i18n:getText("ui_gm_format_pallet")
+                end
+                tracker[objXml] = {
+                    title = title,
+                    xml = objXml,
+                    capacity = objCap,
+                    unitKey = unitKey,
+                    actualCount = objectInfo.numObjects or #objectInfo.objects
+                }
+            else
+                tracker[objXml].actualCount = tracker[objXml].actualCount + (objectInfo.numObjects or #objectInfo.objects)
+            end
+        end
+    end
+
+    for _, f in pairs(tracker) do
+        table.insert(formats, f)
+    end
+    return formats
+end

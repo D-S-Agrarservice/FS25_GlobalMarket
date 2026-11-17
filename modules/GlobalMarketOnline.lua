@@ -298,6 +298,7 @@ end
 -- Restores all market entries from Online stock back to their local Offline simulation state
 function GlobalMarket:restoreOfflineMarketState()
     if self.clearOnlineMarketBranding ~= nil then self:clearOnlineMarketBranding() end
+    if self.onOnlineContractsDisconnected ~= nil then self:onOnlineContractsDisconnected() end
     local currentLimit = GlobalMarket.MARKET_CAPACITY or 2000000
     if self.offlineMarketFillTypes ~= nil then
         for _, item in pairs(self.offlineMarketFillTypes) do

@@ -13,12 +13,13 @@ function ExeStatusEvent.emptyNew()
     return Event.new(ExeStatusEvent_mt)
 end
 
-function ExeStatusEvent.new(isExeRunning, hasBackendConnection, marketName, isPrivateMarket)
+function ExeStatusEvent.new(isExeRunning, hasBackendConnection, marketName, isPrivateMarket, contractsSupported)
     local self = ExeStatusEvent.emptyNew()
     self.isExeRunning = isExeRunning == true
     self.hasBackendConnection = hasBackendConnection == true
     self.marketName = marketName
     self.isPrivateMarket = isPrivateMarket == true
+    self.contractsSupported = contractsSupported == true
     return self
 end
 
@@ -27,6 +28,7 @@ function ExeStatusEvent:writeStream(streamId, connection)
     streamWriteBool(streamId, self.hasBackendConnection == true)
     streamWriteString(streamId, self.marketName or "")
     streamWriteBool(streamId, self.isPrivateMarket == true)
+    streamWriteBool(streamId, self.contractsSupported == true)
 end
 
 function ExeStatusEvent:readStream(streamId, connection)
@@ -35,6 +37,7 @@ function ExeStatusEvent:readStream(streamId, connection)
     local rawName = streamReadString(streamId)
     self.marketName = (rawName ~= "") and rawName or nil
     self.isPrivateMarket = streamReadBool(streamId)
+    self.contractsSupported = streamReadBool(streamId)
     self:run(connection)
 end
 
@@ -47,7 +50,8 @@ function ExeStatusEvent:run(connection)
             self.isExeRunning,
             self.hasBackendConnection,
             self.marketName,
-            self.isPrivateMarket
+            self.isPrivateMarket,
+            self.contractsSupported
         )
     end
 end

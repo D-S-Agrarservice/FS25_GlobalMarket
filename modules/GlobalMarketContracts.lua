@@ -50,6 +50,9 @@ function GlobalMarket:initContractsSystem()
     if self.initPickupInbox ~= nil then
         self:initPickupInbox()
     end
+    if self.initOnlineContractsSystem ~= nil then
+        self:initOnlineContractsSystem()
+    end
 end
 
 ---Broadcasts full contracts/offers/inbox snapshot to clients and refreshes local UI if visible
@@ -119,9 +122,18 @@ end
 function GlobalMarket:getActiveAcceptedContractCount(farmId)
     local count = 0
     for _, c in ipairs(self.contracts or {}) do
-        if c.status == "ACTIVE" and c.contractorFarmId == farmId then
-            count = count + 1
+        if c.status == "ACTIVE" then
+            if c.isOnline then
+                if self.isOwnOnlineIdentity ~= nil and self:isOwnOnlineIdentity(c.contractorServerId, c.contractorFarmId, farmId) then
+                    count = count + 1
+                end
+            elseif c.contractorFarmId == farmId then
+                count = count + 1
+            end
         end
+    end
+    if self.getPendingAcceptContractCount ~= nil then
+        count = count + self:getPendingAcceptContractCount(farmId)
     end
     return count
 end
@@ -146,7 +158,10 @@ end
 ---Creates a player-issued Supply Contract and reserves 100% escrow (base + bonus) upfront
 ---@return boolean success
 ---@return number|nil contractId
-function GlobalMarket:createPlayerContract(farmId, fillTypeName, totalLiters, bonusPct, durationMonths)
+function GlobalMarket:createPlayerContract(farmId, fillTypeName, totalLiters, bonusPct, durationMonths, isOnlineScope)
+    if isOnlineScope == true and self.createOnlinePlayerContract ~= nil then
+        return self:createOnlinePlayerContract(farmId, fillTypeName, totalLiters, bonusPct, durationMonths)
+    end
     if g_server == nil or farmId == nil or farmId <= 0 or farmId == FarmManager.SPECTATOR_FARM_ID then
         return false, nil
     end
@@ -223,6 +238,9 @@ function GlobalMarket:cancelPlayerContract(farmId, contractId)
         return false
     end
     local idx, contract = GlobalMarketContracts.findById(self.contracts, contractId)
+    if contract ~= nil and contract.isOnline and self.cancelOnlineContract ~= nil then
+        return self:cancelOnlineContract(farmId, contract)
+    end
     if contract == nil or contract.origin ~= "PLAYER" or contract.issuerFarmId ~= farmId or contract.status ~= "OPEN" then
         return false
     end
@@ -250,6 +268,9 @@ function GlobalMarket:acceptContract(farmId, contractId)
         return false
     end
     local _, contract = GlobalMarketContracts.findById(self.contracts, contractId)
+    if contract ~= nil and contract.isOnline and self.requestAcceptOnlineContract ~= nil then
+        return self:requestAcceptOnlineContract(farmId, contract)
+    end
     if contract == nil or contract.status ~= "OPEN" then
         return false
     end
@@ -280,6 +301,9 @@ function GlobalMarket:deliverToContract(
         return false, 0
     end
     local idx, contract = GlobalMarketContracts.findById(self.contracts, contractId)
+    if contract ~= nil and contract.isOnline and self.deliverToOnlineContract ~= nil then
+        return self:deliverToOnlineContract(farmId, contract, requestedLiters, targetStorage, isObjectStorage, formatXml)
+    end
     if contract == nil or contract.status ~= "ACTIVE" or contract.contractorFarmId ~= farmId then
         return false, 0
     end
@@ -508,55 +532,59 @@ function GlobalMarket:updateContractsAndOffersHourly(customMonthDelta)
     -- 1. Tick Contracts & enforce deadlines / escrow refunds / 15% penalty
     for i = #(self.contracts or {}), 1, -1 do
         local c = self.contracts[i]
-        c.monthsRemaining = (c.monthsRemaining or 1.0) - monthDelta
-        if c.monthsRemaining <= 0 then
-            if c.status == "OPEN" then
-                if c.origin == "PLAYER" and (c.escrowRemaining or 0) > 0 and c.issuerFarmId > 0 then
-                    g_currentMission:addMoney(c.escrowRemaining, c.issuerFarmId, contractMoneyType, true, true)
-                end
-            elseif c.status == "ACTIVE" then
-                local missing = math.max(0, (c.totalLiters or 0) - (c.deliveredLiters or 0))
-                local missingBase = (missing / 1000) * (c.basePricePer1000 or 500)
-                local penalty = math.ceil(missingBase * GlobalMarketContracts.PENALTY_RATE)
-
-                if penalty > 0 and c.contractorFarmId ~= nil and c.contractorFarmId > 0 then
-                    g_currentMission:addMoney(penalty * -1, c.contractorFarmId, penaltyMoneyType, true, true)
-                end
-
-                if c.origin == "PLAYER" and c.issuerFarmId ~= nil and c.issuerFarmId > 0 then
-                    local escrowRefund = math.max(0, math.floor((c.escrowRemaining or 0) + 0.5))
-                    if escrowRefund > 0 then
-                        g_currentMission:addMoney(escrowRefund, c.issuerFarmId, contractMoneyType, true, true)
+        if not c.isOnline then
+            c.monthsRemaining = (c.monthsRemaining or 1.0) - monthDelta
+            if c.monthsRemaining <= 0 then
+                if c.status == "OPEN" then
+                    if c.origin == "PLAYER" and (c.escrowRemaining or 0) > 0 and c.issuerFarmId > 0 then
+                        g_currentMission:addMoney(c.escrowRemaining, c.issuerFarmId, contractMoneyType, true, true)
                     end
-                    if penalty > 0 then
-                        g_currentMission:addMoney(penalty, c.issuerFarmId, penaltyMoneyType, true, true)
+                elseif c.status == "ACTIVE" then
+                    local missing = math.max(0, (c.totalLiters or 0) - (c.deliveredLiters or 0))
+                    local missingBase = (missing / 1000) * (c.basePricePer1000 or 500)
+                    local penalty = math.ceil(missingBase * GlobalMarketContracts.PENALTY_RATE)
+
+                    if penalty > 0 and c.contractorFarmId ~= nil and c.contractorFarmId > 0 then
+                        g_currentMission:addMoney(penalty * -1, c.contractorFarmId, penaltyMoneyType, true, true)
+                    end
+
+                    if c.origin == "PLAYER" and c.issuerFarmId ~= nil and c.issuerFarmId > 0 then
+                        local escrowRefund = math.max(0, math.floor((c.escrowRemaining or 0) + 0.5))
+                        if escrowRefund > 0 then
+                            g_currentMission:addMoney(escrowRefund, c.issuerFarmId, contractMoneyType, true, true)
+                        end
+                        if penalty > 0 then
+                            g_currentMission:addMoney(penalty, c.issuerFarmId, penaltyMoneyType, true, true)
+                        end
+                    end
+
+                    if self.debugManager ~= nil then
+                        self.debugManager:info(
+                            "Contracts: Contract #%d expired incomplete (Missing %.0f L, Penalty=%d EUR on Farm %d).",
+                            c.id, missing, penalty, c.contractorFarmId or 0
+                        )
                     end
                 end
-
-                if self.debugManager ~= nil then
-                    self.debugManager:info(
-                        "Contracts: Contract #%d expired incomplete (Missing %.0f L, Penalty=%d EUR on Farm %d).",
-                        c.id, missing, penalty, c.contractorFarmId or 0
-                    )
-                end
+                table.remove(self.contracts, i)
+                changed = true
             end
-            table.remove(self.contracts, i)
-            changed = true
         end
     end
 
     -- 2. Tick Direct Offers & move expired unsold player lots to Pickup Inbox
     for i = #(self.directOffers or {}), 1, -1 do
         local o = self.directOffers[i]
-        o.monthsRemaining = (o.monthsRemaining or 1.0) - monthDelta
-        if o.monthsRemaining <= 0 then
-            if o.origin == "PLAYER" and (o.remainingLiters or 0) > 0.5 and o.sellerFarmId ~= nil and o.sellerFarmId > 0 then
-                if self.addPickupInboxItem ~= nil then
-                    self:addPickupInboxItem(o.sellerFarmId, o.fillType, o.remainingLiters, "OFFER_EXPIRED", string.format("#%d", o.id))
+        if not o.isOnline then
+            o.monthsRemaining = (o.monthsRemaining or 1.0) - monthDelta
+            if o.monthsRemaining <= 0 then
+                if o.origin == "PLAYER" and (o.remainingLiters or 0) > 0.5 and o.sellerFarmId ~= nil and o.sellerFarmId > 0 then
+                    if self.addPickupInboxItem ~= nil then
+                        self:addPickupInboxItem(o.sellerFarmId, o.fillType, o.remainingLiters, "OFFER_EXPIRED", string.format("#%d", o.id))
+                    end
                 end
+                table.remove(self.directOffers, i)
+                changed = true
             end
-            table.remove(self.directOffers, i)
-            changed = true
         end
     end
 

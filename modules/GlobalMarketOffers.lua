@@ -9,8 +9,14 @@
 ---@return number|nil offerId
 function GlobalMarket:createDirectOffer(
     farmId, fillTypeName, requestedLiters, priceDeltaPct, allowPartial,
-    durationMonths, targetStorage, isObjectStorage, formatXml
+    durationMonths, targetStorage, isObjectStorage, formatXml, isOnlineScope
 )
+    if isOnlineScope == true and self.createOnlineDirectOffer ~= nil then
+        return self:createOnlineDirectOffer(
+            farmId, fillTypeName, requestedLiters, priceDeltaPct, allowPartial,
+            durationMonths, targetStorage, isObjectStorage, formatXml
+        )
+    end
     if g_server == nil or farmId == nil or farmId <= 0 or farmId == FarmManager.SPECTATOR_FARM_ID then
         return false, nil
     end
@@ -73,6 +79,11 @@ function GlobalMarket:buyDirectOffer(
         return false, 0
     end
     local idx, offer = GlobalMarketContracts.findById(self.directOffers, offerId)
+    if offer ~= nil and offer.isOnline and self.requestBuyOnlineOffer ~= nil then
+        return self:requestBuyOnlineOffer(
+            buyerFarmId, offer, requestedLiters, targetStorage, isObjectStorage, formatXml, capacityPerObject
+        )
+    end
     if offer == nil or (offer.remainingLiters or 0) <= 0.01 then
         return false, 0
     end
@@ -137,6 +148,9 @@ function GlobalMarket:cancelDirectOffer(farmId, offerId)
         return false
     end
     local idx, offer = GlobalMarketContracts.findById(self.directOffers, offerId)
+    if offer ~= nil and offer.isOnline and self.cancelOnlineOffer ~= nil then
+        return self:cancelOnlineOffer(farmId, offer)
+    end
     if offer == nil or offer.origin ~= "PLAYER" or offer.sellerFarmId ~= farmId then
         return false
     end
@@ -218,7 +232,7 @@ function GlobalMarket:processNpcDirectOfferBuying()
 
     for i = #(self.directOffers or {}), 1, -1 do
         local offer = self.directOffers[i]
-        if offer.origin == "PLAYER" and (offer.remainingLiters or 0) > 0.5 then
+        if not offer.isOnline and offer.origin == "PLAYER" and (offer.remainingLiters or 0) > 0.5 then
             -- Base hourly probability scales inversely with seller markup (-10% ~18%/h, 0% ~7%/h, +10% ~1.5%/h)
             local delta = offer.priceDeltaPct or 0
             local prob = math.clamp(0.07 - (delta * 0.008), 0.015, 0.22)
@@ -266,42 +280,82 @@ function GlobalMarket:saveContractsSystemToXml(xmlFile)
         return
     end
     local rootKey = "globalMarket.contractsSystem"
+    local serverId = (self.ensureServerInstanceId ~= nil) and self:ensureServerInstanceId() or (self.serverInstanceId or "")
+    xmlFile:setString(rootKey .. "#serverInstanceId", serverId)
     xmlFile:setInt(rootKey .. "#nextContractId", self.nextContractId or 1)
     xmlFile:setInt(rootKey .. "#nextOfferId", self.nextOfferId or 1)
     xmlFile:setInt(rootKey .. "#nextInboxId", self.nextInboxId or 1)
 
-    for i, c in ipairs(self.contracts or {}) do
-        local key = string.format("%s.contracts.contract(%d)", rootKey, i - 1)
-        xmlFile:setInt(key .. "#id", c.id)
-        xmlFile:setString(key .. "#origin", c.origin or "NPC")
-        xmlFile:setInt(key .. "#issuerFarmId", c.issuerFarmId or 0)
-        xmlFile:setString(key .. "#issuerName", c.issuerName or "NPC")
-        xmlFile:setInt(key .. "#contractorFarmId", c.contractorFarmId or 0)
-        xmlFile:setString(key .. "#fillType", c.fillType or "")
-        xmlFile:setFloat(key .. "#totalLiters", c.totalLiters or 0)
-        xmlFile:setFloat(key .. "#deliveredLiters", c.deliveredLiters or 0)
-        xmlFile:setFloat(key .. "#basePricePer1000", c.basePricePer1000 or 500)
-        xmlFile:setInt(key .. "#bonusPct", c.bonusPct or 10)
-        xmlFile:setFloat(key .. "#escrowRemaining", c.escrowRemaining or 0)
-        xmlFile:setFloat(key .. "#monthsRemaining", c.monthsRemaining or 1)
-        xmlFile:setString(key .. "#status", c.status or "OPEN")
+    local cSaveIdx = 0
+    for _, c in ipairs(self.contracts or {}) do
+        local shouldPersist = (not c.isOnline)
+            or (self.isOwnOnlineServer ~= nil and (self:isOwnOnlineServer(c.issuerServerId) or self:isOwnOnlineServer(c.contractorServerId)))
+        if shouldPersist then
+            local key = string.format("%s.contracts.contract(%d)", rootKey, cSaveIdx)
+            cSaveIdx = cSaveIdx + 1
+            xmlFile:setInt(key .. "#id", c.id)
+            xmlFile:setString(key .. "#origin", c.origin or "NPC")
+            xmlFile:setInt(key .. "#issuerFarmId", c.issuerFarmId or 0)
+            xmlFile:setString(key .. "#issuerName", c.issuerName or "NPC")
+            xmlFile:setInt(key .. "#contractorFarmId", c.contractorFarmId or 0)
+            xmlFile:setString(key .. "#fillType", c.fillType or "")
+            xmlFile:setFloat(key .. "#totalLiters", c.totalLiters or 0)
+            xmlFile:setFloat(key .. "#deliveredLiters", c.deliveredLiters or 0)
+            xmlFile:setFloat(key .. "#basePricePer1000", c.basePricePer1000 or 500)
+            xmlFile:setInt(key .. "#bonusPct", c.bonusPct or 10)
+            xmlFile:setFloat(key .. "#escrowRemaining", c.escrowRemaining or 0)
+            xmlFile:setFloat(key .. "#monthsRemaining", c.monthsRemaining or 1)
+            xmlFile:setString(key .. "#status", c.status or "OPEN")
+            if c.isOnline then
+                xmlFile:setBool(key .. "#isOnline", true)
+                xmlFile:setString(key .. "#remoteId", c.remoteId or "")
+                xmlFile:setString(key .. "#issuerServerId", c.issuerServerId or "")
+                xmlFile:setString(key .. "#contractorServerId", c.contractorServerId or "")
+                xmlFile:setFloat(key .. "#baseTrendFactor", c.baseTrendFactor or 1.0)
+                xmlFile:setInt(key .. "#remainingSeconds", math.floor((c.remainingSeconds or 0) + 0.5))
+                if c.pendingActionId ~= nil and c.pendingActionId ~= "" then
+                    xmlFile:setString(key .. "#pendingActionId", c.pendingActionId)
+                end
+            end
+        end
     end
 
-    for i, o in ipairs(self.directOffers or {}) do
-        local key = string.format("%s.directOffers.offer(%d)", rootKey, i - 1)
-        xmlFile:setInt(key .. "#id", o.id)
-        xmlFile:setString(key .. "#origin", o.origin or "NPC")
-        xmlFile:setInt(key .. "#sellerFarmId", o.sellerFarmId or 0)
-        xmlFile:setString(key .. "#sellerName", o.sellerName or "NPC")
-        xmlFile:setString(key .. "#fillType", o.fillType or "")
-        xmlFile:setFloat(key .. "#totalLiters", o.totalLiters or 0)
-        xmlFile:setFloat(key .. "#remainingLiters", o.remainingLiters or 0)
-        xmlFile:setFloat(key .. "#refPricePer1000", o.refPricePer1000 or 500)
-        xmlFile:setInt(key .. "#priceDeltaPct", o.priceDeltaPct or 0)
-        xmlFile:setBool(key .. "#allowPartial", o.allowPartial == true)
-        xmlFile:setFloat(key .. "#monthsRemaining", o.monthsRemaining or 1)
-        xmlFile:setBool(key .. "#wasBale", o.wasBale == true)
-        xmlFile:setBool(key .. "#wasPallet", o.wasPallet == true)
+    local oSaveIdx = 0
+    for _, o in ipairs(self.directOffers or {}) do
+        local shouldPersist = (not o.isOnline)
+            or (self.isOwnOnlineServer ~= nil and self:isOwnOnlineServer(o.sellerServerId))
+        if shouldPersist then
+            local key = string.format("%s.directOffers.offer(%d)", rootKey, oSaveIdx)
+            oSaveIdx = oSaveIdx + 1
+            xmlFile:setInt(key .. "#id", o.id)
+            xmlFile:setString(key .. "#origin", o.origin or "NPC")
+            xmlFile:setInt(key .. "#sellerFarmId", o.sellerFarmId or 0)
+            xmlFile:setString(key .. "#sellerName", o.sellerName or "NPC")
+            xmlFile:setString(key .. "#fillType", o.fillType or "")
+            xmlFile:setFloat(key .. "#totalLiters", o.totalLiters or 0)
+            xmlFile:setFloat(key .. "#remainingLiters", o.remainingLiters or 0)
+            xmlFile:setFloat(key .. "#refPricePer1000", o.refPricePer1000 or 500)
+            xmlFile:setInt(key .. "#priceDeltaPct", o.priceDeltaPct or 0)
+            xmlFile:setBool(key .. "#allowPartial", o.allowPartial == true)
+            xmlFile:setFloat(key .. "#monthsRemaining", o.monthsRemaining or 1)
+            xmlFile:setBool(key .. "#wasBale", o.wasBale == true)
+            xmlFile:setBool(key .. "#wasPallet", o.wasPallet == true)
+            if o.isOnline then
+                xmlFile:setBool(key .. "#isOnline", true)
+                xmlFile:setString(key .. "#remoteId", o.remoteId or "")
+                xmlFile:setString(key .. "#sellerServerId", o.sellerServerId or "")
+                xmlFile:setInt(key .. "#remainingSeconds", math.floor((o.remainingSeconds or 0) + 0.5))
+                xmlFile:setString(key .. "#status", o.status or "OPEN")
+                if o.pendingActionId ~= nil and o.pendingActionId ~= "" then
+                    xmlFile:setString(key .. "#pendingActionId", o.pendingActionId)
+                end
+            end
+        end
+    end
+
+    for i, sid in ipairs(self.processedSettlementIds or {}) do
+        local key = string.format("%s.processedSettlements.settlement(%d)", rootKey, i - 1)
+        xmlFile:setString(key .. "#id", sid)
     end
 
     for i, p in ipairs(self.pickupInbox or {}) do
@@ -325,26 +379,41 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
     self:initContractsSystem()
 
     local rootKey = "globalMarket.contractsSystem"
+    local savedSid = xmlFile:getString(rootKey .. "#serverInstanceId")
+    if savedSid ~= nil and savedSid ~= "" then
+        self.serverInstanceId = savedSid
+    elseif self.ensureServerInstanceId ~= nil then
+        self:ensureServerInstanceId()
+    end
     local maxCId, maxOId, maxIId = 0, 0, 0
 
     xmlFile:iterate(rootKey .. ".contracts.contract", function(_, key)
         local id = xmlFile:getInt(key .. "#id") or 0
         local ft = xmlFile:getString(key .. "#fillType")
         if id > 0 and ft ~= nil and ft ~= "" then
+            local pendAid = xmlFile:getString(key .. "#pendingActionId")
             table.insert(self.contracts, {
                 id = id,
+                isOnline = xmlFile:getBool(key .. "#isOnline", false),
+                remoteId = xmlFile:getString(key .. "#remoteId") or "",
                 origin = xmlFile:getString(key .. "#origin") or "NPC",
+                issuerServerId = xmlFile:getString(key .. "#issuerServerId") or "",
                 issuerFarmId = xmlFile:getInt(key .. "#issuerFarmId") or 0,
                 issuerName = xmlFile:getString(key .. "#issuerName") or "NPC",
+                contractorServerId = xmlFile:getString(key .. "#contractorServerId") or "",
                 contractorFarmId = xmlFile:getInt(key .. "#contractorFarmId") or 0,
                 fillType = ft,
                 totalLiters = xmlFile:getFloat(key .. "#totalLiters") or 0,
                 deliveredLiters = xmlFile:getFloat(key .. "#deliveredLiters") or 0,
+                baseTrendFactor = xmlFile:getFloat(key .. "#baseTrendFactor") or 1.0,
                 basePricePer1000 = xmlFile:getFloat(key .. "#basePricePer1000") or 500,
                 bonusPct = xmlFile:getInt(key .. "#bonusPct") or 10,
                 escrowRemaining = xmlFile:getFloat(key .. "#escrowRemaining") or 0,
                 monthsRemaining = xmlFile:getFloat(key .. "#monthsRemaining") or 1,
-                status = xmlFile:getString(key .. "#status") or "OPEN"
+                remainingSeconds = xmlFile:getInt(key .. "#remainingSeconds") or 0,
+                status = xmlFile:getString(key .. "#status") or "OPEN",
+                pendingActionId = (pendAid ~= nil and pendAid ~= "") and pendAid or nil,
+                pendingSinceMs = (pendAid ~= nil and pendAid ~= "") and (g_time or 0) or nil
             })
             if id > maxCId then maxCId = id end
         end
@@ -354,9 +423,13 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
         local id = xmlFile:getInt(key .. "#id") or 0
         local ft = xmlFile:getString(key .. "#fillType")
         if id > 0 and ft ~= nil and ft ~= "" then
+            local pendAid = xmlFile:getString(key .. "#pendingActionId")
             table.insert(self.directOffers, {
                 id = id,
+                isOnline = xmlFile:getBool(key .. "#isOnline", false),
+                remoteId = xmlFile:getString(key .. "#remoteId") or "",
                 origin = xmlFile:getString(key .. "#origin") or "NPC",
+                sellerServerId = xmlFile:getString(key .. "#sellerServerId") or "",
                 sellerFarmId = xmlFile:getInt(key .. "#sellerFarmId") or 0,
                 sellerName = xmlFile:getString(key .. "#sellerName") or "NPC",
                 fillType = ft,
@@ -366,10 +439,21 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
                 priceDeltaPct = xmlFile:getInt(key .. "#priceDeltaPct") or 0,
                 allowPartial = xmlFile:getBool(key .. "#allowPartial", false),
                 monthsRemaining = xmlFile:getFloat(key .. "#monthsRemaining") or 1,
+                remainingSeconds = xmlFile:getInt(key .. "#remainingSeconds") or 0,
                 wasBale = xmlFile:getBool(key .. "#wasBale", false),
-                wasPallet = xmlFile:getBool(key .. "#wasPallet", false)
+                wasPallet = xmlFile:getBool(key .. "#wasPallet", false),
+                status = xmlFile:getString(key .. "#status") or "OPEN",
+                pendingActionId = (pendAid ~= nil and pendAid ~= "") and pendAid or nil,
+                pendingSinceMs = (pendAid ~= nil and pendAid ~= "") and (g_time or 0) or nil
             })
             if id > maxOId then maxOId = id end
+        end
+    end)
+
+    xmlFile:iterate(rootKey .. ".processedSettlements.settlement", function(_, key)
+        local sid = xmlFile:getString(key .. "#id") or ""
+        if sid ~= "" and self.markSettlementProcessed ~= nil then
+            self:markSettlementProcessed(sid)
         end
     end)
 

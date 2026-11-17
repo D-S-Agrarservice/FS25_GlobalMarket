@@ -36,9 +36,9 @@
         <e k="gm_help_p2_demand_text"                              v="- Große Nachfragen: Aktive Nachfrage-Aktionen zahlen für begrenzte Zeit deutliche Preisboni und werden per HUD-Meldung angekündigt sowie in der Marktliste hervorgehoben.&#xA;- Hybrid-Modus im Online-Betrieb: Zusätzliche Mod- oder Kartengüter, die online noch geprüft werden ('Ausstehend | Offline') oder rein lokal eingestuft sind ('Nur Offline'), bleiben ohne Unterbrechung über die lokale Marktsimulation handelbar." />
         <e k="gm_help_p5_title"                                    v="3. Lieferverträge, Direktangebote &amp; Abholfach" />
         <e k="gm_help_p5_contracts_title"                          v="Lieferverträge (NPC &amp; Hof-zu-Hof)" />
-        <e k="gm_help_p5_contracts_text"                           v="Im Sub-Tab 'Verträge &amp; Angebote' findest du feste Lieferaufträge von Händlern (NPC) und anderen Höfen:&#xA;- Basispreis &amp; Abschlussprämie: Teillieferungen (lose, Ballen oder Paletten) werden sofort zum garantierten Basis-Festpreis ausgezahlt. Bei 100 % Erfüllung gibt es die komplette Bonusprämie (+5 % bis +20 %) obendrauf.&#xA;- Exklusivität &amp; Konventionalstrafe: Pro Hof können maximal 3 Verträge gleichzeitig aktiv sein. Läuft die Frist unter 100 % ab, verfällt der Bonus und es werden 15 % Vertragsstrafe auf die Fehlmenge fällig.&#xA;- Spieler-Kaufverträge: Beim Ausschreiben wird der Maximalbetrag vorab als Treuhand reserviert; bei Storno vor Annahme gibt es 100 % zurück." />
+        <e k="gm_help_p5_contracts_text"                           v="Im Sub-Tab 'Verträge &amp; Angebote' findest du feste Lieferaufträge von Händlern (NPC) und anderen Höfen:&#xA;- Basispreis &amp; Abschlussprämie: Teillieferungen (lose, Ballen oder Paletten) werden sofort zum garantierten Basis-Festpreis ausgezahlt. Bei 100 % Erfüllung gibt es die komplette Bonusprämie (+5 % bis +20 %) obendrauf.&#xA;- Exklusivität &amp; Konventionalstrafe: Pro Hof können maximal 3 Verträge gleichzeitig aktiv sein. Läuft die Frist unter 100 % ab, verfällt der Bonus und es werden 15 % Vertragsstrafe auf die Fehlmenge fällig.&#xA;- Spieler-Kaufverträge: Beim Ausschreiben wird der Maximalbetrag vorab als Treuhand reserviert; bei Storno vor Annahme gibt es 100 % zurück.&#xA;- Lokal vs. Online: Bei aktiver Online-Verbindung (und freigegebenem Gut) kannst du zwischen lokalem Server-Vertrag (Monate) und serverübergreifendem Online-Vertrag (Echtzeit-Stunden) wählen." />
         <e k="gm_help_p5_offers_title"                             v="±10 %-Direktangebote (Schwarzes Brett)" />
-        <e k="gm_help_p5_offers_text"                              v="Biete eigene Waren direkt innerhalb eines Preiskorridors von -10 % bis +10 % zum aktuellen Marktpreis an oder kaufe Angebote anderer Spieler bzw. Händler:&#xA;- 0 % Händleraufschlag: Bei Direktangeboten entfällt der System-Händleraufschlag vollständig.&#xA;- Teilkäufe &amp; Laufzeit: Wähle beim Einstellen zwischen Teilkäufen und Komplettabnahme sowie einer Laufzeit von 1–3 Monaten." />
+        <e k="gm_help_p5_offers_text"                              v="Biete eigene Waren direkt innerhalb eines Preiskorridors von -10 % bis +10 % zum aktuellen Marktpreis an oder kaufe Angebote anderer Spieler bzw. Händler:&#xA;- 0 % Händleraufschlag: Bei Direktangeboten entfällt der System-Händleraufschlag vollständig.&#xA;- Teilkäufe &amp; Laufzeit: Wähle beim Einstellen zwischen Teilkäufen und Komplettabnahme sowie einer Laufzeit von 1–3 Monaten (lokal) bzw. 24–72 Echtzeit-Stunden (online)." />
         <e k="gm_help_p5_inbox_title"                              v="Einheitliches Abholfach &amp; GM-Terminals" />
         <e k="gm_help_p5_inbox_text"                               v="Abgelaufene bzw. stornierte Direktangebote sowie eingelieferte Waren auf eigene Kaufverträge landen sicher im Abholfach deines Hofs:&#xA;- Flexible Einlagerung: Hole die Ware beliebig in ein eigenes Hofsilo, Objektlager oder kostenfrei (0 $CURRENCY_SYMBOL Spedition) in ein GM-Logistikzentrum.&#xA;- Kulanzfrist: Ungenutzte Posten werden nach 2 Ingame-Monaten automatisch mit -15 % Abschlag auf das Hofkonto liquidiert." />
         <e k="gm_help_p3_title"                                    v="3. Unterstützte Lager, Gebinde &amp; GM-Terminals" />
@@ -111,6 +111,12 @@
         <e k="ui_gm_settings_npc_all"                              v="Alle" />
         <e k="ui_gm_settings_npc_contracts"                        v="Nur Verträge" />
         <e k="ui_gm_settings_npc_players"                          v="Nur Spieler" />
+        <e k="ui_gm_settings_onlineContracts"                      v="Online-Verträge &amp; Angebote" />
+        <e k="ui_gm_settings_onlineContracts_desc"                 v="Legt fest, ob bei aktiver GlobalMarketClient-Verbindung Lieferverträge und ±10 %-Direktangebote serverübergreifend online gehandelt werden dürfen oder rein lokal auf diesem Server bleiben." />
+        <e k="ui_gm_settings_oc_all"                               v="Alle (Online &amp; Lokal)" />
+        <e k="ui_gm_settings_oc_contracts"                         v="Nur Lieferverträge online" />
+        <e k="ui_gm_settings_oc_offers"                            v="Nur Direktangebote online" />
+        <e k="ui_gm_settings_oc_local"                             v="Nur lokal (Server-intern)" />
         <e k="ui_gm_online_pending_short"                          v="(Prüfung)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Prüfung ausstehend / Offline)" />
         <e k="ui_gm_online_rejected_short"                         v="(Nur Offline)" />
@@ -164,6 +170,7 @@
         <e k="ui_gm_col_terms"                                     v="Konditionen / Frist" />
         <e k="ui_gm_col_volumeTime"                                v="Menge / Frist" />
         <e k="ui_gm_confirm_acceptText"                            v="Vertrag über %s %s annehmen?&#xA;Basispreis: %s / 1.000 L  |  Abschlussprämie: +%d%%  |  Frist: %.1f Monat(e)&#xA;&#xA;Hinweis: Bei Nichterfüllung vor Fristablauf verfällt der Bonus und es werden 15 %% Konventionalstrafe auf die Fehlmenge fällig." />
+        <e k="ui_gm_confirm_acceptTextOnline"                      v="Online-Vertrag über %s %s annehmen?&#xA;Basispreis: %s / 1.000 L  |  Abschlussprämie: +%d%%  |  Frist: %s&#xA;&#xA;Hinweis: Bei Nichterfüllung vor Fristablauf verfällt der Bonus und es werden 15 %% Konventionalstrafe auf die Fehlmenge fällig." />
         <e k="ui_gm_confirm_acceptTitle"                           v="Liefervertrag annehmen" />
         <e k="ui_gm_confirm_cancelContractText"                    v="Offenen Kaufvertrag #%d (%s %s) stornieren und 100 %% der reservierten Treuhand zurückbuchen?" />
         <e k="ui_gm_confirm_cancelOfferText"                       v="Direktangebot #%d (%s %s) beenden und die Restmenge sicher ins Abholfach verschieben?" />
@@ -179,8 +186,11 @@
         <e k="ui_gm_dlg_optBonus"                                  v="Kontraktbonus: +%d%% (%s / 1.000 L gesamt)" />
         <e k="ui_gm_dlg_optDelta"                                  v="Preis: %+d%% (%s / 1.000 L)" />
         <e k="ui_gm_dlg_optDuration"                               v="Laufzeit: %d Monat(e)" />
+        <e k="ui_gm_dlg_optDurationHours"                          v="Laufzeit: %d Std. (Echtzeit)" />
         <e k="ui_gm_dlg_optTermFull"                               v="Nur Komplettabnahme | %d Monat(e)" />
+        <e k="ui_gm_dlg_optTermFullHours"                          v="Nur Komplettabnahme | %dh" />
         <e k="ui_gm_dlg_optTermPartial"                            v="Teilkäufe erlauben | %d Monat(e)" />
+        <e k="ui_gm_dlg_optTermPartialHours"                       v="Teilkäufe erlauben | %dh" />
         <e k="ui_gm_filter_all"                                    v="Filter: Alle" />
         <e k="ui_gm_filter_contracts"                              v="Filter: Verträge" />
         <e k="ui_gm_filter_offers"                                 v="Filter: Direktangebote" />
@@ -191,6 +201,12 @@
         <e k="ui_gm_hint_offer"                                    v="Direktangebot #%d (%s): %s verfügbar | %s/1.000L (%+d%%, 0%% Aufschlag) | %s" />
         <e k="ui_gm_hint_ownContract"                              v="Eigener Kaufvertrag #%d: %s / %s geliefert | Rest-Treuhand: %s | Storno vor Annahme erstattet 100%%" />
         <e k="ui_gm_months_short"                                  v="%.1f Mon." />
+        <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
+        <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
+        <e k="ui_gm_scope_local"                                   v="Bereich: Lokal (Dieser Server)" />
+        <e k="ui_gm_scope_localPrefix"                             v="[Lokal] " />
+        <e k="ui_gm_scope_online"                                  v="Bereich: Online (Serverübergreifend)" />
+        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Kontraktbonus (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="TREUHANDSUMME" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Rest im Abholfach" />
@@ -216,6 +232,7 @@
         <e k="ui_gm_tag_inboxReturn"                               v="Rückläufer" />
         <e k="ui_gm_tag_open"                                      v="Offen" />
         <e k="ui_gm_tag_partial"                                   v="Teilkauf" />
+        <e k="ui_gm_tag_pending"                                   v="Wartet" />
         <e k="ui_gm_warn_noStockForOffer"                          v="Keine handelbaren Bestände (oder nicht gegärtes Silagegut) in eigenen Lagern oder GM-Terminals gefunden." />
         <e k="ui_gm_warn_noStorage"                                v="Kein passendes Lager oder GM-Terminal auf diesem Hof verfügbar." />
         <e k="ui_gm_unit_bale"                                     v="Ballen" />

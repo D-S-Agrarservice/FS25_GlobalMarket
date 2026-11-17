@@ -379,10 +379,10 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
             if g_currentMission:getIsServer() then
                 -- SP / MP-Host / Dedicated Server running local EXE directly
-                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket)
+                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket, self.localExeContractsSupported)
             elseif ExeStatusEvent ~= nil and g_client ~= nil then
                 -- Remote MP-Client notifies the authoritative server
-                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket))
+                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket, self.localExeContractsSupported))
             end
         end
     end
@@ -463,6 +463,8 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                                     end
                                 end
                             end)
+                        elseif self.onReadCustomSyncXml ~= nil then
+                            self:onReadCustomSyncXml(action, xmlFile)
                         end
                         xmlFile:delete()
                         deleteFile(fullPath)
@@ -480,6 +482,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                         g_client:getServerConnection():sendEvent(MarketDataSyncEvent.new(newMarketData, self.localExeMarketName, self.localExeIsPrivateMarket))
                     end
                 end
+                if self.flushCustomSyncPackets ~= nil then self:flushCustomSyncPackets() end
             end
         end
     end
@@ -613,8 +616,10 @@ function GlobalMarket:assignNextDataHost()
         self.dataHostConnection = nil
         self.isOnline = false
         self.isDataHost = false
+        self.onlineContractsSupported = false
         self:updateHudIconState()
         self:restoreOfflineMarketState()
+        if self.onOnlineContractsDisconnected ~= nil then self:onOnlineContractsDisconnected() end
         if wasOnline and self.debugManager ~= nil then
             self.debugManager:info("Sync: No active companion client available. Restored Offline Market state.")
         end
@@ -626,7 +631,7 @@ function GlobalMarket:assignNextDataHost()
     end
 end
 
-function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection, marketName, isPrivateMarket)
+function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection, marketName, isPrivateMarket, contractsSupported)
     if not g_currentMission:getIsServer() or connection == nil then return end
 
     self.clientExeStates = self.clientExeStates or {}
@@ -636,6 +641,7 @@ function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackend
         hasBackendConnection = (hasBackendConnection ~= false),
         marketName = marketName,
         isPrivateMarket = (isPrivateMarket == true),
+        contractsSupported = (contractsSupported == true),
         readySeq = (prevState ~= nil) and prevState.readySeq or nil
     }
     local eligible = (self.isClientEligibleForSessionMarket == nil) or self:isClientEligibleForSessionMarket(state)
@@ -683,6 +689,7 @@ function GlobalMarket:receiveDataHostToken(whitelist)
     self.timerData = self.intervalData or 1000
     self:updateHudIconState()
     if self.refreshBrandingUiIfOpen ~= nil then self:refreshBrandingUiIfOpen() end
+    if self.onBecomeContractsDataHost ~= nil then self:onBecomeContractsDataHost() end
     if self.debugManager ~= nil then
         self.debugManager:info("Sync: Data-Host token active (%d whitelist items). Exporting whitelist to companion client.", #(whitelist or {}))
     end

@@ -36,9 +36,9 @@
         <e k="gm_help_p2_demand_text"                              v="- Great Demands: Active Great Demand events grant substantial price bonuses for a limited time, announced via HUD notification and highlighted in the market list.&#xA;- Hybrid Online Mode: Custom map or mod goods that are awaiting online review ('Pending | Offline') or marked local-only ('Offline Only') remain seamlessly tradable via the local market simulation." />
         <e k="gm_help_p5_title"                                    v="3. Supply Contracts, Direct Offers &amp; Pickup Inbox" />
         <e k="gm_help_p5_contracts_title"                          v="Supply Contracts (NPC &amp; Player-to-Player)" />
-        <e k="gm_help_p5_contracts_text"                           v="Switch to the 'Contracts &amp; Offers' sub-tab for guaranteed delivery contracts from NPC buyers and fellow farms:&#xA;- Base Price &amp; Completion Bonus: Partial deliveries (bulk, bales, or pallets) pay out immediately at the guaranteed base rate. Reaching 100% awards the full bonus (+5% to +20%).&#xA;- Farm Cap &amp; Breach Penalty: Each farm may hold up to 3 active contracts simultaneously. Failing to reach 100% before the deadline forfeits the bonus and incurs a 15% penalty on missing volume.&#xA;- Player Purchase Contracts: Posting a contract locks 100% escrow upfront; cancelling before acceptance refunds all funds." />
+        <e k="gm_help_p5_contracts_text"                           v="Switch to the 'Contracts &amp; Offers' sub-tab for guaranteed delivery contracts from NPC buyers and fellow farms:&#xA;- Base Price &amp; Completion Bonus: Partial deliveries (bulk, bales, or pallets) pay out immediately at the guaranteed base rate. Reaching 100% awards the full bonus (+5% to +20%).&#xA;- Farm Cap &amp; Breach Penalty: Each farm may hold up to 3 active contracts simultaneously. Failing to reach 100% before the deadline forfeits the bonus and incurs a 15% penalty on missing volume.&#xA;- Player Purchase Contracts: Posting a contract locks 100% escrow upfront; cancelling before acceptance refunds all funds.&#xA;- Local vs. Online: When connected online (on approved goods), choose between a local server contract (months) or a cross-server online contract (real-time hours)." />
         <e k="gm_help_p5_offers_title"                             v="±10% Direct Offers (Bulletin Board)" />
-        <e k="gm_help_p5_offers_text"                              v="List farm goods directly within a -10% to +10% corridor around the active market spot price, or buy listings from other players and traders:&#xA;- 0% Dealer Markup: Direct offers bypass the system dealer markup completely.&#xA;- Partial Buying &amp; Duration: Choose between partial purchases or full-lot only alongside a 1–3 month duration." />
+        <e k="gm_help_p5_offers_text"                              v="List farm goods directly within a -10% to +10% corridor around the active market spot price, or buy listings from other players and traders:&#xA;- 0% Dealer Markup: Direct offers bypass the system dealer markup completely.&#xA;- Partial Buying &amp; Duration: Choose between partial purchases or full-lot only alongside a 1–3 month duration (local) or 24–72 real-time hours (online)." />
         <e k="gm_help_p5_inbox_title"                              v="Unified Pickup Inbox &amp; GM Terminals" />
         <e k="gm_help_p5_inbox_text"                               v="Expired or cancelled direct offers as well as goods delivered onto your own purchase contracts are routed safely to your farm's Pickup Inbox:&#xA;- Flexible Claiming: Withdraw items into any farm silo, object storage, or free of shipping (0 $CURRENCY_SYMBOL) into a GM Logistics Terminal.&#xA;- Grace Timer: Unclaimed items auto-liquidate after 2 in-game months at a -15% clearance discount." />
         <e k="gm_help_p3_title"                                    v="3. Supported Storages, Containers &amp; GM Terminals" />
@@ -111,6 +111,12 @@
         <e k="ui_gm_settings_npc_all"                              v="All" />
         <e k="ui_gm_settings_npc_contracts"                        v="Contracts Only" />
         <e k="ui_gm_settings_npc_players"                          v="Players Only" />
+        <e k="ui_gm_settings_onlineContracts"                      v="Online Contracts &amp; Offers" />
+        <e k="ui_gm_settings_onlineContracts_desc"                 v="Controls whether supply contracts and ±10% direct offers may be traded cross-server via GlobalMarketClient or remain strictly local to this server." />
+        <e k="ui_gm_settings_oc_all"                               v="All (Online &amp; Local)" />
+        <e k="ui_gm_settings_oc_contracts"                         v="Supply Contracts Online Only" />
+        <e k="ui_gm_settings_oc_offers"                            v="Direct Offers Online Only" />
+        <e k="ui_gm_settings_oc_local"                             v="Local Only (Server-internal)" />
         <e k="ui_gm_online_pending_short"                          v="(Pending)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Pending review / Offline)" />
         <e k="ui_gm_online_rejected_short"                         v="(Offline only)" />
@@ -164,6 +170,7 @@
         <e k="ui_gm_col_terms"                                     v="Terms / Time" />
         <e k="ui_gm_col_volumeTime"                                v="Volume / Time" />
         <e k="ui_gm_confirm_acceptText"                            v="Accept supply contract for %s %s?&#xA;Base Price: %s / 1,000 L  |  Completion Bonus: +%d%%  |  Deadline: %.1f month(s)&#xA;&#xA;Note: Failing to complete before the deadline forfeits the bonus and charges a 15%% penalty on missing volume." />
+        <e k="ui_gm_confirm_acceptTextOnline"                      v="Accept online supply contract for %s %s?&#xA;Base Price: %s / 1,000 L  |  Completion Bonus: +%d%%  |  Deadline: %s&#xA;&#xA;Note: Failing to complete before the deadline forfeits the bonus and charges a 15%% penalty on missing volume." />
         <e k="ui_gm_confirm_acceptTitle"                           v="Accept Supply Contract" />
         <e k="ui_gm_confirm_cancelContractText"                    v="Cancel open purchase contract #%d (%s %s) and refund 100%% of remaining escrow?" />
         <e k="ui_gm_confirm_cancelOfferText"                       v="Cancel direct offer #%d (%s %s) and move unsold stock safely into your Pickup Inbox?" />
@@ -179,8 +186,11 @@
         <e k="ui_gm_dlg_optBonus"                                  v="Contract Bonus: +%d%% (%s / 1,000 L total)" />
         <e k="ui_gm_dlg_optDelta"                                  v="Price: %+d%% (%s / 1,000 L)" />
         <e k="ui_gm_dlg_optDuration"                               v="Duration: %d month(s)" />
+        <e k="ui_gm_dlg_optDurationHours"                          v="Duration: %d h (Real-time)" />
         <e k="ui_gm_dlg_optTermFull"                               v="Full Lot Only | %d month(s)" />
+        <e k="ui_gm_dlg_optTermFullHours"                          v="Full Lot Only | %dh" />
         <e k="ui_gm_dlg_optTermPartial"                            v="Allow Partial Buys | %d month(s)" />
+        <e k="ui_gm_dlg_optTermPartialHours"                       v="Allow Partial Buys | %dh" />
         <e k="ui_gm_filter_all"                                    v="Filter: All" />
         <e k="ui_gm_filter_contracts"                              v="Filter: Contracts" />
         <e k="ui_gm_filter_offers"                                 v="Filter: Direct Offers" />
@@ -191,6 +201,12 @@
         <e k="ui_gm_hint_offer"                                    v="Direct Offer #%d (%s): %s available | %s/1,000L (%+d%%, 0%% markup) | %s" />
         <e k="ui_gm_hint_ownContract"                              v="Own Purchase Contract #%d: %s / %s delivered | Remaining Escrow: %s | Cancel before accept refunds 100%%" />
         <e k="ui_gm_months_short"                                  v="%.1f mo." />
+        <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
+        <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
+        <e k="ui_gm_scope_local"                                   v="Scope: Local (This Server)" />
+        <e k="ui_gm_scope_localPrefix"                             v="[Local] " />
+        <e k="ui_gm_scope_online"                                  v="Scope: Online (Cross-Server)" />
+        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Contract Bonus (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="TOTAL ESCROW" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Remaining in Inbox" />
@@ -216,6 +232,7 @@
         <e k="ui_gm_tag_inboxReturn"                               v="Returned" />
         <e k="ui_gm_tag_open"                                      v="Open" />
         <e k="ui_gm_tag_partial"                                   v="Partial OK" />
+        <e k="ui_gm_tag_pending"                                   v="Pending" />
         <e k="ui_gm_warn_noStockForOffer"                          v="No tradable stock found in your farm storages or GM Terminals (fermenting bales are locked)." />
         <e k="ui_gm_warn_noStorage"                                v="No compatible farm storage or GM Terminal available for this transaction." />
         <e k="ui_gm_unit_bale"                                     v="Bales" />

@@ -36,9 +36,9 @@
         <e k="gm_help_p2_demand_text"                              v="- Duży popyt: Aktywne promocje popytu zapewniają wyraźne premie cenowe przez ograniczony czas i są ogłaszane powiadomieniem HUD.&#xA;- Tryb hybrydowy online: Niestandardowe towary z map lub modów oczekujące na weryfikację ('Oczekujące | Offline') lub lokalne ('Tylko Offline') pozostają bez przeszkód dostępne w handlu przez lokalną symulację." />
         <e k="gm_help_p5_title"                                    v="3. Kontrakty, oferty bezpośrednie i skrytka odbiorcza" />
         <e k="gm_help_p5_contracts_title"                          v="Kontrakty dostaw (NPC i między graczami)" />
-        <e k="gm_help_p5_contracts_text"                           v="W zakładce 'Kontrakty i oferty' znajdziesz kontrakty dostaw od kupców NPC oraz innych gospodarstw:&#xA;- Cena bazowa i premia końcowa: Dostawy częściowe (luzem, bele lub palety) są wypłacane od razu po cenie bazowej. Po osiągnięciu 100% wypłacana jest pełna premia (+5% do +20%).&#xA;- Limit i kara umowna: Maksymalnie 3 aktywne kontrakty na gospodarstwo. Niedostarczenie 100% przed terminem skutkuje utratą premii i karą 15% za brakującą ilość.&#xA;- Kontrakty zakupu: Pełna kwota trafia do depozytu; anulowanie przed przyjęciem zwraca 100%." />
+        <e k="gm_help_p5_contracts_text"                           v="W zakładce 'Kontrakty i oferty' znajdziesz kontrakty dostaw od kupców NPC oraz innych gospodarstw:&#xA;- Cena bazowa i premia końcowa: Dostawy częściowe (luzem, bele lub palety) są wypłacane od razu po cenie bazowej. Po osiągnięciu 100% wypłacana jest pełna premia (+5% do +20%).&#xA;- Limit i kara umowna: Maksymalnie 3 aktywne kontrakty na gospodarstwo. Niedostarczenie 100% przed terminem skutkuje utratą premii i karą 15% za brakującą ilość.&#xA;- Kontrakty zakupu: Pełna kwota trafia do depozytu; anulowanie przed przyjęciem zwraca 100%.&#xA;- Lokalnie czy Online: Przy aktywnym połączeniu online (dla zatwierdzonych towarów) wybierz kontrakt lokalny (miesiące) lub międzyserwerowy online (godziny czasu rzeczywistego)." />
         <e k="gm_help_p5_offers_title"                             v="Oferty bezpośrednie ±10% (Tablica ogłoszeń)" />
-        <e k="gm_help_p5_offers_text"                              v="Wystawiaj towary bezpośrednio w przedziale od -10% do +10% względem bieżącej ceny rynkowej:&#xA;- 0% marży systemowej: Brak systemowej marży handlowej przy zakupach bezpośrednich.&#xA;- Zakup częściowy i czas: Wybierz sprzedaż częściową lub całościową oraz czas trwania 1–3 miesięcy." />
+        <e k="gm_help_p5_offers_text"                              v="Wystawiaj towary bezpośrednio w przedziale od -10% do +10% względem bieżącej ceny rynkowej:&#xA;- 0% marży systemowej: Brak systemowej marży handlowej przy zakupach bezpośrednich.&#xA;- Zakup częściowy i czas: Wybierz sprzedaż częściową lub całościową oraz czas trwania 1–3 miesięcy (lokalnie) lub 24–72 godziny rzeczywiste (online)." />
         <e k="gm_help_p5_inbox_title"                              v="Skrytka odbiorcza i terminale GM" />
         <e k="gm_help_p5_inbox_text"                               v="Wygasłe lub anulowane oferty oraz dostawy z własnych kontraktów zakupu trafiają bezpiecznie do skrytki odbiorczej:&#xA;- Elastyczny odbiór: Przenieś towar do silosu, magazynu obiektów lub bezpłatnie (0 $CURRENCY_SYMBOL) do terminala GM.&#xA;- Okres karencji: Po 2 miesiącach nieodebrany towar zostaje automatycznie spieniężony z rabatem -15%." />
         <e k="gm_help_p3_title"                                    v="3. Obsługiwane magazyny, formaty i terminale GM" />
@@ -111,6 +111,12 @@
         <e k="ui_gm_settings_npc_all"                              v="Wszystkie" />
         <e k="ui_gm_settings_npc_contracts"                        v="Tylko kontrakty" />
         <e k="ui_gm_settings_npc_players"                          v="Tylko gracze" />
+        <e k="ui_gm_settings_onlineContracts"                      v="Kontrakty i oferty online" />
+        <e k="ui_gm_settings_onlineContracts_desc"                 v="Określa, czy kontrakty dostaw oraz oferty bezpośrednie ±10% mogą być wymieniane między serwerami przez GlobalMarketClient, czy pozostają wyłącznie lokalne." />
+        <e k="ui_gm_settings_oc_all"                               v="Wszystkie (Online i Lokalne)" />
+        <e k="ui_gm_settings_oc_contracts"                         v="Tylko kontrakty online" />
+        <e k="ui_gm_settings_oc_offers"                            v="Tylko oferty bezp. online" />
+        <e k="ui_gm_settings_oc_local"                             v="Tylko lokalne (Ten serwer)" />
         <e k="ui_gm_online_pending_short"                          v="(Weryfikacja)" />
         <e k="ui_gm_online_pending_dialog"                         v="(Oczekuje na weryfikację / Offline)" />
         <e k="ui_gm_online_rejected_short"                         v="(Tylko offline)" />
@@ -164,6 +170,7 @@
         <e k="ui_gm_col_terms"                                     v="Warunki / Czas" />
         <e k="ui_gm_col_volumeTime"                                v="Ilość / Termin" />
         <e k="ui_gm_confirm_acceptText"                            v="Przyjąć kontrakt na %s %s?&#xA;Cena bazowa: %s / 1 000 L  |  Premia: +%d%%  |  Termin: %.1f mies.&#xA;&#xA;Uwaga: Niedostarczenie 100 %% przed terminem powoduje utratę premii i 15 %% kary za brakującą ilość." />
+        <e k="ui_gm_confirm_acceptTextOnline"                      v="Przyjąć kontrakt online na %s %s?&#xA;Cena bazowa: %s / 1 000 L  |  Premia: +%d%%  |  Termin: %s&#xA;&#xA;Uwaga: Niedostarczenie 100 %% przed terminem powoduje utratę premii i 15 %% kary za brakującą ilość." />
         <e k="ui_gm_confirm_acceptTitle"                           v="Przyjmij kontrakt dostawy" />
         <e k="ui_gm_confirm_cancelContractText"                    v="Anulować otwarty kontrakt #%d (%s %s) i zwrócić 100 %% pozostałego depozytu?" />
         <e k="ui_gm_confirm_cancelOfferText"                       v="Anulować ofertę bezpośrednią #%d (%s %s) i przenieść resztę do skrytki odbiorczej?" />
@@ -179,8 +186,11 @@
         <e k="ui_gm_dlg_optBonus"                                  v="Premia kontraktu: +%d%% (%s / 1 000 L razem)" />
         <e k="ui_gm_dlg_optDelta"                                  v="Cena: %+d%% (%s / 1 000 L)" />
         <e k="ui_gm_dlg_optDuration"                               v="Czas trwania: %d mies." />
+        <e k="ui_gm_dlg_optDurationHours"                          v="Czas trwania: %d godz. (Czas rzecz.)" />
         <e k="ui_gm_dlg_optTermFull"                               v="Tylko całość | %d mies." />
+        <e k="ui_gm_dlg_optTermFullHours"                          v="Tylko całość | %dh" />
         <e k="ui_gm_dlg_optTermPartial"                            v="Zakupy częściowe | %d mies." />
+        <e k="ui_gm_dlg_optTermPartialHours"                       v="Zakupy częściowe | %dh" />
         <e k="ui_gm_filter_all"                                    v="Filtr: Wszystkie" />
         <e k="ui_gm_filter_contracts"                              v="Filtr: Kontrakty" />
         <e k="ui_gm_filter_offers"                                 v="Filtr: Oferty bezp." />
@@ -191,6 +201,12 @@
         <e k="ui_gm_hint_offer"                                    v="Oferta #%d (%s): %s dostępne | %s/1 000L (%+d%%, 0%% marży) | %s" />
         <e k="ui_gm_hint_ownContract"                              v="Własny kontrakt #%d: %s / %s dostarczono | Depozyt: %s | Anulowanie przed przyjęciem zwraca 100%%" />
         <e k="ui_gm_months_short"                                  v="%.1f mies." />
+        <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
+        <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
+        <e k="ui_gm_scope_local"                                   v="Zakres: Lokalny (Ten serwer)" />
+        <e k="ui_gm_scope_localPrefix"                             v="[Lokalny] " />
+        <e k="ui_gm_scope_online"                                  v="Zakres: Online (Międzyserwerowy)" />
+        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Premia kontraktu (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="CAŁKOWITY DEPOZYT" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Pozostało w skrytce" />
@@ -216,6 +232,7 @@
         <e k="ui_gm_tag_inboxReturn"                               v="Zwrot" />
         <e k="ui_gm_tag_open"                                      v="Otwarty" />
         <e k="ui_gm_tag_partial"                                   v="Częściowo" />
+        <e k="ui_gm_tag_pending"                                   v="Oczekuje" />
         <e k="ui_gm_warn_noStockForOffer"                          v="Nie znaleziono towarów do handlu w Twoich magazynach ani terminalach GM." />
         <e k="ui_gm_warn_noStorage"                                v="Brak odpowiedniego magazynu lub terminala GM dostępnego dla tej farmy." />
         <e k="ui_gm_unit_bale"                                     v="Bele" />

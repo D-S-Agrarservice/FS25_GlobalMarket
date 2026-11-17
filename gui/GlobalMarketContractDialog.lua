@@ -55,126 +55,18 @@ end
 
 ---Collects buyable bale and pallet/BigBag/IBC formats compatible with a target ObjectStorage
 function GlobalMarketContractDialog.collectBuyableFormats(fillTypeName, selectedSilo)
-    local formats = {}
-    local fillType = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(fillTypeName) or nil
-    if fillType == nil or selectedSilo == nil or not selectedSilo.isObjectStorage then
-        return formats
+    if GlobalMarketContractsStorage ~= nil and GlobalMarketContractsStorage.collectBuyableFormats ~= nil then
+        return GlobalMarketContractsStorage.collectBuyableFormats(fillTypeName, selectedSilo)
     end
-
-    if selectedSilo.supportsBales and fillType.isBaleType and g_baleManager ~= nil and g_baleManager.bales ~= nil then
-        local seenMapSizes, seenSizeCap, baleFormats, titleCounts = {}, {}, {}, {}
-        local mapCustomEnv = (g_currentMission ~= nil and g_currentMission.missionInfo ~= nil)
-            and g_currentMission.missionInfo.customEnvironment or nil
-        local mapBaseDir = g_currentMission ~= nil and g_currentMission.baseDirectory or nil
-
-        for _, bale in ipairs(g_baleManager.bales) do
-            if bale.isAvailable and bale.fillTypes ~= nil then
-                for _, ftData in ipairs(bale.fillTypes) do
-                    if ftData.fillTypeIndex == fillType.index then
-                        local isRound, width, _, length, diameter = g_baleManager:getBaleInfoByXMLFilename(bale.xmlFilename)
-                        local sizeKey = isRound
-                            and string.format("ROUND_%.2f_%.2f", diameter or 0, width or 0)
-                            or string.format("SQUARE_%.2f_%.2f", length or 0, width or 0)
-                        local capInt = math.floor((ftData.capacity or 0) + 0.5)
-                        local sizeCapKey = string.format("%s_%d", sizeKey, capInt)
-                        local isMapOrBase = (bale.customEnvironment == nil)
-                            or (mapCustomEnv ~= nil and bale.customEnvironment == mapCustomEnv)
-                            or (mapBaseDir ~= nil and mapBaseDir ~= "" and bale.baseDirectory == mapBaseDir)
-
-                        local shouldAdd = false
-                        if isMapOrBase then
-                            if not seenMapSizes[sizeKey] and not seenSizeCap[sizeCapKey] then
-                                seenMapSizes[sizeKey] = true
-                                seenSizeCap[sizeCapKey] = true
-                                shouldAdd = true
-                            end
-                        elseif not seenSizeCap[sizeCapKey] then
-                            seenSizeCap[sizeCapKey] = true
-                            shouldAdd = true
-                        end
-
-                        if shouldAdd then
-                            local key = isRound and "ui_gm_format_roundbale" or "ui_gm_format_squarebale"
-                            local title = string.format("%s (%.2fm)", g_i18n:getText(key), isRound and (diameter or width or 1.25) or (length or 2.40))
-                            titleCounts[title] = (titleCounts[title] or 0) + 1
-                            table.insert(baleFormats, {
-                                title = title,
-                                xml = bale.xmlFilename,
-                                capacity = ftData.capacity,
-                                unitKey = "ui_gm_unit_bale"
-                            })
-                        end
-                    end
-                end
-            end
-        end
-
-        for _, bf in ipairs(baleFormats) do
-            if (titleCounts[bf.title] or 0) > 1 then
-                bf.title = string.format("%s - %s L", bf.title, g_i18n:formatVolume(bf.capacity or 0, 0))
-            end
-            table.insert(formats, bf)
-        end
-    end
-
-    if selectedSilo.supportsPallets and GlobalMarketStoreCache ~= nil then
-        for _, f in ipairs(GlobalMarketStoreCache.getFormatsForFillType(fillTypeName) or {}) do
-            table.insert(formats, f)
-        end
-    end
-
-    return formats
+    return {}
 end
 
 ---Collects non-fermenting owned stacks from an ObjectStorage matching fillTypeName
 function GlobalMarketContractDialog.collectOwnedFormats(fillTypeName, selectedSilo, farmId)
-    local formats = {}
-    local fillType = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(fillTypeName) or nil
-    if fillType == nil or selectedSilo == nil or not selectedSilo.isObjectStorage or selectedSilo.storage == nil then
-        return formats
+    if GlobalMarketContractsStorage ~= nil and GlobalMarketContractsStorage.collectOwnedFormats ~= nil then
+        return GlobalMarketContractsStorage.collectOwnedFormats(fillTypeName, selectedSilo, farmId)
     end
-
-    local spec = selectedSilo.storage.spec_objectStorage
-    if spec == nil or spec.objectInfos == nil then
-        return formats
-    end
-
-    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
-    local tracker = {}
-    for _, objectInfo in ipairs(spec.objectInfos) do
-        local objFt, objCap, objXml, objFarm, isFerm, isBale = nil, 0, nil, FarmManager.SPECTATOR_FARM_ID, false, false
-        if gm ~= nil and gm.inspectObjectInfoEntry ~= nil then
-            objFt, objCap, objXml, objFarm, isFerm, isBale = gm:inspectObjectInfoEntry(objectInfo)
-        end
-        if objFt == fillType.index and objXml ~= nil and not isFerm and objFarm == farmId and objCap > 0 then
-            if tracker[objXml] == nil then
-                local title = g_i18n:getText("ui_gm_unit_piece")
-                local unitKey = isBale and "ui_gm_unit_bale" or "ui_gm_unit_pallet"
-                if isBale and g_baleManager ~= nil then
-                    local isRound, width, _, length, diameter = g_baleManager:getBaleInfoByXMLFilename(objXml)
-                    local key = isRound and "ui_gm_format_roundbale" or "ui_gm_format_squarebale"
-                    title = string.format("%s (%.2fm)", g_i18n:getText(key), isRound and (diameter or width or 1.25) or (length or 2.40))
-                else
-                    local storeItem = g_storeManager ~= nil and g_storeManager:getItemByXMLFilename(objXml) or nil
-                    title = (storeItem ~= nil and storeItem.name) or g_i18n:getText("ui_gm_format_pallet")
-                end
-                tracker[objXml] = {
-                    title = title,
-                    xml = objXml,
-                    capacity = objCap,
-                    unitKey = unitKey,
-                    actualCount = objectInfo.numObjects or #objectInfo.objects
-                }
-            else
-                tracker[objXml].actualCount = tracker[objXml].actualCount + (objectInfo.numObjects or #objectInfo.objects)
-            end
-        end
-    end
-
-    for _, f in pairs(tracker) do
-        table.insert(formats, f)
-    end
-    return formats
+    return {}
 end
 
 ---Opens the contract/offer/inbox dialog in the requested mode
@@ -258,6 +150,69 @@ function GlobalMarketContractDialog:setHeaderVisuals(titleKey, fillTypeName, but
     end
 end
 
+function GlobalMarketContractDialog:rebuildCreateContractTerms(isOnline)
+    self.termsOptions = {}
+    if isOnline then
+        local hoursList = (GlobalMarketContracts and GlobalMarketContracts.ONLINE_CONTRACT_HOURS) or { 24, 48, 72, 168 }
+        local fmt = g_i18n:hasText("ui_gm_dlg_optDurationHours") and g_i18n:getText("ui_gm_dlg_optDurationHours") or "Duration: %d h (Real-time)"
+        for _, h in ipairs(hoursList) do
+            table.insert(self.termsOptions, { isOnline = true, hours = h, label = string.format(fmt, h) })
+        end
+    else
+        for m = GlobalMarketContracts.CONTRACT_DURATION_MIN, GlobalMarketContracts.CONTRACT_DURATION_MAX do
+            table.insert(self.termsOptions, {
+                isOnline = false,
+                months = m,
+                label = string.format(g_i18n:getText("ui_gm_dlg_optDuration"), m)
+            })
+        end
+    end
+    local termTexts = {}
+    for _, t in ipairs(self.termsOptions) do table.insert(termTexts, t.label) end
+    self.selectorTerms:setTexts(termTexts)
+    self.selectorTerms:setState(math.min(isOnline and 2 or 3, #self.termsOptions), false)
+end
+
+function GlobalMarketContractDialog:rebuildCreateOfferTerms(fillTypeName)
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    local allowOnline = gm ~= nil and gm.canPublishOnlineOffer ~= nil and gm:canPublishOnlineOffer(fillTypeName)
+    self.termsOptions = {}
+    local localPrefix = allowOnline
+        and ((g_i18n:hasText("ui_gm_scope_localPrefix") and g_i18n:getText("ui_gm_scope_localPrefix")) or "[Local] ")
+        or ""
+    for _, partial in ipairs({ true, false }) do
+        for m = GlobalMarketContracts.OFFER_DURATION_MIN, GlobalMarketContracts.OFFER_DURATION_MAX do
+            local key = partial and "ui_gm_dlg_optTermPartial" or "ui_gm_dlg_optTermFull"
+            table.insert(self.termsOptions, {
+                isOnline = false,
+                allowPartial = partial,
+                months = m,
+                label = localPrefix .. string.format(g_i18n:getText(key), m)
+            })
+        end
+    end
+    if allowOnline then
+        local onlinePrefix = (g_i18n:hasText("ui_gm_scope_onlinePrefix") and g_i18n:getText("ui_gm_scope_onlinePrefix")) or "[Online] "
+        local hoursList = (GlobalMarketContracts and GlobalMarketContracts.ONLINE_OFFER_HOURS) or { 24, 48, 72 }
+        for _, partial in ipairs({ true, false }) do
+            for _, h in ipairs(hoursList) do
+                local key = partial and "ui_gm_dlg_optTermPartialHours" or "ui_gm_dlg_optTermFullHours"
+                local fmt = g_i18n:hasText(key) and g_i18n:getText(key) or (partial and "Allow Partial Buys | %dh" or "Full Lot Only | %dh")
+                table.insert(self.termsOptions, {
+                    isOnline = true,
+                    allowPartial = partial,
+                    hours = h,
+                    label = onlinePrefix .. string.format(fmt, h)
+                })
+            end
+        end
+    end
+    local termTexts = {}
+    for _, t in ipairs(self.termsOptions) do table.insert(termTexts, t.label) end
+    self.selectorTerms:setTexts(termTexts)
+    self.selectorTerms:setState(math.min(2, #self.termsOptions), false)
+end
+
 function GlobalMarketContractDialog:setupCreateContractMode()
     local gm = g_currentMission.globalMarket
     self.primaryOptions = {}
@@ -284,15 +239,7 @@ function GlobalMarketContractDialog:setupCreateContractMode()
         table.insert(self.storageOptions, { bonusPct = pct })
     end
 
-    self.termsOptions = {}
-    for m = GlobalMarketContracts.CONTRACT_DURATION_MIN, GlobalMarketContracts.CONTRACT_DURATION_MAX do
-        table.insert(self.termsOptions, {
-            months = m,
-            label = string.format(g_i18n:getText("ui_gm_dlg_optDuration"), m)
-        })
-    end
-
-    self:configureSelectors(true, true, false, true)
+    self:configureSelectors(true, true, true, true)
     local fillTexts = {}
     for _, opt in ipairs(self.primaryOptions) do
         table.insert(fillTexts, string.format("%s (%s / 1.000 L)", opt.title, g_i18n:formatMoney(opt.basePrice, 0, true, true)))
@@ -300,17 +247,14 @@ function GlobalMarketContractDialog:setupCreateContractMode()
     if #fillTexts == 0 then
         self.selectorPrimary:setTexts({"-"})
         self.selectorPrimary:setState(1, false)
+        self.selectorFormat:setTexts({"-"})
+        self.selectorFormat:setState(1, false)
         self:updateStepButtonLabels()
         self:onAmountChanged()
         return
     end
     self.selectorPrimary:setTexts(fillTexts)
     self.selectorPrimary:setState(1, false)
-
-    local termTexts = {}
-    for _, t in ipairs(self.termsOptions) do table.insert(termTexts, t.label) end
-    self.selectorTerms:setTexts(termTexts)
-    self.selectorTerms:setState(math.min(3, #self.termsOptions), false)
 
     self:onClickPrimary(1)
     if #self.storageOptions >= 6 then
@@ -346,18 +290,6 @@ function GlobalMarketContractDialog:setupCreateOfferMode()
         table.insert(self.formatOptions, { deltaPct = d })
     end
 
-    self.termsOptions = {}
-    for _, partial in ipairs({ true, false }) do
-        for m = GlobalMarketContracts.OFFER_DURATION_MIN, GlobalMarketContracts.OFFER_DURATION_MAX do
-            local key = partial and "ui_gm_dlg_optTermPartial" or "ui_gm_dlg_optTermFull"
-            table.insert(self.termsOptions, {
-                allowPartial = partial,
-                months = m,
-                label = string.format(g_i18n:getText(key), m)
-            })
-        end
-    end
-
     self:configureSelectors(true, true, true, true)
     local fillTexts = {}
     for _, opt in ipairs(self.primaryOptions) do
@@ -372,11 +304,6 @@ function GlobalMarketContractDialog:setupCreateOfferMode()
     end
     self.selectorPrimary:setTexts(fillTexts)
     self.selectorPrimary:setState(1, false)
-
-    local termTexts = {}
-    for _, t in ipairs(self.termsOptions) do table.insert(termTexts, t.label) end
-    self.selectorTerms:setTexts(termTexts)
-    self.selectorTerms:setState(2, false) -- Default: Allow Partial, 2 Months
 
     self.selectorFormat:setState(11, false) -- Default: 0%
     self:onClickPrimary(1)
@@ -429,6 +356,7 @@ function GlobalMarketContractDialog:onClickPrimary(state)
     if opt == nil then return end
 
     if self.mode == GlobalMarketContractDialog.MODE_CREATE_CONTRACT then
+        local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
         self:setHeaderVisuals("ui_gm_dlg_createContract", opt.fillType, "ui_gm_btn_create")
         local bTexts = {}
         for _, bo in ipairs(self.storageOptions) do
@@ -439,6 +367,24 @@ function GlobalMarketContractDialog:onClickPrimary(state)
         self.selectorStorage:setTexts(bTexts)
         local curB = self.selectorStorage:getState()
         self.selectorStorage:setState((curB >= 1 and curB <= #bTexts) and curB or 6, false)
+
+        self.formatOptions = {
+            { isOnline = false, label = g_i18n:hasText("ui_gm_scope_local") and g_i18n:getText("ui_gm_scope_local") or "Scope: Local (Server)" }
+        }
+        if gm ~= nil and gm.canPublishOnlineContract ~= nil and gm:canPublishOnlineContract(opt.fillType) then
+            table.insert(self.formatOptions, {
+                isOnline = true,
+                label = g_i18n:hasText("ui_gm_scope_online") and g_i18n:getText("ui_gm_scope_online") or "Scope: Online (Cross-Server)"
+            })
+        end
+        local sTexts = {}
+        for _, so in ipairs(self.formatOptions) do table.insert(sTexts, so.label) end
+        self.selectorFormat:setTexts(sTexts)
+        local curS = self.selectorFormat:getState()
+        local chosenS = (curS >= 1 and curS <= #sTexts) and curS or 1
+        self.selectorFormat:setState(chosenS, false)
+        self:rebuildCreateContractTerms(self.formatOptions[chosenS] and self.formatOptions[chosenS].isOnline == true)
+
         self.maxAmount = GlobalMarketContractDialog.MAX_CONTRACT_LITERS
         self.currentCountFactor = 1
         self.currentMaxPieces = nil
@@ -452,6 +398,7 @@ function GlobalMarketContractDialog:onClickPrimary(state)
 
     elseif self.mode == GlobalMarketContractDialog.MODE_CREATE_OFFER then
         self:setHeaderVisuals("ui_gm_dlg_createOffer", opt.fillType, "ui_gm_btn_create")
+        self:rebuildCreateOfferTerms(opt.fillType)
         local dTexts = {}
         for _, dOpt in ipairs(self.formatOptions) do
             local p = opt.spotPrice * (1 + (dOpt.deltaPct / 100))
@@ -583,6 +530,12 @@ function GlobalMarketContractDialog:onClickStorage(state)
 end
 
 function GlobalMarketContractDialog:onClickFormat(state)
+    if self.mode == GlobalMarketContractDialog.MODE_CREATE_CONTRACT then
+        local scopeOpt = self.formatOptions[state]
+        self:rebuildCreateContractTerms(scopeOpt ~= nil and scopeOpt.isOnline == true)
+        self:onAmountChanged()
+        return
+    end
     if self.mode == GlobalMarketContractDialog.MODE_CREATE_OFFER then
         self:onAmountChanged()
         return
@@ -932,19 +885,24 @@ function GlobalMarketContractDialog:onClickOk()
         if self.mode == GlobalMarketContractDialog.MODE_CREATE_CONTRACT then
             local opt = self.primaryOptions[self.selectorPrimary:getState()]
             local bOpt = s
+            local sOpt = self.formatOptions[self.selectorFormat:getState()]
             local tOpt = self.termsOptions[self.selectorTerms:getState()]
             if opt ~= nil and bOpt ~= nil and tOpt ~= nil then
+                local isOnline = (sOpt ~= nil and sOpt.isOnline == true)
+                local dur = isOnline and (tOpt.hours or 48) or (tOpt.months or 2)
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_CREATE_CONTRACT,
-                    self.farmId, 0, opt.fillType, liters, bOpt.bonusPct, tOpt.months, false, nil, false, nil, 0)
+                    self.farmId, 0, opt.fillType, liters, bOpt.bonusPct, dur, false, nil, false, nil, 0, isOnline)
             end
         elseif self.mode == GlobalMarketContractDialog.MODE_CREATE_OFFER and s ~= nil then
             local opt = self.primaryOptions[self.selectorPrimary:getState()]
             local dOpt = self.formatOptions[self.selectorFormat:getState()]
             local tOpt = self.termsOptions[self.selectorTerms:getState()]
             if opt ~= nil and dOpt ~= nil and tOpt ~= nil then
+                local isOnline = (tOpt.isOnline == true)
+                local dur = isOnline and (tOpt.hours or 48) or (tOpt.months or 2)
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_CREATE_OFFER,
-                    self.farmId, 0, opt.fillType, liters, dOpt.deltaPct, tOpt.months,
-                    tOpt.allowPartial, s.id, s.isObjectStorage, s.formatXml, s.capacityPerObject or 0)
+                    self.farmId, 0, opt.fillType, liters, dOpt.deltaPct, dur,
+                    tOpt.allowPartial, s.id, s.isObjectStorage, s.formatXml, s.capacityPerObject or 0, isOnline)
             end
         elseif self.mode == GlobalMarketContractDialog.MODE_DELIVER_CONTRACT and s ~= nil then
             local c = self.context.contract

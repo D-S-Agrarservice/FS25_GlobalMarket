@@ -18,6 +18,7 @@ GlobalMarket.DELIVER_COST_PERLITER = 0
 GlobalMarket.STORAGE_DECAY_MONTHS = 6
 GlobalMarket.GREAT_DEMAND_MODE = 1 -- 1 = Scarcity (Stock-based), 2 = Random, 3 = Off
 GlobalMarket.NPC_ACTIVITY_MODE = 1 -- 1 = All (Contracts+Offers), 2 = Contracts Only, 3 = Players Only
+GlobalMarket.ONLINE_CONTRACTS_MODE = 1 -- 1 = All Online+Local, 2 = Contracts Online, 3 = Offers Online, 4 = Local Only
 
 -- Master switch for external companion client file polling and online market synchronization.
 -- Active by default; can be toggled live via the console command 'gmToggleOnlineSync' for testing/debugging.
@@ -147,8 +148,11 @@ source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsStorage.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContracts.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
 source(GlobalMarket.dir .. "events/SyncContractsStateEvent.lua")
 source(GlobalMarket.dir .. "events/ContractActionEvent.lua")
+source(GlobalMarket.dir .. "events/ContractOnlineBridgeEvent.lua")
 
 
 -- =========================================================================
@@ -309,6 +313,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmTestStatus", "Toggle GM Status Icon testing (0=Off, 1=EXE, 2=Host, 3=Exe: external connection broken)", "consoleCommandTestStatus", self)
             addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
             addConsoleCommand("gmTestBranding", "Previews 3-tier online market branding (0/off, 1, 2, 3)", "consoleCommandTestBranding", self)
+            addConsoleCommand("gmTestOnlineContracts", "Tests Etappe 2 online contracts capability and mock packets (on/off/mock)", "consoleCommandTestOnlineContracts", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -319,6 +324,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmTestStatus")
             removeConsoleCommand("gmToggleOnlineSync")
             removeConsoleCommand("gmTestBranding")
+            removeConsoleCommand("gmTestOnlineContracts")
             self.debugCommandsRegistered = false
         end
     end
@@ -403,6 +409,10 @@ function GlobalMarket:update(dt)
 
     if g_currentMission ~= nil and g_currentMission:getIsServer() and self.updateOfflineGreatDemands ~= nil then
         self:updateOfflineGreatDemands(dt)
+    end
+
+    if self.updateOnlineContractsTimers ~= nil then
+        self:updateOnlineContractsTimers(dt)
     end
 end
 

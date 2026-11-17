@@ -23,7 +23,7 @@ end
 
 function ContractActionEvent.new(
     actionType, farmId, targetId, fillTypeName, liters, pctParam, durationMonths,
-    flagParam, storageObject, isObjectStorage, formatXml, capacityPerObject
+    flagParam, storageObject, isObjectStorage, formatXml, capacityPerObject, isOnlineScope
 )
     local self = ContractActionEvent.emptyNew()
     self.actionType = actionType or 1
@@ -34,6 +34,7 @@ function ContractActionEvent.new(
     self.pctParam = pctParam or 0
     self.durationMonths = durationMonths or 1
     self.flagParam = (flagParam == true)
+    self.isOnlineScope = (isOnlineScope == true)
 
     self.storageObject = storageObject
     self.isObjectStorage = (isObjectStorage == true)
@@ -64,8 +65,9 @@ function ContractActionEvent:writeStream(streamId, connection)
     streamWriteString(streamId, self.fillTypeName)
     streamWriteFloat32(streamId, self.liters)
     streamWriteInt8(streamId, self.pctParam)
-    streamWriteInt8(streamId, self.durationMonths)
+    streamWriteInt16(streamId, self.durationMonths)
     streamWriteBool(streamId, self.flagParam)
+    streamWriteBool(streamId, self.isOnlineScope == true)
 
     local hasDirect = (self.storageObject ~= nil and self.storageObject.isRegistered == true)
     streamWriteBool(streamId, hasDirect)
@@ -99,8 +101,9 @@ function ContractActionEvent:readStream(streamId, connection)
     self.fillTypeName = streamReadString(streamId)
     self.liters = streamReadFloat32(streamId)
     self.pctParam = streamReadInt8(streamId)
-    self.durationMonths = streamReadInt8(streamId)
+    self.durationMonths = streamReadInt16(streamId)
     self.flagParam = streamReadBool(streamId)
+    self.isOnlineScope = streamReadBool(streamId)
 
     local hasDirect = streamReadBool(streamId)
     local directObj = nil
@@ -148,7 +151,7 @@ end
 ---Routes action either directly on the server or over network from MP client with format encoding
 function ContractActionEvent.dispatch(
     actionType, farmId, targetId, fillTypeName, liters, pctParam, durationMonths,
-    flagParam, storageObject, isObjectStorage, formatXml, capacityPerObject
+    flagParam, storageObject, isObjectStorage, formatXml, capacityPerObject, isOnlineScope
 )
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm == nil then
@@ -160,7 +163,7 @@ function ContractActionEvent.dispatch(
         local cleanCap = (capacityPerObject ~= nil and capacityPerObject > 0) and capacityPerObject or nil
         return ContractActionEvent.executeOnServer(
             gm, actionType, farmId, targetId, fillTypeName, liters,
-            pctParam, durationMonths, flagParam, storageObject, isObjectStorage, cleanFmt, cleanCap
+            pctParam, durationMonths, flagParam, storageObject, isObjectStorage, cleanFmt, cleanCap, isOnlineScope
         )
     end
 
@@ -179,7 +182,7 @@ function ContractActionEvent.dispatch(
         end
         g_client:getServerConnection():sendEvent(ContractActionEvent.new(
             actionType, farmId, targetId, fillTypeName, liters, pctParam,
-            durationMonths, flagParam, storageObject, isObjectStorage, payloadFormat, capacityPerObject
+            durationMonths, flagParam, storageObject, isObjectStorage, payloadFormat, capacityPerObject, isOnlineScope
         ))
         return true
     end
@@ -190,10 +193,10 @@ end
 ---Executes a validated contract/offer action on the authoritative server
 function ContractActionEvent.executeOnServer(
     gm, actionType, farmId, targetId, fillTypeName, liters,
-    pctParam, durationMonths, flagParam, storageObject, isObjectStorage, formatXml, capacityPerObject
+    pctParam, durationMonths, flagParam, storageObject, isObjectStorage, formatXml, capacityPerObject, isOnlineScope
 )
     if actionType == ContractActionEvent.ACTION_CREATE_CONTRACT then
-        return gm:createPlayerContract(farmId, fillTypeName, liters, pctParam, durationMonths)
+        return gm:createPlayerContract(farmId, fillTypeName, liters, pctParam, durationMonths, isOnlineScope)
     elseif actionType == ContractActionEvent.ACTION_CANCEL_CONTRACT then
         return gm:cancelPlayerContract(farmId, targetId)
     elseif actionType == ContractActionEvent.ACTION_ACCEPT_CONTRACT then
@@ -203,7 +206,7 @@ function ContractActionEvent.executeOnServer(
     elseif actionType == ContractActionEvent.ACTION_CREATE_OFFER then
         return gm:createDirectOffer(
             farmId, fillTypeName, liters, pctParam, flagParam,
-            durationMonths, storageObject, isObjectStorage, formatXml
+            durationMonths, storageObject, isObjectStorage, formatXml, isOnlineScope
         )
     elseif actionType == ContractActionEvent.ACTION_BUY_OFFER then
         return gm:buyDirectOffer(
@@ -255,6 +258,6 @@ function ContractActionEvent:run(connection)
     ContractActionEvent.executeOnServer(
         gm, self.actionType, self.farmId, self.targetId, self.fillTypeName, self.liters,
         self.pctParam, self.durationMonths, self.flagParam,
-        self.storageObject, self.isObjectStorage, cleanFmt, cleanCap
+        self.storageObject, self.isObjectStorage, cleanFmt, cleanCap, self.isOnlineScope
     )
 end

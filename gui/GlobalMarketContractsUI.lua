@@ -190,17 +190,28 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
                 canPrimary = true
             elseif row.kind == "OWN_CONTRACT" then
                 actionLabel = self.i18n:getText("ui_gm_action_cancelListing")
-                canCancel = (row.data ~= nil and row.data.status == "OPEN")
+                local d = row.data
+                local isPendingTimedOut = (d ~= nil and d.isOnline == true and d.status == "PENDING_CREATE"
+                    and (d.remoteId == nil or d.remoteId == "")
+                    and (gm == nil or not gm:getAreOnlineContractsSupported()
+                        or ((g_time or 0) - (d.pendingSinceMs or 0)) >= ((GlobalMarketContracts and GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS) or 30000)))
+                canCancel = (d ~= nil and (d.status == "OPEN" or isPendingTimedOut))
                 canPrimary = canCancel
             elseif row.kind == "OWN_OFFER" then
                 actionLabel = self.i18n:getText("ui_gm_action_cancelListing")
-                canCancel = true
-                canPrimary = true
+                local d = row.data
+                local isPendingTimedOut = (d ~= nil and d.isOnline == true and d.status == "PENDING_CREATE"
+                    and (d.remoteId == nil or d.remoteId == "")
+                    and (gm == nil or not gm:getAreOnlineContractsSupported()
+                        or ((g_time or 0) - (d.pendingSinceMs or 0)) >= ((GlobalMarketContracts and GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS) or 30000)))
+                canCancel = (d ~= nil and d.status ~= "PENDING_CANCEL" and (d.status ~= "PENDING_CREATE" or isPendingTimedOut))
+                canPrimary = canCancel
             elseif row.kind == "BOARD_CONTRACT" then
                 actionLabel = self.i18n:getText("ui_gm_action_acceptContract")
                 local activeCnt = (gm ~= nil and gm.getActiveAcceptedContractCount ~= nil)
                     and gm:getActiveAcceptedContractCount(farmId) or 0
-                canPrimary = (activeCnt < ((GlobalMarketContracts and GlobalMarketContracts.MAX_ACTIVE_CONTRACTS_PER_FARM) or 3))
+                local isPending = (row.data ~= nil and row.data.pendingAcceptFarmId ~= nil)
+                canPrimary = (not isPending) and (activeCnt < ((GlobalMarketContracts and GlobalMarketContracts.MAX_ACTIVE_CONTRACTS_PER_FARM) or 3))
             elseif row.kind == "BOARD_OFFER" then
                 actionLabel = self.i18n:getText("ui_gm_action_buyOffer")
                 canPrimary = true
@@ -270,16 +281,23 @@ function GlobalMarketUI:applyContractsListsFilter(allowListFocus)
     local activeAcceptedCount, inboxCount, openContractCount, openOfferCount = 0, 0, 0, 0
 
     for _, c in ipairs(gm.contracts or {}) do
-        if c.status == "ACTIVE" and c.contractorFarmId == farmId then
+        local isOwnActive = (c.status == "ACTIVE") and ((c.isOnline and gm.isOwnOnlineIdentity ~= nil
+            and gm:isOwnOnlineIdentity(c.contractorServerId, c.contractorFarmId, farmId))
+            or (not c.isOnline and c.contractorFarmId == farmId))
+        local isOwnIssued = (c.isOnline and gm.isOwnOnlineIdentity ~= nil
+            and gm:isOwnOnlineIdentity(c.issuerServerId, c.issuerFarmId, farmId))
+            or (not c.isOnline and c.origin == "PLAYER" and c.issuerFarmId == farmId)
+
+        if isOwnActive then
             activeAcceptedCount = activeAcceptedCount + 1
             if self:matchesContractQuery(c.fillType, c.issuerName) then
                 table.insert(activeContracts, { kind = "ACTIVE_CONTRACT", fillType = c.fillType, data = c })
             end
-        elseif c.origin == "PLAYER" and c.issuerFarmId == farmId then
+        elseif isOwnIssued then
             if self:matchesContractQuery(c.fillType, c.issuerName) then
                 table.insert(ownContracts, { kind = "OWN_CONTRACT", fillType = c.fillType, data = c })
             end
-        elseif c.status == "OPEN" then
+        elseif c.status == "OPEN" and (not c.isOnline or (gm.isOnlineContractBoardEnabled ~= nil and gm:isOnlineContractBoardEnabled())) then
             openContractCount = openContractCount + 1
             if self.boardFilter ~= GlobalMarketUI.BOARD_FILTER_OFFERS and self:matchesContractQuery(c.fillType, c.issuerName) then
                 table.insert(boardContracts, { kind = "BOARD_CONTRACT", fillType = c.fillType, data = c })
@@ -298,11 +316,15 @@ function GlobalMarketUI:applyContractsListsFilter(allowListFocus)
 
     for _, o in ipairs(gm.directOffers or {}) do
         if (o.remainingLiters or 0) > 0.5 then
-            if o.origin == "PLAYER" and o.sellerFarmId == farmId then
+            local isOwnOffer = (o.isOnline and gm.isOwnOnlineIdentity ~= nil
+                and gm:isOwnOnlineIdentity(o.sellerServerId, o.sellerFarmId, farmId))
+                or (not o.isOnline and o.origin == "PLAYER" and o.sellerFarmId == farmId)
+            if isOwnOffer then
                 if self:matchesContractQuery(o.fillType, o.sellerName) then
                     table.insert(ownOffers, { kind = "OWN_OFFER", fillType = o.fillType, data = o })
                 end
-            else
+            elseif (not o.isOnline or (gm.isOnlineOfferBoardEnabled ~= nil and gm:isOnlineOfferBoardEnabled()))
+                and (o.status == nil or o.status == "OPEN") then
                 openOfferCount = openOfferCount + 1
                 if self.boardFilter ~= GlobalMarketUI.BOARD_FILTER_CONTRACTS and self:matchesContractQuery(o.fillType, o.sellerName) then
                     table.insert(boardOffers, { kind = "BOARD_OFFER", fillType = o.fillType, data = o })
@@ -430,23 +452,37 @@ function GlobalMarketUI:updateSelectionHint(row)
                 return
             end
         end
+        local pendingTag = ""
+        if d.pendingAcceptFarmId ~= nil or d.status == "PENDING_CREATE" or d.status == "PENDING_CANCEL" then
+            pendingTag = " | [" .. (self.i18n:hasText("ui_gm_tag_pending") and self.i18n:getText("ui_gm_tag_pending") or "Pending") .. "]"
+        end
+        local durTag = (d.isOnline and gm ~= nil and gm.formatContractDurationShort ~= nil)
+            and (" | " .. gm:formatContractDurationShort(self.i18n, d)) or ""
         local bonusVal = ((d.totalLiters or 0) / 1000) * (d.basePricePer1000 or 500) * ((d.bonusPct or 0) / 100)
         self.contractsSelectionHint:setText(string.format(self.i18n:getText("ui_gm_hint_contract"),
             d.id, tostring(d.issuerName or "NPC"),
             self.i18n:formatVolume(d.deliveredLiters or 0, 0), self.i18n:formatVolume(d.totalLiters or 0, 0),
             self.i18n:formatMoney(d.basePricePer1000 or 500, 0, true, true),
-            d.bonusPct or 0, self.i18n:formatMoney(bonusVal, 0, true, true)))
+            d.bonusPct or 0, self.i18n:formatMoney(bonusVal, 0, true, true)) .. durTag .. pendingTag)
     elseif row.kind == "OWN_CONTRACT" then
+        local pendingTag = (d.status == "PENDING_CREATE" or d.status == "PENDING_CANCEL")
+            and (" | [" .. (self.i18n:hasText("ui_gm_tag_pending") and self.i18n:getText("ui_gm_tag_pending") or "Pending") .. "]") or ""
+        local durTag = (d.isOnline and gm ~= nil and gm.formatContractDurationShort ~= nil)
+            and (" | " .. gm:formatContractDurationShort(self.i18n, d)) or ""
         self.contractsSelectionHint:setText(string.format(self.i18n:getText("ui_gm_hint_ownContract"),
             d.id, self.i18n:formatVolume(d.deliveredLiters or 0, 0), self.i18n:formatVolume(d.totalLiters or 0, 0),
-            self.i18n:formatMoney(d.escrowRemaining or 0, 0, true, true)))
+            self.i18n:formatMoney(d.escrowRemaining or 0, 0, true, true)) .. durTag .. pendingTag)
     elseif row.kind == "BOARD_OFFER" or row.kind == "OWN_OFFER" then
         local eff = (d.refPricePer1000 or 500) * (1 + ((d.priceDeltaPct or 0) / 100))
         local modeStr = self.i18n:getText(d.allowPartial and "ui_gm_tag_partial" or "ui_gm_tag_fullOnly")
+        local durTag = (d.isOnline and gm ~= nil and gm.formatContractDurationShort ~= nil)
+            and (" | " .. gm:formatContractDurationShort(self.i18n, d)) or ""
+        local pendingTag = (d.status == "PENDING_CREATE" or d.status == "PENDING_CANCEL")
+            and (" | [" .. (self.i18n:hasText("ui_gm_tag_pending") and self.i18n:getText("ui_gm_tag_pending") or "Pending") .. "]") or ""
         self.contractsSelectionHint:setText(string.format(self.i18n:getText("ui_gm_hint_offer"),
             d.id, tostring(d.sellerName or "NPC"),
             self.i18n:formatVolume(d.remainingLiters or 0, 0),
-            self.i18n:formatMoney(eff, 0, true, true), d.priceDeltaPct or 0, modeStr))
+            self.i18n:formatMoney(eff, 0, true, true), d.priceDeltaPct or 0, modeStr) .. durTag .. pendingTag)
     elseif row.kind == "INBOX" then
         self.contractsSelectionHint:setText(string.format(self.i18n:getText("ui_gm_hint_inbox"),
             d.id, self.i18n:formatVolume(d.liters or 0, 0),
@@ -543,7 +579,7 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
     local desc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(row.fillType) or nil
     local ftTitle = (desc ~= nil and desc.title) or row.fillType
 
-    if row.kind == "OWN_CONTRACT" and row.data.status == "OPEN" then
+    if row.kind == "OWN_CONTRACT" and (row.data.status == "OPEN" or row.data.status == "PENDING_CREATE") then
         local cId = row.data.id
         local function doCancel(yes)
             if yes == true and ContractActionEvent ~= nil then
@@ -558,7 +594,7 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
         else
             doCancel(true)
         end
-    elseif row.kind == "OWN_OFFER" then
+    elseif row.kind == "OWN_OFFER" and row.data.status ~= "PENDING_CANCEL" then
         local oId = row.data.id
         local function doCancel(yes)
             if yes == true and ContractActionEvent ~= nil then
@@ -614,6 +650,9 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
             return
         end
         local c = row.data
+        if c.pendingAcceptFarmId ~= nil then
+            return
+        end
         local function doAccept(yes)
             if yes == true and ContractActionEvent ~= nil then
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_ACCEPT_CONTRACT, farmId, c.id, "", 0, 0, 1, false, nil, false, nil, 0)
@@ -622,10 +661,20 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
             end
         end
         if YesNoDialog ~= nil and YesNoDialog.INSTANCE ~= nil then
-            local msg = string.format(self.i18n:getText("ui_gm_confirm_acceptText"),
-                self.i18n:formatVolume(c.totalLiters or 0, 0), ftTitle,
-                self.i18n:formatMoney(c.basePricePer1000 or 500, 0, true, true),
-                c.bonusPct or 0, c.monthsRemaining or 1.0)
+            local msg
+            if c.isOnline == true and gm.formatContractDurationShort ~= nil then
+                local onlineDur = gm:formatContractDurationShort(self.i18n, c)
+                local fmt = self.i18n:hasText("ui_gm_confirm_acceptTextOnline")
+                    and self.i18n:getText("ui_gm_confirm_acceptTextOnline")
+                    or "Accept online contract for %s %s?&#xA;Base Price: %s / 1,000 L  |  Completion Bonus: +%d%%  |  Deadline: %s&#xA;&#xA;Note: Failing to complete before the deadline forfeits the bonus and charges a 15%% penalty on missing volume."
+                msg = string.format(fmt, self.i18n:formatVolume(c.totalLiters or 0, 0), ftTitle,
+                    self.i18n:formatMoney(c.basePricePer1000 or 500, 0, true, true), c.bonusPct or 0, onlineDur)
+            else
+                msg = string.format(self.i18n:getText("ui_gm_confirm_acceptText"),
+                    self.i18n:formatVolume(c.totalLiters or 0, 0), ftTitle,
+                    self.i18n:formatMoney(c.basePricePer1000 or 500, 0, true, true),
+                    c.bonusPct or 0, c.monthsRemaining or 1.0)
+            end
             YesNoDialog.show(doAccept, nil, msg, self.i18n:getText("ui_gm_confirm_acceptTitle"))
         else
             doAccept(true)
@@ -703,14 +752,25 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
         end
     end
 
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     local d = row.data or {}
-    local mStr = string.format(ui.i18n:getText("ui_gm_months_short"), d.monthsRemaining or 1.0)
+    local mStr = (gm ~= nil and gm.formatContractDurationShort ~= nil)
+        and gm:formatContractDurationShort(ui.i18n, d)
+        or string.format(ui.i18n:getText("ui_gm_months_short"), d.monthsRemaining or 1.0)
+    local pendingLabel = ui.i18n:hasText("ui_gm_tag_pending") and ui.i18n:getText("ui_gm_tag_pending") or "Pending"
     if list == ui.gmTableMyContracts then
         local progEl, termsEl = cell:getAttribute("progress"), cell:getAttribute("terms")
         if row.kind == "ACTIVE_CONTRACT" or row.kind == "OWN_CONTRACT" then
-            local ownerLabel = (row.kind == "OWN_CONTRACT")
-                and ui.i18n:getText(d.status == "OPEN" and "ui_gm_tag_open" or "ui_gm_btn_deliver")
-                or tostring(d.issuerName or "NPC")
+            local ownerLabel
+            if row.kind == "OWN_CONTRACT" then
+                if d.status == "PENDING_CREATE" or d.status == "PENDING_CANCEL" then
+                    ownerLabel = pendingLabel
+                else
+                    ownerLabel = ui.i18n:getText(d.status == "OPEN" and "ui_gm_tag_open" or "ui_gm_btn_deliver")
+                end
+            else
+                ownerLabel = tostring(d.issuerName or "NPC")
+            end
             local pct = math.min(100, math.floor(((d.deliveredLiters or 0) / math.max(1, d.totalLiters or 1)) * 100 + 0.5))
             if name ~= nil then
                 name:setText(string.format("%s (%s)", ftTitle, ownerLabel))
@@ -722,7 +782,9 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
             end
             if termsEl ~= nil then
                 termsEl:setText(string.format("+%d%% | %s", d.bonusPct or 0, mStr))
-                local tc = ((d.monthsRemaining or 1) <= 0.5 and row.kind == "ACTIVE_CONTRACT") and COLOR_URGENT or COLOR_LIGHT
+                local isUrgent = (row.kind == "ACTIVE_CONTRACT") and ((d.isOnline and (d.remainingSeconds or 0) <= 43200)
+                    or (not d.isOnline and (d.monthsRemaining or 1) <= 0.5))
+                local tc = isUrgent and COLOR_URGENT or COLOR_LIGHT
                 termsEl:setTextColor(tc[1], tc[2], tc[3], tc[4])
             end
         elseif row.kind == "INBOX" then
@@ -739,7 +801,9 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
             end
         elseif row.kind == "OWN_OFFER" then
             if name ~= nil then
-                name:setText(ftTitle)
+                local titleTxt = (d.status == "PENDING_CREATE" or d.status == "PENDING_CANCEL")
+                    and string.format("%s (%s)", ftTitle, pendingLabel) or ftTitle
+                name:setText(titleTxt)
                 name:setTextColor(COLOR_WHITE_TEXT[1], COLOR_WHITE_TEXT[2], COLOR_WHITE_TEXT[3], COLOR_WHITE_TEXT[4])
             end
             if progEl ~= nil then progEl:setText(ui.i18n:formatVolume(d.remainingLiters or 0, 0)) end
@@ -752,7 +816,10 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
         local priceEl, amtEl = cell:getAttribute("price"), cell:getAttribute("amount")
         if row.kind == "BOARD_CONTRACT" then
             if name ~= nil then
-                name:setText(string.format("%s (%s)", ftTitle, tostring(d.issuerName or "NPC")))
+                local ownerTxt = (d.pendingAcceptFarmId ~= nil)
+                    and string.format("%s | %s", tostring(d.issuerName or "NPC"), pendingLabel)
+                    or tostring(d.issuerName or "NPC")
+                name:setText(string.format("%s (%s)", ftTitle, ownerTxt))
                 name:setTextColor(COLOR_WHITE_TEXT[1], COLOR_WHITE_TEXT[2], COLOR_WHITE_TEXT[3], COLOR_WHITE_TEXT[4])
             end
             if priceEl ~= nil then
@@ -776,7 +843,8 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
                 priceEl:setTextColor(pCol[1], pCol[2], pCol[3], pCol[4])
             end
             if amtEl ~= nil then
-                amtEl:setText(string.format("%s | %s", ui.i18n:formatVolume(d.remainingLiters or 0, 0), modeTag))
+                local suffix = d.isOnline and (modeTag .. " | " .. mStr) or modeTag
+                amtEl:setText(string.format("%s | %s", ui.i18n:formatVolume(d.remainingLiters or 0, 0), suffix))
             end
         end
     end

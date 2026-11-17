@@ -74,6 +74,8 @@ function GlobalMarket:initBrandingState()
     self.localExeIsPrivateMarket = false
     self.localCustomLogoFile = nil
     self.localHasCustomLogo = false
+    self.localExeContractsSupported = false
+    self.onlineContractsSupported = false
     self.brandingLogoReloadPending = false
     self.debugBrandingOverrideActive = false
     self.debugBrandingMarketName = nil
@@ -121,14 +123,19 @@ function GlobalMarket:readHeartbeatBranding(xmlFile)
         or (hasLogoFlag ~= self.localHasCustomLogo)
         or (not self.isExeRunningLocal and hasLogoFlag)
 
+    local contractsSup = xmlFile:getBool("globalMarketOnline#contractsSupported",
+        xmlFile:getBool("globalMarketOnline.contractsSupported", false)) == true
+
     local changed = (cleanName ~= self.localExeMarketName)
         or (isPrivate ~= self.localExeIsPrivateMarket)
+        or (contractsSup ~= self.localExeContractsSupported)
         or logoChanged
 
     self.localExeMarketName = cleanName
     self.localExeIsPrivateMarket = (isPrivate == true)
     self.localCustomLogoFile = cleanLogo
     self.localHasCustomLogo = (hasLogoFlag == true)
+    self.localExeContractsSupported = contractsSup
 
     if logoChanged then
         self.brandingLogoReloadPending = true
@@ -144,11 +151,13 @@ function GlobalMarket:clearLocalBranding()
         or (self.localExeIsPrivateMarket == true)
         or (self.localCustomLogoFile ~= nil)
         or (self.localHasCustomLogo == true)
+        or (self.localExeContractsSupported == true)
 
     self.localExeMarketName = nil
     self.localExeIsPrivateMarket = false
     self.localCustomLogoFile = nil
     self.localHasCustomLogo = false
+    self.localExeContractsSupported = false
 
     return changed
 end
@@ -295,6 +304,7 @@ function GlobalMarket:applyDataHostBranding(hostState)
     local privName = GlobalMarketBranding.getStatePrivateMarketName(hostState)
     self.onlineMarketName = privName
     self.isPrivateOnlineMarket = (privName ~= nil)
+    self.onlineContractsSupported = (hostState ~= nil and hostState.contractsSupported == true)
 end
 
 ---Applies host branding on failover or promotion and clears stale items if market identity changed
@@ -307,6 +317,11 @@ function GlobalMarket:onDataHostSelectedBranding(hostState, prevWasOnline)
 
     if prevWasOnline and (self.onlineMarketName ~= prevName or self.isPrivateOnlineMarket ~= prevPriv) then
         self:resetMarketItemsForMarketSwitch()
+        if self.onOnlineMarketSwitchedContracts ~= nil then
+            self:onOnlineMarketSwitchedContracts()
+        end
+    elseif self.broadcastContractsState ~= nil then
+        self:broadcastContractsState()
     end
     self:refreshBrandingUiIfOpen()
 end
@@ -322,16 +337,26 @@ function GlobalMarket:updateActiveDataHostBranding(connection)
         return
     end
 
+    local newContractsSup = (hostState.contractsSupported == true)
+    local contractsSupChanged = (newContractsSup ~= (self.onlineContractsSupported == true))
+    self.onlineContractsSupported = newContractsSup
+
     local newPrivName = GlobalMarketBranding.getStatePrivateMarketName(hostState)
     local newPriv = (newPrivName ~= nil)
 
     if newPrivName == self.onlineMarketName and newPriv == self.isPrivateOnlineMarket then
+        if contractsSupChanged and self.broadcastContractsState ~= nil then
+            self:broadcastContractsState()
+        end
         return
     end
 
     self.onlineMarketName = newPrivName
     self.isPrivateOnlineMarket = newPriv
     self:resetMarketItemsForMarketSwitch()
+    if self.onOnlineMarketSwitchedContracts ~= nil then
+        self:onOnlineMarketSwitchedContracts()
+    end
     self:refreshBrandingUiIfOpen()
     self:dispatchDataHostWhitelist(connection)
 
@@ -411,6 +436,7 @@ end
 function GlobalMarket:clearOnlineMarketBranding()
     self.onlineMarketName = nil
     self.isPrivateOnlineMarket = false
+    self.onlineContractsSupported = false
 end
 
 ---Resolves the validated full local filesystem path for the custom market logo, or nil if unavailable

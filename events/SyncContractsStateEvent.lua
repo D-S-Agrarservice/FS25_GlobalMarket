@@ -15,6 +15,8 @@ end
 function SyncContractsStateEvent.new()
     local self = SyncContractsStateEvent.emptyNew()
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    self.serverInstanceId = (gm ~= nil and gm.serverInstanceId) or ""
+    self.onlineContractsSupported = (gm ~= nil and (gm.onlineContractsSupported == true or gm.debugForceOnlineContracts == true))
     self.contracts = {}
     self.directOffers = {}
     self.pickupInbox = {}
@@ -34,6 +36,9 @@ function SyncContractsStateEvent.new()
 end
 
 function SyncContractsStateEvent:writeStream(streamId, connection)
+    streamWriteString(streamId, self.serverInstanceId or "")
+    streamWriteBool(streamId, self.onlineContractsSupported == true)
+
     local contracts = self.contracts or {}
     streamWriteInt16(streamId, #contracts)
     for _, c in ipairs(contracts) do
@@ -50,6 +55,13 @@ function SyncContractsStateEvent:writeStream(streamId, connection)
         streamWriteFloat32(streamId, c.escrowRemaining or 0)
         streamWriteFloat32(streamId, c.monthsRemaining or 0)
         streamWriteString(streamId, c.status or "OPEN")
+        streamWriteBool(streamId, c.isOnline == true)
+        streamWriteString(streamId, c.remoteId or "")
+        streamWriteString(streamId, c.issuerServerId or "")
+        streamWriteString(streamId, c.contractorServerId or "")
+        streamWriteFloat32(streamId, c.baseTrendFactor or 1.0)
+        streamWriteInt32(streamId, math.floor((c.remainingSeconds or 0) + 0.5))
+        streamWriteInt16(streamId, c.pendingAcceptFarmId or 0)
     end
 
     local offers = self.directOffers or {}
@@ -68,6 +80,11 @@ function SyncContractsStateEvent:writeStream(streamId, connection)
         streamWriteFloat32(streamId, o.monthsRemaining or 0)
         streamWriteBool(streamId, o.wasBale == true)
         streamWriteBool(streamId, o.wasPallet == true)
+        streamWriteBool(streamId, o.isOnline == true)
+        streamWriteString(streamId, o.remoteId or "")
+        streamWriteString(streamId, o.sellerServerId or "")
+        streamWriteInt32(streamId, math.floor((o.remainingSeconds or 0) + 0.5))
+        streamWriteString(streamId, o.status or "OPEN")
     end
 
     local inbox = self.pickupInbox or {}
@@ -84,10 +101,13 @@ function SyncContractsStateEvent:writeStream(streamId, connection)
 end
 
 function SyncContractsStateEvent:readStream(streamId, connection)
+    self.serverInstanceId = streamReadString(streamId)
+    self.onlineContractsSupported = streamReadBool(streamId)
+
     local numContracts = streamReadInt16(streamId)
     self.contracts = {}
     for _ = 1, numContracts do
-        table.insert(self.contracts, {
+        local c = {
             id = streamReadInt32(streamId),
             origin = streamReadString(streamId),
             issuerFarmId = streamReadInt16(streamId),
@@ -100,8 +120,17 @@ function SyncContractsStateEvent:readStream(streamId, connection)
             bonusPct = streamReadInt16(streamId),
             escrowRemaining = streamReadFloat32(streamId),
             monthsRemaining = streamReadFloat32(streamId),
-            status = streamReadString(streamId)
-        })
+            status = streamReadString(streamId),
+            isOnline = streamReadBool(streamId),
+            remoteId = streamReadString(streamId),
+            issuerServerId = streamReadString(streamId),
+            contractorServerId = streamReadString(streamId),
+            baseTrendFactor = streamReadFloat32(streamId),
+            remainingSeconds = streamReadInt32(streamId)
+        }
+        local pendFarm = streamReadInt16(streamId)
+        c.pendingAcceptFarmId = (pendFarm > 0) and pendFarm or nil
+        table.insert(self.contracts, c)
     end
 
     local numOffers = streamReadInt16(streamId)
@@ -120,7 +149,12 @@ function SyncContractsStateEvent:readStream(streamId, connection)
             allowPartial = streamReadBool(streamId),
             monthsRemaining = streamReadFloat32(streamId),
             wasBale = streamReadBool(streamId),
-            wasPallet = streamReadBool(streamId)
+            wasPallet = streamReadBool(streamId),
+            isOnline = streamReadBool(streamId),
+            remoteId = streamReadString(streamId),
+            sellerServerId = streamReadString(streamId),
+            remainingSeconds = streamReadInt32(streamId),
+            status = streamReadString(streamId)
         })
     end
 
@@ -144,6 +178,10 @@ end
 function SyncContractsStateEvent:run(connection)
     if connection:getIsServer() and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil then
         local gm = g_currentMission.globalMarket
+        if self.serverInstanceId ~= nil and self.serverInstanceId ~= "" then
+            gm.serverInstanceId = self.serverInstanceId
+        end
+        gm.onlineContractsSupported = (self.onlineContractsSupported == true)
         gm.contracts = self.contracts or {}
         gm.directOffers = self.directOffers or {}
         gm.pickupInbox = self.pickupInbox or {}
