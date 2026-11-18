@@ -15,7 +15,8 @@ end
 function SyncGlobalMarketSettingsEvent.new(
     baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex,
     isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex,
-    greatDemandModeIndex, npcActivityModeIndex, onlineContractsModeIndex
+    greatDemandModeIndex, npcActivityModeIndex, onlineContractsModeIndex,
+    maxFarmContractsIndex, npcContractsTargetIndex, npcOffersTargetIndex
 )
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
@@ -33,6 +34,9 @@ function SyncGlobalMarketSettingsEvent.new(
     self.greatDemandModeIndex = greatDemandModeIndex or 1
     self.npcActivityModeIndex = npcActivityModeIndex or 1
     self.onlineContractsModeIndex = onlineContractsModeIndex or 1
+    self.maxFarmContractsIndex = maxFarmContractsIndex or 3
+    self.npcContractsTargetIndex = npcContractsTargetIndex or 3
+    self.npcOffersTargetIndex = npcOffersTargetIndex or 3
     return self
 end
 
@@ -52,6 +56,9 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.greatDemandModeIndex or 1)
     streamWriteInt8(streamId, self.npcActivityModeIndex or 1)
     streamWriteInt8(streamId, self.onlineContractsModeIndex or 1)
+    streamWriteInt8(streamId, self.maxFarmContractsIndex or 3)
+    streamWriteInt8(streamId, self.npcContractsTargetIndex or 3)
+    streamWriteInt8(streamId, self.npcOffersTargetIndex or 3)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -70,6 +77,9 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.greatDemandModeIndex = streamReadInt8(streamId)
     self.npcActivityModeIndex = streamReadInt8(streamId)
     self.onlineContractsModeIndex = streamReadInt8(streamId)
+    self.maxFarmContractsIndex = streamReadInt8(streamId)
+    self.npcContractsTargetIndex = streamReadInt8(streamId)
+    self.npcOffersTargetIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -93,6 +103,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     local gdModeChanged = false
     local npcModeChanged = false
     local onlineContractsModeChanged = false
+    local contractLimitsChanged = false
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = false
@@ -105,6 +116,9 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         gdModeChanged = (GlobalMarketSettings.current.greatDemandModeIndex ~= self.greatDemandModeIndex)
         npcModeChanged = (GlobalMarketSettings.current.npcActivityModeIndex ~= self.npcActivityModeIndex)
         onlineContractsModeChanged = (GlobalMarketSettings.current.onlineContractsModeIndex ~= self.onlineContractsModeIndex)
+        contractLimitsChanged = (GlobalMarketSettings.current.maxFarmContractsIndex ~= self.maxFarmContractsIndex)
+            or (GlobalMarketSettings.current.npcContractsTargetIndex ~= self.npcContractsTargetIndex)
+            or (GlobalMarketSettings.current.npcOffersTargetIndex ~= self.npcOffersTargetIndex)
     end
 
     -- 2. APPLY SETTINGS LOCALLY
@@ -123,6 +137,9 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.greatDemandModeIndex = self.greatDemandModeIndex or 1
     GlobalMarketSettings.current.npcActivityModeIndex = self.npcActivityModeIndex or 1
     GlobalMarketSettings.current.onlineContractsModeIndex = self.onlineContractsModeIndex or 1
+    GlobalMarketSettings.current.maxFarmContractsIndex = self.maxFarmContractsIndex or 3
+    GlobalMarketSettings.current.npcContractsTargetIndex = self.npcContractsTargetIndex or 3
+    GlobalMarketSettings.current.npcOffersTargetIndex = self.npcOffersTargetIndex or 3
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
@@ -163,6 +180,13 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         g_currentMission.globalMarket:onOnlineContractsModeChanged(GlobalMarket.ONLINE_CONTRACTS_MODE)
     end
 
+    -- Contract board limits (#26): always apply values; server trims/replenishes the NPC board only on change
+    if contractLimitsChanged and GlobalMarketSettings.onContractLimitsUpdated ~= nil then
+        GlobalMarketSettings:onContractLimitsUpdated()
+    elseif GlobalMarketSettings.applyContractLimits ~= nil then
+        GlobalMarketSettings:applyContractLimits()
+    end
+
     if GlobalMarketSettings.applyDebugSettings ~= nil then
         GlobalMarketSettings:applyDebugSettings()
     end
@@ -186,7 +210,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
             self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur,
             self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex,
             self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex, self.npcActivityModeIndex,
-            self.onlineContractsModeIndex
+            self.onlineContractsModeIndex, self.maxFarmContractsIndex, self.npcContractsTargetIndex, self.npcOffersTargetIndex
         ), nil, connection, nil)
     else
         -- CLIENT SIDE

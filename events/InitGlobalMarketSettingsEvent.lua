@@ -47,7 +47,10 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.storageDecayIndex,
                 s.greatDemandModeIndex,
                 s.npcActivityModeIndex,
-                s.onlineContractsModeIndex
+                s.onlineContractsModeIndex,
+                s.maxFarmContractsIndex,
+                s.npcContractsTargetIndex,
+                s.npcOffersTargetIndex
             ))
         end
     end

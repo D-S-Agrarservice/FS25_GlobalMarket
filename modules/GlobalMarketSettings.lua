@@ -24,6 +24,10 @@ GlobalMarketSettings.OPTIONS = {
     NPC_ACTIVITY_MODE = {1, 2, 3},
     -- 1=All Online+Local, 2=Contracts Online, 3=Offers Online, 4=Local Only
     ONLINE_CONTRACTS_MODE = {1, 2, 3, 4},
+    -- Contract board limits (#26): active contracts per farm, NPC board target counts (0 = Off)
+    MAX_FARM_CONTRACTS = {1, 2, 3, 5, 8},
+    NPC_CONTRACTS_TARGET = {0, 3, 5, 8, 12, 16},
+    NPC_OFFERS_TARGET = {0, 2, 3, 5, 8, 12},
     -- Log severity levels ordered from Info to Trace
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
@@ -41,6 +45,9 @@ GlobalMarketSettings.current = {
     greatDemandModeIndex = 1,-- Default: 1 (Stock/Scarcity-based)
     npcActivityModeIndex = 1,-- Default: 1 (All NPC Contracts & Offers)
     onlineContractsModeIndex = 1, -- Default: 1 (All Online + Local)
+    maxFarmContractsIndex = 3,    -- Default: 3 active contracts per farm
+    npcContractsTargetIndex = 3,  -- Default: 5 open NPC supply contracts
+    npcOffersTargetIndex = 3,     -- Default: 3 open NPC direct offers
     isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,     -- Default: Info
     debugDurationIndex = 1,  -- Default: 1 Hour
@@ -101,6 +108,28 @@ function GlobalMarketSettings:applyDebugSettings()
 end
 
 -- ============================================================================
+-- Contract Board Limits (#26)
+-- ============================================================================
+
+-- Pushes the selected contract board limits into the live GlobalMarketContracts values
+-- (out-of-range indices from hand-edited XML fall back to the defaults 3 / 5 / 3)
+function GlobalMarketSettings:applyContractLimits()
+    if GlobalMarketContracts == nil then return end
+    local c = self.current
+    GlobalMarketContracts.MAX_ACTIVE_CONTRACTS_PER_FARM = self.OPTIONS.MAX_FARM_CONTRACTS[c.maxFarmContractsIndex or 3] or 3
+    GlobalMarketContracts.TARGET_NPC_CONTRACTS = self.OPTIONS.NPC_CONTRACTS_TARGET[c.npcContractsTargetIndex or 3] or 5
+    GlobalMarketContracts.TARGET_NPC_OFFERS = self.OPTIONS.NPC_OFFERS_TARGET[c.npcOffersTargetIndex or 3] or 3
+end
+
+-- Applies the limits and lets the authoritative server trim/replenish the NPC board immediately
+function GlobalMarketSettings:onContractLimitsUpdated()
+    self:applyContractLimits()
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onContractLimitsChanged ~= nil then
+        g_currentMission.globalMarket:onContractLimitsChanged()
+    end
+end
+
+-- ============================================================================
 -- XML Storage Manager (Multi-Profile Edition)
 -- ============================================================================
 
@@ -146,6 +175,9 @@ function GlobalMarketSettings:loadFromXML()
         self.current.greatDemandModeIndex = 1
         self.current.npcActivityModeIndex = 1
         self.current.onlineContractsModeIndex = 1
+        self.current.maxFarmContractsIndex = 3
+        self.current.npcContractsTargetIndex = 3
+        self.current.npcOffersTargetIndex = 3
         self.current.isDetailedFinance = false
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
@@ -165,6 +197,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[self.current.greatDemandModeIndex] or 1
         GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         GlobalMarket.ONLINE_CONTRACTS_MODE = self.OPTIONS.ONLINE_CONTRACTS_MODE[self.current.onlineContractsModeIndex] or 1
+        self:applyContractLimits()
         if GlobalMarketFinance ~= nil then
             GlobalMarketFinance.isDetailedCached = false
         end
@@ -183,6 +216,9 @@ function GlobalMarketSettings:loadFromXML()
         self.current.greatDemandModeIndex = xmlFile:getInt(prefix .. "#greatDemandModeIndex", 1)
         self.current.npcActivityModeIndex = xmlFile:getInt(prefix .. "#npcActivityModeIndex", 1)
         self.current.onlineContractsModeIndex = xmlFile:getInt(prefix .. "#onlineContractsModeIndex", 1)
+        self.current.maxFarmContractsIndex = xmlFile:getInt(prefix .. ".contractLimits#maxFarmContractsIndex", 3)
+        self.current.npcContractsTargetIndex = xmlFile:getInt(prefix .. ".contractLimits#npcContractsTargetIndex", 3)
+        self.current.npcOffersTargetIndex = xmlFile:getInt(prefix .. ".contractLimits#npcOffersTargetIndex", 3)
 
         -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
@@ -209,6 +245,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[self.current.greatDemandModeIndex] or 1
         GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         GlobalMarket.ONLINE_CONTRACTS_MODE = self.OPTIONS.ONLINE_CONTRACTS_MODE[self.current.onlineContractsModeIndex] or 1
+        self:applyContractLimits()
 
         self:applyDebugSettings()
         xmlFile:delete()
@@ -245,6 +282,9 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt(prefix .. "#greatDemandModeIndex", self.current.greatDemandModeIndex or 1)
         xmlFile:setInt(prefix .. "#npcActivityModeIndex", self.current.npcActivityModeIndex or 1)
         xmlFile:setInt(prefix .. "#onlineContractsModeIndex", self.current.onlineContractsModeIndex or 1)
+        xmlFile:setInt(prefix .. ".contractLimits#maxFarmContractsIndex", self.current.maxFarmContractsIndex or 3)
+        xmlFile:setInt(prefix .. ".contractLimits#npcContractsTargetIndex", self.current.npcContractsTargetIndex or 3)
+        xmlFile:setInt(prefix .. ".contractLimits#npcOffersTargetIndex", self.current.npcOffersTargetIndex or 3)
 
         xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
@@ -427,6 +467,29 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
             "ui_gm_settings_onlineContracts_desc", ocModeTexts, "onOnlineContractsModeChanged"
         )
 
+        -- Contract board limits (#26)
+        local limitOffText = g_i18n:getText("ui_gm_settings_decay_off")
+        if limitOffText == nil or limitOffText == "ui_gm_settings_decay_off" then limitOffText = "Off" end
+        local function buildLimitTexts(values)
+            local texts = {}
+            for _, val in ipairs(values) do
+                table.insert(texts, (val <= 0) and limitOffText or tostring(val))
+            end
+            return texts
+        end
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsMaxFarmContracts", "ui_gm_settings_maxFarmContracts",
+            "ui_gm_settings_maxFarmContracts_desc", buildLimitTexts(GlobalMarketSettings.OPTIONS.MAX_FARM_CONTRACTS), "onMaxFarmContractsChanged"
+        )
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsNpcContractsTarget", "ui_gm_settings_npcContractsTarget",
+            "ui_gm_settings_npcContractsTarget_desc", buildLimitTexts(GlobalMarketSettings.OPTIONS.NPC_CONTRACTS_TARGET), "onNpcContractsTargetChanged"
+        )
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsNpcOffersTarget", "ui_gm_settings_npcOffersTarget",
+            "ui_gm_settings_npcOffersTarget_desc", buildLimitTexts(GlobalMarketSettings.OPTIONS.NPC_OFFERS_TARGET), "onNpcOffersTargetChanged"
+        )
+
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
 
@@ -512,6 +575,18 @@ function GlobalMarketSettings.refreshMenuState()
         ocModeControl:setState(GlobalMarketSettings.current.onlineContractsModeIndex or 1)
         ocModeControl:setDisabled(not isAdmin)
     end
+    local limitControls = {
+        {"gmSettingsMaxFarmContracts", "maxFarmContractsIndex"},
+        {"gmSettingsNpcContractsTarget", "npcContractsTargetIndex"},
+        {"gmSettingsNpcOffersTarget", "npcOffersTargetIndex"}
+    }
+    for _, entry in ipairs(limitControls) do
+        local limitControl = GlobalMarketSettings.CONTROLS[entry[1]]
+        if limitControl ~= nil then
+            limitControl:setState(GlobalMarketSettings.current[entry[2]] or 3)
+            limitControl:setDisabled(not isAdmin)
+        end
+    end
     if capacityControl ~= nil then
         capacityControl:setState(GlobalMarketSettings.current.capacityIndex)
         capacityControl:setDisabled(not isAdmin)
@@ -592,7 +667,8 @@ function GlobalMarketSettings:broadcastChanges()
             c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive,
             c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
             c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
-            c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex
+            c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex,
+            c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex
         ))
     else
         -- Client admin sends the changes to the dedicated server
@@ -600,7 +676,8 @@ function GlobalMarketSettings:broadcastChanges()
             c.deliveryBaseIndex, c.deliveryLiterIndex, c.isDetailedFinance, c.isDebugActive,
             c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
             c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
-            c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex
+            c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex,
+            c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex
         ))
     end
 end
@@ -663,6 +740,24 @@ function GlobalMarketSettings:onOnlineContractsModeChanged(state)
     if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onOnlineContractsModeChanged ~= nil then
         g_currentMission.globalMarket:onOnlineContractsModeChanged(GlobalMarket.ONLINE_CONTRACTS_MODE)
     end
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onMaxFarmContractsChanged(state)
+    self.current.maxFarmContractsIndex = state
+    self:onContractLimitsUpdated()
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onNpcContractsTargetChanged(state)
+    self.current.npcContractsTargetIndex = state
+    self:onContractLimitsUpdated()
+    self:broadcastChanges()
+end
+
+function GlobalMarketSettings:onNpcOffersTargetChanged(state)
+    self.current.npcOffersTargetIndex = state
+    self:onContractLimitsUpdated()
     self:broadcastChanges()
 end
 

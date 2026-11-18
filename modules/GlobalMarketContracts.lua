@@ -512,6 +512,53 @@ function GlobalMarket:onNpcActivityModeChanged(newMode)
     end
 end
 
+---Reacts immediately when an Admin changes the contract board limits (#26).
+---Trims surplus unaccepted OPEN NPC contracts and NPC offers (newest first) when lowered, replenishes when raised.
+---Accepted (ACTIVE) contracts and player/online entries are never touched; the per-farm cap only blocks new accepts.
+function GlobalMarket:onContractLimitsChanged()
+    if g_server == nil then
+        return
+    end
+    local changed = false
+    local keepContracts = math.max(0, GlobalMarketContracts.TARGET_NPC_CONTRACTS or 0)
+    local openNpcContracts = 0
+    for _, c in ipairs(self.contracts or {}) do
+        if c.origin == "NPC" and c.status == "OPEN" then
+            openNpcContracts = openNpcContracts + 1
+        end
+    end
+    for i = #(self.contracts or {}), 1, -1 do
+        local c = self.contracts[i]
+        if openNpcContracts > keepContracts and c.origin == "NPC" and c.status == "OPEN" then
+            table.remove(self.contracts, i)
+            openNpcContracts = openNpcContracts - 1
+            changed = true
+        end
+    end
+
+    local keepOffers = math.max(0, GlobalMarketContracts.TARGET_NPC_OFFERS or 0)
+    local npcOffers = 0
+    for _, o in ipairs(self.directOffers or {}) do
+        if o.origin == "NPC" then
+            npcOffers = npcOffers + 1
+        end
+    end
+    for i = #(self.directOffers or {}), 1, -1 do
+        if npcOffers > keepOffers and self.directOffers[i].origin == "NPC" then
+            table.remove(self.directOffers, i)
+            npcOffers = npcOffers - 1
+            changed = true
+        end
+    end
+
+    if self:replenishNpcContractsAndOffers() then
+        changed = true
+    end
+    if changed then
+        self:broadcastContractsState()
+    end
+end
+
 ---Evaluates contract deadlines, direct offer expirations, Pickup Inbox liquidation & NPC cycles hourly
 ---@param customMonthDelta number|nil
 ---@return boolean changed

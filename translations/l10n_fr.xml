@@ -113,6 +113,12 @@
         <e k="ui_gm_settings_npc_players"                          v="Joueurs seuls" />
         <e k="ui_gm_settings_onlineContracts"                      v="Contrats &amp; offres en ligne" />
         <e k="ui_gm_settings_onlineContracts_desc"                 v="Définit si les contrats de livraison et les offres directes ±10 % peuvent être échangés entre serveurs via GlobalMarketClient ou rester purement locaux." />
+        <e k="ui_gm_settings_maxFarmContracts"                     v="Max. contrats actifs par ferme" />
+        <e k="ui_gm_settings_maxFarmContracts_desc"                v="Nombre maximal de contrats de livraison qu'une ferme peut détenir simultanément (local et en ligne). Les contrats déjà acceptés sont conservés si la limite est réduite." />
+        <e k="ui_gm_settings_npcContractsTarget"                   v="Contrats PNJ au tableau" />
+        <e k="ui_gm_settings_npcContractsTarget_desc"              v="Nombre de contrats de livraison PNJ ouverts au tableau. Désactivé : aucun contrat PNJ. Une réduction ne supprime que les contrats excédentaires non acceptés. Sans effet en mode Joueurs seuls." />
+        <e k="ui_gm_settings_npcOffersTarget"                      v="Offres directes PNJ au tableau" />
+        <e k="ui_gm_settings_npcOffersTarget_desc"                 v="Nombre d'offres directes PNJ ouvertes au tableau. Désactivé : aucune offre directe PNJ. Actif uniquement si Contrats &amp; offres PNJ est réglé sur Tous." />
         <e k="ui_gm_settings_oc_all"                               v="Tous (En ligne &amp; Local)" />
         <e k="ui_gm_settings_oc_contracts"                         v="Contrats en ligne uniquement" />
         <e k="ui_gm_settings_oc_offers"                            v="Offres directes en ligne uniquement" />

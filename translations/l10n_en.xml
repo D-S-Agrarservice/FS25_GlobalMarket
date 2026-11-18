@@ -113,6 +113,12 @@
         <e k="ui_gm_settings_npc_players"                          v="Players Only" />
         <e k="ui_gm_settings_onlineContracts"                      v="Online Contracts &amp; Offers" />
         <e k="ui_gm_settings_onlineContracts_desc"                 v="Controls whether supply contracts and ±10% direct offers may be traded cross-server via GlobalMarketClient or remain strictly local to this server." />
+        <e k="ui_gm_settings_maxFarmContracts"                     v="Max. Active Contracts per Farm" />
+        <e k="ui_gm_settings_maxFarmContracts_desc"                v="Maximum number of supply contracts a farm may hold at the same time (local and online). Already accepted contracts are kept when the limit is lowered." />
+        <e k="ui_gm_settings_npcContractsTarget"                   v="NPC Supply Contracts on Board" />
+        <e k="ui_gm_settings_npcContractsTarget_desc"              v="Number of open NPC supply contracts kept on the contract board. Off: no NPC supply contracts. Lowering only removes surplus unaccepted contracts. Not used in Players Only mode." />
+        <e k="ui_gm_settings_npcOffersTarget"                      v="NPC Direct Offers on Board" />
+        <e k="ui_gm_settings_npcOffersTarget_desc"                 v="Number of open NPC direct offers kept on the board. Off: no NPC direct offers. Only used when NPC Contracts &amp; Offers is set to All." />
         <e k="ui_gm_settings_oc_all"                               v="All (Online &amp; Local)" />
         <e k="ui_gm_settings_oc_contracts"                         v="Supply Contracts Online Only" />
         <e k="ui_gm_settings_oc_offers"                            v="Direct Offers Online Only" />

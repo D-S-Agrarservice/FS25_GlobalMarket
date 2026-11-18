@@ -113,6 +113,12 @@
         <e k="ui_gm_settings_npc_players"                          v="Nur Spieler" />
         <e k="ui_gm_settings_onlineContracts"                      v="Online-Verträge &amp; Angebote" />
         <e k="ui_gm_settings_onlineContracts_desc"                 v="Legt fest, ob bei aktiver GlobalMarketClient-Verbindung Lieferverträge und ±10 %-Direktangebote serverübergreifend online gehandelt werden dürfen oder rein lokal auf diesem Server bleiben." />
+        <e k="ui_gm_settings_maxFarmContracts"                     v="Max. aktive Verträge pro Hof" />
+        <e k="ui_gm_settings_maxFarmContracts_desc"                v="Maximale Anzahl Lieferverträge, die ein Hof gleichzeitig halten darf (lokal und online). Bereits angenommene Verträge bleiben beim Senken des Limits erhalten." />
+        <e k="ui_gm_settings_npcContractsTarget"                   v="NPC-Lieferverträge am Brett" />
+        <e k="ui_gm_settings_npcContractsTarget_desc"              v="Anzahl offener NPC-Lieferverträge am Vertragsbrett. Aus: keine NPC-Lieferverträge. Beim Senken werden nur überzählige, nicht angenommene Verträge entfernt. Gilt nicht im Modus Nur Spieler." />
+        <e k="ui_gm_settings_npcOffersTarget"                      v="NPC-Direktangebote am Brett" />
+        <e k="ui_gm_settings_npcOffersTarget_desc"                 v="Anzahl offener NPC-Direktangebote am Brett. Aus: keine NPC-Direktangebote. Nur aktiv, wenn NPC-Verträge &amp; Angebote auf Alle steht." />
         <e k="ui_gm_settings_oc_all"                               v="Alle (Online &amp; Lokal)" />
         <e k="ui_gm_settings_oc_contracts"                         v="Nur Lieferverträge online" />
         <e k="ui_gm_settings_oc_offers"                            v="Nur Direktangebote online" />

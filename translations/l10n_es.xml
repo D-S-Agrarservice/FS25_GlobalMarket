@@ -113,6 +113,12 @@
         <e k="ui_gm_settings_npc_players"                          v="Solo jugadores" />
         <e k="ui_gm_settings_onlineContracts"                      v="Contratos y ofertas online" />
         <e k="ui_gm_settings_onlineContracts_desc"                 v="Define si los contratos de suministro y ofertas directas ±10 % pueden comerciarse entre servidores mediante GlobalMarketClient o permanecer solo en este servidor." />
+        <e k="ui_gm_settings_maxFarmContracts"                     v="Máx. contratos activos por granja" />
+        <e k="ui_gm_settings_maxFarmContracts_desc"                v="Número máximo de contratos de suministro que una granja puede tener a la vez (local y online). Los contratos ya aceptados se mantienen al reducir el límite." />
+        <e k="ui_gm_settings_npcContractsTarget"                   v="Contratos NPC en el tablón" />
+        <e k="ui_gm_settings_npcContractsTarget_desc"              v="Número de contratos de suministro NPC abiertos en el tablón. Desactivado: sin contratos NPC. Al reducir solo se eliminan los contratos sobrantes no aceptados. No se aplica en el modo Solo jugadores." />
+        <e k="ui_gm_settings_npcOffersTarget"                      v="Ofertas directas NPC en el tablón" />
+        <e k="ui_gm_settings_npcOffersTarget_desc"                 v="Número de ofertas directas NPC abiertas en el tablón. Desactivado: sin ofertas directas NPC. Solo se aplica si Contratos y ofertas NPC está en Todos." />
         <e k="ui_gm_settings_oc_all"                               v="Todos (Online y Local)" />
         <e k="ui_gm_settings_oc_contracts"                         v="Solo contratos online" />
         <e k="ui_gm_settings_oc_offers"                            v="Solo ofertas directas online" />
