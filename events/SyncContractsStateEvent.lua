@@ -62,6 +62,10 @@ function SyncContractsStateEvent:writeStream(streamId, connection)
         streamWriteFloat32(streamId, c.baseTrendFactor or 1.0)
         streamWriteInt32(streamId, math.floor((c.remainingSeconds or 0) + 0.5))
         streamWriteInt16(streamId, c.pendingAcceptFarmId or 0)
+        -- Map station delivery target (#27): uniqueId ("" = none) + hotspot world position
+        streamWriteString(streamId, c.stationPlaceableId or "")
+        streamWriteFloat32(streamId, c.stationPosX or 0)
+        streamWriteFloat32(streamId, c.stationPosZ or 0)
     end
 
     local offers = self.directOffers or {}
@@ -130,6 +134,14 @@ function SyncContractsStateEvent:readStream(streamId, connection)
         }
         local pendFarm = streamReadInt16(streamId)
         c.pendingAcceptFarmId = (pendFarm > 0) and pendFarm or nil
+        local stationId = streamReadString(streamId)
+        local stationPosX = streamReadFloat32(streamId)
+        local stationPosZ = streamReadFloat32(streamId)
+        if stationId ~= nil and stationId ~= "" then
+            c.stationPlaceableId = stationId
+            c.stationPosX = stationPosX
+            c.stationPosZ = stationPosZ
+        end
         table.insert(self.contracts, c)
     end
 
@@ -199,6 +211,11 @@ function SyncContractsStateEvent:run(connection)
         gm.nextContractId = math.max(gm.nextContractId or 1, maxC + 1)
         gm.nextOfferId = math.max(gm.nextOfferId or 1, maxO + 1)
         gm.nextInboxId = math.max(gm.nextInboxId or 1, maxI + 1)
+
+        -- Show/hide map hotspots of this farm's active station contracts (#27)
+        if gm.refreshContractHotspots ~= nil then
+            gm:refreshContractHotspots()
+        end
 
         local ui = gm.ui or g_currentMission.globalMarketUi
         if ui ~= nil and ui:getIsVisible() and ui.updateContent ~= nil then

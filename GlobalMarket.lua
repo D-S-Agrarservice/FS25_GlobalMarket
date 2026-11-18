@@ -147,6 +147,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 -- Contracts, Direct Offers & Pickup Inbox Modules
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsStorage.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContracts.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketContractsStations.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -355,6 +356,10 @@ function GlobalMarket:deleteMap()
         display.hasGlobalMarketIcon = nil
     end
 
+    if self.deleteContractHotspots ~= nil then
+        self:deleteContractHotspots()
+    end
+
     if self.debugManager ~= nil then
         self.debugManager:close()
     end
@@ -417,6 +422,11 @@ function GlobalMarket:update(dt)
 
     if self.updateOnlineContractsTimers ~= nil then
         self:updateOnlineContractsTimers(dt)
+    end
+
+    -- Settle liters unloaded at map stations for NPC contracts (#27), throttled to ~1s
+    if self.stationCreditsDirty and self.updateStationContracts ~= nil then
+        self:updateStationContracts(dt)
     end
 end
 

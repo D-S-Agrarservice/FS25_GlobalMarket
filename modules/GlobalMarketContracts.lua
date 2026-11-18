@@ -57,8 +57,15 @@ end
 
 ---Broadcasts full contracts/offers/inbox snapshot to clients and refreshes local UI if visible
 function GlobalMarket:broadcastContractsState()
+    -- Refresh map station targets (#27) before the snapshot so vanished stations are synced as cleared
+    if self.rebuildContractStationIndex ~= nil then
+        self:rebuildContractStationIndex()
+    end
     if g_server ~= nil and SyncContractsStateEvent ~= nil then
         g_server:broadcastEvent(SyncContractsStateEvent.new())
+    end
+    if self.refreshContractHotspots ~= nil then
+        self:refreshContractHotspots()
     end
     local ui = self.ui or (g_currentMission ~= nil and g_currentMission.globalMarketUi or nil)
     if ui ~= nil and ui:getIsVisible() and ui.updateContent ~= nil then
@@ -300,6 +307,10 @@ function GlobalMarket:deliverToContract(
     if g_server == nil or farmId == nil or farmId <= 0 then
         return false, 0
     end
+    -- Settle pending map station unloads (#27) first so the open amount is up to date
+    if self.stationCreditsDirty and self.flushStationContractCredits ~= nil then
+        self:flushStationContractCredits()
+    end
     local idx, contract = GlobalMarketContracts.findById(self.contracts, contractId)
     if contract ~= nil and contract.isOnline and self.deliverToOnlineContract ~= nil then
         return self:deliverToOnlineContract(farmId, contract, requestedLiters, targetStorage, isObjectStorage, formatXml)
@@ -323,28 +334,7 @@ function GlobalMarket:deliverToContract(
 
     local creditedLiters = math.min(actualLiters, neededLiters)
     local excessLiters = math.max(0, actualLiters - creditedLiters)
-
-    local basePayout = math.floor(((creditedLiters / 1000) * (contract.basePricePer1000 or 500)) + 0.5)
     local contractMoneyType = MoneyType.GM_CONTRACTS or MoneyType.GM_SELL
-    if basePayout > 0 then
-        g_currentMission:addMoney(basePayout, farmId, contractMoneyType, true, true)
-    end
-
-    if contract.origin == "PLAYER" then
-        contract.escrowRemaining = math.max(0, (contract.escrowRemaining or 0) - basePayout)
-        if self.addPickupInboxItem ~= nil then
-            local srcLabel = string.format("#%d (%s)", contract.id, self:getContractFarmName(farmId))
-            self:addPickupInboxItem(contract.issuerFarmId, contract.fillType, creditedLiters, "CONTRACT_DELIVERY", srcLabel)
-        end
-    else
-        local cap = GlobalMarket.MARKET_CAPACITY or 2000000
-        for _, ft in pairs(self.offlineMarketFillTypes or {}) do
-            if ft.fillType == contract.fillType then
-                ft.fillLevel = math.clamp((ft.fillLevel or 0) + creditedLiters, 0, cap)
-                break
-            end
-        end
-    end
 
     -- Settle any minor rounding excess from full-bale/pallet completion at normal market spot price
     if excessLiters > 0.5 then
@@ -366,6 +356,50 @@ function GlobalMarket:deliverToContract(
         end
     end
 
+    local completed = self:creditContractLiters(contract, idx, farmId, creditedLiters, true)
+    if not completed and self.debugManager ~= nil then
+        self.debugManager:info("Contracts: Farm %d delivered %.0f L to contract #%d (%.0f/%.0f L).",
+            farmId, creditedLiters, contract.id, contract.deliveredLiters, contract.totalLiters)
+    end
+    self:broadcastContractsState()
+    return true, creditedLiters
+end
+
+---Pays the contract base price for credited liters, routes the goods and settles completion bonus.
+---Shared by menu deliveries (deliverToContract) and physical map station unloads (#27).
+---@param contract table Active local contract
+---@param idx number|nil Index of the contract inside self.contracts (resolved if nil)
+---@param farmId number Contractor farm receiving the payout
+---@param creditedLiters number Liters counted towards the contract (already capped to the open amount)
+---@param addToMarketStock boolean True if NPC goods should be added to GM market stock (menu delivery)
+---@return boolean completed True if the contract was completed and removed
+function GlobalMarket:creditContractLiters(contract, idx, farmId, creditedLiters, addToMarketStock)
+    if contract == nil or creditedLiters == nil or creditedLiters <= 0 then
+        return false
+    end
+    local contractMoneyType = MoneyType.GM_CONTRACTS or MoneyType.GM_SELL
+
+    local basePayout = math.floor(((creditedLiters / 1000) * (contract.basePricePer1000 or 500)) + 0.5)
+    if basePayout > 0 then
+        g_currentMission:addMoney(basePayout, farmId, contractMoneyType, true, true)
+    end
+
+    if contract.origin == "PLAYER" then
+        contract.escrowRemaining = math.max(0, (contract.escrowRemaining or 0) - basePayout)
+        if self.addPickupInboxItem ~= nil then
+            local srcLabel = string.format("#%d (%s)", contract.id, self:getContractFarmName(farmId))
+            self:addPickupInboxItem(contract.issuerFarmId, contract.fillType, creditedLiters, "CONTRACT_DELIVERY", srcLabel)
+        end
+    elseif addToMarketStock then
+        local cap = GlobalMarket.MARKET_CAPACITY or 2000000
+        for _, ft in pairs(self.offlineMarketFillTypes or {}) do
+            if ft.fillType == contract.fillType then
+                ft.fillLevel = math.clamp((ft.fillLevel or 0) + creditedLiters, 0, cap)
+                break
+            end
+        end
+    end
+
     contract.deliveredLiters = (contract.deliveredLiters or 0) + creditedLiters
     if contract.deliveredLiters >= (contract.totalLiters - 0.5) then
         local bonusPayout
@@ -382,14 +416,15 @@ function GlobalMarket:deliverToContract(
         if self.debugManager ~= nil then
             self.debugManager:info("Contracts: Contract #%d completed by Farm %d (Bonus=%d EUR).", contract.id, farmId, bonusPayout)
         end
-        table.remove(self.contracts, idx)
-    elseif self.debugManager ~= nil then
-        self.debugManager:info("Contracts: Farm %d delivered %.0f L to contract #%d (%.0f/%.0f L).",
-            farmId, creditedLiters, contract.id, contract.deliveredLiters, contract.totalLiters)
+        if idx == nil or self.contracts[idx] ~= contract then
+            idx = GlobalMarketContracts.findById(self.contracts, contract.id)
+        end
+        if idx ~= nil then
+            table.remove(self.contracts, idx)
+        end
+        return true
     end
-
-    self:broadcastContractsState()
-    return true, creditedLiters
+    return false
 end
 
 ---Collects allowed fillTypes present in the current market for NPC contract/offer seeding
@@ -441,7 +476,7 @@ function GlobalMarket:replenishNpcContractsAndOffers()
             local id = self.nextContractId
             self.nextContractId = id + 1
 
-            table.insert(self.contracts, {
+            local npcContract = {
                 id = id,
                 origin = "NPC",
                 issuerFarmId = 0,
@@ -455,7 +490,12 @@ function GlobalMarket:replenishNpcContractsAndOffers()
                 escrowRemaining = 0,
                 monthsRemaining = months,
                 status = "OPEN"
-            })
+            }
+            -- Prefer a real map selling station / unowned production as buyer (#27); keeps fictional name otherwise
+            if self.assignContractStation ~= nil then
+                self:assignContractStation(npcContract)
+            end
+            table.insert(self.contracts, npcContract)
             openNpcContracts = openNpcContracts + 1
             changed = true
         end
@@ -565,6 +605,11 @@ end
 function GlobalMarket:updateContractsAndOffersHourly(customMonthDelta)
     if g_server == nil then
         return false
+    end
+
+    -- Settle pending map station unloads (#27) before deadlines and penalties are evaluated
+    if self.stationCreditsDirty and self.flushStationContractCredits ~= nil then
+        self:flushStationContractCredits()
     end
 
     local daysPerPeriod = (g_currentMission ~= nil and g_currentMission.environment ~= nil

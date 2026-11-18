@@ -279,6 +279,11 @@ function GlobalMarket:saveContractsSystemToXml(xmlFile)
     if xmlFile == nil then
         return
     end
+    -- Settle pending map station unloads (#27) so no liters are lost across save/load
+    if self.stationCreditsDirty and self.flushStationContractCredits ~= nil then
+        self:flushStationContractCredits()
+    end
+
     local rootKey = "globalMarket.contractsSystem"
     local serverId = (self.ensureServerInstanceId ~= nil) and self:ensureServerInstanceId() or (self.serverInstanceId or "")
     xmlFile:setString(rootKey .. "#serverInstanceId", serverId)
@@ -306,6 +311,12 @@ function GlobalMarket:saveContractsSystemToXml(xmlFile)
             xmlFile:setFloat(key .. "#escrowRemaining", c.escrowRemaining or 0)
             xmlFile:setFloat(key .. "#monthsRemaining", c.monthsRemaining or 1)
             xmlFile:setString(key .. "#status", c.status or "OPEN")
+            if c.stationPlaceableId ~= nil and c.stationPlaceableId ~= "" then
+                xmlFile:setString(key .. "#stationPlaceableId", c.stationPlaceableId)
+                xmlFile:setInt(key .. "#stationIndex", c.stationIndex or 1)
+                xmlFile:setFloat(key .. "#stationPosX", c.stationPosX or 0)
+                xmlFile:setFloat(key .. "#stationPosZ", c.stationPosZ or 0)
+            end
             if c.isOnline then
                 xmlFile:setBool(key .. "#isOnline", true)
                 xmlFile:setString(key .. "#remoteId", c.remoteId or "")
@@ -397,8 +408,14 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
         local ft = xmlFile:getString(key .. "#fillType")
         if id > 0 and ft ~= nil and ft ~= "" then
             local pendAid = xmlFile:getString(key .. "#pendingActionId")
+            local stationId = xmlFile:getString(key .. "#stationPlaceableId")
+            local hasStation = (stationId ~= nil and stationId ~= "")
             table.insert(self.contracts, {
                 id = id,
+                stationPlaceableId = hasStation and stationId or nil,
+                stationIndex = hasStation and (xmlFile:getInt(key .. "#stationIndex") or 1) or nil,
+                stationPosX = hasStation and (xmlFile:getFloat(key .. "#stationPosX") or 0) or nil,
+                stationPosZ = hasStation and (xmlFile:getFloat(key .. "#stationPosZ") or 0) or nil,
                 isOnline = xmlFile:getBool(key .. "#isOnline", false),
                 remoteId = xmlFile:getString(key .. "#remoteId") or "",
                 origin = xmlFile:getString(key .. "#origin") or "NPC",
@@ -489,4 +506,12 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
     self.nextContractId = math.max(xmlFile:getInt(rootKey .. "#nextContractId") or 1, maxCId + 1)
     self.nextOfferId = math.max(xmlFile:getInt(rootKey .. "#nextOfferId") or 1, maxOId + 1)
     self.nextInboxId = math.max(xmlFile:getInt(rootKey .. "#nextInboxId") or 1, maxIId + 1)
+
+    -- Resolve map station targets (#27) now that all placeables exist, and restore local map hotspots
+    if self.rebuildContractStationIndex ~= nil then
+        self:rebuildContractStationIndex()
+    end
+    if self.refreshContractHotspots ~= nil then
+        self:refreshContractHotspots()
+    end
 end

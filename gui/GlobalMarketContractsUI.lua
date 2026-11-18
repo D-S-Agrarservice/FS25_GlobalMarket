@@ -459,11 +459,15 @@ function GlobalMarketUI:updateSelectionHint(row)
         local durTag = (d.isOnline and gm ~= nil and gm.formatContractDurationShort ~= nil)
             and (" | " .. gm:formatContractDurationShort(self.i18n, d)) or ""
         local bonusVal = ((d.totalLiters or 0) / 1000) * (d.basePricePer1000 or 500) * ((d.bonusPct or 0) / 100)
+        local stationTag = ""
+        if not d.isOnline and d.stationPlaceableId ~= nil and d.stationPlaceableId ~= "" then
+            stationTag = " | " .. string.format(self.i18n:getText("ui_gm_hint_stationTarget"), tostring(d.issuerName or "NPC"))
+        end
         self.contractsSelectionHint:setText(string.format(self.i18n:getText("ui_gm_hint_contract"),
             d.id, tostring(d.issuerName or "NPC"),
             self.i18n:formatVolume(d.deliveredLiters or 0, 0), self.i18n:formatVolume(d.totalLiters or 0, 0),
             self.i18n:formatMoney(d.basePricePer1000 or 500, 0, true, true),
-            d.bonusPct or 0, self.i18n:formatMoney(bonusVal, 0, true, true)) .. durTag .. pendingTag)
+            d.bonusPct or 0, self.i18n:formatMoney(bonusVal, 0, true, true)) .. stationTag .. durTag .. pendingTag)
     elseif row.kind == "OWN_CONTRACT" then
         local pendingTag = (d.status == "PENDING_CREATE" or d.status == "PENDING_CANCEL")
             and (" | [" .. (self.i18n:hasText("ui_gm_tag_pending") and self.i18n:getText("ui_gm_tag_pending") or "Pending") .. "]") or ""
@@ -631,7 +635,13 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
     elseif row.kind == "ACTIVE_CONTRACT" and gm.contractDialog ~= nil then
         local silos = gm:getAvailableStorages(row.fillType, farmId, true) or {}
         if #silos == 0 then
-            self:showContractInfoMessage(self.i18n:getText("ui_gm_warn_noStockForOffer"))
+            local c = row.data
+            if c ~= nil and not c.isOnline and c.stationPlaceableId ~= nil and c.stationPlaceableId ~= "" then
+                -- Station contract (#27): point the player to physical delivery instead of a plain warning
+                self:showContractInfoMessage(string.format(self.i18n:getText("ui_gm_info_deliverAtStation"), tostring(c.issuerName or "NPC")))
+            else
+                self:showContractInfoMessage(self.i18n:getText("ui_gm_warn_noStockForOffer"))
+            end
             return
         end
         gm.contractDialog:show(GlobalMarketContractDialog.MODE_DELIVER_CONTRACT,
