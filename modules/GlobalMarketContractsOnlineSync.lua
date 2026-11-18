@@ -95,8 +95,7 @@ function GlobalMarket:onReadCustomSyncXml(action, xmlFile)
                 status = string.upper(xmlFile:getString(key .. "#status") or "REJECTED"),
                 reason = xmlFile:getString(key .. "#reason") or "",
                 remoteId = xmlFile:getString(key .. "#remoteId") or "",
-                -- -1 = attribute absent (backend did not report an authoritative amount); 0 = nothing granted/returned
-                grantedLiters = xmlFile:getFloat(key .. "#grantedLiters") or -1,
+                grantedLiters = xmlFile:getFloat(key .. "#grantedLiters") or 0,
                 baseTrendFactor = xmlFile:getFloat(key .. "#baseTrendFactor") or 1.0,
                 bonusPct = xmlFile:getInt(key .. "#bonusPct") or 10,
                 remainingSeconds = xmlFile:getInt(key .. "#remainingSeconds") or 0
@@ -248,9 +247,10 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
             if o ~= nil then
                 if accepted then
                     -- Race guard: a partial OFFER_SOLD may be in flight. Prefer the backend's authoritative
-                    -- grantedLiters; otherwise subtract liters sold in this same packet from the local remainder.
+                    -- grantedLiters (> 0; the client always writes the attribute, defaulting to 0, and a fully
+                    -- sold-out offer is REJECTED); otherwise subtract liters sold in this same packet.
                     local retLiters
-                    if (res.grantedLiters or -1) >= 0 then
+                    if (res.grantedLiters or 0) > 0.5 then
                         retLiters = res.grantedLiters
                     else
                         retLiters = math.max(0, (o.remainingLiters or 0) - (soldInPacket[o.remoteId] or 0))
