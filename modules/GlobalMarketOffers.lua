@@ -358,6 +358,11 @@ function GlobalMarket:saveContractsSystemToXml(xmlFile)
         xmlFile:setString(key .. "#id", sid)
     end
 
+    for i, rid in ipairs(self.orphanedRemoteIds or {}) do
+        local key = string.format("%s.orphanedRemoteIds.remote(%d)", rootKey, i - 1)
+        xmlFile:setString(key .. "#id", rid)
+    end
+
     for i, p in ipairs(self.pickupInbox or {}) do
         local key = string.format("%s.pickupInbox.item(%d)", rootKey, i - 1)
         xmlFile:setInt(key .. "#id", p.id)
@@ -454,6 +459,13 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
         local sid = xmlFile:getString(key .. "#id") or ""
         if sid ~= "" and self.markSettlementProcessed ~= nil then
             self:markSettlementProcessed(sid)
+        end
+    end)
+
+    xmlFile:iterate(rootKey .. ".orphanedRemoteIds.remote", function(_, key)
+        local rid = xmlFile:getString(key .. "#id") or ""
+        if rid ~= "" and self.markOrphanedOnlineRemoteId ~= nil then
+            self:markOrphanedOnlineRemoteId(rid)
         end
     end)
 

@@ -193,7 +193,10 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
     for _, res in ipairs(packet.actionResults or {}) do
         local sub = res.subAction
         local accepted = (res.status == "ACCEPTED")
-        if sub == "CREATE_CONTRACT" then
+        if self.orphanedActionIds ~= nil and self.orphanedActionIds[res.actionId] ~= nil then
+            -- Action of a deleted farm (#30): never bind/refund, cancel accepted creates
+            self:handleOrphanedActionResult(res)
+        elseif sub == "CREATE_CONTRACT" then
             local idx, c = GlobalMarketContracts.findOnlineEntry(self.contracts, res.actionId, res.remoteId)
             if c ~= nil then
                 if accepted and res.remoteId ~= "" then
@@ -325,7 +328,9 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
             else
                 local st = s.type
                 local isDupCancel = ((st == "CONTRACT_EXPIRED_OPEN" or st == "OFFER_RETURNED") and self.settledCancelRemoteIds[s.remoteId])
-                if not isDupCancel then
+                -- Settlements for a deleted farm (#30) are acknowledged but never booked onto a reused farm ID
+                local isOrphan = self.isOrphanedOnlineRemoteId ~= nil and self:isOrphanedOnlineRemoteId(s.remoteId)
+                if not isDupCancel and not isOrphan then
                     if st == "CONTRACT_DELIVERY" then
                         local _, c = GlobalMarketContracts.findOnlineEntry(self.contracts, nil, s.remoteId)
                         if c ~= nil then
@@ -435,7 +440,7 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
             local isIssuerMine = self:isOwnOnlineServer(rc.issuerServerId)
             local isContractorMine = self:isOwnOnlineServer(rc.contractorServerId)
             local wasCompletedLocally = (completedMap[rc.remoteId] == true)
-            local skipResurrect = (wasCompletedLocally and not isIssuerMine)
+            local skipResurrect = (wasCompletedLocally and not isIssuerMine) or self:isOrphanedOnlineRemoteId(rc.remoteId)
             if not skipResurrect and (isIssuerMine or isContractorMine or showBoardC) then
                 local prev = existingCByRid[rc.remoteId]
                 local id = (prev ~= nil and prev.id) or self.nextContractId
@@ -503,7 +508,7 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
         local ftDesc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(ro.fillType) or nil
         if ftDesc ~= nil and (GlobalMarketAPI == nil or GlobalMarketAPI.getIsFillTypeAllowed(ftDesc)) then
             local isMine = self:isOwnOnlineServer(ro.sellerServerId)
-            if isMine or showBoardO then
+            if (isMine or showBoardO) and not self:isOrphanedOnlineRemoteId(ro.remoteId) then
                 local prev = existingOByRid[ro.remoteId]
                 local id = (prev ~= nil and prev.id) or self.nextOfferId
                 if prev == nil then self.nextOfferId = self.nextOfferId + 1 end

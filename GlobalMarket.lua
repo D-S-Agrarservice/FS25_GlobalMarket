@@ -150,6 +150,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketContracts.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketFarmCleanup.lua")
 source(GlobalMarket.dir .. "events/SyncContractsStateEvent.lua")
 source(GlobalMarket.dir .. "events/ContractActionEvent.lua")
 source(GlobalMarket.dir .. "events/ContractOnlineBridgeEvent.lua")
@@ -282,6 +283,9 @@ function GlobalMarket:loadMap(name)
 
         -- Subscribe to hourly simulation
         g_messageCenter:subscribe(MessageType.HOUR_CHANGED, self.runOfflineSimulation, self)
+
+        -- Clean up farm-keyed GM data when a farm is deleted in MP (#30, farm IDs get reused)
+        g_messageCenter:subscribe(MessageType.FARM_DELETED, self.onFarmDeleted, self)
     end
 
     -- =========================================================
