@@ -53,10 +53,12 @@ GlobalMarket operates seamlessly in two modes:
 * **Automatic Storage Detection:** Supports standard GIANTS Bulk Silos (`spec_silo`), Production Storages, and Object Storages (`spec_objectStorage`) for pallets and bales.
 * **Deep Packaging Resolution:** Buy and sell loose liters or physical containers (Pallets, BigBags, BigBag Pallets, IBC Tanks, Round Bales, and Square Bales). Actively fermenting silage bales are safely excluded from trading until fermentation completes.
 * **GM Logistics Terminals (`isGmMarket`):** Optional dedicated logistics buildings with strict multi-farm stock isolation on multiplayer servers, `0 €` delivery fees (physical self-delivery/pickup), configurable monthly storage fees, and optional storage expiration/decay warnings.
+* **Remaining Storage Time:** A countdown icon in the storage list marks goods held in a GM Terminal (green = normal, orange = increased fees, red = clearance imminent). The exact remaining time is shown for the selected product and in the sell dialog.
 
 #### Supply Contracts & Direct Offers
 * **Supply Contracts:** Players and NPC contractors post delivery contracts (1–6 months) with a price bonus on top of the market price. Player contracts are backed by an escrow the issuer deposits up front; if an accepted contract is not fulfilled by its deadline, the supplier pays a `15 %` penalty on the undelivered value. Admins can limit active contracts per farm and the size of the NPC board.
 * **Direct Offers:** Sell lots to other farms or NPC traders at up to `±10 %` of the current market price.
+* **Map Stations as Delivery Targets:** Local NPC contracts can name a real selling station or unowned production on the map. Unloading there counts towards the contract, and the station can be tagged on the map (incl. navigation) straight from the contract list, just like in the basegame prices menu.
 * **Pickup Inbox:** Goods that cannot be placed into a matching storage right away are kept in a per-farm inbox for a grace period before being sold off automatically.
 * **Cross-Server Online Contracts (Companion App):** With the GlobalMarketClient connected, contracts and offers can also be published to and accepted from other servers. Admins choose which parts go online (all, contracts only, offers only, or local only).
 
@@ -137,6 +139,7 @@ When enabled in the settings, a compact status icon next to the top-right HUD in
 | :--- | :--- | :--- |
 | **Open / Close GlobalMarket Menu** | `Left Alt + M` *(or via `ESC` Menu Tab)* | `ESC` Menu Paging |
 | **Switch Category View** *(Detailed / Compact / A–Z)* | `C` | `X` *(Menu Extra 1)* |
+| **Contracts Tab Actions** *(accept, cancel, board filter, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
 
 *(All keybindings can be customized in the standard FS25 Controls menu.)*
 
@@ -331,10 +334,12 @@ Der Globale Markt arbeitet nahtlos in zwei Betriebsmodi:
 * **Automatische Lagererkennung:** Unterstützt Standard-Schüttgutsilos (`spec_silo`), Produktionslager sowie Objektlager (`spec_objectStorage`) für Paletten und Ballen.
 * **Tiefgehende Gebinde-Auswahl:** Kaufe und verkaufe lose Liter oder physische Gebinde (Paletten, BigBags, BigBag-Paletten, IBC-Tanks, Rundballen und Quaderballen). Noch gärende Silageballen sind während der Fermentation automatisch vom Handel ausgeschlossen.
 * **GM-Logistik-Terminals (`isGmMarket`):** Optionale Spezialgebäude mit strikter Hof-Trennung im Multiplayer, `0 €` Lieferkosten (für physische Selbstanlieferung/-abholung), einstellbaren monatlichen Lagergebühren sowie optionaler Lagerräumung nach Ablauf der Lagerfrist.
+* **Restlaufzeit im Lager:** Ein Countdown-Symbol in der Lagerliste markiert Waren im GM-Terminal (grün = normal, orange = erhöhte Gebühren, rot = Räumung steht kurz bevor). Die genaue Restzeit steht bei der gewählten Ware und im Verkaufsdialog.
 
 #### Lieferverträge & Direktangebote
 * **Lieferverträge:** Spieler und NPC-Abnehmer schreiben Lieferverträge (1–6 Monate) mit Preisaufschlag auf den Marktpreis aus. Spieler-Verträge sind durch einen Treuhandbetrag gedeckt, den der Aussteller vorab hinterlegt; wird ein angenommener Vertrag bis zur Frist nicht erfüllt, zahlt der Lieferant `15 %` Vertragsstrafe auf den fehlenden Warenwert. Admins können die aktiven Verträge je Hof und die Größe des NPC-Boards begrenzen.
 * **Direktangebote:** Verkaufe Partien an andere Höfe oder NPC-Händler zu bis zu `±10 %` des aktuellen Marktpreises.
+* **Kartenstationen als Lieferziel:** Lokale NPC-Verträge können eine echte Verkaufsstelle oder eine besitzerlose Produktion auf der Karte als Ziel nennen. Abladen dort zählt für den Vertrag, und die Station lässt sich direkt aus der Vertragsliste auf der Karte markieren (inkl. Navigation), wie im Preismenü des Basisspiels.
 * **Abholfach (Pickup Inbox):** Waren, die nicht sofort in ein passendes Lager passen, bleiben für eine Frist im Abholfach des Hofs und werden danach automatisch verkauft.
 * **Serverübergreifende Online-Verträge (Companion-Client):** Mit verbundenem GlobalMarketClient lassen sich Verträge und Angebote auch für andere Server veröffentlichen und von dort annehmen. Admins legen fest, was online geht (alles, nur Verträge, nur Angebote oder nur lokal).
 
@@ -381,6 +386,7 @@ Ist die Statusanzeige in den Einstellungen aktiviert, zeigt ein kompaktes Icon o
 | :--- | :--- | :--- |
 | **GlobalMarket-Menü öffnen / schließen** | `Links Alt + M` *(oder über den `ESC`-Menüreiter)* | `ESC`-Menü durchblättern |
 | **Kategorie-Ansicht wechseln** *(Detailliert / Kompakt / A–Z)* | `C` | `X` *(Menü Extra 1)* |
+| **Aktionen im Vertrags-Tab** *(annehmen, stornieren, Board-Filter, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
 
 *(Alle Tastenbelegungen lassen sich jederzeit in den normalen LS25-Steuerungsoptionen anpassen.)*
 
