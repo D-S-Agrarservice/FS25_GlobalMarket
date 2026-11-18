@@ -133,7 +133,8 @@
                         <ListItem profile="globalMarketListItem" name="gmMyContractRowTemplate">
                             <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                             <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="250px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="222px 32px" textLayoutMode="resize" name="name" />
+                            <Bitmap profile="globalMarketRowCellMarker" name="marker" position="266px 0px" />
                             <Text profile="globalMarketRowCellRight" position="295px 0px" size="210px 32px" textLayoutMode="resize" name="progress" />
                             <Text profile="globalMarketRowCellRight" position="510px 0px" size="170px 32px" textLayoutMode="resize" name="terms" />
                         </ListItem>
@@ -173,7 +174,8 @@
                         <ListItem profile="globalMarketListItem" name="gmBoardContractRowTemplate">
                             <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                             <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="255px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="227px 32px" textLayoutMode="resize" name="name" />
+                            <Bitmap profile="globalMarketRowCellMarker" name="marker" position="271px 0px" />
                             <Text profile="globalMarketRowCellRight" position="300px 0px" size="195px 32px" textLayoutMode="resize" name="price" />
                             <Text profile="globalMarketRowCellRight" position="500px 0px" size="190px 32px" textLayoutMode="resize" name="amount" />
                         </ListItem>

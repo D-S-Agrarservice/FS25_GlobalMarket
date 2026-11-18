@@ -507,11 +507,8 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
     self.nextOfferId = math.max(xmlFile:getInt(rootKey .. "#nextOfferId") or 1, maxOId + 1)
     self.nextInboxId = math.max(xmlFile:getInt(rootKey .. "#nextInboxId") or 1, maxIId + 1)
 
-    -- Resolve map station targets (#27) now that all placeables exist, and restore local map hotspots
+    -- Resolve map station targets (#27) now that all placeables exist
     if self.rebuildContractStationIndex ~= nil then
         self:rebuildContractStationIndex()
-    end
-    if self.refreshContractHotspots ~= nil then
-        self:refreshContractHotspots()
     end
 end

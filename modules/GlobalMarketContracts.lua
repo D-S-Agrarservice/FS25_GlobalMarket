@@ -64,9 +64,6 @@ function GlobalMarket:broadcastContractsState()
     if g_server ~= nil and SyncContractsStateEvent ~= nil then
         g_server:broadcastEvent(SyncContractsStateEvent.new())
     end
-    if self.refreshContractHotspots ~= nil then
-        self:refreshContractHotspots()
-    end
     local ui = self.ui or (g_currentMission ~= nil and g_currentMission.globalMarketUi or nil)
     if ui ~= nil and ui:getIsVisible() and ui.updateContent ~= nil then
         ui:updateContent()

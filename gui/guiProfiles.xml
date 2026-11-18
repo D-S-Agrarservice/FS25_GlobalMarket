@@ -55,6 +55,14 @@
         <imageSliceId value="noSlice"/>
     </Profile>
 
+    <!-- Map marker of a contract's target station (#27): dim = not tagged, bright = current map target (basegame prices menu style) -->
+    <Profile name="globalMarketRowCellMarker" extends="baseReference" with="anchorMiddleLeft">
+        <size value="22px 22px"/>
+        <imageSliceId value="gui.visit"/>
+        <imageColor value="$preset_colorWhite_50"/>
+        <imageSelectedColor value="$preset_colorWhite"/>
+    </Profile>
+
     <Profile name="globalMarketRowCellLeft" extends="baseReference" with="anchorStretchingYLeft">
         <size value="155px 32px"/>
         <textBold value="false"/>

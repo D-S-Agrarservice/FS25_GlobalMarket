@@ -293,57 +293,54 @@ if SellingStation ~= nil and SellingStation.addFillLevelFromTool ~= nil and not 
 end
 
 -- =========================================================================
--- MAP HOTSPOTS (Client / Host of the contractor farm)
+-- MAP MARKER (Client UI, basegame prices menu pattern)
 -- =========================================================================
 
----Reconciles map hotspots with the local farm's active station contracts
-function GlobalMarket:refreshContractHotspots()
+---Returns the basegame map hotspot of a contract's target station (nil if not resolvable locally)
+---Read-only lookup: never clears station data, so it is safe on MP clients.
+---@param contract table|nil
+---@return table|nil hotspot
+function GlobalMarket:getContractStationHotspot(contract)
+    if contract == nil or contract.isOnline or contract.stationPlaceableId == nil or contract.stationPlaceableId == "" then
+        return nil
+    end
     local mission = g_currentMission
-    if mission == nil or mission.addMapHotspot == nil or MissionHotspot == nil or g_dedicatedServer ~= nil then
-        return
+    if mission == nil or mission.placeableSystem == nil then
+        return nil
     end
-    self.contractHotspots = self.contractHotspots or {}
-
-    local localFarmId = mission:getFarmId() or 0
-    local wanted = {}
-    if localFarmId > 0 then
-        for _, c in ipairs(self.contracts or {}) do
-            if c.status == "ACTIVE" and not c.isOnline and c.contractorFarmId == localFarmId
-                and c.stationPlaceableId ~= nil and c.stationPlaceableId ~= ""
-                and ((c.stationPosX or 0) ~= 0 or (c.stationPosZ or 0) ~= 0) then
-                wanted[c.id] = c
-            end
-        end
+    -- Hash lookup on every call (no cached stationRef): a removed placeable never hands out a stale hotspot
+    local placeable = mission.placeableSystem:getPlaceableByUniqueId(contract.stationPlaceableId)
+    if placeable == nil or placeable.getHotspot == nil or placeable.spec_hotspots == nil then
+        return nil
     end
-
-    for id, hotspot in pairs(self.contractHotspots) do
-        if wanted[id] == nil then
-            mission:removeMapHotspot(hotspot)
-            hotspot:delete()
-            self.contractHotspots[id] = nil
-        end
-    end
-
-    for id, c in pairs(wanted) do
-        if self.contractHotspots[id] == nil then
-            local hotspot = MissionHotspot.new()
-            hotspot:setWorldPosition(c.stationPosX, c.stationPosZ)
-            mission:addMapHotspot(hotspot)
-            self.contractHotspots[id] = hotspot
-        end
-    end
+    return placeable:getHotspot(1)
 end
 
----Removes all contract hotspots (mission exit)
-function GlobalMarket:deleteContractHotspots()
-    if self.contractHotspots == nil then
-        return
+---Returns true if the contract's target station is the currently tagged map target
+---@param contract table|nil
+---@return boolean
+function GlobalMarket:getIsContractStationMarked(contract)
+    local mission = g_currentMission
+    if mission == nil or mission.currentMapTargetHotspot == nil then
+        return false
     end
-    for id, hotspot in pairs(self.contractHotspots) do
-        if g_currentMission ~= nil and g_currentMission.removeMapHotspot ~= nil then
-            g_currentMission:removeMapHotspot(hotspot)
-        end
-        hotspot:delete()
-        self.contractHotspots[id] = nil
+    local hotspot = self:getContractStationHotspot(contract)
+    return hotspot ~= nil and hotspot == mission.currentMapTargetHotspot
+end
+
+---Toggles the map target marker (incl. navigation) on the contract's target station
+---@param contract table|nil
+---@return boolean isMarked State after toggling
+function GlobalMarket:toggleContractStationMarker(contract)
+    local mission = g_currentMission
+    local hotspot = self:getContractStationHotspot(contract)
+    if mission == nil or mission.setMapTargetHotspot == nil or hotspot == nil then
+        return false
     end
+    if mission.currentMapTargetHotspot == hotspot then
+        mission:setMapTargetHotspot(nil)
+        return false
+    end
+    mission:setMapTargetHotspot(hotspot)
+    return true
 end

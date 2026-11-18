@@ -212,11 +212,6 @@ function SyncContractsStateEvent:run(connection)
         gm.nextOfferId = math.max(gm.nextOfferId or 1, maxO + 1)
         gm.nextInboxId = math.max(gm.nextInboxId or 1, maxI + 1)
 
-        -- Show/hide map hotspots of this farm's active station contracts (#27)
-        if gm.refreshContractHotspots ~= nil then
-            gm:refreshContractHotspots()
-        end
-
         local ui = gm.ui or g_currentMission.globalMarketUi
         if ui ~= nil and ui:getIsVisible() and ui.updateContent ~= nil then
             ui:updateContent()

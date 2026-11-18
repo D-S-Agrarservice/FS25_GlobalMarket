@@ -356,10 +356,6 @@ function GlobalMarket:deleteMap()
         display.hasGlobalMarketIcon = nil
     end
 
-    if self.deleteContractHotspots ~= nil then
-        self:deleteContractHotspots()
-    end
-
     if self.debugManager ~= nil then
         self.debugManager:close()
     end

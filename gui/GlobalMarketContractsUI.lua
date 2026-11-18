@@ -69,6 +69,13 @@ function GlobalMarketUI:onContractsFrameOpen()
         callback = function() self:onClickCycleBoardFilter() end,
         disabled = false
     }
+    -- Tag/untag the target station on the map (#27), basegame prices menu pattern
+    self.contractsMarkerButtonInfo = {
+        inputAction = InputAction.MENU_EXTRA_2,
+        text = g_i18n:getText("action_tag"),
+        callback = function() self:onContractToggleMarker() end,
+        disabled = false
+    }
 
     self:updateCategoryModeButtonVisuals()
     self:setActiveSubTab(self.activeSubTab or GlobalMarketUI.SUBTAB_SPOT, false)
@@ -226,6 +233,12 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
         end
         if self.switchSubTabButtonInfo ~= nil then table.insert(list, self.switchSubTabButtonInfo) end
         if self.boardFilterButtonInfo ~= nil then table.insert(list, self.boardFilterButtonInfo) end
+        if not isEmpty and self.contractsMarkerButtonInfo ~= nil and gm ~= nil and gm.getContractStationHotspot ~= nil
+            and (row.kind == "ACTIVE_CONTRACT" or row.kind == "BOARD_CONTRACT")
+            and gm:getContractStationHotspot(row.data) ~= nil then
+            self.contractsMarkerButtonInfo.text = g_i18n:getText(gm:getIsContractStationMarked(row.data) and "action_untag" or "action_tag")
+            table.insert(list, self.contractsMarkerButtonInfo)
+        end
         if canCancel and self.contractsCancelButtonInfo ~= nil then
             self.contractsCancelButtonInfo.disabled = false
             table.insert(list, self.contractsCancelButtonInfo)
@@ -567,6 +580,20 @@ function GlobalMarketUI:onContractRightAction(_, section, index)
     self:onContractPrimaryAction(section, index)
 end
 
+---Tags/untags the selected contract's target station as map target (incl. navigation), like the basegame prices menu
+function GlobalMarketUI:onContractToggleMarker()
+    local row = self:getSelectedContractRow()
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    if row == nil or row.data == nil or gm == nil or gm.toggleContractStationMarker == nil then
+        return
+    end
+    if row.kind ~= "ACTIVE_CONTRACT" and row.kind ~= "BOARD_CONTRACT" then
+        return
+    end
+    gm:toggleContractStationMarker(row.data)
+    self:updateActiveSubTabMenuButtons()
+end
+
 function GlobalMarketUI:showContractInfoMessage(text)
     if InfoDialog ~= nil and InfoDialog.INSTANCE ~= nil then
         InfoDialog.show(text, nil, nil, DialogElement.TYPE_WARNING)
@@ -737,6 +764,8 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
 
     local icon = cell:getAttribute("icon")
     local name = cell:getAttribute("name")
+    local marker = cell:getAttribute("marker")
+    if marker ~= nil then marker:setVisible(false) end
 
     if row.kind == "EMPTY_MY" or row.kind == "EMPTY_BOARD" then
         if icon ~= nil then icon:setVisible(false) end
@@ -764,6 +793,14 @@ function GlobalMarketContractsUI:populateCellForItemInSection(list, section, ind
 
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     local d = row.data or {}
+    if marker ~= nil and gm ~= nil and gm.getContractStationHotspot ~= nil
+        and (row.kind == "ACTIVE_CONTRACT" or row.kind == "BOARD_CONTRACT") then
+        local hotspot = gm:getContractStationHotspot(d)
+        marker:setVisible(hotspot ~= nil)
+        marker.getIsSelected = function()
+            return hotspot ~= nil and g_currentMission ~= nil and g_currentMission.currentMapTargetHotspot == hotspot
+        end
+    end
     local mStr = (gm ~= nil and gm.formatContractDurationShort ~= nil)
         and gm:formatContractDurationShort(ui.i18n, d)
         or string.format(ui.i18n:getText("ui_gm_months_short"), d.monthsRemaining or 1.0)
