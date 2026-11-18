@@ -47,7 +47,7 @@
         <e k="gm_help_p3_terminals_title"                          v="Geteilte GM-Logistik-Terminals (isGmMarket)" />
         <e k="gm_help_p3_terminals_text"                           v="Spezielle Global-Market-Lagergebäude (XML-Attribut 'isGmMarket') arbeiten als öffentliche Handels-Terminals:&#xA;- 0 $CURRENCY_SYMBOL Lieferkosten: Da du Waren am Terminal selbst physisch anlieferst oder abholst, entfallen sämtliche Liefergebühren.&#xA;- Strikte Hof-Trennung im Multiplayer: Alle Höfe können dasselbe Terminal gleichzeitig nutzen - Schüttgutbestände, Ballen und Paletten werden im Hintergrund strikt pro Hof getrennt verwaltet." />
         <e k="gm_help_p3_decay_title"                              v="Monatliche Lagergebühren &amp; Lagerräumung" />
-        <e k="gm_help_p3_decay_text"                               v="Für Waren, die dauerhaft in einem GM-Logistik-Terminal lagern, fallen monatliche Lagergebühren an.&#xA;- Maximale Lagerdauer: Überschreitet ein Posten im GM-Terminal die eingestellte Höchstdauer (Standard: 6 Monate), erhältst du rechtzeitig Vorwarnungen, bevor überfällige Restbestände automatisch geräumt werden. Eigene Hofsilos sind davon nicht betroffen." />
+        <e k="gm_help_p3_decay_text"                               v="Für Waren, die dauerhaft in einem GM-Logistik-Terminal lagern, fallen monatliche Lagergebühren an.&#xA;- Maximale Lagerdauer: Überschreitet ein Posten im GM-Terminal die eingestellte Höchstdauer (Standard: 6 Monate), erhältst du rechtzeitig Vorwarnungen, bevor überfällige Restbestände automatisch geräumt werden. Eigene Hofsilos sind davon nicht betroffen.&#xA;- Restlaufzeit: Ein Uhr-Symbol in der Lagerliste zeigt Waren im GM-Terminal (grün = normal, orange = erhöhte Gebühren, rot = Räumung steht kurz bevor). Die genaue Zeit steht unten rechts bei der gewählten Ware und im Verkaufsdialog." />
         <e k="gm_help_p4_title"                                    v="4. Finanzen, Einstellungen &amp; Multiplayer" />
         <e k="gm_help_p4_finances_title"                           v="Finanzübersicht (Kompakt oder Detailliert)" />
         <e k="gm_help_p4_finances_text"                            v="Sämtliche Umsätze und Gebühren des Globalen Marktes werden im LS25-Finanzmenü separat erfasst.&#xA;- In den Spieleinstellungen kannst du jederzeit persönlich umschalten, ob alle Marktbuchungen kompakt zusammengefasst oder detailliert nach Schüttgut, Flüssigkeiten, Ballen, Paletten und Gebühren aufgeschlüsselt werden." />
@@ -157,6 +157,8 @@
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatibilität" />
         <e k="ui_gm_storage_only"                                  v="(nur GM)" />
         <e k="ui_gm_storage_split"                                 v="(Hof: %s | GM: %s)" />
+        <e k="ui_gm_storage_clearIn"                               v="GM-Lager: Räumung in %s" />
+        <e k="ui_gm_storage_feesHigh"                              v="erhöhte Lagergebühren" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistikzentrum - keine Gebühren)" />
         <e k="ui_gm_total_storage"                                 v="GESAMT BESTAND:" />
         <e k="ui_gm_trend"                                         v="Trend" />

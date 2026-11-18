@@ -48,7 +48,8 @@
                         <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
                             <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                             <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="310px 32px" name="name" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="282px 32px" name="name" />
+                            <Bitmap profile="globalMarketRowCellAgeIcon" name="ageIcon" position="326px 0px" visible="false" />
                             <Text profile="globalMarketRowCellRight" position="360px 0px" size="320px 32px" name="amount" />
                         </ListItem>
                         <ListItem profile="globalMarketSectionHeader" name="section">
@@ -106,6 +107,7 @@
                 <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
                 <Text profile="globalMarketHeaderBright" position="40px 0px" text="$l10n_ui_gm_total_storage"/>
                 <Text profile="globalMarketHeaderRightBright" position="380px 0px" size="320px 32px" id="totalStorageDisplay" text="0 L"/>
+                <Text profile="fs25_textDefault" id="storageAgeHint" position="790px 2px" size="710px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
             </GuiElement>
         </GuiElement>
 

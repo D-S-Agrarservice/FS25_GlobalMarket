@@ -47,7 +47,7 @@
         <e k="gm_help_p3_terminals_title"                          v="Terminales logísticos compartidos (isGmMarket)" />
         <e k="gm_help_p3_terminals_text"                           v="Los edificios especiales del Mercado Global (atributo XML 'isGmMarket') funcionan como centros logísticos compartidos:&#xA;- 0 $CURRENCY_SYMBOL de gastos de envío: Al entregar o recoger físicamente la mercancía en el terminal, no se cobran gastos de envío.&#xA;- Separación estricta por granja en multijugador: Varias granjas pueden usar el mismo terminal a la vez con inventarios totalmente independientes." />
         <e k="gm_help_p3_decay_title"                              v="Tasas mensuales y vaciado por límite de tiempo" />
-        <e k="gm_help_p3_decay_text"                               v="La mercancía almacenada de forma prolongada en un terminal GM genera tasas mensuales de almacenamiento.&#xA;- Duración máxima: Si un lote supera el tiempo máximo configurado en el terminal GM (por defecto: 6 meses), recibirás avisos previos antes del vaciado automático. Tus silos privados nunca se ven afectados." />
+        <e k="gm_help_p3_decay_text"                               v="La mercancía almacenada de forma prolongada en un terminal GM genera tasas mensuales de almacenamiento.&#xA;- Duración máxima: Si un lote supera el tiempo máximo configurado en el terminal GM (por defecto: 6 meses), recibirás avisos previos antes del vaciado automático. Tus silos privados nunca se ven afectados.&#xA;- Tiempo restante: Un icono de reloj en la lista de existencias marca la mercancía en un terminal GM (verde = normal, naranja = tasas elevadas, rojo = vaciado inminente). El tiempo exacto aparece abajo a la derecha para el producto seleccionado y en el diálogo de venta." />
         <e k="gm_help_p4_title"                                    v="4. Finanzas, ajustes y multijugador" />
         <e k="gm_help_p4_finances_title"                           v="Resumen financiero (compacto o detallado)" />
         <e k="gm_help_p4_finances_text"                            v="Todas las compras, ventas y tarifas del Mercado Global se registran en el menú de Finanzas de FS25.&#xA;- En los ajustes del juego puedes elegir entre una vista resumida compacta o un desglose detallado por granel, líquidos, pacas, palés y tarifas." />
@@ -157,6 +157,8 @@
         <e k="ui_gm_settings_system_header"                        v="GM Sistema y Compatibilidad" />
         <e k="ui_gm_storage_only"                                  v="(Solo GM)" />
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
+        <e k="ui_gm_storage_clearIn"                               v="Almacén GM: vaciado en %s" />
+        <e k="ui_gm_storage_feesHigh"                              v="tasas de almacenamiento elevadas" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />
         <e k="ui_gm_total_storage"                                 v="STOCK TOTAL:" />
         <e k="ui_gm_trend"                                         v="Tendencia" />

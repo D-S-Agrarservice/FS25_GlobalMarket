@@ -47,7 +47,7 @@
         <e k="gm_help_p3_terminals_title"                          v="Terminaux logistiques GM partagés (isGmMarket)" />
         <e k="gm_help_p3_terminals_text"                           v="Les bâtiments spéciaux du Marché Global (attribut XML 'isGmMarket') servent de plateformes logistiques partagées :&#xA;- 0 $CURRENCY_SYMBOL de frais de livraison : Comme vous livrez ou récupérez physiquement vos marchandises au terminal, aucuns frais de livraison ne sont facturés.&#xA;- Séparation stricte par ferme en multijoueur : Plusieurs fermes peuvent utiliser le même terminal simultanément avec des stocks totalement isolés." />
         <e k="gm_help_p3_decay_title"                              v="Frais mensuels de garde et expiration du stockage" />
-        <e k="gm_help_p3_decay_text"                               v="Les marchandises stockées durablement dans un terminal GM engendrent des frais mensuels de stockage.&#xA;- Durée maximale : Si un lot dépasse la durée limite configurée dans un terminal GM (par défaut : 6 mois), des avertissements sont affichés avant l'évacuation automatique. Vos propres silos de ferme ne sont jamais concernés." />
+        <e k="gm_help_p3_decay_text"                               v="Les marchandises stockées durablement dans un terminal GM engendrent des frais mensuels de stockage.&#xA;- Durée maximale : Si un lot dépasse la durée limite configurée dans un terminal GM (par défaut : 6 mois), des avertissements sont affichés avant l'évacuation automatique. Vos propres silos de ferme ne sont jamais concernés.&#xA;- Temps restant : Une icône d'horloge dans la liste des stocks signale les marchandises d'un terminal GM (vert = normal, orange = frais majorés, rouge = évacuation imminente). Le temps exact s'affiche en bas à droite pour le produit sélectionné et dans la fenêtre de vente." />
         <e k="gm_help_p4_title"                                    v="4. Finances, paramètres et multijoueur" />
         <e k="gm_help_p4_finances_title"                           v="Aperçu des finances (compact ou détaillé)" />
         <e k="gm_help_p4_finances_text"                            v="Tous les achats, ventes et frais du Marché Global sont enregistrés dans le menu Finances de FS25.&#xA;- Dans les paramètres du jeu, vous pouvez choisir librement entre un affichage résumé compact ou une ventilation détaillée par vrac, liquides, balles, palettes et frais." />
@@ -157,6 +157,8 @@
         <e k="ui_gm_settings_system_header"                        v="GM Système &amp; Compatibilité" />
         <e k="ui_gm_storage_only"                                  v="(GM uniquement)" />
         <e k="ui_gm_storage_split"                                 v="(Ferme : %s | GM : %s)" />
+        <e k="ui_gm_storage_clearIn"                               v="Stock GM : évacuation dans %s" />
+        <e k="ui_gm_storage_feesHigh"                              v="frais de stockage majorés" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centre logistique GM - sans frais)" />
         <e k="ui_gm_total_storage"                                 v="STOCK TOTAL :" />
         <e k="ui_gm_trend"                                         v="Tendance" />

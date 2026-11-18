@@ -47,7 +47,7 @@
         <e k="gm_help_p3_terminals_title"                          v="Shared GM Logistics Terminals (isGmMarket)" />
         <e k="gm_help_p3_terminals_text"                           v="Dedicated Global Market storage buildings (XML attribute 'isGmMarket') act as shared logistics hubs:&#xA;- 0 $CURRENCY_SYMBOL Delivery Costs: Because you physically deliver or pick up goods at the terminal yourself, all delivery fees are waived.&#xA;- Strict Per-Farm Isolation in Multiplayer: Multiple farms can use the same terminal simultaneously - bulk levels, bales, and pallets are strictly isolated per farm." />
         <e k="gm_help_p3_decay_title"                              v="Monthly Storage Fees &amp; Storage Clearance" />
-        <e k="gm_help_p3_decay_text"                               v="Goods stored long-term inside a GM Logistics Terminal incur monthly storage fees.&#xA;- Maximum Storage Duration: If stored stock exceeds the configured limit in a GM Terminal (default: 6 months), advance warnings are shown before overdue stock is automatically cleared. Your own private farm silos are never affected." />
+        <e k="gm_help_p3_decay_text"                               v="Goods stored long-term inside a GM Logistics Terminal incur monthly storage fees.&#xA;- Maximum Storage Duration: If stored stock exceeds the configured limit in a GM Terminal (default: 6 months), advance warnings are shown before overdue stock is automatically cleared. Your own private farm silos are never affected.&#xA;- Remaining time: A clock icon in the storage list marks goods in a GM Terminal (green = normal, orange = increased fees, red = clearance imminent). The exact time is shown at the bottom right for the selected product and in the sell dialog." />
         <e k="gm_help_p4_title"                                    v="4. Finances, Settings &amp; Multiplayer" />
         <e k="gm_help_p4_finances_title"                           v="Finance Screen (Compact or Detailed)" />
         <e k="gm_help_p4_finances_text"                            v="All Global Market purchases, sales, and fees are tracked in the native FS25 Finances screen.&#xA;- In the Game Settings, each player can freely choose between a compact summary view or a detailed breakdown by bulk goods, liquids, bales, pallets, and fees." />
@@ -157,6 +157,8 @@
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Compatibility" />
         <e k="ui_gm_storage_only"                                  v="(GM only)" />
         <e k="ui_gm_storage_split"                                 v="(Farm: %s | GM: %s)" />
+        <e k="ui_gm_storage_clearIn"                               v="GM storage: cleared in %s" />
+        <e k="ui_gm_storage_feesHigh"                              v="increased storage fees" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
         <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
         <e k="ui_gm_trend"                                         v="Trend" />

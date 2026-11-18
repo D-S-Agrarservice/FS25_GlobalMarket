@@ -551,12 +551,14 @@ function GlobalMarketUI:applyFilterAndCategories(restoreTableFocus)
 
     -- 5. Restore selection state
     local hasValidSelection = false
+    local selectedStorageRow = nil
 
     if activeList == "storage" and self.gmTableStorage ~= nil then
         local newSec, newIdx = GlobalMarketUI.findSelectionInSections(self.storageSections, activeFillType, activeSection, activeIndex)
         if newSec > 0 and newIdx > 0 then
             self.gmTableStorage:setSelectedItem(newSec, newIdx)
             hasValidSelection = true
+            selectedStorageRow = self.storageSections[newSec].items[newIdx]
         else
             self.gmTableStorage:setSelectedItem(1, 0)
             self.gmTableStorage:clearElementSelection()
@@ -594,6 +596,8 @@ function GlobalMarketUI:applyFilterAndCategories(restoreTableFocus)
         self.actionButtonInfo.disabled = not hasValidSelection
         self:setMenuButtonInfoDirty()
     end
+
+    GlobalMarketStorageAge.updateSelectionHint(self, selectedStorageRow)
 
     -- 6. Drop the shield so user inputs are processed normally again
     self.isUpdatingSelection = false
@@ -792,6 +796,7 @@ function GlobalMarketUI:populateCellForItemInSection(list, section, index, cell)
     if icon and fillTypeDesc then
         icon:setImageFilename(fillTypeDesc.hudOverlayFilename)
     end
+    GlobalMarketStorageAge.decorateCell(cell, (list == self.gmTableStorage) and data or nil)
 
     if amount then
         if list == self.gmTableStorage then
@@ -893,6 +898,7 @@ function GlobalMarketUI:onListSelectionChanged(list, section, index)
     local sections = (self.currentListFocus == "storage") and self.storageSections or self.marketSections
     local hasValidItem = (section ~= nil and index ~= nil and section > 0 and index > 0
         and sections[section] ~= nil and sections[section].items ~= nil and sections[section].items[index] ~= nil)
+    GlobalMarketStorageAge.updateSelectionHint(self, (hasValidItem and self.currentListFocus == "storage") and sections[section].items[index] or nil)
 
     if self.actionButtonInfo ~= nil then
         self.actionButtonInfo.disabled = not hasValidItem

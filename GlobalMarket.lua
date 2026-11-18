@@ -111,6 +111,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketFinance.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketStorageAge.lua")
 
 -- Storage & Access Modules
 source(GlobalMarket.dir .. "modules/GlobalMarketStorage.lua")
@@ -127,6 +128,7 @@ source(GlobalMarket.dir .. "events/InitGlobalMarketSettingsEvent.lua")
 source(GlobalMarket.dir .. "events/SynchOfflineMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SyncGlobalMarketSettingsEvent.lua")
 source(GlobalMarket.dir .. "events/SyncGmSiloEvent.lua")
+source(GlobalMarket.dir .. "events/SyncGmStorageAgeEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyMarketGlobalMarketEvent.lua")
 source(GlobalMarket.dir .. "events/SellBuyOfflineMarketEvent.lua")
 -- Online Events

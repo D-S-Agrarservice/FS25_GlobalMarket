@@ -823,6 +823,11 @@ function GlobalMarket:updateGmStorageFeesAndDecay(customMonthDelta)
         end
     end
 
+    -- Push the new storage ages to all clients (remaining storage time display, #20)
+    if self.refreshGmStorageAges ~= nil then
+        self:refreshGmStorageAges()
+    end
+
     if anyUiChange then
         local ui = self.ui or g_currentMission.globalMarketUi
         if ui ~= nil and ui:getIsVisible() then

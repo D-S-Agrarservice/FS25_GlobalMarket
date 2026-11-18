@@ -63,6 +63,12 @@
         <imageSelectedColor value="$preset_colorWhite"/>
     </Profile>
 
+    <Profile name="globalMarketRowCellAgeIcon" extends="baseReference" with="anchorMiddleLeft">
+        <size value="22px 22px"/>
+        <imageSliceId value="gui.storeAttribute_time"/>
+        <imageColor value="$preset_colorGreen"/>
+    </Profile>
+
     <Profile name="globalMarketRowCellLeft" extends="baseReference" with="anchorStretchingYLeft">
         <size value="155px 32px"/>
         <textBold value="false"/>

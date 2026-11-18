@@ -47,7 +47,7 @@
         <e k="gm_help_p3_terminals_title"                          v="Współdzielone terminale logistyczne GM (isGmMarket)" />
         <e k="gm_help_p3_terminals_text"                           v="Specjalne budynki magazynowe Rynku Globalnego (atrybut XML 'isGmMarket') działają jako publiczne terminale handlowe:&#xA;- 0 $CURRENCY_SYMBOL kosztów dostawy: Ponieważ samodzielnie dowozisz lub odbierasz towar w terminalu, opłaty transportowe nie są naliczane.&#xA;- Ścisły podział na gospodarstwa w MP: Wiele gospodarstw może korzystać z tego samego terminala jednocześnie - towary luzem, bele i palety są rozliczane oddzielnie dla każdej farmy." />
         <e k="gm_help_p3_decay_title"                              v="Miesięczne opłaty składowe i czyszczenie magazynu" />
-        <e k="gm_help_p3_decay_text"                               v="Za towary przechowywane długoterminowo w terminalu logistycznym GM naliczane są miesięczne opłaty magazynowe.&#xA;- Maksymalny czas składowania: Po przekroczeniu ustawionego limitu czasu w terminalu GM (domyślnie: 6 miesięcy) wyświetlane są wcześniejsze ostrzeżenia przed automatycznym usunięciem przeterminowanych partii. Prywatne silosy na farmie nie podlegają temu limitowi." />
+        <e k="gm_help_p3_decay_text"                               v="Za towary przechowywane długoterminowo w terminalu logistycznym GM naliczane są miesięczne opłaty magazynowe.&#xA;- Maksymalny czas składowania: Po przekroczeniu ustawionego limitu czasu w terminalu GM (domyślnie: 6 miesięcy) wyświetlane są wcześniejsze ostrzeżenia przed automatycznym usunięciem przeterminowanych partii. Prywatne silosy na farmie nie podlegają temu limitowi.&#xA;- Pozostały czas: Ikona zegara na liście zapasów oznacza towary w terminalu GM (zielony = normalnie, pomarańczowy = podwyższone opłaty, czerwony = usunięcie wkrótce). Dokładny czas widać w prawym dolnym rogu dla wybranego towaru oraz w oknie sprzedaży." />
         <e k="gm_help_p4_title"                                    v="4. Finanse, ustawienia i tryb wieloosobowy" />
         <e k="gm_help_p4_finances_title"                           v="Podsumowanie finansowe (kompaktowe lub szczegółowe)" />
         <e k="gm_help_p4_finances_text"                            v="Wszystkie zakupy, sprzedaże i opłaty Rynku Globalnego są osobno rejestrowane w menu Finansów FS25.&#xA;- W ustawieniach gry każdy gracz może w dowolnej chwili przełączyć widok między zwięzłym podsumowaniem a szczegółowym podziałem na towary luzem, ciecze, bele, palety i opłaty." />
@@ -157,6 +157,8 @@
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatybilność" />
         <e k="ui_gm_storage_only"                                  v="(Tylko GM)" />
         <e k="ui_gm_storage_split"                                 v="(Gosp.: %s | GM: %s)" />
+        <e k="ui_gm_storage_clearIn"                               v="Magazyn GM: usunięcie za %s" />
+        <e k="ui_gm_storage_feesHigh"                              v="podwyższone opłaty magazynowe" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centrum Logistyczne GM - bez opłat)" />
         <e k="ui_gm_total_storage"                                 v="CAŁKOWITY ZAPAS:" />
         <e k="ui_gm_trend"                                         v="Trend" />

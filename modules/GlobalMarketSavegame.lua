@@ -341,6 +341,9 @@ function GlobalMarket:sendInitialClientState(connection, user, farm)
     if SyncContractsStateEvent ~= nil then
         connection:sendEvent(SyncContractsStateEvent.new())
     end
+    if SyncGmStorageAgeEvent ~= nil and self.getGmStorageAgeEntries ~= nil then
+        connection:sendEvent(SyncGmStorageAgeEvent.new(self:getGmStorageAgeEntries()))
+    end
 end
 
 FSBaseMission.sendInitialClientState = Utils.appendedFunction(FSBaseMission.sendInitialClientState, function(mission, connection, user, farm)

@@ -231,7 +231,7 @@ Placeable modders can turn custom silos or object storages into official **Globa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Lean lifecycle orchestrator, InGameMenu injection & input bindings
 ├── modDesc.xml               # FS25 mod descriptor (descVersion 116)
-├── events/                   # 14 dedicated Multiplayer synchronization, transaction & contract events
+├── events/                   # 15 dedicated Multiplayer synchronization, transaction & contract events
 ├── gui/                      # Market UI, Contracts sub-tab & two dialogs (controllers, XML layouts & profiles)
 │   ├── GlobalMarketUI.lua / .xml             # Main InGameMenu frame: storage & market lists, search, categories
 │   ├── GlobalMarketContractsUI.lua           # Sub-tab controller: supply contracts, direct offers & Pickup Inbox
@@ -257,6 +257,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketSavegame.lua              # Savegame persistence for market stock & GM Terminals
 │   ├── GlobalMarketSettings.lua              # Environment-aware (sp/mp/dedi) settings injection
 │   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage discovery & market transfers
+│   ├── GlobalMarketStorageAge.lua            # Remaining GM storage time: client sync & UI display
 │   ├── GlobalMarketStoreCache.lua            # 2-phase deep XML scanner for pallets, BigBags & IBCs
 │   └── GlobalMarketSync.lua                  # Companion App XML bridge, token failover & HUD icon
 ├── translations/             # Localized strings (DE, EN, ES, FR, PL)

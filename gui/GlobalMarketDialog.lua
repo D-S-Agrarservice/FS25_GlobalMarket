@@ -309,12 +309,14 @@ function GlobalMarketDialog:onClickStorage(state)
             end
         end
 
-        -- 3. Update the info text below the title
+        -- 3. Update the info text below the title (+ remaining GM storage time when selling from a GM terminal, #20)
+        self.storageAgeSuffix = (self.actionType == "SELL")
+            and GlobalMarketStorageAge.getDialogSuffix(selectedSilo, self.fillTypeName) or ""
         local infoText = string.format("%s: %s | %s: %s / 1.000 L",
             g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"),
             g_i18n:formatVolume(self.maxAmount, 0),
             g_i18n:getText("ui_ingameMenuGlobalMarketPrice"),
-            g_i18n:formatMoney(self.pricePer1000, 0, true, true))
+            g_i18n:formatMoney(self.pricePer1000, 0, true, true)) .. self.storageAgeSuffix
 
         self.baseInfoText = infoText
         if self.dialogInfoTextElement ~= nil then
@@ -384,7 +386,7 @@ function GlobalMarketDialog:onClickFormat(state)
 
         -- Update info text using strict translation system
         local infoText = string.format(g_i18n:getText("ui_gm_format_info"),
-            selectedFormat.title, self.currentMaxPieces, self.currentCountFactor)
+            selectedFormat.title, self.currentMaxPieces, self.currentCountFactor) .. (self.storageAgeSuffix or "")
         self.baseInfoText = infoText
         if self.dialogInfoTextElement ~= nil then
             self.dialogInfoTextElement:setText(infoText)
