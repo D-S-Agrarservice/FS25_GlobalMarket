@@ -208,7 +208,7 @@ function GlobalMarketDialog:onClickStorage(state)
                         -- Disambiguate dropdown labels if a mod added a variant with the same display length/diameter but different capacity
                         for _, baleFormat in ipairs(baleFormats) do
                             if baseTitleCounts[baleFormat.title] ~= nil and baseTitleCounts[baleFormat.title] > 1 then
-                                baleFormat.title = string.format("%s - %s L", baleFormat.title, g_i18n:formatVolume(baleFormat.capacity or 0, 0))
+                                baleFormat.title = string.format("%s - %s", baleFormat.title, g_i18n:formatVolume(baleFormat.capacity or 0, 0))
                             end
                             table.insert(self.availableFormats, baleFormat)
                         end
@@ -310,7 +310,7 @@ function GlobalMarketDialog:onClickStorage(state)
         end
 
         -- 3. Update the info text below the title
-        local infoText = string.format("%s: %s L | %s: %s / 1000L",
+        local infoText = string.format("%s: %s | %s: %s / 1.000 L",
             g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"),
             g_i18n:formatVolume(self.maxAmount, 0),
             g_i18n:getText("ui_ingameMenuGlobalMarketPrice"),

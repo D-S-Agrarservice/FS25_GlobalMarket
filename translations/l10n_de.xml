@@ -258,7 +258,7 @@
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Verfügbare Menge" />
         <e k="ui_ingameMenuGlobalMarketCount"                      v="Anzahl" />
-        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Frucht" />
+        <e k="ui_ingameMenuGlobalMarketFruit"                      v="Ware" />
         <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Globaler Markt" />
         <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Lagerbestand" />
         <e k="ui_ingameMenuGlobalMarketOffline"                    v="Globaler Markt - Offline" />

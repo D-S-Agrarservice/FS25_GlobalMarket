@@ -487,7 +487,7 @@ function GlobalMarketContractDialog:onClickStorage(state)
             self.maxAmount = selectedSilo.level or 0
         end
         self:setAmountInputSilent("0")
-        self:updateInfoBanner(string.format("%s: %s L",
+        self:updateInfoBanner(string.format("%s: %s",
             g_i18n:getText("ui_ingameMenuGlobalMarketAvailable"),
             g_i18n:formatVolume(self.maxAmount, 0)))
         self:updateStepButtonLabels()

@@ -196,23 +196,19 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
                 actionLabel = self.i18n:getText("ui_gm_action_claimInbox")
                 canPrimary = true
             elseif row.kind == "OWN_CONTRACT" then
-                actionLabel = self.i18n:getText("ui_gm_action_cancelListing")
                 local d = row.data
                 local isPendingTimedOut = (d ~= nil and d.isOnline == true and d.status == "PENDING_CREATE"
                     and (d.remoteId == nil or d.remoteId == "")
                     and (gm == nil or not gm:getAreOnlineContractsSupported()
                         or ((g_time or 0) - (d.pendingSinceMs or 0)) >= ((GlobalMarketContracts and GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS) or 30000)))
                 canCancel = (d ~= nil and (d.status == "OPEN" or isPendingTimedOut))
-                canPrimary = canCancel
             elseif row.kind == "OWN_OFFER" then
-                actionLabel = self.i18n:getText("ui_gm_action_cancelListing")
                 local d = row.data
                 local isPendingTimedOut = (d ~= nil and d.isOnline == true and d.status == "PENDING_CREATE"
                     and (d.remoteId == nil or d.remoteId == "")
                     and (gm == nil or not gm:getAreOnlineContractsSupported()
                         or ((g_time or 0) - (d.pendingSinceMs or 0)) >= ((GlobalMarketContracts and GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS) or 30000)))
                 canCancel = (d ~= nil and d.status ~= "PENDING_CANCEL" and (d.status ~= "PENDING_CREATE" or isPendingTimedOut))
-                canPrimary = canCancel
             elseif row.kind == "BOARD_CONTRACT" then
                 actionLabel = self.i18n:getText("ui_gm_action_acceptContract")
                 local activeCnt = (gm ~= nil and gm.getActiveAcceptedContractCount ~= nil)
@@ -225,8 +221,11 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
             end
         end
 
+        -- Primary (MENU_ACCEPT) only for rows that have one; own listings are cancelled via MENU_CANCEL only
+        local hasPrimary = not isEmpty and not isSpectator and (row.kind == "ACTIVE_CONTRACT" or row.kind == "INBOX"
+            or row.kind == "BOARD_CONTRACT" or row.kind == "BOARD_OFFER")
         local list = { backButton }
-        if self.contractsActionButtonInfo ~= nil then
+        if hasPrimary and self.contractsActionButtonInfo ~= nil then
             self.contractsActionButtonInfo.text = actionLabel
             self.contractsActionButtonInfo.disabled = not canPrimary
             table.insert(list, self.contractsActionButtonInfo)
@@ -244,6 +243,7 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
             table.insert(list, self.contractsCancelButtonInfo)
         end
         self:setMenuButtonInfo(list)
+        self:setMenuButtonInfoDirty()
         self:updateSelectionHint(row)
     else
         local list = { backButton }
@@ -251,6 +251,7 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
         if self.switchSubTabButtonInfo ~= nil then table.insert(list, self.switchSubTabButtonInfo) end
         if self.categoryModeButtonInfo ~= nil then table.insert(list, self.categoryModeButtonInfo) end
         self:setMenuButtonInfo(list)
+        self:setMenuButtonInfoDirty()
     end
 end
 
@@ -564,12 +565,13 @@ function GlobalMarketUI:onContractDialogDone(mode, wasObjectStorage)
     self.refreshCountdown = wasObjectStorage and 1200 or 250
 end
 
-function GlobalMarketUI:onContractLeftAction(_, section, index)
+function GlobalMarketUI:onContractLeftAction(_, section, index, element)
     self.contractsListFocus = "left"
     if section ~= nil and index ~= nil and self.gmTableMyContracts ~= nil then
         GlobalMarketContractsUI:onListSelectionChanged(self.gmTableMyContracts, section, index)
     end
-    self:onContractPrimaryAction(section, index)
+    -- SmoothList passes the clicked cell on a mouse double-click, but nil when activated via Enter (onFocusActivate)
+    self:onContractPrimaryAction(section, index, element ~= nil)
 end
 
 function GlobalMarketUI:onContractRightAction(_, section, index)
@@ -643,7 +645,8 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
     end
 end
 
-function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
+---@param isMouseDoubleClick boolean|nil true only for a real mouse double-click on a list row
+function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex, isMouseDoubleClick)
     local row = self:getSelectedContractRow(overrideSection, overrideIndex)
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm == nil or row == nil or row.data == nil or row.kind == "EMPTY_MY" or row.kind == "EMPTY_BOARD" then
@@ -658,7 +661,11 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex)
     local ftTitle = (desc ~= nil and desc.title) or row.fillType
 
     if row.kind == "OWN_CONTRACT" or row.kind == "OWN_OFFER" then
-        self:onContractCancelAction(overrideSection, overrideIndex)
+        -- Own listings: no Enter action (MENU_CANCEL is the labelled cancel key), mouse double-click still cancels
+        if isMouseDoubleClick == true then
+            self:onContractCancelAction(overrideSection, overrideIndex)
+        end
+        return
     elseif row.kind == "ACTIVE_CONTRACT" and gm.contractDialog ~= nil then
         local silos = gm:getAvailableStorages(row.fillType, farmId, true) or {}
         if #silos == 0 then

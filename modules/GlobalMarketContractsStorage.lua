@@ -677,7 +677,7 @@ function GlobalMarketContractsStorage.collectBuyableFormats(fillTypeName, select
 
         for _, bf in ipairs(baleFormats) do
             if (titleCounts[bf.title] or 0) > 1 then
-                bf.title = string.format("%s - %s L", bf.title, g_i18n:formatVolume(bf.capacity or 0, 0))
+                bf.title = string.format("%s - %s", bf.title, g_i18n:formatVolume(bf.capacity or 0, 0))
             end
             table.insert(formats, bf)
         end
