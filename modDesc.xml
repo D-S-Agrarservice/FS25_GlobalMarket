@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="116">
     <author>D-S-Agrarservice</author>
-    <version>0.9.9.37</version>
+    <version>0.9.9.38</version>
     <title>
         <en>Global Market</en>
         <de>Globaler Markt</de>
@@ -10,91 +10,161 @@
         <pl>Rynek Globalny</pl>
     </title>
     <description>
-        <en><![CDATA[Trade agricultural goods, liquids, bales, and pallets on a dynamic Global Market in both Singleplayer and Multiplayer!
+        <en><![CDATA[Buy and sell crops, liquids, bales and pallets on a dynamic Global Market – in singleplayer, multiplayer and on dedicated servers.
 
-Global Market adds a dedicated trading page directly to the in-game ESC menu (default shortcut: Left Alt + M) and connects seamlessly with your farm silos as well as bale and pallet storages based on standard GIANTS specializations.
+Global Market adds its own page to the ESC menu (default: Left Alt + M) and works directly with your silos, production storages, and bale and pallet storages.
 
-The market can be used both offline and online: Without additional tools, Global Market runs out of the box as a dynamically simulated offline market. For full live online market support across sessions and servers, the optional GlobalMarketClient is required.
+Offline or online:
+- Without any extra software, a simulated market runs with prices based on the selling points of your map.
+- With the optional GlobalMarketClient, you trade on a shared online market where every player's purchases and sales drive stock levels and price trends.
 
-Features:
-- Dynamic Supply & Demand: Market prices adjust dynamically to current stock levels, seasonal fluctuations, economic difficulty, and Great Demand events.
-- Full Storage & Format Support: Buy and sell loose bulk goods, liquids, round and square bales, pallets, BigBags, and IBC tanks directly from or into your storages.
-- Search & Categories: Filter goods via live search, switch between Compact, Detailed, or alphabetical views, and track market trends at a glance.
-- Shared Logistics Terminals: Supports Global Market storage terminals (isGmMarket) with strict per-farm stock separation in Multiplayer, fee-free direct trading, and configurable storage duration limits.
-- Detailed Finances & Settings: Optional itemized finance bookings plus customizable admin settings for delivery fees, dealer markup, market capacity, storage clearance, and Great Demands.
-- Mod & Map Ready: Automatically integrates custom map and mod fillTypes and supports external XML configurations.
+Trading:
+- Prices react to supply and demand, season and economic difficulty. Great Demands are announced via HUD notifications.
+- Trade loose goods, liquids, round and square bales, pallets, BigBags and IBC tanks directly from and into your storages.
+- Live search, three category views and price trend arrows keep things clear.
+
+Supply contracts & direct offers:
+- Deliver on contracts from NPC buyers or other farms, or post your own purchase contracts.
+- List lots as direct offers at up to ±10 % of the market price.
+- Incoming and returned goods wait in your farm's pickup inbox.
+- Cross-server as well with the GlobalMarketClient.
+
+Global Market storages:
+- Supports GM storage buildings from other mods: no delivery fees, separate stock per farm in multiplayer, monthly storage fees and a configurable maximum storage time.
+
+Settings & extensibility:
+- Delivery fees, dealer markup, market capacity, storage time, Great Demands, NPC activity and contract limits are configurable, separately for singleplayer, multiplayer and dedicated servers.
+- Optional detailed breakdown in the finance overview.
+- Goods from mod maps and productions are detected automatically; modders can extend it via XML.
+- Help pages in the ESC help menu.
 
 Notes:
-- Optional Online Client & further information on GitHub: https://github.com/D-S-Agrarservice/GlobalMarketClient
-- Bales that are currently fermenting cannot be bought or sold until fermentation is complete.]]></en>
-        <de><![CDATA[Handle Erntegüter, Flüssigkeiten, Ballen und Paletten über einen dynamischen Globalen Markt – im Einzelspieler sowie im Multiplayer!
+- Optional online client & further information: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Silage bales that are still fermenting can only be traded once fermentation has finished.]]></en>
+        <de><![CDATA[Kaufe und verkaufe Erntegüter, Flüssigkeiten, Ballen und Paletten auf einem dynamischen Globalen Markt – im Einzelspieler, im Multiplayer und auf Dedicated Servern.
 
-Der Globale Markt integriert eine eigene Handelsübersicht direkt in das ESC-Menü (Standard-Tastenkombination: Links Alt + M) und erkennt automatisch alle Hofsilos sowie Ballen- und Palettenlager, die auf den GIANTS-Standardskripten aufbauen.
+Der Globale Markt erscheint als eigene Seite im ESC-Menü (Standard: Links Alt + M) und arbeitet direkt mit deinen Silos, Produktionslagern sowie Ballen- und Palettenlagern zusammen.
 
-Der Markt lässt sich sowohl offline als auch online nutzen: Ohne Zusatzprogramm wird der Globale Markt vollständig offline simuliert. Für die volle Online-Unterstützung mit echtem spielerübergreifendem Marktgeschehen wird der optionale GlobalMarketClient benötigt.
+Offline oder online:
+- Ohne Zusatzprogramm läuft ein simulierter Markt, dessen Preise sich an den Verkaufsstellen deiner Karte orientieren.
+- Mit dem optionalen GlobalMarketClient handelst du auf einem gemeinsamen Online-Markt, auf dem die Käufe und Verkäufe aller Spieler Bestände und Preistrends bestimmen.
 
-Funktionen:
-- Dynamisches Angebot & Nachfrage: Die Marktpreise passen sich laufend an aktuelle Lagerbestände, saisonale Schwankungen, den Wirtschaftsschwierigkeitsgrad sowie Große Nachfragen an.
-- Volle Lager- & Gebinde-Unterstützung: Kaufe und verkaufe loses Schüttgut, Flüssigkeiten, Rund- und Quaderballen, Paletten, BigBags sowie IBC-Tanks direkt aus deinen oder in deine Lager.
-- Suche & Kategorien: Übersichtlich gefiltert per Live-Suche, umschaltbaren Kategorie-Ansichten (Kompakt, Detailliert, A-Z) und klaren Preistrend-Anzeigen.
-- Geteilte Logistik-Terminals: Unterstützt spezielle Global-Market-Terminals (isGmMarket) mit strikter Hof-Trennung im Multiplayer, gebührenfreiem Direkthandel und einstellbarer Lagerdauer.
-- Detaillierte Finanzen & Einstellungen: Optionale Einzelaufschlüsselung in der Finanzübersicht sowie umfangreiche Admin-Einstellungen für Lieferkosten, Händleraufschlag, Marktkapazität, Lagerräumung und Große Nachfragen.
-- Bereit für Mods & Maps: Erkennt zusätzliche Güter von Mod-Karten und Produktionen automatisch und unterstützt eigene XML-Erweiterungen.
+Handel:
+- Preise reagieren auf Angebot und Nachfrage, Jahreszeit und Wirtschaftsschwierigkeit. Große Nachfragen werden per HUD-Meldung angekündigt.
+- Handle lose Ware, Flüssigkeiten, Rund- und Quaderballen, Paletten, BigBags und IBC-Tanks direkt aus deinen und in deine Lager.
+- Live-Suche, drei Kategorie-Ansichten und Preistrend-Pfeile sorgen für Übersicht.
+
+Lieferverträge & Direktangebote:
+- Beliefere Verträge von NPC-Abnehmern oder anderen Höfen oder schreibe eigene Kaufverträge aus.
+- Biete Partien als Direktangebot zu bis zu ±10 % des Marktpreises an.
+- Eingehende und zurückgegebene Ware wartet im Abholfach deines Hofs.
+- Mit dem GlobalMarketClient auch serverübergreifend.
+
+Global-Market-Lager:
+- Unterstützt GM-Lagergebäude aus anderen Mods: keine Lieferkosten, getrennte Bestände je Hof im Multiplayer, monatliche Lagergebühren und eine einstellbare maximale Lagerdauer.
+
+Einstellungen & Erweiterbarkeit:
+- Lieferkosten, Händleraufschlag, Marktkapazität, Lagerdauer, Große Nachfragen, NPC-Aktivität und Vertragslimits sind einstellbar, getrennt für Einzelspieler, Multiplayer und Dedicated Server.
+- Optional detaillierte Aufschlüsselung in der Finanzübersicht.
+- Güter von Mod-Karten und Produktionen werden automatisch erkannt; Modder können per XML erweitern.
+- Hilfeseiten im ESC-Hilfemenü.
 
 Hinweise:
-- Optionaler Online-Client & weitere Infos auf GitHub: https://github.com/D-S-Agrarservice/GlobalMarketClient
-- Ballen, die sich aktuell noch im Gärprozess befinden, können erst nach abgeschlossener Silierung gehandelt werden.]]></de>
-        <es><![CDATA[¡Comercia cosechas, líquidos, pacas y palés en un Mercado Global dinámico tanto en un jugador como en multijugador!
+- Optionaler Online-Client & weitere Infos: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Silageballen im Gärprozess können erst nach abgeschlossener Silierung gehandelt werden.]]></de>
+        <es><![CDATA[Compra y vende cosechas, líquidos, pacas y palés en un Mercado Global dinámico, en un jugador, en multijugador y en servidores dedicados.
 
-Mercado Global añade una página de comercio dedicada directamente en el menú ESC (atajo predeterminado: Alt Izq + M) y reconoce automáticamente todos los silos y almacenes de pacas o palés basados en los scripts estándar de GIANTS.
+Mercado Global añade su propia página al menú ESC (predeterminado: Alt Izq + M) y trabaja directamente con tus silos, almacenes de producción y almacenes de pacas y palés.
 
-El mercado se puede utilizar tanto sin conexión como en línea: Sin programas adicionales, el Mercado Global se simula por completo de forma local (offline). Para disfrutar de la compatibilidad completa con el mercado en línea compartido, se necesita el cliente opcional GlobalMarketClient.
+Sin conexión o en línea:
+- Sin programas adicionales funciona un mercado simulado cuyos precios se basan en los puntos de venta de tu mapa.
+- Con el cliente opcional GlobalMarketClient comercias en un mercado en línea compartido, donde las compras y ventas de todos los jugadores determinan las existencias y las tendencias de precios.
 
-Características:
-- Oferta y demanda dinámicas: Los precios del mercado se ajustan dinámicamente según las existencias actuales, las variaciones estacionales, la dificultad económica y los eventos de Gran Demanda.
-- Soporte completo de almacenes y formatos: Compra y vende productos a granel, líquidos, pacas redondas y cuadradas, palés, BigBags y depósitos IBC directamente desde o hacia tus almacenes.
-- Búsqueda y categorías: Filtra mercancías mediante búsqueda en vivo, alterna entre vistas Compacta, Detallada o alfabética y consulta las tendencias de precios de un vistazo.
-- Terminales logísticos compartidos: Compatible con terminales del Mercado Global (isGmMarket) con separación estricta de inventario por granja en multijugador, comercio directo sin gastos de envío y límites configurables de tiempo de almacenamiento.
-- Finanzas detalladas y ajustes: Desglose financiero opcional y amplios ajustes de administrador para gastos de envío, margen comercial, capacidad del mercado, vaciado de almacén y Gran Demanda.
-- Compatible con mods y mapas: Integra automáticamente nuevos productos de mapas y mods y admite configuraciones XML externas.
+Comercio:
+- Los precios reaccionan a la oferta y la demanda, a la estación y a la dificultad económica. Las Grandes Demandas se anuncian mediante notificaciones en el HUD.
+- Comercia con mercancía a granel, líquidos, pacas redondas y cuadradas, palés, BigBags y depósitos IBC directamente desde y hacia tus almacenes.
+- Búsqueda en vivo, tres vistas de categorías y flechas de tendencia de precios para una visión clara.
+
+Contratos de suministro y ofertas directas:
+- Cumple contratos de compradores NPC o de otras granjas, o publica tus propios contratos de compra.
+- Ofrece lotes como ofertas directas hasta un ±10 % del precio de mercado.
+- La mercancía entrante y devuelta espera en el buzón de recogida de tu granja.
+- También entre servidores con el GlobalMarketClient.
+
+Almacenes del Mercado Global:
+- Compatible con edificios de almacén GM de otros mods: sin gastos de envío, existencias separadas por granja en multijugador, tasas de almacenamiento mensuales y un tiempo máximo de almacenamiento configurable.
+
+Ajustes y ampliaciones:
+- Gastos de envío, margen comercial, capacidad del mercado, tiempo de almacenamiento, Grandes Demandas, actividad de NPC y límites de contratos son configurables, por separado para un jugador, multijugador y servidores dedicados.
+- Desglose detallado opcional en el resumen financiero.
+- Los productos de mapas y producciones de mods se detectan automáticamente; los modders pueden ampliarlo mediante XML.
+- Páginas de ayuda en el menú de ayuda ESC.
 
 Notas:
-- Cliente en línea opcional y más información en GitHub: https://github.com/D-S-Agrarservice/GlobalMarketClient
-- Las pacas en proceso de fermentación no se pueden comprar ni vender hasta que finalice el ensilado.]]></es>
-        <fr><![CDATA[Échangez vos récoltes, liquides, balles et palettes sur un Marché Global dynamique, aussi bien en solo qu'en multijoueur !
+- Cliente en línea opcional y más información: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Las pacas de ensilado que aún están fermentando solo se pueden comerciar cuando termina la fermentación.]]></es>
+        <fr><![CDATA[Achetez et vendez récoltes, liquides, balles et palettes sur un Marché Global dynamique, en solo, en multijoueur et sur serveurs dédiés.
 
-Le Marché Global ajoute une page commerciale dédiée directement dans le menu ESC (raccourci par défaut : Alt Gauche + M) et détecte automatiquement tous les silos ainsi que les entrepôts de balles et de palettes basés sur les scripts standards de GIANTS.
+Le Marché Global ajoute sa propre page au menu ESC (par défaut : Alt Gauche + M) et fonctionne directement avec vos silos, stockages de production et entrepôts de balles et de palettes.
 
-Le marché peut être utilisé aussi bien hors ligne qu'en ligne : Sans outil supplémentaire, le Marché Global est entièrement simulé hors ligne. Pour profiter pleinement du marché en ligne partagé entre joueurs, le client optionnel GlobalMarketClient est nécessaire.
+Hors ligne ou en ligne :
+- Sans logiciel supplémentaire, un marché simulé fonctionne avec des prix basés sur les points de vente de votre carte.
+- Avec le client optionnel GlobalMarketClient, vous commercez sur un marché en ligne partagé où les achats et ventes de tous les joueurs déterminent les stocks et les tendances de prix.
 
-Fonctionnalités :
-- Offre et demande dynamiques : Les prix du marché s'adaptent dynamiquement aux stocks actuels, aux variations saisonnières, à la difficulté économique et aux fortes demandes.
-- Prise en charge complète des stockages et formats : Achetez et vendez des marchandises en vrac, liquides, balles rondes et carrées, palettes, BigBags et cuves IBC directement depuis ou vers vos stockages.
-- Recherche et catégories : Filtrez les produits via la recherche en direct, basculez entre les vues Compacte, Détaillée ou alphabétique et suivez les tendances de prix en un coup d'œil.
-- Terminaux logistiques partagés : Prend en charge les terminaux du Marché Global (isGmMarket) avec séparation stricte des stocks par ferme en multijoueur, commerce direct sans frais de livraison et durée de stockage configurable.
-- Finances détaillées et paramètres : Ventilation financière détaillée en option et nombreux réglages administrateur pour les frais de livraison, la marge commerciale, la capacité du marché, l'expiration du stockage et les fortes demandes.
-- Prêt pour les mods et cartes : Intègre automatiquement les produits personnalisés des cartes et mods et prend en charge les configurations XML externes.
+Commerce :
+- Les prix réagissent à l'offre et à la demande, à la saison et à la difficulté économique. Les fortes demandes sont annoncées par des notifications HUD.
+- Échangez marchandises en vrac, liquides, balles rondes et carrées, palettes, BigBags et cuves IBC directement depuis et vers vos stockages.
+- Recherche en direct, trois vues par catégories et flèches de tendance des prix pour une vue d'ensemble claire.
+
+Contrats de livraison et offres directes :
+- Honorez les contrats d'acheteurs PNJ ou d'autres fermes, ou publiez vos propres contrats d'achat.
+- Proposez des lots en offre directe jusqu'à ±10 % du prix du marché.
+- Les marchandises entrantes et retournées attendent dans la boîte de retrait de votre ferme.
+- Également entre serveurs avec le GlobalMarketClient.
+
+Stockages du Marché Global :
+- Prend en charge les bâtiments de stockage GM d'autres mods : aucun frais de livraison, stocks séparés par ferme en multijoueur, frais de stockage mensuels et durée de stockage maximale configurable.
+
+Paramètres et extensibilité :
+- Frais de livraison, marge commerciale, capacité du marché, durée de stockage, fortes demandes, activité des PNJ et limites de contrats sont configurables, séparément pour le solo, le multijoueur et les serveurs dédiés.
+- Ventilation détaillée optionnelle dans l'aperçu financier.
+- Les produits des cartes et productions moddées sont détectés automatiquement ; les moddeurs peuvent l'étendre via XML.
+- Pages d'aide dans le menu d'aide ESC.
 
 Remarques :
-- Client en ligne optionnel et informations complémentaires sur GitHub : https://github.com/D-S-Agrarservice/GlobalMarketClient
-- Les balles en cours de fermentation ne peuvent pas être achetées ou vendues tant que l'ensilage n'est pas terminé.]]></fr>
-        <pl><![CDATA[Handluj plonami, cieczami, belami i paletami na dynamicznym Rynku Globalnym – zarówno w trybie jednoosobowym, jak i wieloosobowym!
+- Client en ligne optionnel et informations complémentaires : https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Les balles d'ensilage encore en fermentation ne peuvent être échangées qu'une fois la fermentation terminée.]]></fr>
+        <pl><![CDATA[Kupuj i sprzedawaj plony, ciecze, bele i palety na dynamicznym Rynku Globalnym – w trybie jednoosobowym, wieloosobowym i na serwerach dedykowanych.
 
-Rynek Globalny dodaje dedykowaną stronę handlową bezpośrednio do menu ESC (domyślny skrót: Lewy Alt + M) i automatycznie rozpoznaje wszystkie silosy oraz magazyny bel i palet oparte na standardowych skryptach GIANTS.
+Rynek Globalny dodaje własną stronę do menu ESC (domyślnie: Lewy Alt + M) i współpracuje bezpośrednio z twoimi silosami, magazynami produkcyjnymi oraz magazynami bel i palet.
 
-Rynek może działać zarówno w trybie offline, jak i online: Bez dodatkowych narzędzi Rynek Globalny jest w pełni symulowany lokalnie (offline). Aby korzystać z pełnej obsługi wspólnego rynku online, wymagany jest opcjonalny klient GlobalMarketClient.
+Offline lub online:
+- Bez dodatkowego oprogramowania działa symulowany rynek, którego ceny opierają się na punktach sprzedaży na twojej mapie.
+- Z opcjonalnym klientem GlobalMarketClient handlujesz na wspólnym rynku online, na którym zakupy i sprzedaż wszystkich graczy kształtują zapasy i trendy cenowe.
 
-Funkcje:
-- Dynamiczny popyt i podaż: Ceny rynkowe dostosowują się dynamicznie do aktualnych stanów magazynowych, wahań sezonowych, poziomu trudności ekonomicznej oraz wydarzeń dużego popytu.
-- Pełna obsługa magazynów i formatów: Kupuj i sprzedawaj towary luzem, ciecze, bele okrągłe i kostki, palety, BigBagi oraz zbiorniki IBC bezpośrednio ze swoich magazynów lub do nich.
-- Wyszukiwanie i kategorie: Filtruj towary za pomocą wyszukiwarki na żywo, przełączaj widoki (Kompaktowy, Szczegółowy, A-Z) i śledź trendy cenowe na bieżąco.
-- Współdzielone terminale logistyczne: Obsługuje terminale Rynku Globalnego (isGmMarket) ze ścisłym podziałem zasobów na gospodarstwa w trybie wieloosobowym, handlem bezpośrednim bez kosztów dostawy oraz konfigurowalnym limitem czasu składowania.
-- Szczegółowe finanse i ustawienia: Opcjonalne szczegółowe zestawienie finansowe oraz rozbudowane ustawienia administratora dotyczące kosztów dostawy, marży handlowej, pojemności rynku, czyszczenia magazynu i dużego popytu.
-- Wsparcie dla modów i map: Automatycznie wykrywa niestandardowe towary z map oraz modyfikacji i obsługuje zewnętrzne konfiguracje XML.
+Handel:
+- Ceny reagują na podaż i popyt, porę roku oraz poziom trudności ekonomicznej. Duży popyt jest ogłaszany powiadomieniami w HUD.
+- Handluj towarami luzem, cieczami, belami okrągłymi i kostkami, paletami, BigBagami i zbiornikami IBC bezpośrednio ze swoich magazynów i do nich.
+- Wyszukiwanie na żywo, trzy widoki kategorii i strzałki trendów cenowych zapewniają przejrzystość.
+
+Kontrakty dostaw i oferty bezpośrednie:
+- Realizuj kontrakty od kupców NPC lub innych gospodarstw albo wystawiaj własne kontrakty zakupu.
+- Wystawiaj partie towaru jako oferty bezpośrednie w cenie do ±10 % ceny rynkowej.
+- Towary przychodzące i zwrócone czekają w skrytce odbiorczej twojego gospodarstwa.
+- Z klientem GlobalMarketClient również między serwerami.
+
+Magazyny Rynku Globalnego:
+- Obsługuje budynki magazynowe GM z innych modów: brak kosztów dostawy, oddzielne zapasy dla każdego gospodarstwa w trybie wieloosobowym, miesięczne opłaty magazynowe i konfigurowalny maksymalny czas składowania.
+
+Ustawienia i rozszerzalność:
+- Koszty dostawy, marża handlowa, pojemność rynku, czas składowania, duży popyt, aktywność NPC i limity kontraktów można ustawić osobno dla trybu jednoosobowego, wieloosobowego i serwerów dedykowanych.
+- Opcjonalne szczegółowe zestawienie w przeglądzie finansów.
+- Towary z modowanych map i produkcji są wykrywane automatycznie; modderzy mogą rozszerzać mod przez XML.
+- Strony pomocy w menu pomocy ESC.
 
 Uwagi:
-- Opcjonalny klient online oraz więcej informacji na GitHubie: https://github.com/D-S-Agrarservice/GlobalMarketClient
-- Bele będące aktualnie w trakcie fermentacji nie mogą być kupowane ani sprzedawane do momentu zakończenia kiszenia.]]></pl>
+- Opcjonalny klient online i więcej informacji: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Bele kiszonki, które jeszcze fermentują, można sprzedawać i kupować dopiero po zakończeniu fermentacji.]]></pl>
     </description>
     <iconFilename>icon_GM.dds</iconFilename>
     <l10n filenamePrefix="translations/l10n"/>
