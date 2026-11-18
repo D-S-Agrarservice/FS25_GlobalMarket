@@ -54,6 +54,12 @@ GlobalMarket operates seamlessly in two modes:
 * **Deep Packaging Resolution:** Buy and sell loose liters or physical containers (Pallets, BigBags, BigBag Pallets, IBC Tanks, Round Bales, and Square Bales). Actively fermenting silage bales are safely excluded from trading until fermentation completes.
 * **GM Logistics Terminals (`isGmMarket`):** Optional dedicated logistics buildings with strict multi-farm stock isolation on multiplayer servers, `0 €` delivery fees (physical self-delivery/pickup), configurable monthly storage fees, and optional storage expiration/decay warnings.
 
+#### Supply Contracts & Direct Offers
+* **Supply Contracts:** Players and NPC contractors post delivery contracts (1–6 months) with a price bonus on top of the market price. Player contracts are backed by an escrow the issuer deposits up front; if an accepted contract is not fulfilled by its deadline, the supplier pays a `15 %` penalty on the undelivered value. Admins can limit active contracts per farm and the size of the NPC board.
+* **Direct Offers:** Sell lots to other farms or NPC traders at up to `±10 %` of the current market price.
+* **Pickup Inbox:** Goods that cannot be placed into a matching storage right away are kept in a per-farm inbox for a grace period before being sold off automatically.
+* **Cross-Server Online Contracts (Companion App):** With the GlobalMarketClient connected, contracts and offers can also be published to and accepted from other servers. Admins choose which parts go online (all, contracts only, offers only, or local only).
+
 #### Native FS25 UI, Finances & Administration
 * **Native `InGameMenu` Integration:** Cleanly injected tab in the FS25 `ESC` menu with live search filtering, 3 switchable category layouts (*Detailed*, *Compact*, *Flat A–Z*), trend arrows, and transparent cost breakdowns (base value, dealer markup, and delivery fees).
 * **Dedicated Server Ready (Zero Server-Side `.exe` Required):** Uses a dynamic **Data-Host Token & Standby Failover** system so Dedicated Servers can participate in the live Online Market as soon as at least one connected player runs the Companion Client on their PC.
@@ -225,21 +231,32 @@ Placeable modders can turn custom silos or object storages into official **Globa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Lean lifecycle orchestrator, InGameMenu injection & input bindings
 ├── modDesc.xml               # FS25 mod descriptor (descVersion 116)
-├── events/                   # 11 dedicated Multiplayer synchronization & transaction events
-├── gui/                      # GlobalMarketUI & GlobalMarketDialog controllers, XML layouts & profiles
+├── events/                   # 14 dedicated Multiplayer synchronization, transaction & contract events
+├── gui/                      # Market UI, Contracts sub-tab & two dialogs (controllers, XML layouts & profiles)
+│   ├── GlobalMarketUI.lua / .xml             # Main InGameMenu frame: storage & market lists, search, categories
+│   ├── GlobalMarketContractsUI.lua           # Sub-tab controller: supply contracts, direct offers & Pickup Inbox
+│   ├── GlobalMarketDialog.lua / .xml         # Buy/sell transaction dialog (storage, packaging format, fee preview)
+│   ├── GlobalMarketContractDialog.lua / .xml # Multi-mode dialog for contracts, offers & inbox withdrawals
+│   └── guiProfiles.xml                       # Shared GUI profiles
 ├── images/                   # Menu & UI texture assets (.dds)
 ├── modules/                  # Specialized domain modules:
 │   ├── GlobalMarketAPI.lua                   # 3-Tier whitelist/blacklist/category & metadata API
 │   ├── GlobalMarketAccess.lua                # Multi-farm access & isolation hooks for GM Terminals
 │   ├── GlobalMarketBranding.lua              # 3-Tier online market branding (synced name & local logo)
 │   ├── GlobalMarketCompatibilityManager.lua  # Dynamic mod conflict firewall & mitigation rules
+│   ├── GlobalMarketContracts.lua             # Supply contracts, NPC contract board, escrow & penalties
+│   ├── GlobalMarketContractsOnline.lua       # Cross-server online contracts & offers (Pending -> Ack)
+│   ├── GlobalMarketContractsOnlineSync.lua   # Incoming contractData parser, settlements & snapshot merge
+│   ├── GlobalMarketContractsStorage.lua      # Contract/offer storage withdrawals, deposits & Pickup Inbox
 │   ├── GlobalMarketDebug.lua                 # Leveled logger with round-robin dump rotation
-│   ├── GlobalMarketFinance.lua               # Unconditional MoneyType registration & ledger routing
+│   ├── GlobalMarketFarmCleanup.lua           # Cleanup of farm-keyed GM data on farm deletion
+│   ├── GlobalMarketFinance.lua               # MoneyType registration, ledger routing, GM storage fees & decay
+│   ├── GlobalMarketOffers.lua                # +/-10% direct offers, NPC buying & contracts savegame persistence
 │   ├── GlobalMarketOffline.lua               # Map-Spy pricing, local NPC simulation & Great Demands
-│   ├── GlobalMarketOnline.lua                # Online trend pricing & authoritative Great Demand sync
+│   ├── GlobalMarketOnline.lua                # Online trend pricing, EXE version floor & offline state restore
 │   ├── GlobalMarketSavegame.lua              # Savegame persistence for market stock & GM Terminals
 │   ├── GlobalMarketSettings.lua              # Environment-aware (sp/mp/dedi) settings injection
-│   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage transfers, storage fees & decay
+│   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage discovery & market transfers
 │   ├── GlobalMarketStoreCache.lua            # 2-phase deep XML scanner for pallets, BigBags & IBCs
 │   └── GlobalMarketSync.lua                  # Companion App XML bridge, token failover & HUD icon
 ├── translations/             # Localized strings (DE, EN, ES, FR, PL)
@@ -313,6 +330,12 @@ Der Globale Markt arbeitet nahtlos in zwei Betriebsmodi:
 * **Automatische Lagererkennung:** Unterstützt Standard-Schüttgutsilos (`spec_silo`), Produktionslager sowie Objektlager (`spec_objectStorage`) für Paletten und Ballen.
 * **Tiefgehende Gebinde-Auswahl:** Kaufe und verkaufe lose Liter oder physische Gebinde (Paletten, BigBags, BigBag-Paletten, IBC-Tanks, Rundballen und Quaderballen). Noch gärende Silageballen sind während der Fermentation automatisch vom Handel ausgeschlossen.
 * **GM-Logistik-Terminals (`isGmMarket`):** Optionale Spezialgebäude mit strikter Hof-Trennung im Multiplayer, `0 €` Lieferkosten (für physische Selbstanlieferung/-abholung), einstellbaren monatlichen Lagergebühren sowie optionaler Lagerräumung nach Ablauf der Lagerfrist.
+
+#### Lieferverträge & Direktangebote
+* **Lieferverträge:** Spieler und NPC-Abnehmer schreiben Lieferverträge (1–6 Monate) mit Preisaufschlag auf den Marktpreis aus. Spieler-Verträge sind durch einen Treuhandbetrag gedeckt, den der Aussteller vorab hinterlegt; wird ein angenommener Vertrag bis zur Frist nicht erfüllt, zahlt der Lieferant `15 %` Vertragsstrafe auf den fehlenden Warenwert. Admins können die aktiven Verträge je Hof und die Größe des NPC-Boards begrenzen.
+* **Direktangebote:** Verkaufe Partien an andere Höfe oder NPC-Händler zu bis zu `±10 %` des aktuellen Marktpreises.
+* **Abholfach (Pickup Inbox):** Waren, die nicht sofort in ein passendes Lager passen, bleiben für eine Frist im Abholfach des Hofs und werden danach automatisch verkauft.
+* **Serverübergreifende Online-Verträge (Companion-Client):** Mit verbundenem GlobalMarketClient lassen sich Verträge und Angebote auch für andere Server veröffentlichen und von dort annehmen. Admins legen fest, was online geht (alles, nur Verträge, nur Angebote oder nur lokal).
 
 #### Natives LS25-UI, Finanzen & Administration
 * **Saubere `InGameMenu`-Integration:** Eigener Reiter im `ESC`-Menü mit Live-Suchfeld, 3 umschaltbaren Kategorie-Ansichten (*Detailliert*, *Kompakt*, *A–Z*), Preistrend-Pfeilen und transparenter Kostenaufschlüsselung (Warenwert, Händleraufschlag, Lieferkosten).
