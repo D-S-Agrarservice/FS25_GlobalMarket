@@ -312,6 +312,35 @@ function GlobalMarketVehicleListings.getDealerValue(snapshot, resolved)
     return Vehicle.calculateSellPrice(storeItem, snapshot.age or 0, snapshot.operatingTime or 0, price, repairPrice, repaintPrice)
 end
 
+---Returns the asking price of a listing on this server (nil if the vehicle is not available here)
+---@param listing table
+---@return number|nil price
+function GlobalMarketVehicleListings.getListingPrice(listing)
+    local resolved = GlobalMarketVehicleListings.resolveSnapshot(listing.snapshot)
+    if resolved == nil then
+        return nil
+    end
+    return math.floor(GlobalMarketVehicleListings.getDealerValue(listing.snapshot, resolved) * (listing.priceFactor or 1) + 0.5)
+end
+
+---Returns "Brand Name" of a vehicle by its (network) xml filename
+---@param xmlFilename string|nil
+---@return string
+function GlobalMarketVehicleListings.getDisplayName(xmlFilename)
+    if xmlFilename == nil or xmlFilename == "" then
+        return "?"
+    end
+    local storeItem = g_storeManager:getItemByXMLFilename(NetworkUtil.convertFromNetworkFilename(xmlFilename))
+    if storeItem == nil then
+        return xmlFilename
+    end
+    local brand = (g_brandManager ~= nil and storeItem.brandIndex ~= nil) and g_brandManager:getBrandByIndex(storeItem.brandIndex) or nil
+    if brand ~= nil and brand.title ~= nil and brand.title ~= "" then
+        return string.format("%s %s", brand.title, storeItem.name)
+    end
+    return storeItem.name or xmlFilename
+end
+
 -- =========================================================================
 -- RESPAWN (Server)
 -- =========================================================================

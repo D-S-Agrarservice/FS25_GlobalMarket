@@ -219,6 +219,9 @@ function GlobalMarket:onFarmDeleted(farmId)
 
     local contractsChanged = self:cleanupContractsForDeletedFarm(farmId)
     local removedLiters = self:cleanupGmStorageForDeletedFarm(farmId)
+    if self.cleanupVehicleListingsForDeletedFarm ~= nil then
+        self:cleanupVehicleListingsForDeletedFarm(farmId)
+    end
 
     if contractsChanged then
         if self.replenishNpcContractsAndOffers ~= nil then

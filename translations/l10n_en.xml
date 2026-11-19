@@ -159,6 +159,33 @@
         <e k="ui_gm_storage_split"                                 v="(Farm: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="GM storage: cleared in %s" />
         <e k="ui_gm_storage_feesHigh"                              v="increased storage fees" />
+        <e k="ui_gm_vehicles_group_specialCrops"                   v="Special crops" />
+        <e k="ui_gm_vehicles_notice_listed"                        v="%s is now listed on the GM vehicle market for %s." />
+        <e k="ui_gm_vehicles_notice_newListing"                    v="New on the GM vehicle market: %s for %s." />
+        <e k="ui_gm_vehicles_notice_bought"                        v="Bought %s for %s. Pick it up at the dealer." />
+        <e k="ui_gm_vehicles_notice_sold"                          v="%s was sold for %s to %s." />
+        <e k="ui_gm_vehicles_notice_returned"                      v="%s is back and ready at the dealer." />
+        <e k="ui_gm_vehicles_notice_returnPending"                 v="%s could not be returned: the dealer's pickup area is blocked. Retrying every hour." />
+        <e k="ui_gm_vehicles_notice_expired"                       v="The listing for %s has expired. The vehicle is returned to you." />
+        <e k="ui_gm_vehicles_reason_invalid"                       v="This vehicle cannot be listed." />
+        <e k="ui_gm_vehicles_reason_notTradeable"                  v="This item does not belong on the vehicle market." />
+        <e k="ui_gm_vehicles_reason_notOwned"                      v="Only vehicles your farm owns can be listed." />
+        <e k="ui_gm_vehicles_reason_inUse"                         v="The vehicle is currently in use." />
+        <e k="ui_gm_vehicles_reason_attached"                      v="Detach all implements first." />
+        <e k="ui_gm_vehicles_reason_hasCargo"                      v="The vehicle must be empty." />
+        <e k="ui_gm_vehicles_reason_priceOutOfRange"               v="The price must be between %d %% and %d %% of the dealer value." />
+        <e k="ui_gm_vehicles_reason_durationOutOfRange"            v="The duration must be between %d and %d months." />
+        <e k="ui_gm_vehicles_reason_marketFull"                    v="The vehicle market is full." />
+        <e k="ui_gm_vehicles_reason_farmLimitReached"              v="Your farm already has %d vehicles listed." />
+        <e k="ui_gm_vehicles_reason_notAvailable"                  v="This vehicle is not available on this server." />
+        <e k="ui_gm_vehicles_reason_listingNotFound"               v="This listing no longer exists." />
+        <e k="ui_gm_vehicles_reason_notOwner"                      v="This is not your listing." />
+        <e k="ui_gm_vehicles_reason_listingBusy"                   v="This listing is currently being processed." />
+        <e k="ui_gm_vehicles_reason_ownListing"                    v="You cannot buy your own listing." />
+        <e k="ui_gm_vehicles_reason_notEnoughMoney"                v="Not enough money." />
+        <e k="ui_gm_vehicles_reason_noSpace"                       v="No free pickup space at the dealer." />
+        <e k="ui_gm_vehicles_reason_loadFailed"                    v="The vehicle could not be loaded." />
+        <e k="ui_gm_vehicles_reason_noPermission"                  v="You do not have permission to do this." />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
         <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
         <e k="ui_gm_trend"                                         v="Trend" />

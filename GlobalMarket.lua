@@ -152,6 +152,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketContracts.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsStations.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleMarket.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketVehicleTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -159,6 +160,8 @@ source(GlobalMarket.dir .. "modules/GlobalMarketFarmCleanup.lua")
 source(GlobalMarket.dir .. "events/SyncContractsStateEvent.lua")
 source(GlobalMarket.dir .. "events/ContractActionEvent.lua")
 source(GlobalMarket.dir .. "events/ContractOnlineBridgeEvent.lua")
+source(GlobalMarket.dir .. "events/VehicleMarketActionEvent.lua")
+source(GlobalMarket.dir .. "events/SyncVehicleMarketEvent.lua")
 
 
 -- =========================================================================
@@ -331,6 +334,8 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmVehicleMarketList", "Lists own vehicles (eligibility, dealer value) and all vehicle market listings", "consoleCommandVehicleMarketList", self)
             addConsoleCommand("gmVehicleMarketSell", "Lists an own vehicle: <index> [pricePercent=100] [months=3]", "consoleCommandVehicleMarketSell", self)
             addConsoleCommand("gmVehicleMarketReturn", "Returns a listed vehicle to its seller: <listingId|pending>", "consoleCommandVehicleMarketReturn", self)
+            addConsoleCommand("gmVehicleMarketBuy", "Buys a vehicle market listing for the own farm: <listingId>", "consoleCommandVehicleMarketBuy", self)
+            addConsoleCommand("gmAdvanceVehicleMarket", "Advances vehicle market listing timers in months (expiry test)", "consoleCommandAdvanceVehicleMarket", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -345,6 +350,8 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmVehicleMarketList")
             removeConsoleCommand("gmVehicleMarketSell")
             removeConsoleCommand("gmVehicleMarketReturn")
+            removeConsoleCommand("gmVehicleMarketBuy")
+            removeConsoleCommand("gmAdvanceVehicleMarket")
             self.debugCommandsRegistered = false
         end
     end

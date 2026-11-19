@@ -159,6 +159,33 @@
         <e k="ui_gm_storage_split"                                 v="(Gosp.: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Magazyn GM: usunięcie za %s" />
         <e k="ui_gm_storage_feesHigh"                              v="podwyższone opłaty magazynowe" />
+        <e k="ui_gm_vehicles_group_specialCrops"                   v="Uprawy specjalne" />
+        <e k="ui_gm_vehicles_notice_listed"                        v="%s jest teraz wystawiony na rynku pojazdów GM za %s." />
+        <e k="ui_gm_vehicles_notice_newListing"                    v="Nowość na rynku pojazdów GM: %s za %s." />
+        <e k="ui_gm_vehicles_notice_bought"                        v="Kupiono %s za %s. Odbiór u dealera." />
+        <e k="ui_gm_vehicles_notice_sold"                          v="%s sprzedano za %s gospodarstwu %s." />
+        <e k="ui_gm_vehicles_notice_returned"                      v="%s ponownie czeka u dealera." />
+        <e k="ui_gm_vehicles_notice_returnPending"                 v="Nie można zwrócić %s: miejsce odbioru u dealera jest zajęte. Ponowna próba co godzinę." />
+        <e k="ui_gm_vehicles_notice_expired"                       v="Oferta dla %s wygasła. Pojazd wraca do ciebie." />
+        <e k="ui_gm_vehicles_reason_invalid"                       v="Tego pojazdu nie można wystawić." />
+        <e k="ui_gm_vehicles_reason_notTradeable"                  v="Ten przedmiot nie należy do rynku pojazdów." />
+        <e k="ui_gm_vehicles_reason_notOwned"                      v="Można wystawić tylko pojazdy będące własnością gospodarstwa." />
+        <e k="ui_gm_vehicles_reason_inUse"                         v="Pojazd jest obecnie używany." />
+        <e k="ui_gm_vehicles_reason_attached"                      v="Najpierw odłącz wszystkie maszyny." />
+        <e k="ui_gm_vehicles_reason_hasCargo"                      v="Pojazd musi być pusty." />
+        <e k="ui_gm_vehicles_reason_priceOutOfRange"               v="Cena musi wynosić od %d %% do %d %% wartości u dealera." />
+        <e k="ui_gm_vehicles_reason_durationOutOfRange"            v="Czas trwania musi wynosić od %d do %d miesięcy." />
+        <e k="ui_gm_vehicles_reason_marketFull"                    v="Rynek pojazdów jest pełny." />
+        <e k="ui_gm_vehicles_reason_farmLimitReached"              v="Twoje gospodarstwo ma już wystawionych %d pojazdów." />
+        <e k="ui_gm_vehicles_reason_notAvailable"                  v="Ten pojazd nie jest dostępny na tym serwerze." />
+        <e k="ui_gm_vehicles_reason_listingNotFound"               v="Ta oferta już nie istnieje." />
+        <e k="ui_gm_vehicles_reason_notOwner"                      v="To nie jest twoja oferta." />
+        <e k="ui_gm_vehicles_reason_listingBusy"                   v="Ta oferta jest właśnie przetwarzana." />
+        <e k="ui_gm_vehicles_reason_ownListing"                    v="Nie możesz kupić własnej oferty." />
+        <e k="ui_gm_vehicles_reason_notEnoughMoney"                v="Za mało pieniędzy." />
+        <e k="ui_gm_vehicles_reason_noSpace"                       v="Brak wolnego miejsca odbioru u dealera." />
+        <e k="ui_gm_vehicles_reason_loadFailed"                    v="Nie udało się wczytać pojazdu." />
+        <e k="ui_gm_vehicles_reason_noPermission"                  v="Nie masz do tego uprawnień." />
         <e k="ui_gm_terminal_hint"                                 v=" (Centrum Logistyczne GM - bez opłat)" />
         <e k="ui_gm_total_storage"                                 v="CAŁKOWITY ZAPAS:" />
         <e k="ui_gm_trend"                                         v="Trend" />

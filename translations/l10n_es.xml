@@ -159,6 +159,33 @@
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Almacén GM: vaciado en %s" />
         <e k="ui_gm_storage_feesHigh"                              v="tasas de almacenamiento elevadas" />
+        <e k="ui_gm_vehicles_group_specialCrops"                   v="Cultivos especiales" />
+        <e k="ui_gm_vehicles_notice_listed"                        v="%s ya está a la venta en el mercado de vehículos GM por %s." />
+        <e k="ui_gm_vehicles_notice_newListing"                    v="Nuevo en el mercado de vehículos GM: %s por %s." />
+        <e k="ui_gm_vehicles_notice_bought"                        v="Has comprado %s por %s. Recógelo en el concesionario." />
+        <e k="ui_gm_vehicles_notice_sold"                          v="%s se ha vendido por %s a %s." />
+        <e k="ui_gm_vehicles_notice_returned"                      v="%s vuelve a estar disponible en el concesionario." />
+        <e k="ui_gm_vehicles_notice_returnPending"                 v="No se ha podido devolver %s: la zona de recogida del concesionario está ocupada. Se reintentará cada hora." />
+        <e k="ui_gm_vehicles_notice_expired"                       v="La oferta de %s ha caducado. El vehículo te será devuelto." />
+        <e k="ui_gm_vehicles_reason_invalid"                       v="Este vehículo no se puede poner a la venta." />
+        <e k="ui_gm_vehicles_reason_notTradeable"                  v="Este objeto no pertenece al mercado de vehículos." />
+        <e k="ui_gm_vehicles_reason_notOwned"                      v="Solo se pueden vender vehículos propios comprados." />
+        <e k="ui_gm_vehicles_reason_inUse"                         v="El vehículo está en uso." />
+        <e k="ui_gm_vehicles_reason_attached"                      v="Desengancha primero todos los aperos." />
+        <e k="ui_gm_vehicles_reason_hasCargo"                      v="El vehículo debe estar vacío." />
+        <e k="ui_gm_vehicles_reason_priceOutOfRange"               v="El precio debe estar entre el %d %% y el %d %% del valor del concesionario." />
+        <e k="ui_gm_vehicles_reason_durationOutOfRange"            v="La duración debe estar entre %d y %d meses." />
+        <e k="ui_gm_vehicles_reason_marketFull"                    v="El mercado de vehículos está lleno." />
+        <e k="ui_gm_vehicles_reason_farmLimitReached"              v="Tu granja ya tiene %d vehículos a la venta." />
+        <e k="ui_gm_vehicles_reason_notAvailable"                  v="Este vehículo no está disponible en este servidor." />
+        <e k="ui_gm_vehicles_reason_listingNotFound"               v="Esta oferta ya no existe." />
+        <e k="ui_gm_vehicles_reason_notOwner"                      v="Esta oferta no es tuya." />
+        <e k="ui_gm_vehicles_reason_listingBusy"                   v="Esta oferta se está procesando." />
+        <e k="ui_gm_vehicles_reason_ownListing"                    v="No puedes comprar tu propia oferta." />
+        <e k="ui_gm_vehicles_reason_notEnoughMoney"                v="No tienes suficiente dinero." />
+        <e k="ui_gm_vehicles_reason_noSpace"                       v="No hay espacio libre de recogida en el concesionario." />
+        <e k="ui_gm_vehicles_reason_loadFailed"                    v="No se ha podido cargar el vehículo." />
+        <e k="ui_gm_vehicles_reason_noPermission"                  v="No tienes permiso para hacer esto." />
         <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />
         <e k="ui_gm_total_storage"                                 v="STOCK TOTAL:" />
         <e k="ui_gm_trend"                                         v="Tendencia" />

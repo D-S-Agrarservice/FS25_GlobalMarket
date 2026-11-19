@@ -565,6 +565,11 @@ function GlobalMarket:runOfflineSimulation()
         self:updateContractsAndOffersHourly()
     end
 
+    -- Used vehicle market (#16): listing expiry and pending return retries
+    if self.updateVehicleMarketHourly ~= nil then
+        self:updateVehicleMarketHourly()
+    end
+
     if self.offlineMarketFillTypes == nil then
         return
     end

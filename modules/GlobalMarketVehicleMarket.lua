@@ -21,6 +21,18 @@ GlobalMarket.VEHICLE_LISTING_STATUS = {
     RETURN_PENDING = "RETURN_PENDING"
 }
 
+-- HUD notice kinds (server -> clients, see GlobalMarketVehicleTrade.lua)
+GlobalMarket.VEHICLE_NOTICE = {
+    RESULT = 1,          -- Error result of an own request (code = reason)
+    LISTED = 2,          -- Own vehicle is now listed
+    NEW_LISTING = 3,     -- Another farm listed a vehicle
+    BOUGHT = 4,
+    SOLD = 5,
+    RETURNED = 6,
+    RETURN_PENDING = 7,
+    EXPIRED = 8
+}
+
 -- =========================================================================
 -- STATE
 -- =========================================================================
@@ -64,14 +76,6 @@ function GlobalMarket:removeVehicleListing(listing)
     if index ~= nil then
         table.remove(self.vehicleListings, index)
     end
-end
-
----Returns the display name of a farm
----@param farmId number
----@return string
-local function getFarmName(farmId)
-    local farm = (g_farmManager ~= nil) and g_farmManager:getFarmById(farmId) or nil
-    return (farm ~= nil and farm.name ~= nil) and farm.name or ("Farm " .. tostring(farmId))
 end
 
 -- =========================================================================
@@ -129,7 +133,7 @@ function GlobalMarket:createVehicleListing(vehicle, farmId, priceFactor, duratio
         uid = string.format("%s_v%d", serverId, id),
         status = GlobalMarket.VEHICLE_LISTING_STATUS.OPEN,
         sellerFarmId = farmId,
-        sellerName = getFarmName(farmId),
+        sellerName = GlobalMarket.getVehicleMarketFarmName(farmId),
         isNpc = false,
         saleMode = "FIXED",
         priceFactor = priceFactor,
@@ -138,6 +142,10 @@ function GlobalMarket:createVehicleListing(vehicle, farmId, priceFactor, duratio
     }
     table.insert(self.vehicleListings, listing)
     vehicle:delete()
+
+    local price = GlobalMarketVehicleListings.getListingPrice(listing) or 0
+    self:notifyVehicleMarketFarms(GlobalMarket.VEHICLE_NOTICE.NEW_LISTING, 0, farmId, "", snapshot.xmlFilename, price, "")
+    self:broadcastVehicleMarketState()
 
     if self.debugManager ~= nil then
         self.debugManager:info("VehicleMarket: Listing #%d created by farm %d (%s, %.0f%% of dealer value, %d months).",
@@ -168,6 +176,7 @@ function GlobalMarket:returnVehicleListing(listing)
         if self.debugManager ~= nil then
             self.debugManager:warning("VehicleMarket: Listing #%d cannot be returned yet (%s). Kept as pending.", listing.id, tostring(reason))
         end
+        self:onVehicleReturnDeferred(listing)
         return
     end
     listing.isReturning = true
@@ -187,10 +196,25 @@ function GlobalMarket:onVehicleListingReturned(vehicles, loadingState, args)
         if self.debugManager ~= nil then
             self.debugManager:info("VehicleMarket: Listing #%d returned to farm %d.", listing.id, listing.sellerFarmId)
         end
-    elseif self.debugManager ~= nil then
+        self:notifyVehicleMarketFarms(GlobalMarket.VEHICLE_NOTICE.RETURNED, listing.sellerFarmId, 0, "", listing.snapshot.xmlFilename, 0, "")
+        self:broadcastVehicleMarketState()
+        return
+    end
+    if self.debugManager ~= nil then
         self.debugManager:warning("VehicleMarket: Return of listing #%d failed (loading state %s). Retrying later.",
             listing.id, tostring(loadingState))
     end
+    self:onVehicleReturnDeferred(listing)
+end
+
+---Marks a failed return as pending; the seller is notified once, the next try runs hourly
+---@param listing table
+function GlobalMarket:onVehicleReturnDeferred(listing)
+    if not listing.returnPendingNotified then
+        listing.returnPendingNotified = true
+        self:notifyVehicleMarketFarms(GlobalMarket.VEHICLE_NOTICE.RETURN_PENDING, listing.sellerFarmId, 0, "", listing.snapshot.xmlFilename, 0, "")
+    end
+    self:broadcastVehicleMarketState()
 end
 
 ---Withdraws an open listing of a farm and returns the vehicle
@@ -299,7 +323,7 @@ function GlobalMarket:loadVehicleMarketFromXml(xmlFile)
 end
 
 -- =========================================================================
--- DEBUG CONSOLE (SP / MP host only)
+-- DEBUG CONSOLE
 -- =========================================================================
 
 ---Returns the vehicles of a farm that are vehicle-market items (eligible or not)
@@ -322,14 +346,18 @@ function GlobalMarket:getVehicleMarketFarmVehicles(farmId)
     return result
 end
 
----Shared guard for the vehicle market console commands
+---Shared guard for the vehicle market console commands (works on SP, MP host and MP clients)
 ---@return string|nil errorText
 local function getConsoleGuardError()
     if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
         return "GM Debug Mode is disabled."
     end
-    if g_currentMission == nil or not g_currentMission:getIsServer() then
-        return "Execute vehicle market commands on the server/SP host."
+    if g_currentMission == nil then
+        return "No mission running."
+    end
+    local farmId = g_currentMission:getFarmId()
+    if farmId == nil or farmId == FarmManager.SPECTATOR_FARM_ID then
+        return "Join a farm first (the dedicated server console has no farm)."
     end
     return nil
 end
@@ -353,9 +381,11 @@ function GlobalMarket:consoleCommandVehicleMarketList()
     end
     table.insert(lines, string.format("Listings (%d):", #(self.vehicleListings or {})))
     for _, listing in ipairs(self.vehicleListings or {}) do
-        table.insert(lines, string.format("  #%d %s | farm %d | %s | %.0f%% | %.1f months | %d configs",
-            listing.id, listing.status, listing.sellerFarmId, tostring(listing.snapshot.xmlFilename),
-            (listing.priceFactor or 1) * 100, listing.monthsRemaining or 0, #(listing.snapshot.configs or {})))
+        local price = GlobalMarketVehicleListings.getListingPrice(listing)
+        table.insert(lines, string.format("  #%d %s | %s | seller farm %d | %s | %.0f%% = %s | %.2f months | %d configs",
+            listing.id, listing.status, GlobalMarketVehicleListings.getDisplayName(listing.snapshot.xmlFilename),
+            listing.sellerFarmId, listing.snapshot.group or "-", (listing.priceFactor or 1) * 100,
+            price ~= nil and string.format("%d", price) or "n/a", listing.monthsRemaining or 0, #(listing.snapshot.configs or {})))
     end
     return table.concat(lines, "\n")
 end
@@ -374,27 +404,43 @@ function GlobalMarket:consoleCommandVehicleMarketSell(indexArg, pricePctArg, mon
     if vehicle == nil then
         return "Usage: gmVehicleMarketSell <index from gmVehicleMarketList> [pricePercent=100] [months=3]"
     end
-    local listing, reason = self:createVehicleListing(vehicle, farmId, (tonumber(pricePctArg) or 100) / 100, tonumber(monthsArg) or 3, nil)
-    if listing == nil then
-        return "Listing rejected: " .. tostring(reason)
-    end
-    return string.format("Listing #%d created (%d configs).", listing.id, #listing.snapshot.configs)
+    VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_CREATE, farmId, vehicle, 0,
+        (tonumber(pricePctArg) or 100) / 100, tonumber(monthsArg) or 3)
+    return "Listing request sent (result appears as HUD notice)."
 end
 
----Console: returns a listing to its seller (withdraw) or retries all pending returns
----@param listingIdArg string|nil Listing ID, or "pending" to retry pending returns
+---Console: withdraws an own listing, or (server only) retries all pending returns
+---@param listingIdArg string|nil Listing ID, or "pending"
 function GlobalMarket:consoleCommandVehicleMarketReturn(listingIdArg)
     local guardError = getConsoleGuardError()
     if guardError ~= nil then
         return guardError
     end
     if listingIdArg == "pending" then
+        if not g_currentMission:getIsServer() then
+            return "Pending returns can only be retried on the server/SP host."
+        end
         return string.format("Retried %d pending return(s).", self:retryPendingVehicleReturns())
     end
-    local listing = self:getVehicleListingById(tonumber(listingIdArg) or 0)
-    if listing == nil then
+    local listingId = tonumber(listingIdArg)
+    if listingId == nil then
         return "Usage: gmVehicleMarketReturn <listingId|pending>"
     end
-    self:returnVehicleListing(listing)
-    return string.format("Return of listing #%d started (status %s).", listing.id, listing.status)
+    VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_CANCEL, g_currentMission:getFarmId(), nil, listingId, 1, 1)
+    return "Withdraw request sent (result appears as HUD notice)."
+end
+
+---Console: buys a listing for the own farm
+---@param listingIdArg string
+function GlobalMarket:consoleCommandVehicleMarketBuy(listingIdArg)
+    local guardError = getConsoleGuardError()
+    if guardError ~= nil then
+        return guardError
+    end
+    local listingId = tonumber(listingIdArg)
+    if listingId == nil then
+        return "Usage: gmVehicleMarketBuy <listingId>"
+    end
+    VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_BUY, g_currentMission:getFarmId(), nil, listingId, 1, 1)
+    return "Purchase request sent (result appears as HUD notice)."
 end
