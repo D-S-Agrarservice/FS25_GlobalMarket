@@ -150,6 +150,8 @@ source(GlobalMarket.dir .. "modules/GlobalMarketSync.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsStorage.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContracts.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsStations.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketVehicleListings.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketVehicleMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -278,6 +280,11 @@ function GlobalMarket:loadMap(name)
             self:initContractsSystem()
         end
 
+        -- Initialize the used vehicle market (#16)
+        if self.initVehicleMarket ~= nil then
+            self:initVehicleMarket()
+        end
+
         -- Build the Server Whitelist based on the fully evaluated offline market
         -- Requirement: getIsServer must be true to generate the external sync file
         if g_currentMission:getIsServer() and self.initServerWhitelist ~= nil then
@@ -321,6 +328,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmToggleOnlineSync", "Toggles GlobalMarket.ENABLE_ONLINE_SYNC master switch for EXE bridge testing", "consoleCommandToggleOnlineSync", self)
             addConsoleCommand("gmTestBranding", "Previews 3-tier online market branding (0/off, 1, 2, 3)", "consoleCommandTestBranding", self)
             addConsoleCommand("gmTestOnlineContracts", "Tests Etappe 2 online contracts capability and mock packets (on/off/mock)", "consoleCommandTestOnlineContracts", self)
+            addConsoleCommand("gmVehicleMarketList", "Lists own vehicles (eligibility, dealer value) and all vehicle market listings", "consoleCommandVehicleMarketList", self)
+            addConsoleCommand("gmVehicleMarketSell", "Lists an own vehicle: <index> [pricePercent=100] [months=3]", "consoleCommandVehicleMarketSell", self)
+            addConsoleCommand("gmVehicleMarketReturn", "Returns a listed vehicle to its seller: <listingId|pending>", "consoleCommandVehicleMarketReturn", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -332,6 +342,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmToggleOnlineSync")
             removeConsoleCommand("gmTestBranding")
             removeConsoleCommand("gmTestOnlineContracts")
+            removeConsoleCommand("gmVehicleMarketList")
+            removeConsoleCommand("gmVehicleMarketSell")
+            removeConsoleCommand("gmVehicleMarketReturn")
             self.debugCommandsRegistered = false
         end
     end
