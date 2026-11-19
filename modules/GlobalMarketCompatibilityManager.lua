@@ -304,6 +304,83 @@ function GMCompatibilityManager:installFirewalls()
             ProductionPoint.updateInfo = Utils.overwrittenFunction(ProductionPoint.updateInfo, gmProdUpdateInfo)
         end
     end
+
+    -- ========================================================
+    -- FIREWALL: EasyDropdowns
+    -- Its dropdown list is drawn after the GUI, but native text renders on top of it, so it
+    -- hides overlapping text leaves while the list is open. GM dialog buttons (-10k, 0, MAX, ...)
+    -- carry a background child, are no leaves and stayed visible above the list.
+    -- ========================================================
+    local easyDropdowns = GMCompatibilityManager.findModGlobal("EasyDropdowns")
+    if easyDropdowns ~= nil and type(easyDropdowns.prepare) == "function" and not easyDropdowns.gmFirewallInstalled then
+        easyDropdowns.gmFirewallInstalled = true
+        local originalPrepare = easyDropdowns.prepare
+        easyDropdowns.prepare = function(gui, ...)
+            originalPrepare(gui, ...)
+            GMCompatibilityManager.hideGmButtonsUnderDropdown(easyDropdowns)
+        end
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:info("[Compatibility] EasyDropdowns detected. Installed dropdown overlay firewall for GM dialogs.")
+        end
+    end
+end
+
+--- Returns a global table defined by another mod (mods run in their own environment _G[modName])
+-- @param string globalName Name of the global inside the other mod's environment
+-- @return table|nil
+function GMCompatibilityManager.findModGlobal(globalName)
+    if g_modManager == nil or g_modManager.getActiveMods == nil then
+        return nil
+    end
+    for _, mod in ipairs(g_modManager:getActiveMods() or {}) do
+        local env = mod.modName ~= nil and _G[mod.modName] or nil
+        if type(env) == "table" and type(rawget(env, globalName)) == "table" then
+            return rawget(env, globalName)
+        end
+    end
+    return nil
+end
+
+--- True if the GUI root is one of the GlobalMarket dialogs
+-- @param table root
+-- @return boolean
+function GMCompatibilityManager.isGmDialog(root)
+    if type(root) ~= "table" or root.isa == nil then
+        return false
+    end
+    return (GlobalMarketDialog ~= nil and root:isa(GlobalMarketDialog))
+        or (GlobalMarketContractDialog ~= nil and root:isa(GlobalMarketContractDialog))
+        or (GlobalMarketVehicleDialog ~= nil and root:isa(GlobalMarketVehicleDialog))
+end
+
+--- Hides GM dialog buttons below an open EasyDropdowns list. They are registered in the
+-- mod's own covered table, so EasyDropdowns restores their visibility when the list closes.
+-- @param table sd EasyDropdowns state table
+function GMCompatibilityManager.hideGmButtonsUnderDropdown(sd)
+    if not sd.expanded or sd.list == nil or sd.covered == nil or ButtonElement == nil
+        or not GMCompatibilityManager.isGmDialog(sd.dialog) then
+        return
+    end
+    local l = sd.list
+    local visited = {}
+    local function visit(e)
+        if type(e) ~= "table" or visited[e] or e.visible == false or e == sd.option then
+            return
+        end
+        visited[e] = true
+        if e.isa ~= nil and e:isa(ButtonElement) and e.absPosition ~= nil and e.absSize ~= nil and e.setVisible ~= nil then
+            local p, s = e.absPosition, e.absSize
+            if p[1] < l.x + l.w and p[1] + s[1] > l.x and p[2] < l.y + l.h and p[2] + s[2] > l.y then
+                sd.covered[e] = true
+                e:setVisible(false)
+                return
+            end
+        end
+        for _, child in ipairs(e.elements or {}) do
+            visit(child)
+        end
+    end
+    visit(sd.dialog)
 end
 
 --- Saves the current compatibility definitions to the local modSettings XML file.
