@@ -1,6 +1,6 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - GlobalMarketContractsOnline.lua
--- Etappe 2: Cross-server online contracts/offers engine, Pending->Ack, and XML sync.
+-- Stage 2: Cross-server online contracts/offers engine, Pending->Ack, and XML sync.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
@@ -14,7 +14,7 @@ GlobalMarketContracts.ONLINE_OFFER_HOURS = { 24, 48, 72 }
 GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS = 30000
 GlobalMarketContracts.MAX_PROCESSED_SETTLEMENTS = 256
 
----Initializes runtime state for Etappe 2 online contracts & direct offers
+---Initializes runtime state for Stage 2 online contracts & direct offers
 function GlobalMarket:initOnlineContractsSystem()
     self.serverInstanceId = self.serverInstanceId or nil
     self.onlineActionCounter = self.onlineActionCounter or 0
@@ -89,7 +89,7 @@ function GlobalMarket:formatOnlineIssuerDisplayName(farmId)
     return string.sub(raw, 1, 48)
 end
 
----Returns true when the active online Data-Host supports Etappe 2 contractData/contractAction
+---Returns true when the active online Data-Host supports Stage 2 contractData/contractAction
 ---@return boolean
 function GlobalMarket:getAreOnlineContractsSupported()
     return self:getIsMarketOnline()
@@ -298,7 +298,7 @@ function GlobalMarket:pruneForeignOnlineContracts(clearContracts, clearOffers)
     end
 end
 
----Handles going offline / Data-Host loss for Etappe 2 contracts state
+---Handles going offline / Data-Host loss for Stage 2 contracts state
 function GlobalMarket:onOnlineContractsDisconnected()
     self.onlineContractsSupported = false
     self.pendingContractActions = {}

@@ -1,6 +1,6 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - GlobalMarketContractsOnlineSync.lua
--- Etappe 2: Incoming contractData XML parser, settlement engine, snapshot merge & timers.
+-- Stage 2: Incoming contractData XML parser, settlement engine, snapshot merge & timers.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
@@ -588,7 +588,7 @@ function GlobalMarket:updateOnlineContractsTimers(dt)
     end
 end
 
----Developer console command for Etappe 2 testing (`gmTestOnlineContracts <on|off|mock>`)
+---Developer console command for Stage 2 testing (`gmTestOnlineContracts <on|off|mock>`)
 function GlobalMarket:consoleCommandTestOnlineContracts(cmdArg)
     if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
         return "GM Debug Mode is disabled."
@@ -602,11 +602,11 @@ function GlobalMarket:consoleCommandTestOnlineContracts(cmdArg)
         self.onlineContractsSupported = true
         self.isOnline = true
         self:broadcastContractsState()
-        return "Etappe 2 Online Contracts debug capability forced ON."
+        return "Stage 2 Online Contracts debug capability forced ON."
     elseif arg == "off" then
         self.debugForceOnlineContracts = false
         self:broadcastContractsState()
-        return "Etappe 2 Online Contracts debug capability override OFF."
+        return "Stage 2 Online Contracts debug capability override OFF."
     end
 
     self.debugForceOnlineContracts = true
@@ -632,5 +632,5 @@ function GlobalMarket:consoleCommandTestOnlineContracts(cmdArg)
             { remoteId = "mock_foreign_o1", origin = "ONLINE", isNpc = false, sellerServerId = "remote_srv_9999", sellerFarmId = 2, sellerName = "Mock Trader [EU]", fillType = "BARLEY", totalLiters = 30000, remainingLiters = 30000, priceDeltaPct = -6, allowPartial = true, remainingSeconds = 86400, wasBale = false, wasPallet = false, status = "OPEN" }
         }
     })
-    return "Injected mock Etappe 2 online contract, direct offer, and accepted pending creates."
+    return "Injected mock Stage 2 online contract, direct offer, and accepted pending creates."
 end

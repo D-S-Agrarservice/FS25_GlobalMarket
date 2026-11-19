@@ -1,6 +1,6 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - ContractOnlineBridgeEvent.lua
--- Bidirectional relay between authoritative Server and remote Data-Host for Etappe 2 XMLs.
+-- Bidirectional relay between authoritative Server and remote Data-Host for Stage 2 XMLs.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
