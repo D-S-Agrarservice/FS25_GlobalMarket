@@ -157,6 +157,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketVehicleListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleNpc.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -192,6 +193,9 @@ function GlobalMarket:loadMap(name)
 
     -- Register global reference
     g_currentMission.globalMarket = self
+
+    -- Animal subtype indices are per mission
+    GlobalMarketAnimalListings.resetCaches()
 
     -- 1. MANDATORY: Initialize FileSystem Infrastructure first
     -- This ensures all path variables (read/write/whitelist) are defined before logic modules access them.
@@ -347,6 +351,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmVehicleMarketMakeNpc", "Turns a listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandVehicleMarketMakeNpc", self)
             addConsoleCommand("gmVehicleMarketSpawnNpc", "Creates NPC dealer vehicle listings now: [count=1]", "consoleCommandVehicleMarketSpawnNpc", self)
             addConsoleCommand("gmAdvanceVehicleMarket", "Advances vehicle market listing timers in months (expiry test)", "consoleCommandAdvanceVehicleMarket", self)
+            addConsoleCommand("gmAnimalMarketList", "Lists own barn/trailer animals (eligibility, dealer value, new price, flags)", "consoleCommandAnimalMarketList", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -365,6 +370,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmVehicleMarketMakeNpc")
             removeConsoleCommand("gmVehicleMarketSpawnNpc")
             removeConsoleCommand("gmAdvanceVehicleMarket")
+            removeConsoleCommand("gmAnimalMarketList")
             self.debugCommandsRegistered = false
         end
     end
