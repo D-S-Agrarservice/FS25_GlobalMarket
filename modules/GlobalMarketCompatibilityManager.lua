@@ -341,16 +341,24 @@ function GMCompatibilityManager.findModGlobal(globalName)
     return nil
 end
 
---- True if the GUI root is one of the GlobalMarket dialogs
+--- True if the GUI root (g_gui.currentListener) belongs to one of the GlobalMarket dialogs.
+-- For dialogs the listener is the GuiElement root; the dialog controller is its target.
 -- @param table root
 -- @return boolean
 function GMCompatibilityManager.isGmDialog(root)
-    if type(root) ~= "table" or root.isa == nil then
+    if type(root) ~= "table" then
         return false
     end
-    return (GlobalMarketDialog ~= nil and root:isa(GlobalMarketDialog))
-        or (GlobalMarketContractDialog ~= nil and root:isa(GlobalMarketContractDialog))
-        or (GlobalMarketVehicleDialog ~= nil and root:isa(GlobalMarketVehicleDialog))
+    for _, candidate in ipairs({ root, root.target }) do
+        if type(candidate) == "table" and candidate.isa ~= nil then
+            if (GlobalMarketDialog ~= nil and candidate:isa(GlobalMarketDialog))
+                or (GlobalMarketContractDialog ~= nil and candidate:isa(GlobalMarketContractDialog))
+                or (GlobalMarketVehicleDialog ~= nil and candidate:isa(GlobalMarketVehicleDialog)) then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 --- Hides GM dialog buttons below an open EasyDropdowns list. They are registered in the
@@ -381,6 +389,7 @@ function GMCompatibilityManager.hideGmButtonsUnderDropdown(sd)
         end
     end
     visit(sd.dialog)
+    visit(sd.dialog.target)
 end
 
 --- Saves the current compatibility definitions to the local modSettings XML file.
