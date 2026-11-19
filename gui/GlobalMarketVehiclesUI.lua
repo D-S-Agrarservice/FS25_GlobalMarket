@@ -359,7 +359,7 @@ function GlobalMarketUI:updateVehiclesMenuButtons()
             self.vehiclesPrimaryButtonInfo.disabled = not row.data.isEligible
             table.insert(list, self.vehiclesPrimaryButtonInfo)
         elseif row.kind == "MARKET_LISTING" then
-            self.vehiclesPrimaryButtonInfo.text = self.i18n:getText("ui_gm_vehicles_action_buy")
+            self.vehiclesPrimaryButtonInfo.text = self.i18n:getText("ui_gm_vehicles_action_viewBuy")
             self.vehiclesPrimaryButtonInfo.disabled = false
             table.insert(list, self.vehiclesPrimaryButtonInfo)
         end
@@ -429,6 +429,10 @@ function GlobalMarketUI:onVehiclePrimaryAction(overrideSection, overrideIndex)
         end
     elseif row.kind == "MARKET_LISTING" then
         local listing = row.data
+        -- Preferred: view & buy in the basegame shop screen (exact configuration and paint)
+        if GlobalMarketVehicleShopBridge ~= nil and GlobalMarketVehicleShopBridge.openListing(listing, farmId) then
+            return
+        end
         local text = string.format(self.i18n:getText("ui_gm_vehicles_confirmBuy"), row.name,
             self.i18n:formatMoney(row.price, 0, true, true))
         -- target == nil: YesNoDialog calls callback(yes, args)

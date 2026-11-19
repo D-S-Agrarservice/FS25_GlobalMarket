@@ -200,6 +200,9 @@
         <e k="ui_gm_vehicles_action_list"                          v="List for sale" />
         <e k="ui_gm_vehicles_action_buy"                           v="Buy" />
         <e k="ui_gm_vehicles_action_withdraw"                      v="Withdraw" />
+        <e k="ui_gm_vehicles_action_viewBuy"                       v="View &amp; Buy" />
+        <e k="ui_gm_vehicles_shopHint"                             v="Configurations – preview only, sold as listed" />
+        <e k="ui_gm_vehicles_configChanged"                        v="GM listings are only sold as listed. Reset the configuration to the listing?" />
         <e k="ui_gm_vehicles_condition_short"                      v="%.0f h | %d mo." />
         <e k="ui_gm_vehicles_condition_full"                       v="%.1f h | %d months old | Damage %d %% | Wear %d %%" />
         <e k="ui_gm_vehicles_status_open"                          v="Listed (%s)" />

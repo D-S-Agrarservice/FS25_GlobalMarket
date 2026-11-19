@@ -106,6 +106,7 @@ source(GlobalMarket.dir .. "gui/GlobalMarketVehicleDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketContractsUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketVehiclesUI.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketVehicleShopBridge.lua")
 
 -- Economy & Savegame Modules
 source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
@@ -342,6 +343,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmVehicleMarketSell", "Lists an own vehicle: <index> [pricePercent=100] [months=3]", "consoleCommandVehicleMarketSell", self)
             addConsoleCommand("gmVehicleMarketReturn", "Returns a listed vehicle to its seller: <listingId|pending>", "consoleCommandVehicleMarketReturn", self)
             addConsoleCommand("gmVehicleMarketBuy", "Buys a vehicle market listing for the own farm: <listingId>", "consoleCommandVehicleMarketBuy", self)
+            addConsoleCommand("gmVehicleMarketMakeNpc", "Turns a listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandVehicleMarketMakeNpc", self)
             addConsoleCommand("gmAdvanceVehicleMarket", "Advances vehicle market listing timers in months (expiry test)", "consoleCommandAdvanceVehicleMarket", self)
             self.debugCommandsRegistered = true
         end
@@ -358,6 +360,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmVehicleMarketSell")
             removeConsoleCommand("gmVehicleMarketReturn")
             removeConsoleCommand("gmVehicleMarketBuy")
+            removeConsoleCommand("gmVehicleMarketMakeNpc")
             removeConsoleCommand("gmAdvanceVehicleMarket")
             self.debugCommandsRegistered = false
         end

@@ -41,6 +41,13 @@ GlobalMarket.VEHICLE_NOTICE = {
 function GlobalMarket:initVehicleMarket()
     self.vehicleListings = {}
     self.nextVehicleListingId = 1
+    -- Vehicle deletions/spawns reach clients after the listing sync, so refresh the open tab on both
+    if g_messageCenter ~= nil then
+        g_messageCenter:unsubscribe(MessageType.VEHICLE_REMOVED, self)
+        g_messageCenter:unsubscribe(MessageType.VEHICLE_ADDED, self)
+        g_messageCenter:subscribe(MessageType.VEHICLE_REMOVED, self.onVehicleMarketChanged, self)
+        g_messageCenter:subscribe(MessageType.VEHICLE_ADDED, self.onVehicleMarketChanged, self)
+    end
 end
 
 ---Returns a listing by its local ID
@@ -192,6 +199,7 @@ function GlobalMarket:onVehicleListingReturned(vehicles, loadingState, args)
     end
     listing.isReturning = false
     if loadingState == VehicleLoadingState.OK then
+        GlobalMarket.applyVehicleMarketLicensePlate(vehicles, nil)
         self:removeVehicleListing(listing)
         if self.debugManager ~= nil then
             self.debugManager:info("VehicleMarket: Listing #%d returned to farm %d.", listing.id, listing.sellerFarmId)

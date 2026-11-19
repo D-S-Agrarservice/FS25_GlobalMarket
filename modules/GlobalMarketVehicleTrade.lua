@@ -151,9 +151,10 @@ end
 ---Buys an open listing for a farm: the vehicle is built from the listing data (never from client data)
 ---@param listingId number
 ---@param buyerFarmId number
+---@param licensePlateData table|nil License plate chosen by the buyer (random if nil)
 ---@return boolean started
 ---@return string|nil reason
-function GlobalMarket:buyVehicleListing(listingId, buyerFarmId)
+function GlobalMarket:buyVehicleListing(listingId, buyerFarmId, licensePlateData)
     if g_currentMission == nil or not g_currentMission:getIsServer() then
         return false, "notServer"
     end
@@ -180,7 +181,8 @@ function GlobalMarket:buyVehicleListing(listingId, buyerFarmId)
     listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.BUYING
     self:broadcastVehicleMarketState()
     GlobalMarketVehicleListings.spawnFromSnapshot(listing.snapshot, resolved, buyerFarmId,
-        self.onVehicleListingBought, self, { listing = listing, buyerFarmId = buyerFarmId, price = price })
+        self.onVehicleListingBought, self, { listing = listing, buyerFarmId = buyerFarmId, price = price,
+            licensePlateData = licensePlateData })
     return true, nil
 end
 
@@ -198,6 +200,7 @@ function GlobalMarket:onVehicleListingBought(vehicles, loadingState, args)
         return
     end
 
+    GlobalMarket.applyVehicleMarketLicensePlate(vehicles, args.licensePlateData)
     g_currentMission:addMoney(-price, buyerFarmId, MoneyType.SHOP_VEHICLE_BUY, true, true)
     local buyerName = GlobalMarket.getVehicleMarketFarmName(buyerFarmId)
     if not listing.isNpc then
@@ -273,6 +276,24 @@ function GlobalMarket:cleanupVehicleListingsForDeletedFarm(farmId)
     return changed
 end
 
+---Applies a license plate to freshly loaded vehicles (license plates are never part of a listing)
+---@param vehicles table
+---@param licensePlateData table|nil Buyer's choice; a random plate is used if nil
+function GlobalMarket.applyVehicleMarketLicensePlate(vehicles, licensePlateData)
+    if g_licensePlateManager == nil or not g_licensePlateManager:getAreLicensePlatesAvailable() then
+        return
+    end
+    local plate = licensePlateData
+    if plate == nil or plate.characters == nil then
+        plate = g_licensePlateManager:getRandomLicensePlateData()
+    end
+    for _, vehicle in ipairs(vehicles or {}) do
+        if vehicle.setLicensePlatesData ~= nil and vehicle.getHasLicensePlates ~= nil and vehicle:getHasLicensePlates() then
+            vehicle:setLicensePlatesData(plate)
+        end
+    end
+end
+
 ---Returns the display name of a farm
 ---@param farmId number
 ---@return string
@@ -300,4 +321,24 @@ function GlobalMarket:consoleCommandAdvanceVehicleMarket(monthsArg)
     end
     self:updateVehicleMarketHourly(delta)
     return string.format("Advanced vehicle market listings by +%.2f month(s).", delta)
+end
+
+---Console: turns a listing into an NPC dealer listing (SP test: buy back an own listed vehicle)
+---@param listingIdArg string
+function GlobalMarket:consoleCommandVehicleMarketMakeNpc(listingIdArg)
+    if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
+        return "GM Debug Mode is disabled."
+    end
+    if g_currentMission == nil or not g_currentMission:getIsServer() then
+        return "Execute gmVehicleMarketMakeNpc on the server/SP host."
+    end
+    local listing = self:getVehicleListingById(tonumber(listingIdArg) or 0)
+    if listing == nil or listing.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
+        return "Usage: gmVehicleMarketMakeNpc <id of an open listing>"
+    end
+    listing.isNpc = true
+    listing.sellerFarmId = 0
+    listing.sellerName = ""
+    self:broadcastVehicleMarketState()
+    return string.format("Listing #%d is now an NPC dealer listing (no seller payout, not returned on expiry).", listing.id)
 end

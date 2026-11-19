@@ -200,6 +200,9 @@
         <e k="ui_gm_vehicles_action_list"                          v="Wystaw" />
         <e k="ui_gm_vehicles_action_buy"                           v="Kup" />
         <e k="ui_gm_vehicles_action_withdraw"                      v="Wycofaj" />
+        <e k="ui_gm_vehicles_action_viewBuy"                       v="Zobacz i kup" />
+        <e k="ui_gm_vehicles_shopHint"                             v="Konfiguracje – tylko podgląd, sprzedaż jak w ofercie" />
+        <e k="ui_gm_vehicles_configChanged"                        v="Oferty GM są sprzedawane tylko w oferowanym stanie. Przywrócić konfigurację z oferty?" />
         <e k="ui_gm_vehicles_condition_short"                      v="%.0f h | %d mies." />
         <e k="ui_gm_vehicles_condition_full"                       v="%.1f h | %d mies. | Uszkodzenia %d %% | Zużycie %d %%" />
         <e k="ui_gm_vehicles_status_open"                          v="Wystawiony (%s)" />

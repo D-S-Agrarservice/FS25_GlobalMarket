@@ -24,7 +24,8 @@ end
 ---@param listingId number|nil Target listing (ACTION_CANCEL / ACTION_BUY)
 ---@param priceFactor number|nil
 ---@param durationMonths number|nil
-function VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceFactor, durationMonths)
+---@param licensePlateData table|nil License plate chosen by the buyer (ACTION_BUY)
+function VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceFactor, durationMonths, licensePlateData)
     local self = VehicleMarketActionEvent.emptyNew()
     self.isNotice = false
     self.action = action or 0
@@ -33,6 +34,7 @@ function VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceF
     self.listingId = listingId or 0
     self.priceFactor = priceFactor or 1
     self.durationMonths = durationMonths or 1
+    self.licensePlateData = licensePlateData
     return self
 end
 
@@ -72,6 +74,8 @@ function VehicleMarketActionEvent:writeStream(streamId, connection)
     streamWriteInt32(streamId, self.listingId)
     streamWriteFloat32(streamId, self.priceFactor)
     streamWriteUInt8(streamId, self.durationMonths)
+    -- Writes a validity flag first and handles nil itself
+    LicensePlateManager.writeLicensePlateData(streamId, connection, self.licensePlateData)
 end
 
 function VehicleMarketActionEvent:readStream(streamId, connection)
@@ -94,29 +98,32 @@ function VehicleMarketActionEvent:readStream(streamId, connection)
         self.listingId = streamReadInt32(streamId)
         self.priceFactor = streamReadFloat32(streamId)
         self.durationMonths = streamReadUInt8(streamId)
+        local plate = LicensePlateManager.readLicensePlateData(streamId, connection)
+        self.licensePlateData = (plate ~= nil and plate.characters ~= nil) and plate or nil
     end
     self:run(connection)
 end
 
 ---Routes a request directly on the server (SP / host) or sends it from an MP client
-function VehicleMarketActionEvent.dispatch(action, farmId, vehicle, listingId, priceFactor, durationMonths)
+function VehicleMarketActionEvent.dispatch(action, farmId, vehicle, listingId, priceFactor, durationMonths, licensePlateData)
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm == nil then
         return false
     end
     if g_server ~= nil then
-        VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, nil)
+        VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, nil, licensePlateData)
         return true
     end
     if g_client ~= nil then
-        g_client:getServerConnection():sendEvent(VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceFactor, durationMonths))
+        g_client:getServerConnection():sendEvent(VehicleMarketActionEvent.new(action, farmId, vehicle, listingId,
+            priceFactor, durationMonths, licensePlateData))
         return true
     end
     return false
 end
 
 ---Executes a validated request on the authoritative server and reports the result to the requester
-function VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, connection)
+function VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, connection, licensePlateData)
     local N = GlobalMarket.VEHICLE_NOTICE
     local permission = (action == VehicleMarketActionEvent.ACTION_BUY) and Farm.PERMISSION.BUY_VEHICLE or Farm.PERMISSION.SELL_VEHICLE
     if not g_currentMission:getHasPlayerPermission(permission, connection, farmId) then
@@ -138,7 +145,7 @@ function VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, l
             gm:notifyVehicleMarketRequester(connection, N.RESULT, reason or "invalid", "", 0)
         end
     elseif action == VehicleMarketActionEvent.ACTION_BUY then
-        local ok, reason = gm:buyVehicleListing(listingId, farmId)
+        local ok, reason = gm:buyVehicleListing(listingId, farmId, licensePlateData)
         if not ok then
             gm:notifyVehicleMarketRequester(connection, N.RESULT, reason or "invalid", "", 0)
         end
@@ -181,5 +188,5 @@ function VehicleMarketActionEvent:run(connection)
         end
     end
     VehicleMarketActionEvent.executeOnServer(gm, self.action, self.farmId, self.vehicle, self.listingId,
-        self.priceFactor, self.durationMonths, connection)
+        self.priceFactor, self.durationMonths, connection, self.licensePlateData)
 end

@@ -200,6 +200,9 @@
         <e k="ui_gm_vehicles_action_list"                          v="Poner a la venta" />
         <e k="ui_gm_vehicles_action_buy"                           v="Comprar" />
         <e k="ui_gm_vehicles_action_withdraw"                      v="Retirar" />
+        <e k="ui_gm_vehicles_action_viewBuy"                       v="Ver y comprar" />
+        <e k="ui_gm_vehicles_shopHint"                             v="Configuraciones: solo vista previa, se vende tal cual" />
+        <e k="ui_gm_vehicles_configChanged"                        v="Las ofertas GM solo se venden tal cual. ¿Restablecer la configuración de la oferta?" />
         <e k="ui_gm_vehicles_condition_short"                      v="%.0f h | %d mes." />
         <e k="ui_gm_vehicles_condition_full"                       v="%.1f h | %d meses | Daños %d %% | Desgaste %d %%" />
         <e k="ui_gm_vehicles_status_open"                          v="En venta (%s)" />
