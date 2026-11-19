@@ -188,9 +188,11 @@ function GlobalMarket:replenishNpcOffers(candidates)
 
     local changed = false
     while openNpcOffers < GlobalMarketContracts.TARGET_NPC_OFFERS do
-        local pick = candidates[math.random(1, #candidates)]
+        -- Goods in surplus are offered more often and with a deeper discount (#29)
+        local pick = GlobalMarketContracts.pickWeighted(candidates, GlobalMarketContracts.getNpcOfferWeight)
         local liters = math.random(2, 10) * 5000
-        local deltaPct = math.random(-8, -1)
+        local deltaPct = -GlobalMarketContracts.scaleByRatio(GlobalMarketContracts.NPC_OFFER_DELTA_MIN,
+            GlobalMarketContracts.NPC_OFFER_DELTA_MAX, GlobalMarketContracts.getStockRatio(pick))
         local trader = GlobalMarketContracts.NPC_TRADERS[math.random(1, #GlobalMarketContracts.NPC_TRADERS)]
         local refPrice = self:getCurrentMarketPricePer1000(pick.fillType)
 

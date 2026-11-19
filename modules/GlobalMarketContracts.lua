@@ -27,6 +27,12 @@ GlobalMarketContracts.NPC_MODE_PLAYERS_ONLY = 3
 GlobalMarketContracts.TARGET_NPC_CONTRACTS = 5
 GlobalMarketContracts.TARGET_NPC_OFFERS = 3
 
+-- Stock-driven NPC seeding (#29): minimum pick weight per good, extra contract weight during Great Demand
+GlobalMarketContracts.NPC_WEIGHT_FLOOR = 0.05
+GlobalMarketContracts.NPC_GREAT_DEMAND_WEIGHT = 1.0
+GlobalMarketContracts.NPC_OFFER_DELTA_MIN = 1
+GlobalMarketContracts.NPC_OFFER_DELTA_MAX = 8
+
 GlobalMarketContracts.NPC_CONTRACTORS = {
     "AgroFood Processing",
     "Nordland Mühle",
@@ -436,6 +442,75 @@ function GlobalMarket:getNpcContractCandidates()
     return candidates
 end
 
+---Market stock ratio of a market entry (0 = empty, 1 = saturated). The shared market list
+---holds the global online stock for APPROVED goods and the local stock otherwise.
+---@param item table
+---@return number ratio
+function GlobalMarketContracts.getStockRatio(item)
+    local cap = GlobalMarket.MARKET_CAPACITY or 2000000
+    if cap <= 0 then
+        return 0.5
+    end
+    return math.clamp((item.fillLevel or 0) / cap, 0, 1)
+end
+
+---Pick weight for an NPC supply contract: scarce goods and Great Demand are preferred
+---@param item table
+---@return number weight
+function GlobalMarketContracts.getNpcContractWeight(item)
+    local scarcity = 1 - GlobalMarketContracts.getStockRatio(item)
+    local weight = scarcity * scarcity + GlobalMarketContracts.NPC_WEIGHT_FLOOR
+    if item.isGreatDemand == true then
+        weight = weight + GlobalMarketContracts.NPC_GREAT_DEMAND_WEIGHT
+    end
+    return weight
+end
+
+---Pick weight for an NPC direct offer: goods in surplus are preferred
+---@param item table
+---@return number weight
+function GlobalMarketContracts.getNpcOfferWeight(item)
+    local ratio = GlobalMarketContracts.getStockRatio(item)
+    return ratio * ratio + GlobalMarketContracts.NPC_WEIGHT_FLOOR
+end
+
+---Picks one candidate with probability proportional to weightFn(candidate)
+---@param candidates table
+---@param weightFn function
+---@return table|nil candidate
+function GlobalMarketContracts.pickWeighted(candidates, weightFn)
+    local weights = {}
+    local total = 0
+    for i, item in ipairs(candidates) do
+        local w = math.max(0, weightFn(item) or 0)
+        weights[i] = w
+        total = total + w
+    end
+    if total <= 0 then
+        return candidates[math.random(1, #candidates)]
+    end
+    local roll = math.random() * total
+    for i, item in ipairs(candidates) do
+        roll = roll - weights[i]
+        if roll <= 0 then
+            return item
+        end
+    end
+    return candidates[#candidates]
+end
+
+---Integer in [minValue, maxValue] that moves towards maxValue as t goes from 0 to 1,
+---with +/-25 % random spread so equal stock levels still vary
+---@param minValue number
+---@param maxValue number
+---@param t number 0..1
+---@return number value
+function GlobalMarketContracts.scaleByRatio(minValue, maxValue, t)
+    local spread = maxValue - minValue
+    local value = minValue + spread * math.clamp(t, 0, 1) + (math.random() * 2 - 1) * spread * 0.25
+    return math.clamp(math.floor(value + 0.5), minValue, maxValue)
+end
+
 ---Seeds NPC contracts and NPC direct offers up to target counts according to NPC_ACTIVITY_MODE
 ---@return boolean changed
 function GlobalMarket:replenishNpcContractsAndOffers()
@@ -462,9 +537,11 @@ function GlobalMarket:replenishNpcContractsAndOffers()
         end
 
         while openNpcContracts < GlobalMarketContracts.TARGET_NPC_CONTRACTS do
-            local pick = candidates[math.random(1, #candidates)]
-            local liters = math.random(2, 16) * 10000
-            local bonusPct = math.random(GlobalMarketContracts.CONTRACT_NPC_BONUS_MIN, GlobalMarketContracts.CONTRACT_NPC_BONUS_MAX)
+            -- Scarce goods are picked more often and pay a higher bonus for larger volumes (#29)
+            local pick = GlobalMarketContracts.pickWeighted(candidates, GlobalMarketContracts.getNpcContractWeight)
+            local scarcity = 1 - GlobalMarketContracts.getStockRatio(pick)
+            local liters = GlobalMarketContracts.scaleByRatio(2, 16, scarcity) * 10000
+            local bonusPct = GlobalMarketContracts.scaleByRatio(GlobalMarketContracts.CONTRACT_NPC_BONUS_MIN, GlobalMarketContracts.CONTRACT_NPC_BONUS_MAX, scarcity)
             local months = math.random(2, 5)
             local contractor = GlobalMarketContracts.NPC_CONTRACTORS[math.random(1, #GlobalMarketContracts.NPC_CONTRACTORS)]
             local basePrice = self:getContractReferencePricePer1000(pick.fillType)
