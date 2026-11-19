@@ -388,7 +388,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
     end
 
     -- Phase 2: Processing - backend IO (Data-Host only)
-    -- Note: fileExists() returns false on directory paths in GIANTS Engine, and getFiles() uses a callback (see dataS/scripts/Files.lua).
+    -- Note: fileExists() returns false on directory paths in GIANTS Engine, and getFiles() uses a callback (see the GIANTS script documentation, `Files`).
     if self.isDataHost and self.timerData >= self.intervalData then
         self.timerData = 0
         if self.readFolder ~= nil then
