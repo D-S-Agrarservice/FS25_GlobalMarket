@@ -123,12 +123,18 @@ function GlobalMarket:showVehicleMarketNotice(kind, targetFarmId, excludeFarmId,
     elseif kind == N.LISTED then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_listed"), name, money)
     elseif kind == N.NEW_LISTING then
+        -- Personal comfort setting (not synced)
+        if GlobalMarketSettings ~= nil and GlobalMarketSettings.current ~= nil
+            and GlobalMarketSettings.current.showVehicleNotices == false then
+            return
+        end
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_newListing"), name, money)
         color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
     elseif kind == N.BOUGHT then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_bought"), name, money)
     elseif kind == N.SOLD then
-        text = string.format(g_i18n:getText("ui_gm_vehicles_notice_sold"), name, money, tostring(otherName))
+        local buyerName = (code == "npc") and g_i18n:getText("ui_gm_vehicles_npcSeller") or tostring(otherName)
+        text = string.format(g_i18n:getText("ui_gm_vehicles_notice_sold"), name, money, buyerName)
     elseif kind == N.RETURNED then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_returned"), name)
         color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
@@ -227,7 +233,7 @@ function GlobalMarket:updateVehicleMarketHourly(customMonthDelta)
         return
     end
     local listings = self.vehicleListings or {}
-    if #listings == 0 then
+    if #listings == 0 and (GlobalMarket.VEHICLE_NPC_LEVEL or 0) <= 0 then
         return
     end
     local daysPerPeriod = (g_currentMission.environment ~= nil and g_currentMission.environment.daysPerPeriod) or 1
@@ -249,6 +255,9 @@ function GlobalMarket:updateVehicleMarketHourly(customMonthDelta)
         self:returnVehicleListing(listing)
     end
     self:retryPendingVehicleReturns()
+    if self.updateVehicleMarketNpcs ~= nil then
+        self:updateVehicleMarketNpcs(monthDelta)
+    end
     self:broadcastVehicleMarketState()
 end
 

@@ -156,6 +156,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketContractsStations.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleTrade.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketVehicleNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -344,6 +345,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmVehicleMarketReturn", "Returns a listed vehicle to its seller: <listingId|pending>", "consoleCommandVehicleMarketReturn", self)
             addConsoleCommand("gmVehicleMarketBuy", "Buys a vehicle market listing for the own farm: <listingId>", "consoleCommandVehicleMarketBuy", self)
             addConsoleCommand("gmVehicleMarketMakeNpc", "Turns a listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandVehicleMarketMakeNpc", self)
+            addConsoleCommand("gmVehicleMarketSpawnNpc", "Creates NPC dealer vehicle listings now: [count=1]", "consoleCommandVehicleMarketSpawnNpc", self)
             addConsoleCommand("gmAdvanceVehicleMarket", "Advances vehicle market listing timers in months (expiry test)", "consoleCommandAdvanceVehicleMarket", self)
             self.debugCommandsRegistered = true
         end
@@ -361,6 +363,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmVehicleMarketReturn")
             removeConsoleCommand("gmVehicleMarketBuy")
             removeConsoleCommand("gmVehicleMarketMakeNpc")
+            removeConsoleCommand("gmVehicleMarketSpawnNpc")
             removeConsoleCommand("gmAdvanceVehicleMarket")
             self.debugCommandsRegistered = false
         end

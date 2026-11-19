@@ -16,7 +16,7 @@ function SyncGlobalMarketSettingsEvent.new(
     baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex,
     isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex,
     greatDemandModeIndex, npcActivityModeIndex, onlineContractsModeIndex,
-    maxFarmContractsIndex, npcContractsTargetIndex, npcOffersTargetIndex
+    maxFarmContractsIndex, npcContractsTargetIndex, npcOffersTargetIndex, vehicleNpcModeIndex
 )
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
@@ -37,6 +37,7 @@ function SyncGlobalMarketSettingsEvent.new(
     self.maxFarmContractsIndex = maxFarmContractsIndex or 3
     self.npcContractsTargetIndex = npcContractsTargetIndex or 3
     self.npcOffersTargetIndex = npcOffersTargetIndex or 3
+    self.vehicleNpcModeIndex = vehicleNpcModeIndex or 3
     return self
 end
 
@@ -59,6 +60,7 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.maxFarmContractsIndex or 3)
     streamWriteInt8(streamId, self.npcContractsTargetIndex or 3)
     streamWriteInt8(streamId, self.npcOffersTargetIndex or 3)
+    streamWriteInt8(streamId, self.vehicleNpcModeIndex or 3)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -80,6 +82,7 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.maxFarmContractsIndex = streamReadInt8(streamId)
     self.npcContractsTargetIndex = streamReadInt8(streamId)
     self.npcOffersTargetIndex = streamReadInt8(streamId)
+    self.vehicleNpcModeIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -104,6 +107,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     local npcModeChanged = false
     local onlineContractsModeChanged = false
     local contractLimitsChanged = false
+    local vehicleNpcChanged = false
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = false
@@ -119,6 +123,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
         contractLimitsChanged = (GlobalMarketSettings.current.maxFarmContractsIndex ~= self.maxFarmContractsIndex)
             or (GlobalMarketSettings.current.npcContractsTargetIndex ~= self.npcContractsTargetIndex)
             or (GlobalMarketSettings.current.npcOffersTargetIndex ~= self.npcOffersTargetIndex)
+        vehicleNpcChanged = (GlobalMarketSettings.current.vehicleNpcModeIndex ~= self.vehicleNpcModeIndex)
     end
 
     -- 2. APPLY SETTINGS LOCALLY
@@ -140,6 +145,14 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     GlobalMarketSettings.current.maxFarmContractsIndex = self.maxFarmContractsIndex or 3
     GlobalMarketSettings.current.npcContractsTargetIndex = self.npcContractsTargetIndex or 3
     GlobalMarketSettings.current.npcOffersTargetIndex = self.npcOffersTargetIndex or 3
+    GlobalMarketSettings.current.vehicleNpcModeIndex = self.vehicleNpcModeIndex or 3
+    if GlobalMarketSettings.OPTIONS.VEHICLE_NPC_MODE ~= nil then
+        GlobalMarket.VEHICLE_NPC_LEVEL = GlobalMarketSettings.OPTIONS.VEHICLE_NPC_MODE[self.vehicleNpcModeIndex] or 2
+    end
+    if vehicleNpcChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil
+        and g_currentMission.globalMarket.onVehicleNpcModeChanged ~= nil then
+        g_currentMission.globalMarket:onVehicleNpcModeChanged(GlobalMarket.VEHICLE_NPC_LEVEL)
+    end
 
     -- Update Global Variables
     GlobalMarket.DELIVER_COST = GlobalMarketSettings.OPTIONS.DELIVERY_BASE[self.baseIndex]
@@ -210,7 +223,8 @@ function SyncGlobalMarketSettingsEvent:run(connection)
             self.baseIndex, self.literIndex, self.isDetailed, self.isDebug, self.debugLevel, self.debugDur,
             self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex,
             self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex, self.npcActivityModeIndex,
-            self.onlineContractsModeIndex, self.maxFarmContractsIndex, self.npcContractsTargetIndex, self.npcOffersTargetIndex
+            self.onlineContractsModeIndex, self.maxFarmContractsIndex, self.npcContractsTargetIndex, self.npcOffersTargetIndex,
+            self.vehicleNpcModeIndex
         ), nil, connection, nil)
     else
         -- CLIENT SIDE

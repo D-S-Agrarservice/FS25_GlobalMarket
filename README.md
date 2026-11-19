@@ -62,6 +62,11 @@ GlobalMarket operates seamlessly in two modes:
 * **Pickup Inbox:** Goods that cannot be placed into a matching storage right away are kept in a per-farm inbox for a grace period before being sold off automatically.
 * **Cross-Server Online Contracts (Companion App):** With the GlobalMarketClient connected, contracts and offers can also be published to and accepted from other servers. Admins choose which parts go online (all, contracts only, offers only, or local only).
 
+#### Used Vehicle Market
+* **Sell at Your Own Price:** List any owned vehicle or implement - from front weights to flagship tractors, mod vehicles included - at 70-130 % of its dealer value for 1-12 months. Configuration, custom paint, operating hours, damage and wear travel with it.
+* **View & Buy in the Native Shop:** Listings of other farms open in the basegame shop screen with their exact configuration and paint. Switching options is preview only - vehicles are always sold as listed. Mod vehicles only show up where the identical mod file is installed.
+* **NPC Dealers:** Dealers buy your listings (the cheaper, the faster, minus 5 % commission) and list used vehicles of their own (admin setting: Off / Low / Normal).
+
 #### Native FS25 UI, Finances & Administration
 * **Native `InGameMenu` Integration:** Cleanly injected tab in the FS25 `ESC` menu with live search filtering, 3 switchable category layouts (*Detailed*, *Compact*, *Flat A–Z*), trend arrows, and transparent cost breakdowns (base value, dealer markup, and delivery fees).
 * **Dedicated Server Ready (Zero Server-Side `.exe` Required):** Uses a dynamic **Data-Host Token & Standby Failover** system so Dedicated Servers can participate in the live Online Market as soon as at least one connected player runs the Companion Client on their PC.
@@ -139,7 +144,7 @@ When enabled in the settings, a compact status icon next to the top-right HUD in
 | :--- | :--- | :--- |
 | **Open / Close GlobalMarket Menu** | `Left Alt + M` *(or via `ESC` Menu Tab)* | `ESC` Menu Paging |
 | **Switch Category View** *(Detailed / Compact / A–Z)* | `C` | `X` *(Menu Extra 1)* |
-| **Contracts Tab Actions** *(accept, cancel, board filter, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
+| **Contracts & Used Vehicles Tab Actions** *(accept, cancel, list, view & buy, filter / sort, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
 
 *(All keybindings can be customized in the standard FS25 Controls menu.)*
 
@@ -234,12 +239,15 @@ Placeable modders can turn custom silos or object storages into official **Globa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Lean lifecycle orchestrator, InGameMenu injection & input bindings
 ├── modDesc.xml               # FS25 mod descriptor (descVersion 116)
-├── events/                   # 15 dedicated Multiplayer synchronization, transaction & contract events
-├── gui/                      # Market UI, Contracts sub-tab & two dialogs (controllers, XML layouts & profiles)
+├── events/                   # 17 dedicated Multiplayer synchronization, transaction, contract & vehicle market events
+├── gui/                      # Market UI, Contracts & Used Vehicles sub-tabs, three dialogs (controllers, XML layouts & profiles)
 │   ├── GlobalMarketUI.lua / .xml             # Main InGameMenu frame: storage & market lists, search, categories
 │   ├── GlobalMarketContractsUI.lua           # Sub-tab controller: supply contracts, direct offers & Pickup Inbox
 │   ├── GlobalMarketDialog.lua / .xml         # Buy/sell transaction dialog (storage, packaging format, fee preview)
 │   ├── GlobalMarketContractDialog.lua / .xml # Multi-mode dialog for contracts, offers & inbox withdrawals
+│   ├── GlobalMarketVehiclesUI.lua            # Sub-tab controller: own vehicles & listings, used vehicle market
+│   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog to list a vehicle (asking price, duration)
+│   ├── GlobalMarketVehicleShopBridge.lua     # View & buy listings in the basegame shop screen
 │   └── guiProfiles.xml                       # Shared GUI profiles
 ├── images/                   # Menu & UI texture assets (.dds)
 ├── modules/                  # Specialized domain modules:
@@ -250,6 +258,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketContracts.lua             # Supply contracts, NPC contract board, escrow & penalties
 │   ├── GlobalMarketContractsOnline.lua       # Cross-server online contracts & offers (Pending -> Ack)
 │   ├── GlobalMarketContractsOnlineSync.lua   # Incoming contractData parser, settlements & snapshot merge
+│   ├── GlobalMarketContractsStations.lua     # Map selling stations as physical contract delivery targets
 │   ├── GlobalMarketContractsStorage.lua      # Contract/offer storage withdrawals, deposits & Pickup Inbox
 │   ├── GlobalMarketDebug.lua                 # Leveled logger with round-robin dump rotation
 │   ├── GlobalMarketFarmCleanup.lua           # Cleanup of farm-keyed GM data on farm deletion
@@ -262,6 +271,10 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage discovery & market transfers
 │   ├── GlobalMarketStorageAge.lua            # Remaining GM storage time: client sync & UI display
 │   ├── GlobalMarketStoreCache.lua            # 2-phase deep XML scanner for pallets, BigBags & IBCs
+│   ├── GlobalMarketVehicleListings.lua       # Vehicle snapshots, listing groups, eligibility & dealer value
+│   ├── GlobalMarketVehicleMarket.lua         # Vehicle listing store, returns to seller & savegame
+│   ├── GlobalMarketVehicleNpc.lua            # NPC dealers buying and listing used vehicles
+│   ├── GlobalMarketVehicleTrade.lua          # Vehicle purchases, hourly expiry, sync & HUD notices
 │   └── GlobalMarketSync.lua                  # Companion App XML bridge, token failover & HUD icon
 ├── translations/             # Localized strings (DE, EN, ES, FR, PL)
 └── xml/                      # In-game help configuration (helpLine_globalMarket.xml)
@@ -343,6 +356,11 @@ Der Globale Markt arbeitet nahtlos in zwei Betriebsmodi:
 * **Abholfach (Pickup Inbox):** Waren, die nicht sofort in ein passendes Lager passen, bleiben für eine Frist im Abholfach des Hofs und werden danach automatisch verkauft.
 * **Serverübergreifende Online-Verträge (Companion-Client):** Mit verbundenem GlobalMarketClient lassen sich Verträge und Angebote auch für andere Server veröffentlichen und von dort annehmen. Admins legen fest, was online geht (alles, nur Verträge, nur Angebote oder nur lokal).
 
+#### Gebrauchtfahrzeugmarkt
+* **Zum eigenen Preis verkaufen:** Jedes eigene Fahrzeug oder Gerät - vom Frontgewicht bis zum Großtraktor, auch Mod-Fahrzeuge - lässt sich für 70-130 % des Händlerwerts und 1-12 Monate anbieten. Konfiguration, eigene Lackfarbe, Betriebsstunden, Schaden und Verschleiß reisen mit.
+* **Ansehen & Kaufen im Original-Shop:** Angebote anderer Höfe öffnen sich im Shop-Bildschirm des Spiels mit exakter Konfiguration und Lackierung. Optionen umschalten ist nur Vorschau - verkauft wird immer wie angeboten. Mod-Fahrzeuge erscheinen nur dort, wo dieselbe Mod-Datei installiert ist.
+* **NPC-Händler:** Händler kaufen eure Angebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Gebrauchtfahrzeuge an (Admin-Einstellung: Aus / Wenig / Normal).
+
 #### Natives LS25-UI, Finanzen & Administration
 * **Saubere `InGameMenu`-Integration:** Eigener Reiter im `ESC`-Menü mit Live-Suchfeld, 3 umschaltbaren Kategorie-Ansichten (*Detailliert*, *Kompakt*, *A–Z*), Preistrend-Pfeilen und transparenter Kostenaufschlüsselung (Warenwert, Händleraufschlag, Lieferkosten).
 * **Dedicated-Server-tauglich (Keine `.exe` auf dem Server nötig):** Über ein dynamisches **Data-Host-Token- & Standby-Failover-System** kann auch ein Dedicated Server live am Online-Markt teilnehmen, sobald mindestens ein verbundener Spieler auf seinem PC den `GlobalMarketClient` gestartet hat.
@@ -386,7 +404,7 @@ Ist die Statusanzeige in den Einstellungen aktiviert, zeigt ein kompaktes Icon o
 | :--- | :--- | :--- |
 | **GlobalMarket-Menü öffnen / schließen** | `Links Alt + M` *(oder über den `ESC`-Menüreiter)* | `ESC`-Menü durchblättern |
 | **Kategorie-Ansicht wechseln** *(Detailliert / Kompakt / A–Z)* | `C` | `X` *(Menü Extra 1)* |
-| **Aktionen im Vertrags-Tab** *(annehmen, stornieren, Board-Filter, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
+| **Aktionen im Vertrags- & Gebrauchtfahrzeug-Tab** *(annehmen, stornieren, anbieten, ansehen & kaufen, Filter / Sortierung, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
 
 *(Alle Tastenbelegungen lassen sich jederzeit in den normalen LS25-Steuerungsoptionen anpassen.)*
 

@@ -28,6 +28,8 @@ GlobalMarketSettings.OPTIONS = {
     MAX_FARM_CONTRACTS = {1, 2, 3, 5, 8},
     NPC_CONTRACTS_TARGET = {0, 3, 5, 8, 12, 16},
     NPC_OFFERS_TARGET = {0, 2, 3, 5, 8, 12},
+    -- Used vehicle market (#16): NPC vehicle trading 0=Off, 1=Low, 2=Normal
+    VEHICLE_NPC_MODE = {0, 1, 2},
     -- Log severity levels ordered from Info to Trace
     DEBUG_LEVEL = {"Info", "Warning", "Error", "Debug", "Trace"},
     DEBUG_DURATION = {"1 Hour", "3 Hours"},
@@ -48,6 +50,8 @@ GlobalMarketSettings.current = {
     maxFarmContractsIndex = 3,    -- Default: 3 active contracts per farm
     npcContractsTargetIndex = 3,  -- Default: 5 open NPC supply contracts
     npcOffersTargetIndex = 3,     -- Default: 3 open NPC direct offers
+    vehicleNpcModeIndex = 3,      -- Default: Normal NPC vehicle trading
+    showVehicleNotices = true,    -- Default: On (personal HUD notice for new vehicle listings)
     isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
     debugLevelIndex = 1,     -- Default: Info
     debugDurationIndex = 1,  -- Default: 1 Hour
@@ -178,6 +182,8 @@ function GlobalMarketSettings:loadFromXML()
         self.current.maxFarmContractsIndex = 3
         self.current.npcContractsTargetIndex = 3
         self.current.npcOffersTargetIndex = 3
+        self.current.vehicleNpcModeIndex = 3
+        self.current.showVehicleNotices = true
         self.current.isDetailedFinance = false
         self.current.isDebugActive = false
         self.current.debugLevelIndex = 1
@@ -197,6 +203,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[self.current.greatDemandModeIndex] or 1
         GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         GlobalMarket.ONLINE_CONTRACTS_MODE = self.OPTIONS.ONLINE_CONTRACTS_MODE[self.current.onlineContractsModeIndex] or 1
+        GlobalMarket.VEHICLE_NPC_LEVEL = self.OPTIONS.VEHICLE_NPC_MODE[self.current.vehicleNpcModeIndex] or 2
         self:applyContractLimits()
         if GlobalMarketFinance ~= nil then
             GlobalMarketFinance.isDetailedCached = false
@@ -219,6 +226,8 @@ function GlobalMarketSettings:loadFromXML()
         self.current.maxFarmContractsIndex = xmlFile:getInt(prefix .. ".contractLimits#maxFarmContractsIndex", 3)
         self.current.npcContractsTargetIndex = xmlFile:getInt(prefix .. ".contractLimits#npcContractsTargetIndex", 3)
         self.current.npcOffersTargetIndex = xmlFile:getInt(prefix .. ".contractLimits#npcOffersTargetIndex", 3)
+        self.current.vehicleNpcModeIndex = xmlFile:getInt(prefix .. ".vehicleMarket#npcModeIndex", 3)
+        self.current.showVehicleNotices = xmlFile:getBool(prefix .. ".vehicleMarket#showNotices", true)
 
         -- Load Detailed Finance Setting
         self.current.isDetailedFinance = xmlFile:getBool(prefix .. "#isDetailedFinance", false)
@@ -245,6 +254,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.GREAT_DEMAND_MODE = self.OPTIONS.GREAT_DEMAND_MODE[self.current.greatDemandModeIndex] or 1
         GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         GlobalMarket.ONLINE_CONTRACTS_MODE = self.OPTIONS.ONLINE_CONTRACTS_MODE[self.current.onlineContractsModeIndex] or 1
+        GlobalMarket.VEHICLE_NPC_LEVEL = self.OPTIONS.VEHICLE_NPC_MODE[self.current.vehicleNpcModeIndex] or 2
         self:applyContractLimits()
 
         self:applyDebugSettings()
@@ -285,6 +295,8 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt(prefix .. ".contractLimits#maxFarmContractsIndex", self.current.maxFarmContractsIndex or 3)
         xmlFile:setInt(prefix .. ".contractLimits#npcContractsTargetIndex", self.current.npcContractsTargetIndex or 3)
         xmlFile:setInt(prefix .. ".contractLimits#npcOffersTargetIndex", self.current.npcOffersTargetIndex or 3)
+        xmlFile:setInt(prefix .. ".vehicleMarket#npcModeIndex", self.current.vehicleNpcModeIndex or 3)
+        xmlFile:setBool(prefix .. ".vehicleMarket#showNotices", self.current.showVehicleNotices ~= false)
 
         xmlFile:setBool(prefix .. "#isDetailedFinance", self.current.isDetailedFinance)
 
@@ -489,6 +501,12 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
             settingsFrame, "gmSettingsNpcOffersTarget", "ui_gm_settings_npcOffersTarget",
             "ui_gm_settings_npcOffersTarget_desc", buildLimitTexts(GlobalMarketSettings.OPTIONS.NPC_OFFERS_TARGET), "onNpcOffersTargetChanged"
         )
+        -- Used vehicle market (#16)
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsVehicleNpcMode", "ui_gm_settings_vehicleNpc", "ui_gm_settings_vehicleNpc_desc",
+            { g_i18n:getText("ui_gm_settings_vehicleNpc_off"), g_i18n:getText("ui_gm_settings_vehicleNpc_low"),
+                g_i18n:getText("ui_gm_settings_vehicleNpc_normal") }, "onVehicleNpcModeChanged"
+        )
 
         -- 2. FINANCE SETTINGS
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsDetailedFinance", "ui_gm_settings_detailedFinance", "ui_gm_settings_detailedFinance_desc", "onDetailedFinanceChanged")
@@ -497,6 +515,7 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
         GlobalMarketSettings:addSectionHeader(settingsFrame, "ui_gm_settings_system_header")
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsShowIcon", "ui_gm_settings_showIcon", "ui_gm_settings_showIcon_desc", "onShowIconChanged")
         GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsIconPulse", "ui_gm_settings_iconPulse", "ui_gm_settings_iconPulse_desc", "onIconPulseChanged")
+        GlobalMarketSettings:addBinaryOption(settingsFrame, "gmSettingsVehicleNotices", "ui_gm_settings_vehicleNotices", "ui_gm_settings_vehicleNotices_desc", "onVehicleNoticesChanged")
         GlobalMarketSettings:addMultiOption(
             settingsFrame, "gmSettingsCompatMode", "ui_gm_settings_compatMode",
             "ui_gm_settings_compatMode_desc", GlobalMarketSettings.OPTIONS.COMPAT_MODE, "onCompatModeChanged"
@@ -578,7 +597,8 @@ function GlobalMarketSettings.refreshMenuState()
     local limitControls = {
         {"gmSettingsMaxFarmContracts", "maxFarmContractsIndex"},
         {"gmSettingsNpcContractsTarget", "npcContractsTargetIndex"},
-        {"gmSettingsNpcOffersTarget", "npcOffersTargetIndex"}
+        {"gmSettingsNpcOffersTarget", "npcOffersTargetIndex"},
+        {"gmSettingsVehicleNpcMode", "vehicleNpcModeIndex"}
     }
     for _, entry in ipairs(limitControls) do
         local limitControl = GlobalMarketSettings.CONTROLS[entry[1]]
@@ -601,6 +621,12 @@ function GlobalMarketSettings.refreshMenuState()
 
     -- System Controls
     local isStatusIconOn = GlobalMarketSettings.current.showStatusIcon
+
+    local vehicleNoticesControl = GlobalMarketSettings.CONTROLS["gmSettingsVehicleNotices"]
+    if vehicleNoticesControl ~= nil then
+        vehicleNoticesControl:setState(GlobalMarketSettings.current.showVehicleNotices ~= false and 2 or 1)
+        vehicleNoticesControl:setDisabled(false)
+    end
 
     local showIconControl = GlobalMarketSettings.CONTROLS["gmSettingsShowIcon"]
     if showIconControl ~= nil then
@@ -668,7 +694,7 @@ function GlobalMarketSettings:broadcastChanges()
             c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
             c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
             c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex,
-            c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex
+            c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex, c.vehicleNpcModeIndex
         ))
     else
         -- Client admin sends the changes to the dedicated server
@@ -677,7 +703,7 @@ function GlobalMarketSettings:broadcastChanges()
             c.debugLevelIndex, c.debugDurationIndex, c.compatModeIndex, c.isIconPulseActive,
             c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
             c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex,
-            c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex
+            c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex, c.vehicleNpcModeIndex
         ))
     end
 end
@@ -827,3 +853,20 @@ local function initHooks()
 end
 
 initHooks()
+
+-- Used vehicle market (#16): admin NPC trading level (synced)
+function GlobalMarketSettings:onVehicleNpcModeChanged(state)
+    self.current.vehicleNpcModeIndex = state
+    GlobalMarket.VEHICLE_NPC_LEVEL = self.OPTIONS.VEHICLE_NPC_MODE[state] or 2
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onVehicleNpcModeChanged ~= nil then
+        g_currentMission.globalMarket:onVehicleNpcModeChanged(GlobalMarket.VEHICLE_NPC_LEVEL)
+    end
+    self:broadcastChanges()
+end
+
+-- Used vehicle market (#16): personal HUD notice for new listings (not synced)
+function GlobalMarketSettings:onVehicleNoticesChanged(state)
+    self.current.showVehicleNotices = (state == 2)
+    self.isLocalChange = true
+    self:broadcastChanges()
+end
