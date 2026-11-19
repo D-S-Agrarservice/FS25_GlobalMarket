@@ -73,10 +73,10 @@ function GlobalMarket:notifyVehicleMarketFarms(kind, targetFarmId, excludeFarmId
     self:showVehicleMarketNotice(kind, targetFarmId, excludeFarmId, code, xmlFilename, amount, otherName)
 end
 
----Returns the text of a RESULT reason code
+---Returns the localized text of a reason code (HUD results and UI hints)
 ---@param code string
 ---@return string
-local function getReasonText(code)
+function GlobalMarket.getVehicleMarketReasonText(code)
     local cfg = GlobalMarket.VEHICLE_MARKET
     if NOT_AVAILABLE_REASONS[code] then
         code = "notAvailable"
@@ -118,7 +118,7 @@ function GlobalMarket:showVehicleMarketNotice(kind, targetFarmId, excludeFarmId,
     local color = FSBaseMission.INGAME_NOTIFICATION_OK or { 1, 1, 1, 1 }
     local text
     if kind == N.RESULT then
-        text = getReasonText(code)
+        text = GlobalMarket.getVehicleMarketReasonText(code)
         color = FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 }
     elseif kind == N.LISTED then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_listed"), name, money)

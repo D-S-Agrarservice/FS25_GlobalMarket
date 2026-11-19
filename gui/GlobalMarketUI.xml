@@ -20,7 +20,7 @@
         </GuiElement>
 
         <!-- Sub-Tab Bar (top-left, clear of right-side custom market logo) -->
-        <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="20px 792px" size="520px 38px">
+        <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="20px 792px" size="770px 38px">
             <Button profile="globalMarketSubTabBtn" id="btnSubTabSpot" position="0px 2px" size="210px 34px" text="$l10n_ui_gm_subtab_spot" onClick="onClickSubTabSpot">
                 <ThreePartBitmap profile="globalMarketToolbarBtnBg" id="bgSubTabSpotInactive" visible="false" />
                 <ThreePartBitmap profile="globalMarketSubTabBgActive" id="bgSubTabSpotActive" />
@@ -28,6 +28,10 @@
             <Button profile="globalMarketSubTabBtn" id="btnSubTabContracts" position="220px 2px" size="290px 34px" text="$l10n_ui_gm_subtab_contracts" onClick="onClickSubTabContracts">
                 <ThreePartBitmap profile="globalMarketToolbarBtnBg" id="bgSubTabContractsInactive" />
                 <ThreePartBitmap profile="globalMarketSubTabBgActive" id="bgSubTabContractsActive" visible="false" />
+            </Button>
+            <Button profile="globalMarketSubTabBtn" id="btnSubTabVehicles" position="520px 2px" size="250px 34px" text="$l10n_ui_gm_subtab_vehicles" onClick="onClickSubTabVehicles">
+                <ThreePartBitmap profile="globalMarketToolbarBtnBg" id="bgSubTabVehiclesInactive" />
+                <ThreePartBitmap profile="globalMarketSubTabBgActive" id="bgSubTabVehiclesActive" visible="false" />
             </Button>
         </GuiElement>
 
@@ -195,6 +199,82 @@
             <GuiElement profile="globalMarketFooterBox1">
                 <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
                 <Text profile="fs25_textDefault" id="contractsSelectionHint" position="40px 8px" size="1470px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
+            </GuiElement>
+        </GuiElement>
+
+        <!-- Sub-Tab 3: Used Vehicle Market (#16) -->
+        <GuiElement profile="emptyPanel" with="anchorBottomLeft" id="subTabVehiclesContainer" position="0px 0px" size="1550px 790px" visible="false">
+            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="700px 750px" position="20px 40px">
+                <Text profile="globalMarketHeaderBright" text="$l10n_ui_gm_vehicles_myHeader" position="10px 715px" size="680px 30px" textSize="22px" />
+                <Text profile="fs25_textDefault" id="myVehiclesSubtitle" text="" position="10px 695px" size="680px 22px" textAlignment="left" textSize="15px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="700px 38px">
+                    <Text profile="globalMarketHeader" position="40px 8px" size="290px 24px" text="$l10n_ui_gm_vehicles_col_vehicle" />
+                    <Text profile="globalMarketHeaderRight" position="335px 8px" size="170px 24px" text="$l10n_ui_gm_vehicles_col_status" />
+                    <Text profile="globalMarketHeaderRight" position="510px 8px" size="170px 24px" text="$l10n_ui_gm_vehicles_col_value" />
+                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="700px 2px" />
+                </GuiElement>
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="700px 592px">
+                    <SmoothList profile="emptyPanel" id="gmTableMyVehicles" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onVehicleLeftAction">
+                        <ListItem profile="globalMarketListItem" name="gmMyVehicleRowTemplate">
+                            <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                            <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="290px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellRight" position="335px 0px" size="170px 32px" textLayoutMode="resize" name="status" />
+                            <Text profile="globalMarketRowCellRight" position="510px 0px" size="170px 32px" textLayoutMode="resize" name="value" />
+                        </ListItem>
+                        <ListItem profile="globalMarketSectionHeader" name="section">
+                            <Text profile="globalMarketSectionHeaderTitle" name="title" />
+                        </ListItem>
+                    </SmoothList>
+
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="globalMarketListSlider" dataElementId="gmTableMyVehicles" id="gmTableMyVehiclesSlider" />
+                    </ThreePartBitmap>
+                </GuiElement>
+            </GuiElement>
+
+            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="710px 750px" position="790px 40px">
+                <Text profile="globalMarketHeaderBright" text="$l10n_ui_gm_vehicles_marketHeader" position="10px 715px" size="690px 30px" textSize="22px" />
+                <Text profile="fs25_textDefault" id="marketVehiclesSubtitle" text="" position="10px 695px" size="690px 22px" textAlignment="left" textSize="15px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">
+                    <Button profile="globalMarketToolbarBtnMode" id="btnVehicleSort" position="450px 0px" text="$l10n_ui_gm_vehicles_sort_price" onClick="onClickCycleVehicleSort">
+                        <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                    </Button>
+                </GuiElement>
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="710px 38px">
+                    <Text profile="globalMarketHeader" position="40px 8px" size="255px 24px" text="$l10n_ui_gm_vehicles_col_vehicle" />
+                    <Text profile="globalMarketHeaderRight" position="300px 8px" size="195px 24px" text="$l10n_ui_gm_vehicles_col_condition" />
+                    <Text profile="globalMarketHeaderRight" position="500px 8px" size="190px 24px" text="$l10n_ui_gm_vehicles_col_price" />
+                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="710px 2px" />
+                </GuiElement>
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="710px 592px">
+                    <SmoothList profile="emptyPanel" id="gmTableVehicleMarket" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onVehicleRightAction">
+                        <ListItem profile="globalMarketListItem" name="gmVehicleMarketRowTemplate">
+                            <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                            <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="255px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellRight" position="300px 0px" size="195px 32px" textLayoutMode="resize" name="condition" />
+                            <Text profile="globalMarketRowCellRight" position="500px 0px" size="190px 32px" textLayoutMode="resize" name="price" />
+                        </ListItem>
+                        <ListItem profile="globalMarketSectionHeader" name="section">
+                            <Text profile="globalMarketSectionHeaderTitle" name="title" />
+                        </ListItem>
+                    </SmoothList>
+
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="globalMarketListSlider" dataElementId="gmTableVehicleMarket" id="gmTableVehicleMarketSlider" />
+                    </ThreePartBitmap>
+                </GuiElement>
+            </GuiElement>
+
+            <GuiElement profile="globalMarketFooterBox1">
+                <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
+                <Text profile="fs25_textDefault" id="vehiclesSelectionHint" position="40px 8px" size="1470px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
             </GuiElement>
         </GuiElement>
 

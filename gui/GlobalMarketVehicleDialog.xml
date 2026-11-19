@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- ========================================================================================= -->
+<!-- FS25_GlobalMarket - GlobalMarketVehicleDialog.xml                                         -->
+<!-- Used vehicle market (#16): dialog to list an own vehicle (asking price, duration).        -->
+<!-- Reuses the receipt/dropdown profiles registered by GlobalMarketContractDialog.xml.        -->
+<!-- Author: D-S-Agrarservice                                                                  -->
+<!-- ========================================================================================= -->
+<GUI name="GlobalMarketVehicleDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer" />
+    <Bitmap profile="dialogFullscreenBg" id="dialogBg" />
+
+    <GuiElement profile="globalMarketVDialogBg" id="dialogElement">
+
+        <ThreePartBitmap profile="fs25_dialogBgMiddle" with="anchorStretch" />
+        <ThreePartBitmap profile="fs25_dialogBgTop" />
+        <ThreePartBitmap profile="fs25_dialogBgBottom" />
+
+        <GuiElement profile="fs25_dialogContentContainer" size="100% 100%">
+            <BoxLayout profile="globalMarketCHeaderBox" id="headerBoxLayout">
+                <Bitmap profile="globalMarketVVehicleIcon" id="dialogVehicleIcon" />
+                <Text profile="globalMarketCTitleText" id="dialogTitleElement" />
+            </BoxLayout>
+            <Text profile="globalMarketCInfoText" id="dialogInfoTextElement" />
+
+            <MultiTextOption profile="globalMarketCDropdown1" id="selectorPrice" onClick="onClickPrice">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
+            <MultiTextOption profile="globalMarketCDropdown2" id="selectorDuration" onClick="onClickDuration">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
+            <GuiElement profile="globalMarketVReceiptBox">
+                <Bitmap profile="globalMarketCReceiptCardBg" />
+                <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px 0px" size="536px 2px" with="anchorTopCenter" />
+                <Text profile="globalMarketCReceiptLabel" id="receiptRow1Label" position="18px -14px" text="" />
+                <Text profile="globalMarketCReceiptValue" id="receiptRow1Value" position="-18px -14px" text="" />
+                <Text profile="globalMarketCReceiptLabel" id="receiptRow2Label" position="18px -46px" text="" />
+                <Text profile="globalMarketCReceiptValue" id="receiptRow2Value" position="-18px -46px" text="" />
+                <Text profile="globalMarketCReceiptLabel" id="receiptRow3Label" position="18px -78px" text="" />
+                <Text profile="globalMarketCReceiptValue" id="receiptRow3Value" position="-18px -78px" text="" />
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px -114px" size="500px 2px" with="anchorTopCenter" />
+                <Text profile="globalMarketCReceiptTotalLabel" id="receiptTotalLabel" position="18px -126px" text="" />
+                <Text profile="globalMarketCReceiptTotalValue" id="receiptTotalValue" position="-18px -126px" text="" />
+                <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="536px 2px" with="anchorBottomCenter" />
+            </GuiElement>
+        </GuiElement>
+
+        <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
+            <Button profile="buttonOK" text="$l10n_ui_gm_vehicles_action_list" onClick="onClickOk" id="yesButton" />
+            <Bitmap profile="fs25_dialogButtonBoxSeparator" />
+            <Button profile="buttonBack" text="$l10n_button_back" onClick="onClickBack" id="noButton" />
+        </BoxLayout>
+    </GuiElement>
+
+    <GUIProfiles>
+        <Profile name="globalMarketVDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
+            <size value="620px 470px" />
+        </Profile>
+        <Profile name="globalMarketVVehicleIcon" extends="baseReference">
+            <size value="36px 36px" />
+            <imageSliceId value="noSlice" />
+            <imageColor value="$preset_colorWhite" />
+        </Profile>
+        <Profile name="globalMarketVReceiptBox" extends="emptyPanel" with="anchorTopCenter">
+            <size value="536px 172px" />
+            <position value="0px -190px" />
+        </Profile>
+    </GUIProfiles>
+</GUI>

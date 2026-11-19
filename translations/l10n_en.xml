@@ -186,6 +186,45 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="No free pickup space at the dealer." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="The vehicle could not be loaded." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="You do not have permission to do this." />
+        <e k="ui_gm_subtab_vehicles"                               v="Used Vehicles" />
+        <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
+        <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />
+        <e k="ui_gm_vehicles_col_vehicle"                          v="Vehicle" />
+        <e k="ui_gm_vehicles_col_status"                           v="Status" />
+        <e k="ui_gm_vehicles_col_value"                            v="Value / Price" />
+        <e k="ui_gm_vehicles_col_condition"                        v="Hours / Age" />
+        <e k="ui_gm_vehicles_col_price"                            v="Price" />
+        <e k="ui_gm_vehicles_sort_price"                           v="Sort: Price" />
+        <e k="ui_gm_vehicles_sort_hours"                           v="Sort: Hours" />
+        <e k="ui_gm_vehicles_sort_age"                             v="Sort: Age" />
+        <e k="ui_gm_vehicles_action_list"                          v="List for sale" />
+        <e k="ui_gm_vehicles_action_buy"                           v="Buy" />
+        <e k="ui_gm_vehicles_action_withdraw"                      v="Withdraw" />
+        <e k="ui_gm_vehicles_condition_short"                      v="%.0f h | %d mo." />
+        <e k="ui_gm_vehicles_condition_full"                       v="%.1f h | %d months old | Damage %d %% | Wear %d %%" />
+        <e k="ui_gm_vehicles_status_open"                          v="Listed (%s)" />
+        <e k="ui_gm_vehicles_status_buying"                        v="Being sold" />
+        <e k="ui_gm_vehicles_status_returnPending"                 v="Return pending" />
+        <e k="ui_gm_vehicles_sec_myListings"                       v="My Listings" />
+        <e k="ui_gm_vehicles_sec_myVehicles"                       v="My Vehicles" />
+        <e k="ui_gm_vehicles_empty_my"                             v="No vehicles" />
+        <e k="ui_gm_vehicles_empty_market"                         v="No listings at the moment" />
+        <e k="ui_gm_vehicles_mySub"                                v="Listings: %d / %d | Vehicles: %d" />
+        <e k="ui_gm_vehicles_marketSub"                            v="%d listings" />
+        <e k="ui_gm_vehicles_state_ready"                          v="Ready" />
+        <e k="ui_gm_vehicles_state_blocked"                        v="Blocked" />
+        <e k="ui_gm_vehicles_hint_vehicle"                         v="%s | Dealer value: %s" />
+        <e k="ui_gm_vehicles_hint_listing"                         v="%s | Seller: %s | %s | Price: %s (%d %%) | Time left: %s" />
+        <e k="ui_gm_vehicles_npcSeller"                            v="Dealer" />
+        <e k="ui_gm_vehicles_confirmBuy"                           v="Buy %s for %s?" />
+        <e k="ui_gm_vehicles_confirmWithdraw"                      v="Withdraw the listing for %s? The vehicle will be waiting at the dealer." />
+        <e k="ui_gm_vehicles_dialog_title"                         v="List for sale: %s" />
+        <e k="ui_gm_vehicles_priceOption"                          v="%d %% (%s)" />
+        <e k="ui_gm_vehicles_durationOption"                       v="%d mo." />
+        <e k="ui_gm_vehicles_receipt_dealer"                       v="Dealer value" />
+        <e k="ui_gm_vehicles_receipt_npc"                          v="If an NPC buys (-%d %%)" />
+        <e k="ui_gm_vehicles_receipt_duration"                     v="Duration" />
+        <e k="ui_gm_vehicles_receipt_asking"                       v="Asking price" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
         <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
         <e k="ui_gm_trend"                                         v="Trend" />

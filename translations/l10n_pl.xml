@@ -186,6 +186,45 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="Brak wolnego miejsca odbioru u dealera." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Nie udało się wczytać pojazdu." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Nie masz do tego uprawnień." />
+        <e k="ui_gm_subtab_vehicles"                               v="Pojazdy używane" />
+        <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
+        <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />
+        <e k="ui_gm_vehicles_col_vehicle"                          v="Pojazd" />
+        <e k="ui_gm_vehicles_col_status"                           v="Status" />
+        <e k="ui_gm_vehicles_col_value"                            v="Wartość / Cena" />
+        <e k="ui_gm_vehicles_col_condition"                        v="Godziny / Wiek" />
+        <e k="ui_gm_vehicles_col_price"                            v="Cena" />
+        <e k="ui_gm_vehicles_sort_price"                           v="Sortuj: Cena" />
+        <e k="ui_gm_vehicles_sort_hours"                           v="Sortuj: Godziny" />
+        <e k="ui_gm_vehicles_sort_age"                             v="Sortuj: Wiek" />
+        <e k="ui_gm_vehicles_action_list"                          v="Wystaw" />
+        <e k="ui_gm_vehicles_action_buy"                           v="Kup" />
+        <e k="ui_gm_vehicles_action_withdraw"                      v="Wycofaj" />
+        <e k="ui_gm_vehicles_condition_short"                      v="%.0f h | %d mies." />
+        <e k="ui_gm_vehicles_condition_full"                       v="%.1f h | %d mies. | Uszkodzenia %d %% | Zużycie %d %%" />
+        <e k="ui_gm_vehicles_status_open"                          v="Wystawiony (%s)" />
+        <e k="ui_gm_vehicles_status_buying"                        v="Sprzedaż w toku" />
+        <e k="ui_gm_vehicles_status_returnPending"                 v="Zwrot oczekuje" />
+        <e k="ui_gm_vehicles_sec_myListings"                       v="Moje oferty" />
+        <e k="ui_gm_vehicles_sec_myVehicles"                       v="Moje pojazdy" />
+        <e k="ui_gm_vehicles_empty_my"                             v="Brak pojazdów" />
+        <e k="ui_gm_vehicles_empty_market"                         v="Obecnie brak ofert" />
+        <e k="ui_gm_vehicles_mySub"                                v="Oferty: %d / %d | Pojazdy: %d" />
+        <e k="ui_gm_vehicles_marketSub"                            v="Oferty: %d" />
+        <e k="ui_gm_vehicles_state_ready"                          v="Gotowy" />
+        <e k="ui_gm_vehicles_state_blocked"                        v="Zablokowany" />
+        <e k="ui_gm_vehicles_hint_vehicle"                         v="%s | Wartość u dealera: %s" />
+        <e k="ui_gm_vehicles_hint_listing"                         v="%s | Sprzedawca: %s | %s | Cena: %s (%d %%) | Pozostało: %s" />
+        <e k="ui_gm_vehicles_npcSeller"                            v="Dealer" />
+        <e k="ui_gm_vehicles_confirmBuy"                           v="Kupić %s za %s?" />
+        <e k="ui_gm_vehicles_confirmWithdraw"                      v="Wycofać ofertę dla %s? Pojazd będzie czekał u dealera." />
+        <e k="ui_gm_vehicles_dialog_title"                         v="Wystaw: %s" />
+        <e k="ui_gm_vehicles_priceOption"                          v="%d %% (%s)" />
+        <e k="ui_gm_vehicles_durationOption"                       v="%d mies." />
+        <e k="ui_gm_vehicles_receipt_dealer"                       v="Wartość u dealera" />
+        <e k="ui_gm_vehicles_receipt_npc"                          v="Przy zakupie przez NPC (-%d %%)" />
+        <e k="ui_gm_vehicles_receipt_duration"                     v="Czas trwania" />
+        <e k="ui_gm_vehicles_receipt_asking"                       v="Cena wywoławcza" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centrum Logistyczne GM - bez opłat)" />
         <e k="ui_gm_total_storage"                                 v="CAŁKOWITY ZAPAS:" />
         <e k="ui_gm_trend"                                         v="Trend" />

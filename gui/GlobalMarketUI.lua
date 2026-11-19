@@ -342,6 +342,9 @@ function GlobalMarketUI:onGuiSetupFinished()
     if self.initContractsSubTab ~= nil then
         self:initContractsSubTab()
     end
+    if self.initVehiclesSubTab ~= nil then
+        self:initVehiclesSubTab()
+    end
 end
 
 -- Returns the localized label for the currently active category mode
@@ -663,6 +666,7 @@ function GlobalMarketUI:updateContent()
 
     self:applyFilterAndCategories(true)
     if self.updateContractsSubTabContent ~= nil then self:updateContractsSubTabContent() end
+    if self.updateVehiclesSubTabContent ~= nil then self:updateVehiclesSubTabContent() end
 
     if GlobalMarket.debugManager ~= nil then
         GlobalMarket.debugManager:trace("UI Content refreshed. Storage items: %d (%d sections), Market items: %d (%d sections)",
@@ -677,16 +681,11 @@ end
 function GlobalMarketUI:onSearchTextChanged(element, text)
     self.searchFilterText = text or ""
     self:applyFilterAndCategories(false)
-    if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS and self.applyContractsListsFilter ~= nil then
-        self:applyContractsListsFilter(false)
-    end
+    self:applySubTabSearch(false)
 end
 
 function GlobalMarketUI:onSearchEnterPressed(element)
-    local isCon = (self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS)
-    local targetList = isCon
-        and ((self.contractsListFocus == "right") and self.gmTableContractBoard or self.gmTableMyContracts)
-        or ((self.currentListFocus == "storage") and self.gmTableStorage or self.gmTableMarket)
+    local targetList = self:getSubTabFocusList()
     if targetList ~= nil then FocusManager:setFocus(targetList) end
 end
 
@@ -696,9 +695,7 @@ function GlobalMarketUI:onClickClearSearch()
         self.searchTextInput:setText("")
     end
     self:applyFilterAndCategories(true)
-    if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS and self.applyContractsListsFilter ~= nil then
-        self:applyContractsListsFilter(true)
-    end
+    self:applySubTabSearch(true)
 end
 
 function GlobalMarketUI:onClickToggleCategoryMode()

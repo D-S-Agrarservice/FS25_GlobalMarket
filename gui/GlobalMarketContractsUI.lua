@@ -9,6 +9,7 @@ GlobalMarketContractsUI.activeUi = nil
 
 GlobalMarketUI.SUBTAB_SPOT      = 1
 GlobalMarketUI.SUBTAB_CONTRACTS = 2
+GlobalMarketUI.SUBTAB_VEHICLES  = 3
 
 GlobalMarketUI.BOARD_FILTER_ALL       = 1
 GlobalMarketUI.BOARD_FILTER_CONTRACTS = 2
@@ -77,11 +78,20 @@ function GlobalMarketUI:onContractsFrameOpen()
         disabled = false
     }
 
+    if self.initVehiclesButtonInfos ~= nil then
+        self:initVehiclesButtonInfos()
+    end
+
     self:updateCategoryModeButtonVisuals()
     self:setActiveSubTab(self.activeSubTab or GlobalMarketUI.SUBTAB_SPOT, false)
     self:updateContent()
 
-    if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS then
+    if self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES and self.getSubTabFocusList ~= nil then
+        local focusTarget = self:getSubTabFocusList()
+        if focusTarget ~= nil then
+            FocusManager:setFocus(focusTarget)
+        end
+    elseif self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS then
         local focusTarget = (self.contractsListFocus == "right") and self.gmTableContractBoard or self.gmTableMyContracts
         if focusTarget ~= nil then
             FocusManager:setFocus(focusTarget)
@@ -109,24 +119,30 @@ function GlobalMarketUI:onClickSubTabContracts()
 end
 
 function GlobalMarketUI:onClickToggleSubTab()
-    local nextTab = (self.activeSubTab == GlobalMarketUI.SUBTAB_SPOT)
-        and GlobalMarketUI.SUBTAB_CONTRACTS or GlobalMarketUI.SUBTAB_SPOT
+    -- Cycles Spot -> Contracts -> Vehicles -> Spot
+    local nextTab = (self.activeSubTab or GlobalMarketUI.SUBTAB_SPOT) + 1
+    if nextTab > GlobalMarketUI.SUBTAB_VEHICLES then
+        nextTab = GlobalMarketUI.SUBTAB_SPOT
+    end
     self:setActiveSubTab(nextTab, true)
 end
 
 function GlobalMarketUI:setActiveSubTab(tabIndex, restoreFocus)
     self.activeSubTab = tabIndex or GlobalMarketUI.SUBTAB_SPOT
     local isContracts = (self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS)
+    local isVehicles = (self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES)
+    local isSpot = not isContracts and not isVehicles
 
-    if self.subTabSpotContainer ~= nil then self.subTabSpotContainer:setVisible(not isContracts) end
+    if self.subTabSpotContainer ~= nil then self.subTabSpotContainer:setVisible(isSpot) end
     if self.subTabContractsContainer ~= nil then self.subTabContractsContainer:setVisible(isContracts) end
+    if self.applyVehiclesSubTabVisuals ~= nil then self:applyVehiclesSubTabVisuals(isVehicles) end
 
-    if self.bgSubTabSpotActive ~= nil then self.bgSubTabSpotActive:setVisible(not isContracts) end
-    if self.bgSubTabSpotInactive ~= nil then self.bgSubTabSpotInactive:setVisible(isContracts) end
+    if self.bgSubTabSpotActive ~= nil then self.bgSubTabSpotActive:setVisible(isSpot) end
+    if self.bgSubTabSpotInactive ~= nil then self.bgSubTabSpotInactive:setVisible(not isSpot) end
     if self.bgSubTabContractsActive ~= nil then self.bgSubTabContractsActive:setVisible(isContracts) end
     if self.bgSubTabContractsInactive ~= nil then self.bgSubTabContractsInactive:setVisible(not isContracts) end
 
-    local spotCol = isContracts and COLOR_WHITE_TEXT or COLOR_ACTIVE_TAB_TEXT
+    local spotCol = isSpot and COLOR_ACTIVE_TAB_TEXT or COLOR_WHITE_TEXT
     local conCol = isContracts and COLOR_ACTIVE_TAB_TEXT or COLOR_WHITE_TEXT
     if self.btnSubTabSpot ~= nil then self.btnSubTabSpot:setTextColor(spotCol[1], spotCol[2], spotCol[3], spotCol[4]) end
     if self.btnSubTabContracts ~= nil then self.btnSubTabContracts:setTextColor(conCol[1], conCol[2], conCol[3], conCol[4]) end
@@ -134,11 +150,16 @@ function GlobalMarketUI:setActiveSubTab(tabIndex, restoreFocus)
     self:refreshSubTabBadge()
     if isContracts then
         self:updateContractsSubTabContent()
+    elseif isVehicles and self.updateVehiclesSubTabContent ~= nil then
+        self:updateVehiclesSubTabContent()
     end
     self:updateActiveSubTabMenuButtons()
 
     if restoreFocus then
-        if isContracts then
+        if isVehicles and self.getSubTabFocusList ~= nil then
+            local target = self:getSubTabFocusList()
+            if target ~= nil then FocusManager:setFocus(target) end
+        elseif isContracts then
             local target = (self.contractsListFocus == "right") and self.gmTableContractBoard or self.gmTableMyContracts
             if target ~= nil then FocusManager:setFocus(target) end
         elseif self.gmTableStorage ~= nil then
@@ -165,6 +186,10 @@ function GlobalMarketUI:refreshSubTabBadge()
 end
 
 function GlobalMarketUI:updateActiveSubTabMenuButtons()
+    if self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES and self.updateVehiclesMenuButtons ~= nil then
+        self:updateVehiclesMenuButtons()
+        return
+    end
     local backButton = { inputAction = InputAction.MENU_BACK }
     if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS then
         if self.boardFilterButtonInfo ~= nil then
