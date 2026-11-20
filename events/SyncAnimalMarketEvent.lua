@@ -1,6 +1,6 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - SyncAnimalMarketEvent.lua
--- Livestock market (#15): server-to-client snapshot of all listings and pickup box entries
+-- Livestock market (#15): server-to-client snapshot of all listings, pickup box entries and the great demand
 -- (on change, hourly while listings exist, and on join). Clients receive a compact view of the
 -- animals with server-computed prices; the server keeps the authoritative clusters.
 -- Author: D-S-Agrarservice
@@ -16,10 +16,12 @@ end
 
 ---@param listings table
 ---@param pickups table
-function SyncAnimalMarketEvent.new(listings, pickups)
+---@param demand table|nil Active great demand for meat animals (Stage 1b)
+function SyncAnimalMarketEvent.new(listings, pickups, demand)
     local self = SyncAnimalMarketEvent.emptyNew()
     self.listings = listings or {}
     self.pickups = pickups or {}
+    self.demand = demand
     return self
 end
 
@@ -43,6 +45,15 @@ function SyncAnimalMarketEvent:writeStream(streamId, connection)
         streamWriteUIntN(streamId, entry.farmId or 0, FarmManager.FARM_ID_SEND_NUM_BITS)
         streamWriteString(streamId, entry.reason or "")
         GlobalMarketAnimalListings.writeSnapshotToStream(streamId, entry.snapshot)
+    end
+    local demand = self.demand
+    streamWriteBool(streamId, demand ~= nil)
+    if demand ~= nil then
+        streamWriteString(streamId, demand.typeName or "")
+        streamWriteFloat32(streamId, demand.bonus or 0)
+        streamWriteFloat32(streamId, demand.hoursRemaining or 0)
+        streamWriteUInt16(streamId, math.max(0, math.min(demand.quota or 0, 65535)))
+        streamWriteUInt16(streamId, math.max(0, math.min(demand.sold or 0, 65535)))
     end
 end
 
@@ -75,6 +86,16 @@ function SyncAnimalMarketEvent:readStream(streamId, connection)
         entry.snapshot = GlobalMarketAnimalListings.readSnapshotFromStream(streamId)
         table.insert(self.pickups, entry)
     end
+    self.demand = nil
+    if streamReadBool(streamId) then
+        self.demand = {
+            typeName = streamReadString(streamId),
+            bonus = streamReadFloat32(streamId),
+            hoursRemaining = streamReadFloat32(streamId),
+            quota = streamReadUInt16(streamId),
+            sold = streamReadUInt16(streamId)
+        }
+    end
     self:run(connection)
 end
 
@@ -85,6 +106,6 @@ function SyncAnimalMarketEvent:run(connection)
     end
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm ~= nil and gm.applyAnimalMarketState ~= nil then
-        gm:applyAnimalMarketState(self.listings, self.pickups)
+        gm:applyAnimalMarketState(self.listings, self.pickups, self.demand)
     end
 end

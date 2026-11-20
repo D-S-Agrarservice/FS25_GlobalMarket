@@ -287,6 +287,14 @@
         <e k="ui_gm_animals_dealer_load"                           v="Charger le dépôt GM dans la bétaillère" />
         <e k="ui_gm_animals_npcName"                               v="Marchand de bestiaux" />
         <e k="ui_gm_animals_disabledByMod"                         v="Marché aux animaux désactivé : %s remplace le système d'animaux." />
+        <e k="ui_gm_animals_notice_demandStart"                    v="Forte demande sur le marché aux animaux GM : %s en âge d'abattage, +%d %% sur la valeur chez le marchand pendant %s jours (%d animaux)." />
+        <e k="ui_gm_animals_notice_demandEnd"                      v="La forte demande de %s est terminée (%d animaux vendus)." />
+        <e k="ui_gm_animals_notice_demandSold"                     v="%s vendus à la forte demande pour %s." />
+        <e k="ui_gm_animals_reason_demandInactive"                 v="Il n'y a pas de forte demande en ce moment." />
+        <e k="ui_gm_animals_reason_demandWrongType"                v="Ces animaux ne correspondent pas à la forte demande actuelle." />
+        <e k="ui_gm_animals_reason_demandTooYoung"                 v="Ces animaux n'ont pas encore l'âge d'abattage." />
+        <e k="ui_gm_animals_reason_demandUnhealthy"                v="Les animaux doivent avoir au moins %d %% de santé." />
+        <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="La forte demande n'accepte plus autant d'animaux (encore %d)." />
         <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />

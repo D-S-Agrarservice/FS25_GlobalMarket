@@ -364,7 +364,7 @@ function GlobalMarket:sendInitialClientState(connection, user, farm)
         connection:sendEvent(SyncVehicleMarketEvent.new(self.vehicleListings or {}))
     end
     if SyncAnimalMarketEvent ~= nil then
-        connection:sendEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}))
+        connection:sendEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}, self.animalDemand))
     end
 end
 

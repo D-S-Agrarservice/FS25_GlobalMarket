@@ -287,6 +287,14 @@
         <e k="ui_gm_animals_dealer_load"                           v="Load GM pickup box onto the trailer" />
         <e k="ui_gm_animals_npcName"                               v="Animal dealer" />
         <e k="ui_gm_animals_disabledByMod"                         v="Animal market disabled: %s replaces the animal system." />
+        <e k="ui_gm_animals_notice_demandStart"                    v="Great demand on the GM animal market: %s of slaughter age, +%d %% on the dealer value for %s days (%d animals)." />
+        <e k="ui_gm_animals_notice_demandEnd"                      v="The great demand for %s has ended (%d animals sold)." />
+        <e k="ui_gm_animals_notice_demandSold"                     v="%s sold to the great demand for %s." />
+        <e k="ui_gm_animals_reason_demandInactive"                 v="There is no great demand at the moment." />
+        <e k="ui_gm_animals_reason_demandWrongType"                v="These animals do not match the current great demand." />
+        <e k="ui_gm_animals_reason_demandTooYoung"                 v="These animals are not of slaughter age yet." />
+        <e k="ui_gm_animals_reason_demandUnhealthy"                v="The animals need at least %d %% health." />
+        <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="The great demand does not take that many animals anymore (%d left)." />
         <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />

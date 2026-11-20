@@ -222,11 +222,15 @@ function GlobalMarket:updateAnimalMarketNpcs(monthDelta)
     return changed
 end
 
----Reacts to a changed NPC level; "Off" removes all open NPC listings (server)
+---Reacts to a changed NPC level; "Off" removes all open NPC listings and ends a great demand (server)
 ---@param level number
 function GlobalMarket:onAnimalNpcModeChanged(level)
     if (level or 0) > 0 or g_currentMission == nil or not g_currentMission:getIsServer() then
         return
+    end
+    -- Great demands come from NPC dealers as well (Stage 1b)
+    if self.animalDemand ~= nil and self.endAnimalDemand ~= nil then
+        self:endAnimalDemand()
     end
     local listings = self.animalListings or {}
     local removed = 0

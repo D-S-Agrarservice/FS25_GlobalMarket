@@ -43,7 +43,10 @@ GlobalMarket.ANIMAL_NOTICE = {
     RETURNED = 7,
     RETURN_PENDING = 8,
     EXPIRED = 9,
-    LOADED = 10
+    LOADED = 10,
+    DEMAND_START = 11,   -- Great demand for meat animals (Stage 1b)
+    DEMAND_END = 12,
+    DEMAND_SOLD = 13
 }
 
 -- =========================================================================
@@ -56,6 +59,10 @@ function GlobalMarket:initAnimalMarket()
     self.animalPickups = {}
     self.nextAnimalListingId = 1
     self.nextAnimalPickupId = 1
+    self.animalDemand = nil
+    if GlobalMarket.resetAnimalDemandCaches ~= nil then
+        GlobalMarket.resetAnimalDemandCaches()
+    end
     local incompatible = GlobalMarketAnimalListings.getIncompatibleMod()
     if incompatible ~= nil and not self.hasLoggedAnimalMarketDisabled then
         self.hasLoggedAnimalMarketDisabled = true
@@ -350,8 +357,9 @@ function GlobalMarket:updateAnimalMarketHourly(customMonthDelta)
     end
     self:retryAnimalPickupReturns()
     local npcChanged = (self.updateAnimalMarketNpcs ~= nil) and self:updateAnimalMarketNpcs(monthDelta)
-    -- Clients show the remaining time, so the state is sent every hour while listings exist
-    if #(self.animalListings or {}) > 0 or npcChanged then
+    local demandChanged = (self.updateAnimalDemandHourly ~= nil) and self:updateAnimalDemandHourly(monthDelta)
+    -- Clients show remaining times, so the state is sent every hour while listings or a great demand exist
+    if #(self.animalListings or {}) > 0 or self.animalDemand ~= nil or npcChanged or demandChanged then
         broadcastState(self)
     end
 end
@@ -414,6 +422,9 @@ function GlobalMarket:saveAnimalMarketToXml(xmlFile)
         xmlFile:setString(key .. "#reason", entry.reason or GlobalMarket.ANIMAL_PICKUP_REASON.RETURN)
         GlobalMarketAnimalListings.writeSnapshotToXml(xmlFile, key .. ".animals", entry.snapshot)
     end
+    if self.saveAnimalDemandToXml ~= nil then
+        self:saveAnimalDemandToXml(xmlFile, rootKey)
+    end
 end
 
 ---Loads all listings and pickup box entries from globalMarket.xml
@@ -460,6 +471,9 @@ function GlobalMarket:loadAnimalMarketFromXml(xmlFile)
     end)
     self.nextAnimalListingId = math.max(xmlFile:getInt(rootKey .. "#nextListingId", 1), maxListingId + 1)
     self.nextAnimalPickupId = math.max(xmlFile:getInt(rootKey .. "#nextPickupId", 1), maxPickupId + 1)
+    if self.loadAnimalDemandFromXml ~= nil then
+        self:loadAnimalDemandFromXml(xmlFile, rootKey)
+    end
     if self.debugManager ~= nil then
         self.debugManager:info("AnimalMarket: Loaded %d listing(s) and %d pickup box entr(ies).",
             #self.animalListings, #self.animalPickups)
@@ -514,6 +528,7 @@ local function findSourceByClusterId(farmId, clusterId)
     end
     return nil
 end
+GlobalMarket.findAnimalSourceByClusterId = findSourceByClusterId
 
 ---Returns console lines for all listings and pickup box entries (appended to gmAnimalMarketList)
 ---@return table lines
@@ -530,6 +545,9 @@ function GlobalMarket:getAnimalMarketConsoleLines()
     for _, entry in ipairs(self.animalPickups or {}) do
         local info = GlobalMarketAnimalListings.getInfo(entry.snapshot)
         table.insert(lines, string.format("  P%d farm %d | %s x%d | %s", entry.id, entry.farmId, info.title, info.numAnimals, entry.reason))
+    end
+    if self.getAnimalDemandConsoleLine ~= nil then
+        table.insert(lines, self:getAnimalDemandConsoleLine())
     end
     return lines
 end

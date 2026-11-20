@@ -287,6 +287,14 @@
         <e k="ui_gm_animals_dealer_load"                           v="Załaduj punkt odbioru GM na przyczepę" />
         <e k="ui_gm_animals_npcName"                               v="Handlarz zwierząt" />
         <e k="ui_gm_animals_disabledByMod"                         v="Targ zwierząt wyłączony: %s zastępuje system zwierząt." />
+        <e k="ui_gm_animals_notice_demandStart"                    v="Duży popyt na targu zwierząt GM: %s w wieku ubojowym, +%d %% do wartości u handlarza przez %s dni (%d zwierząt)." />
+        <e k="ui_gm_animals_notice_demandEnd"                      v="Duży popyt na %s zakończył się (sprzedano %d zwierząt)." />
+        <e k="ui_gm_animals_notice_demandSold"                     v="%s sprzedano w ramach dużego popytu za %s." />
+        <e k="ui_gm_animals_reason_demandInactive"                 v="Obecnie nie ma dużego popytu." />
+        <e k="ui_gm_animals_reason_demandWrongType"                v="Te zwierzęta nie pasują do obecnego dużego popytu." />
+        <e k="ui_gm_animals_reason_demandTooYoung"                 v="Te zwierzęta nie osiągnęły jeszcze wieku ubojowego." />
+        <e k="ui_gm_animals_reason_demandUnhealthy"                v="Zwierzęta potrzebują co najmniej %d %% zdrowia." />
+        <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="Duży popyt nie przyjmuje już tylu zwierząt (pozostało %d)." />
         <e k="ui_gm_subtab_vehicles"                               v="Ogłoszenia" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />

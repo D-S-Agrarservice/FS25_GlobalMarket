@@ -163,6 +163,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAnimalListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalNpc.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalDemand.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -376,6 +377,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmAnimalMarketLoad", "Loads pickup box animals onto an own livestock trailer at the animal dealer: [pickupId|all]", "consoleCommandAnimalMarketLoad", self)
             addConsoleCommand("gmAnimalMarketMakeNpc", "Turns an animal listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandAnimalMarketMakeNpc", self)
             addConsoleCommand("gmAnimalMarketSpawnNpc", "Creates NPC animal dealer listings now: [count=1]", "consoleCommandAnimalMarketSpawnNpc", self)
+            addConsoleCommand("gmAnimalDemandStart", "Starts a great demand for meat animals now: [animal type, e.g. COW or PIG]", "consoleCommandAnimalDemandStart", self)
+            addConsoleCommand("gmAnimalDemandEnd", "Ends the active great demand for meat animals", "consoleCommandAnimalDemandEnd", self)
+            addConsoleCommand("gmAnimalDemandSell", "Sells own animals to the great demand: <clusterId> <count>", "consoleCommandAnimalDemandSell", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -402,6 +406,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmAnimalMarketLoad")
             removeConsoleCommand("gmAnimalMarketMakeNpc")
             removeConsoleCommand("gmAnimalMarketSpawnNpc")
+            removeConsoleCommand("gmAnimalDemandStart")
+            removeConsoleCommand("gmAnimalDemandEnd")
+            removeConsoleCommand("gmAnimalDemandSell")
             self.debugCommandsRegistered = false
         end
     end

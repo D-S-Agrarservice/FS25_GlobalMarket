@@ -287,6 +287,14 @@
         <e k="ui_gm_animals_dealer_load"                           v="GM-Abholfach auf den Anhänger laden" />
         <e k="ui_gm_animals_npcName"                               v="Viehhändler" />
         <e k="ui_gm_animals_disabledByMod"                         v="Tiermarkt deaktiviert: %s ersetzt das Tiersystem." />
+        <e k="ui_gm_animals_notice_demandStart"                    v="Großnachfrage im GM-Tiermarkt: %s ab Schlachtalter, +%d %% auf den Händlerwert für %s Tage (%d Tiere)." />
+        <e k="ui_gm_animals_notice_demandEnd"                      v="Die Großnachfrage für %s ist beendet (%d Tiere verkauft)." />
+        <e k="ui_gm_animals_notice_demandSold"                     v="%s für %s an die Großnachfrage verkauft." />
+        <e k="ui_gm_animals_reason_demandInactive"                 v="Zurzeit gibt es keine Großnachfrage." />
+        <e k="ui_gm_animals_reason_demandWrongType"                v="Diese Tiere passen nicht zur aktuellen Großnachfrage." />
+        <e k="ui_gm_animals_reason_demandTooYoung"                 v="Diese Tiere sind noch nicht schlachtreif." />
+        <e k="ui_gm_animals_reason_demandUnhealthy"                v="Die Tiere brauchen mindestens %d %% Gesundheit." />
+        <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="So viele Tiere nimmt die Großnachfrage nicht mehr an (noch %d)." />
         <e k="ui_gm_subtab_vehicles"                               v="Marktplatz" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />

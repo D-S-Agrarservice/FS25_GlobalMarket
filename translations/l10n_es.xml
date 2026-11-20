@@ -287,6 +287,14 @@
         <e k="ui_gm_animals_dealer_load"                           v="Cargar el depósito GM en el remolque" />
         <e k="ui_gm_animals_npcName"                               v="Tratante de animales" />
         <e k="ui_gm_animals_disabledByMod"                         v="Mercado de animales desactivado: %s sustituye el sistema de animales." />
+        <e k="ui_gm_animals_notice_demandStart"                    v="Gran demanda en el mercado de animales GM: %s en edad de sacrificio, +%d %% sobre el valor en el tratante durante %s días (%d animales)." />
+        <e k="ui_gm_animals_notice_demandEnd"                      v="La gran demanda de %s ha terminado (%d animales vendidos)." />
+        <e k="ui_gm_animals_notice_demandSold"                     v="%s vendidos a la gran demanda por %s." />
+        <e k="ui_gm_animals_reason_demandInactive"                 v="Ahora mismo no hay ninguna gran demanda." />
+        <e k="ui_gm_animals_reason_demandWrongType"                v="Estos animales no corresponden a la gran demanda actual." />
+        <e k="ui_gm_animals_reason_demandTooYoung"                 v="Estos animales aún no tienen edad de sacrificio." />
+        <e k="ui_gm_animals_reason_demandUnhealthy"                v="Los animales necesitan al menos un %d %% de salud." />
+        <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="La gran demanda ya no acepta tantos animales (quedan %d)." />
         <e k="ui_gm_subtab_vehicles"                               v="Compraventa" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mis vehículos y ofertas" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Mercado de vehículos usados" />

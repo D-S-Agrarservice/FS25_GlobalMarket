@@ -147,7 +147,7 @@ end
 ---Server: sends all listings and pickup box entries to all clients and refreshes the local UI
 function GlobalMarket:broadcastAnimalMarketState()
     if g_server ~= nil and SyncAnimalMarketEvent ~= nil then
-        g_server:broadcastEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}))
+        g_server:broadcastEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}, self.animalDemand))
     end
     self:onAnimalMarketChanged()
 end
@@ -155,9 +155,11 @@ end
 ---Client: applies a received state
 ---@param listings table
 ---@param pickups table
-function GlobalMarket:applyAnimalMarketState(listings, pickups)
+---@param demand table|nil Active great demand
+function GlobalMarket:applyAnimalMarketState(listings, pickups, demand)
     self.animalListings = listings or {}
     self.animalPickups = pickups or {}
+    self.animalDemand = demand
     self:onAnimalMarketChanged()
 end
 
@@ -195,6 +197,11 @@ function GlobalMarket.getAnimalMarketReasonText(code)
         return string.format(text, cfg.DURATION_MIN, cfg.DURATION_MAX)
     elseif code == "farmLimitReached" then
         return string.format(text, cfg.MAX_PER_FARM)
+    elseif code == "demandUnhealthy" and GlobalMarket.ANIMAL_DEMAND ~= nil then
+        return string.format(text, GlobalMarket.ANIMAL_DEMAND.MIN_HEALTH)
+    elseif code == "demandQuotaExceeded" then
+        local gm = (g_currentMission ~= nil) and g_currentMission.globalMarket or nil
+        return string.format(text, (gm ~= nil and gm.getAnimalDemandRemaining ~= nil) and gm:getAnimalDemandRemaining() or 0)
     end
     return text
 end
@@ -221,7 +228,10 @@ local NOTICE_TEXT_KEYS = {
     [GlobalMarket.ANIMAL_NOTICE.RETURNED] = "ui_gm_animals_notice_returned",
     [GlobalMarket.ANIMAL_NOTICE.RETURN_PENDING] = "ui_gm_animals_notice_returnPending",
     [GlobalMarket.ANIMAL_NOTICE.EXPIRED] = "ui_gm_animals_notice_expired",
-    [GlobalMarket.ANIMAL_NOTICE.LOADED] = "ui_gm_animals_notice_loaded"
+    [GlobalMarket.ANIMAL_NOTICE.LOADED] = "ui_gm_animals_notice_loaded",
+    [GlobalMarket.ANIMAL_NOTICE.DEMAND_START] = "ui_gm_animals_notice_demandStart",
+    [GlobalMarket.ANIMAL_NOTICE.DEMAND_END] = "ui_gm_animals_notice_demandEnd",
+    [GlobalMarket.ANIMAL_NOTICE.DEMAND_SOLD] = "ui_gm_animals_notice_demandSold"
 }
 
 ---Server: broadcasts a notice; clients filter by target farm (0 = all) and excluded farm
@@ -282,7 +292,15 @@ function GlobalMarket:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, 
     local money = g_i18n:formatMoney(amount or 0, 0, true, true)
     local color = FSBaseMission.INGAME_NOTIFICATION_OK or { 1, 1, 1, 1 }
     local text
-    if kind == N.SOLD then
+    if kind == N.DEMAND_START then
+        -- subTypeName = animal type, numAnimals = quota, amount = bonus percent, otherName = days
+        text = string.format(g_i18n:getText(key), GlobalMarket.getAnimalDemandTypeTitle(subTypeName), amount or 0,
+            tostring(otherName), numAnimals or 0)
+        color = FSBaseMission.INGAME_NOTIFICATION_GREATDEMAND or FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
+    elseif kind == N.DEMAND_END then
+        text = string.format(g_i18n:getText(key), GlobalMarket.getAnimalDemandTypeTitle(subTypeName), numAnimals or 0)
+        color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
+    elseif kind == N.SOLD then
         local buyerName = (code == "npc") and g_i18n:getText("ui_gm_animals_npcName") or tostring(otherName)
         text = string.format(g_i18n:getText(key), animals, money, buyerName)
     elseif kind == N.RETURNED or kind == N.RETURN_PENDING or kind == N.EXPIRED or kind == N.LOADED then
