@@ -131,6 +131,8 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Aus" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Wenig" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_animalNpc"                            v="NPC-Tierhandel" />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Steuert die Viehhändler im GM-Tiermarkt. Wenig/Normal: NPC-Händler kaufen eure Tierangebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an, auch trächtige und Altersstufen, die der Viehhändler nicht verkauft. Aus: Reiner Handel zwischen Spielern." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Meldung bei neuen Fahrzeugangeboten" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Zeigt eine HUD-Meldung, wenn ein anderer Hof ein Fahrzeug im GM-Gebrauchtfahrzeugmarkt anbietet. Persönliche Einstellung, gilt nur für dich." />
         <e k="ui_gm_settings_oc_all"                               v="Alle (Online &amp; Lokal)" />
@@ -276,6 +278,7 @@
         <e k="ui_gm_animals_dealer_title"                          v="GM-Tiermarkt" />
         <e k="ui_gm_animals_dealer_text"                           v="Im GM-Abholfach warten: %s" />
         <e k="ui_gm_animals_dealer_load"                           v="GM-Abholfach auf den Anhänger laden" />
+        <e k="ui_gm_animals_npcName"                               v="Viehhändler" />
         <e k="ui_gm_subtab_vehicles"                               v="Marktplatz" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />

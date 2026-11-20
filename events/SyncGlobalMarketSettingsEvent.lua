@@ -16,7 +16,8 @@ function SyncGlobalMarketSettingsEvent.new(
     baseIndex, literIndex, isDetailed, isDebug, debugLevel, debugDur, compatModeIndex,
     isIconPulse, showStatusIcon, dealerMarkupIndex, capacityIndex, storageDecayIndex,
     greatDemandModeIndex, npcActivityModeIndex, onlineContractsModeIndex,
-    maxFarmContractsIndex, npcContractsTargetIndex, npcOffersTargetIndex, vehicleNpcModeIndex
+    maxFarmContractsIndex, npcContractsTargetIndex, npcOffersTargetIndex, vehicleNpcModeIndex,
+    animalNpcModeIndex
 )
     local self = SyncGlobalMarketSettingsEvent.emptyNew()
     self.baseIndex = baseIndex
@@ -38,6 +39,7 @@ function SyncGlobalMarketSettingsEvent.new(
     self.npcContractsTargetIndex = npcContractsTargetIndex or 3
     self.npcOffersTargetIndex = npcOffersTargetIndex or 3
     self.vehicleNpcModeIndex = vehicleNpcModeIndex or 3
+    self.animalNpcModeIndex = animalNpcModeIndex or 3
     return self
 end
 
@@ -61,6 +63,7 @@ function SyncGlobalMarketSettingsEvent:writeStream(streamId, connection)
     streamWriteInt8(streamId, self.npcContractsTargetIndex or 3)
     streamWriteInt8(streamId, self.npcOffersTargetIndex or 3)
     streamWriteInt8(streamId, self.vehicleNpcModeIndex or 3)
+    streamWriteInt8(streamId, self.animalNpcModeIndex or 3)
 end
 
 function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
@@ -83,6 +86,7 @@ function SyncGlobalMarketSettingsEvent:readStream(streamId, connection)
     self.npcContractsTargetIndex = streamReadInt8(streamId)
     self.npcOffersTargetIndex = streamReadInt8(streamId)
     self.vehicleNpcModeIndex = streamReadInt8(streamId)
+    self.animalNpcModeIndex = streamReadInt8(streamId)
     self:run(connection)
 end
 
@@ -108,6 +112,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     local onlineContractsModeChanged = false
     local contractLimitsChanged = false
     local vehicleNpcChanged = false
+    local animalNpcChanged = false
 
     if GlobalMarketSettings.current ~= nil then
         financeChanged = false
@@ -124,6 +129,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
             or (GlobalMarketSettings.current.npcContractsTargetIndex ~= self.npcContractsTargetIndex)
             or (GlobalMarketSettings.current.npcOffersTargetIndex ~= self.npcOffersTargetIndex)
         vehicleNpcChanged = (GlobalMarketSettings.current.vehicleNpcModeIndex ~= self.vehicleNpcModeIndex)
+        animalNpcChanged = (GlobalMarketSettings.current.animalNpcModeIndex ~= self.animalNpcModeIndex)
     end
 
     -- 2. APPLY SETTINGS LOCALLY
@@ -152,6 +158,14 @@ function SyncGlobalMarketSettingsEvent:run(connection)
     if vehicleNpcChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil
         and g_currentMission.globalMarket.onVehicleNpcModeChanged ~= nil then
         g_currentMission.globalMarket:onVehicleNpcModeChanged(GlobalMarket.VEHICLE_NPC_LEVEL)
+    end
+    GlobalMarketSettings.current.animalNpcModeIndex = self.animalNpcModeIndex or 3
+    if GlobalMarketSettings.OPTIONS.ANIMAL_NPC_MODE ~= nil then
+        GlobalMarket.ANIMAL_NPC_LEVEL = GlobalMarketSettings.OPTIONS.ANIMAL_NPC_MODE[self.animalNpcModeIndex] or 2
+    end
+    if animalNpcChanged and g_currentMission ~= nil and g_currentMission.globalMarket ~= nil
+        and g_currentMission.globalMarket.onAnimalNpcModeChanged ~= nil then
+        g_currentMission.globalMarket:onAnimalNpcModeChanged(GlobalMarket.ANIMAL_NPC_LEVEL)
     end
 
     -- Update Global Variables
@@ -224,7 +238,7 @@ function SyncGlobalMarketSettingsEvent:run(connection)
             self.compatModeIndex, self.isIconPulse, self.showStatusIcon, self.dealerMarkupIndex,
             self.capacityIndex, self.storageDecayIndex, self.greatDemandModeIndex, self.npcActivityModeIndex,
             self.onlineContractsModeIndex, self.maxFarmContractsIndex, self.npcContractsTargetIndex, self.npcOffersTargetIndex,
-            self.vehicleNpcModeIndex
+            self.vehicleNpcModeIndex, self.animalNpcModeIndex
         ), nil, connection, nil)
     else
         -- CLIENT SIDE

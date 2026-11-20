@@ -504,7 +504,7 @@ function GlobalMarketUI:updateAnimalSelectionHint(row)
     elseif row ~= nil and (row.kind == "MY_LISTING" or row.kind == "MARKET_LISTING") then
         local listing = row.data
         text = string.format(self.i18n:getText("ui_gm_animals_hint_listing"), row.name,
-            listing.isNpc and self.i18n:getText("ui_gm_vehicles_npcSeller") or tostring(listing.sellerName),
+            listing.isNpc and self.i18n:getText("ui_gm_animals_npcName") or tostring(listing.sellerName),
             self:formatAnimalCondition(row.info), self.i18n:formatMoney(row.price, 0, true, true),
             math.floor((listing.priceFactor or 1) * 100 + 0.5),
             self:formatAnimalNewPrice(GlobalMarketAnimalListings.getDealerNewPrice(listing.snapshot)),

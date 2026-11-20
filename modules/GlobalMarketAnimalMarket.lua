@@ -344,11 +344,9 @@ function GlobalMarket:updateAnimalMarketHourly(customMonthDelta)
         self:returnAnimalListing(listing)
     end
     self:retryAnimalPickupReturns()
-    if self.updateAnimalMarketNpcs ~= nil then
-        self:updateAnimalMarketNpcs(monthDelta)
-    end
+    local npcChanged = (self.updateAnimalMarketNpcs ~= nil) and self:updateAnimalMarketNpcs(monthDelta)
     -- Clients show the remaining time, so the state is sent every hour while listings exist
-    if #(self.animalListings or {}) > 0 then
+    if #(self.animalListings or {}) > 0 or npcChanged then
         broadcastState(self)
     end
 end

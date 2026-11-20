@@ -232,12 +232,13 @@ local NOTICE_TEXT_KEYS = {
 ---@param numAnimals number
 ---@param amount number
 ---@param otherName string
-function GlobalMarket:notifyAnimalMarketFarms(kind, targetFarmId, excludeFarmId, subTypeName, numAnimals, amount, otherName)
+---@param code string|nil "npc" = the other party is an NPC dealer (name localized on the client)
+function GlobalMarket:notifyAnimalMarketFarms(kind, targetFarmId, excludeFarmId, subTypeName, numAnimals, amount, otherName, code)
     if g_server ~= nil and AnimalMarketActionEvent ~= nil and AnimalMarketActionEvent.newNotice ~= nil then
-        g_server:broadcastEvent(AnimalMarketActionEvent.newNotice(kind, targetFarmId, excludeFarmId, "",
+        g_server:broadcastEvent(AnimalMarketActionEvent.newNotice(kind, targetFarmId, excludeFarmId, code or "",
             subTypeName, numAnimals, amount, otherName))
     end
-    self:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, "", subTypeName, numAnimals, amount, otherName)
+    self:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, code or "", subTypeName, numAnimals, amount, otherName)
 end
 
 ---Client/host: shows an animal market notice if it concerns the local farm
@@ -282,7 +283,8 @@ function GlobalMarket:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, 
     local color = FSBaseMission.INGAME_NOTIFICATION_OK or { 1, 1, 1, 1 }
     local text
     if kind == N.SOLD then
-        text = string.format(g_i18n:getText(key), animals, money, tostring(otherName))
+        local buyerName = (code == "npc") and g_i18n:getText("ui_gm_animals_npcName") or tostring(otherName)
+        text = string.format(g_i18n:getText(key), animals, money, buyerName)
     elseif kind == N.RETURNED or kind == N.RETURN_PENDING or kind == N.EXPIRED or kind == N.LOADED then
         text = string.format(g_i18n:getText(key), animals)
     else

@@ -131,6 +131,8 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Désactivé" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Faible" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_animalNpc"                            v="Commerce d'animaux PNJ" />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Contrôle les marchands du marché aux animaux GM. Faible/Normal : les marchands PNJ achètent vos annonces d'animaux (plus c'est bon marché, plus c'est rapide, moins 5 % de commission) et proposent leurs propres animaux, y compris gestants et d'âges que le marchand de bestiaux ne vend pas. Désactivé : échanges entre joueurs uniquement." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Notifier les nouvelles annonces de véhicules" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Affiche une notification HUD lorsqu'une autre ferme met un véhicule en vente sur le marché de véhicules d'occasion GM. Réglage personnel, ne s'applique qu'à vous." />
         <e k="ui_gm_settings_oc_all"                               v="Tous (En ligne &amp; Local)" />
@@ -276,6 +278,7 @@
         <e k="ui_gm_animals_dealer_title"                          v="Marché aux animaux GM" />
         <e k="ui_gm_animals_dealer_text"                           v="En attente dans le dépôt de retrait GM : %s" />
         <e k="ui_gm_animals_dealer_load"                           v="Charger le dépôt GM dans la bétaillère" />
+        <e k="ui_gm_animals_npcName"                               v="Marchand de bestiaux" />
         <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />

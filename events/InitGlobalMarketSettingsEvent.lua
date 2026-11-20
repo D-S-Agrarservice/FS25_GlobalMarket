@@ -51,7 +51,8 @@ function InitGlobalMarketSettingsEvent:run(connection)
                 s.maxFarmContractsIndex,
                 s.npcContractsTargetIndex,
                 s.npcOffersTargetIndex,
-                s.vehicleNpcModeIndex
+                s.vehicleNpcModeIndex,
+                s.animalNpcModeIndex
             ))
         end
     end

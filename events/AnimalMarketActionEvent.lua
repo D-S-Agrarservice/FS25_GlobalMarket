@@ -17,6 +17,7 @@ AnimalMarketActionEvent.ACTION_LOAD = 4
 AnimalMarketActionEvent.ACTION_ADMIN_MAKE_NPC = 5
 AnimalMarketActionEvent.ACTION_ADMIN_ADVANCE = 6
 AnimalMarketActionEvent.ACTION_ADMIN_RETRY_RETURNS = 7
+AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC = 8
 
 ---Returns true for the admin test helper actions
 ---@param action number
@@ -25,6 +26,7 @@ local function getIsAdminAction(action)
     return action == AnimalMarketActionEvent.ACTION_ADMIN_MAKE_NPC
         or action == AnimalMarketActionEvent.ACTION_ADMIN_ADVANCE
         or action == AnimalMarketActionEvent.ACTION_ADMIN_RETRY_RETURNS
+        or action == AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC
 end
 
 function AnimalMarketActionEvent.emptyNew()
@@ -37,7 +39,7 @@ end
 ---@param args table|nil
 ---  object: barn or trailer to list from (CREATE), target barn (BUY, optional), trailer (LOAD, optional)
 ---  clusterId, numAnimals, priceFactor, durationMonths: CREATE
----  targetId: listing ID (CANCEL / BUY / ADMIN_MAKE_NPC) or pickup box ID (LOAD, 0 = all)
+---  targetId: listing ID (CANCEL / BUY / ADMIN_MAKE_NPC), pickup box ID (LOAD, 0 = all) or count (ADMIN_SPAWN_NPC)
 ---  deliveryMode: GlobalMarket.ANIMAL_DELIVERY (BUY)
 ---  months: months to advance (ADMIN_ADVANCE)
 function AnimalMarketActionEvent.new(action, farmId, args)
@@ -178,6 +180,8 @@ function AnimalMarketActionEvent.executeOnServer(gm, action, farmId, args, conne
         gm:updateAnimalMarketHourly(math.max(0.01, args.months or 1))
     elseif action == AnimalMarketActionEvent.ACTION_ADMIN_RETRY_RETURNS then
         gm:retryAnimalPickupReturns()
+    elseif action == AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC then
+        gm:spawnNpcAnimalListings(args.targetId)
     elseif action == AnimalMarketActionEvent.ACTION_CREATE then
         local listing
         listing, reason = gm:createAnimalListing(args.object, args.clusterId, args.numAnimals, farmId,

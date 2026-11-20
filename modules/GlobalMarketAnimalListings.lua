@@ -222,6 +222,8 @@ local function newSnapshot(cluster)
         cluster = cluster
     }
 end
+-- Public for generated NPC animals (GlobalMarketAnimalNpc.lua)
+GlobalMarketAnimalListings.createSnapshot = newSnapshot
 
 ---Takes animals out of a source into escrow (Server). Call getEligibility first.
 ---@param source table Barn or livestock trailer

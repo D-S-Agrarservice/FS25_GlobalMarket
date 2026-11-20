@@ -162,6 +162,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketVehicleNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalTrade.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -374,6 +375,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmAnimalMarketBuy", "Buys an animal listing for the own farm: <listingId> [barn|pickup]", "consoleCommandAnimalMarketBuy", self)
             addConsoleCommand("gmAnimalMarketLoad", "Loads pickup box animals onto an own livestock trailer at the animal dealer: [pickupId|all]", "consoleCommandAnimalMarketLoad", self)
             addConsoleCommand("gmAnimalMarketMakeNpc", "Turns an animal listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandAnimalMarketMakeNpc", self)
+            addConsoleCommand("gmAnimalMarketSpawnNpc", "Creates NPC animal dealer listings now: [count=1]", "consoleCommandAnimalMarketSpawnNpc", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -399,6 +401,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmAnimalMarketBuy")
             removeConsoleCommand("gmAnimalMarketLoad")
             removeConsoleCommand("gmAnimalMarketMakeNpc")
+            removeConsoleCommand("gmAnimalMarketSpawnNpc")
             self.debugCommandsRegistered = false
         end
     end

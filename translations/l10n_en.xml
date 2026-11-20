@@ -131,6 +131,8 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Off" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Low" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_animalNpc"                            v="NPC Animal Trading" />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Controls the animal dealers on the GM animal market. Low/Normal: NPC dealers buy your animal listings (the cheaper, the faster, minus 5 % commission) and offer animals of their own, incl. pregnant animals and age stages the animal dealer does not sell. Off: Player-to-player trading only." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Notify About New Vehicle Listings" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Shows a HUD notice when another farm lists a vehicle on the GM used vehicle market. Personal setting, applies to you only." />
         <e k="ui_gm_settings_oc_all"                               v="All (Online &amp; Local)" />
@@ -276,6 +278,7 @@
         <e k="ui_gm_animals_dealer_title"                          v="GM Animal Market" />
         <e k="ui_gm_animals_dealer_text"                           v="Waiting in the GM pickup box: %s" />
         <e k="ui_gm_animals_dealer_load"                           v="Load GM pickup box onto the trailer" />
+        <e k="ui_gm_animals_npcName"                               v="Animal dealer" />
         <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />
