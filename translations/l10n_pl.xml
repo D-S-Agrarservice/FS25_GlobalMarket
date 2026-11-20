@@ -209,6 +209,29 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="Brak wolnego miejsca odbioru u dealera." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Nie udało się wczytać pojazdu." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Nie masz do tego uprawnień." />
+        <e k="ui_gm_animals_reason_invalid"                        v="Tych zwierząt nie można wystawić." />
+        <e k="ui_gm_animals_reason_unavailable"                    v="Targ zwierząt nie jest dostępny w tym zapisie gry." />
+        <e k="ui_gm_animals_reason_notOwned"                       v="Możliwe są tylko zwierzęta z własnych budynków i przyczep." />
+        <e k="ui_gm_animals_reason_notAtDealer"                    v="Przyczepa do zwierząt musi stać u handlarza zwierząt." />
+        <e k="ui_gm_animals_reason_notEnoughAnimals"               v="W tej grupie nie ma tylu zwierząt." />
+        <e k="ui_gm_animals_reason_notTradeable"                   v="Tych zwierząt nie można teraz sprzedać." />
+        <e k="ui_gm_animals_reason_notSupported"                   v="Ten gatunek zwierząt tu nie pasuje." />
+        <e k="ui_gm_animals_reason_priceOutOfRange"                v="Cena musi wynosić od %d %% do %d %% wartości u handlarza zwierząt." />
+        <e k="ui_gm_animals_reason_durationOutOfRange"             v="Czas trwania musi wynosić od %d do %d miesięcy." />
+        <e k="ui_gm_animals_reason_marketFull"                     v="Targ zwierząt jest pełny." />
+        <e k="ui_gm_animals_reason_farmLimitReached"               v="Twoje gospodarstwo ma już %d ofert zwierząt." />
+        <e k="ui_gm_animals_reason_notAvailable"                   v="Tych zwierząt nie ma na tym serwerze." />
+        <e k="ui_gm_animals_reason_listingNotFound"                v="Ta oferta już nie istnieje." />
+        <e k="ui_gm_animals_reason_notOwner"                       v="To nie jest twoja oferta." />
+        <e k="ui_gm_animals_reason_listingBusy"                    v="Ta oferta jest właśnie przetwarzana." />
+        <e k="ui_gm_animals_reason_ownListing"                     v="Nie możesz kupić własnej oferty." />
+        <e k="ui_gm_animals_reason_notEnoughMoney"                 v="Za mało pieniędzy." />
+        <e k="ui_gm_animals_reason_noBarn"                         v="Nie masz odpowiedniego budynku dla tych zwierząt." />
+        <e k="ui_gm_animals_reason_noSpace"                        v="Za mało miejsca dla tych zwierząt." />
+        <e k="ui_gm_animals_reason_noDealer"                       v="Na tej mapie nie ma handlarza zwierząt do odbioru." />
+        <e k="ui_gm_animals_reason_pickupNotFound"                 v="Brak pasujących zwierząt w punkcie odbioru." />
+        <e k="ui_gm_animals_reason_noTrailer"                      v="Żadna twoja przyczepa do zwierząt nie stoi u handlarza zwierząt." />
+        <e k="ui_gm_animals_reason_noPermission"                   v="Nie masz do tego uprawnień." />
         <e k="ui_gm_subtab_vehicles"                               v="Pojazdy używane" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />

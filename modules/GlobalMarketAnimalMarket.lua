@@ -106,7 +106,7 @@ function GlobalMarket:removeAnimalListing(listing)
     end
 end
 
----Calls the state broadcast once it exists (step 4)
+---Sends the state to all clients (GlobalMarketAnimalTrade.lua)
 local function broadcastState(self)
     if self.broadcastAnimalMarketState ~= nil then
         self:broadcastAnimalMarketState()
@@ -468,20 +468,23 @@ end
 -- =========================================================================
 
 ---Shared guard for the animal market console commands that change state.
----Until the network events exist (step 4) they run on the SP/MP host only.
+---Player actions run on MP clients as well (sent as AnimalMarketActionEvent). Test helpers run on the
+---server or on the client of a logged-in admin (sent as admin request, checked again by the server).
+---@param isTestHelper boolean
 ---@return string|nil errorText
-local function getConsoleGuardError()
+local function getConsoleGuardError(isTestHelper)
     if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
         return "GM Debug Mode is disabled."
     end
     if g_currentMission == nil then
         return "No mission running."
     end
-    if not g_currentMission:getIsServer() then
-        return "Animal market commands run on the SP/MP host for now."
+    if isTestHelper and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
+        return "This test command needs the SP/MP host, the dedicated server console or an admin login."
     end
+    -- Player actions need a farm; test helpers do not
     local farmId = g_currentMission:getFarmId()
-    if farmId == nil or farmId == FarmManager.SPECTATOR_FARM_ID then
+    if not isTestHelper and (farmId == nil or farmId == FarmManager.SPECTATOR_FARM_ID) then
         return "Join a farm first."
     end
     if not GlobalMarketAnimalListings.getIsAvailable() then
@@ -530,7 +533,7 @@ end
 
 ---Console: lists animals of an own barn or trailer: <clusterId> <count> [pricePercent=100] [months=1]
 function GlobalMarket:consoleCommandAnimalMarketSell(clusterIdArg, countArg, pricePctArg, monthsArg)
-    local guardError = getConsoleGuardError()
+    local guardError = getConsoleGuardError(false)
     if guardError ~= nil then
         return guardError
     end
@@ -540,8 +543,15 @@ function GlobalMarket:consoleCommandAnimalMarketSell(clusterIdArg, countArg, pri
     if source == nil then
         return "Usage: gmAnimalMarketSell <clusterId from gmAnimalMarketList> <count> [pricePercent=100] [months=1]"
     end
-    local listing, reason = self:createAnimalListing(source, clusterId, tonumber(countArg) or 0, farmId,
-        (tonumber(pricePctArg) or 100) / 100, tonumber(monthsArg) or 1)
+    local numAnimals = tonumber(countArg) or 0
+    local priceFactor = (tonumber(pricePctArg) or 100) / 100
+    local durationMonths = tonumber(monthsArg) or 1
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_CREATE, farmId, { object = source,
+            clusterId = clusterId, numAnimals = numAnimals, priceFactor = priceFactor, durationMonths = durationMonths })
+        return "Listing request sent to the server (result as HUD notice)."
+    end
+    local listing, reason = self:createAnimalListing(source, clusterId, numAnimals, farmId, priceFactor, durationMonths)
     if listing == nil then
         return "Listing rejected: " .. tostring(reason)
     end
@@ -551,16 +561,24 @@ end
 ---Console: withdraws an own listing, or retries the barn delivery of returned animals
 ---@param listingIdArg string|nil Listing ID, or "pending"
 function GlobalMarket:consoleCommandAnimalMarketReturn(listingIdArg)
-    local guardError = getConsoleGuardError()
+    local guardError = getConsoleGuardError(listingIdArg == "pending")
     if guardError ~= nil then
         return guardError
     end
     if listingIdArg == "pending" then
+        if not g_currentMission:getIsServer() then
+            AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_ADMIN_RETRY_RETURNS, 0, nil)
+            return "Admin request sent to the server."
+        end
         return string.format("Delivered %d returned animal(s) to barns.", self:retryAnimalPickupReturns())
     end
     local listingId = tonumber(listingIdArg)
     if listingId == nil then
         return "Usage: gmAnimalMarketReturn <listingId|pending>"
+    end
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_CANCEL, g_currentMission:getFarmId(), { targetId = listingId })
+        return "Withdraw request sent to the server (result as HUD notice)."
     end
     local success, reason = self:cancelAnimalListing(listingId, g_currentMission:getFarmId())
     return success and string.format("Listing #%d withdrawn.", listingId) or ("Withdraw rejected: " .. tostring(reason))
@@ -569,11 +587,18 @@ end
 ---Console: advances all listing timers (expiry test)
 ---@param monthsArg string|nil
 function GlobalMarket:consoleCommandAdvanceAnimalMarket(monthsArg)
-    local guardError = getConsoleGuardError()
+    local guardError = getConsoleGuardError(true)
     if guardError ~= nil then
         return guardError
     end
     local months = tonumber(monthsArg) or 1
+    if months <= 0 then
+        months = 1
+    end
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_ADMIN_ADVANCE, 0, { months = months })
+        return "Admin request sent to the server."
+    end
     self:updateAnimalMarketHourly(months)
     return string.format("Animal market advanced by %.2f month(s).", months)
 end

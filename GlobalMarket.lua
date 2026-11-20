@@ -169,6 +169,8 @@ source(GlobalMarket.dir .. "events/ContractActionEvent.lua")
 source(GlobalMarket.dir .. "events/ContractOnlineBridgeEvent.lua")
 source(GlobalMarket.dir .. "events/VehicleMarketActionEvent.lua")
 source(GlobalMarket.dir .. "events/SyncVehicleMarketEvent.lua")
+source(GlobalMarket.dir .. "events/AnimalMarketActionEvent.lua")
+source(GlobalMarket.dir .. "events/SyncAnimalMarketEvent.lua")
 
 
 -- =========================================================================

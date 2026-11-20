@@ -66,8 +66,75 @@ function GlobalMarket.getAnimalMarketTrailerAtDealer(farmId)
 end
 
 -- =========================================================================
+-- STATE SYNC
+-- =========================================================================
+
+---Server: sends all listings and pickup box entries to all clients and refreshes the local UI
+function GlobalMarket:broadcastAnimalMarketState()
+    if g_server ~= nil and SyncAnimalMarketEvent ~= nil then
+        g_server:broadcastEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}))
+    end
+    self:onAnimalMarketChanged()
+end
+
+---Client: applies a received state
+---@param listings table
+---@param pickups table
+function GlobalMarket:applyAnimalMarketState(listings, pickups)
+    self.animalListings = listings or {}
+    self.animalPickups = pickups or {}
+    self:onAnimalMarketChanged()
+end
+
+---Refreshes the animal market UI if it is open (UI hook from step 5 on)
+function GlobalMarket:onAnimalMarketChanged()
+    local ui = self.ui or (g_currentMission ~= nil and g_currentMission.globalMarketUi) or nil
+    if ui ~= nil and ui.onAnimalMarketChanged ~= nil then
+        ui:onAnimalMarketChanged()
+    end
+end
+
+-- =========================================================================
 -- HUD NOTICES
 -- =========================================================================
+
+-- Reason codes that all mean "not possible here" without a dedicated text
+local REASON_ALIASES = {
+    notServer = "invalid"
+}
+
+---Returns the localized text of a reason code (HUD results and UI hints)
+---@param code string
+---@return string
+function GlobalMarket.getAnimalMarketReasonText(code)
+    local cfg = GlobalMarket.ANIMAL_MARKET
+    code = REASON_ALIASES[code] or code
+    local key = "ui_gm_animals_reason_" .. tostring(code)
+    if not g_i18n:hasText(key) then
+        key = "ui_gm_animals_reason_invalid"
+    end
+    local text = g_i18n:getText(key)
+    if code == "priceOutOfRange" then
+        return string.format(text, math.floor(cfg.PRICE_FACTOR_MIN * 100 + 0.5), math.floor(cfg.PRICE_FACTOR_MAX * 100 + 0.5))
+    elseif code == "durationOutOfRange" then
+        return string.format(text, cfg.DURATION_MIN, cfg.DURATION_MAX)
+    elseif code == "farmLimitReached" then
+        return string.format(text, cfg.MAX_PER_FARM)
+    end
+    return text
+end
+
+---Server: sends a result notice to the requesting connection only (local SP/host: shown directly)
+---@param connection table|nil
+---@param kind number GlobalMarket.ANIMAL_NOTICE
+---@param code string Reason code
+function GlobalMarket:notifyAnimalMarketRequester(connection, kind, code)
+    if connection ~= nil and not connection:getIsLocal() and AnimalMarketActionEvent ~= nil then
+        connection:sendEvent(AnimalMarketActionEvent.newNotice(kind, 0, 0, code, "", 0, 0, ""))
+        return
+    end
+    self:showAnimalMarketNotice(kind, 0, 0, code, "", 0, 0, "")
+end
 
 -- Notice kind -> l10n key
 local NOTICE_TEXT_KEYS = {
@@ -102,7 +169,7 @@ end
 ---@param kind number
 ---@param targetFarmId number
 ---@param excludeFarmId number
----@param code string Reason code (RESULT notices, step 4)
+---@param code string Reason code (RESULT notices)
 ---@param subTypeName string
 ---@param numAnimals number
 ---@param amount number
@@ -119,6 +186,13 @@ function GlobalMarket:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, 
         return
     end
     if (excludeFarmId or 0) > 0 and farmId == excludeFarmId then
+        return
+    end
+    if kind == GlobalMarket.ANIMAL_NOTICE.RESULT then
+        if g_currentMission.hud.addSideNotification ~= nil then
+            g_currentMission.hud:addSideNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 },
+                GlobalMarket.getAnimalMarketReasonText(code), 8000)
+        end
         return
     end
     local key = NOTICE_TEXT_KEYS[kind]
@@ -298,9 +372,7 @@ function GlobalMarket:buyAnimalListing(listingId, buyerFarmId, deliveryMode, tar
         self:addAnimalPickup(buyerFarmId, snapshot, GlobalMarket.ANIMAL_PICKUP_REASON.BOUGHT)
         self:notifyAnimalMarketFarms(N.BOUGHT_PICKUP, buyerFarmId, 0, snapshot.subTypeName, purchase.numAnimals, total, "")
     end
-    if self.broadcastAnimalMarketState ~= nil then
-        self:broadcastAnimalMarketState()
-    end
+    self:broadcastAnimalMarketState()
     if self.debugManager ~= nil then
         self.debugManager:info("AnimalMarket: Listing #%d sold to farm %d for %d (+%d transport fee, %s).",
             listing.id, buyerFarmId, purchase.price, purchase.fee,
@@ -364,9 +436,7 @@ function GlobalMarket:loadAnimalPickupOntoTrailer(pickupId, trailer, farmId)
     end
     self:cleanupAnimalPickups()
     self:notifyAnimalMarketFarms(GlobalMarket.ANIMAL_NOTICE.LOADED, farmId, 0, subTypeName, moved, 0, "")
-    if self.broadcastAnimalMarketState ~= nil then
-        self:broadcastAnimalMarketState()
-    end
+    self:broadcastAnimalMarketState()
     if self.debugManager ~= nil then
         self.debugManager:info("AnimalMarket: Loaded %d animal(s) of pickup P%d onto a trailer of farm %d.", moved, pickupId, farmId)
     end
@@ -405,7 +475,7 @@ end
 
 ---Console: buys a listing for the own farm: <listingId> [barn|pickup]
 function GlobalMarket:consoleCommandAnimalMarketBuy(listingIdArg, modeArg)
-    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError()
+    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError(false)
     if guardError ~= nil then
         return guardError
     end
@@ -415,29 +485,42 @@ function GlobalMarket:consoleCommandAnimalMarketBuy(listingIdArg, modeArg)
     if listingId == nil or (mode ~= "barn" and mode ~= "pickup") then
         return "Usage: gmAnimalMarketBuy <listingId> [barn|pickup]"
     end
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_BUY, g_currentMission:getFarmId(),
+            { targetId = listingId, deliveryMode = deliveryMode })
+        return "Purchase request sent to the server (result as HUD notice)."
+    end
     local success, reason = self:buyAnimalListing(listingId, g_currentMission:getFarmId(), deliveryMode, nil)
     return success and string.format("Listing #%d bought (%s).", listingId, mode) or ("Purchase rejected: " .. tostring(reason))
 end
 
 ---Console: loads pickup box animals onto an own livestock trailer at the animal dealer: [pickupId|all]
 function GlobalMarket:consoleCommandAnimalMarketLoad(pickupIdArg)
-    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError()
+    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError(false)
     if guardError ~= nil then
         return guardError
     end
+    local pickupId = 0
+    if pickupIdArg ~= nil and pickupIdArg ~= "all" then
+        pickupId = tonumber(string.match(tostring(pickupIdArg), "%d+") or "")
+        if pickupId == nil then
+            return "Usage: gmAnimalMarketLoad [pickupId|all]"
+        end
+    end
     local farmId = g_currentMission:getFarmId()
     local trailer = GlobalMarket.getAnimalMarketTrailerAtDealer(farmId)
+    if not g_currentMission:getIsServer() then
+        -- The server looks for a trailer itself if the client does not see one at the dealer
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_LOAD, farmId, { object = trailer, targetId = pickupId })
+        return "Load request sent to the server (result as HUD notice)."
+    end
     if trailer == nil then
         return "No own livestock trailer stands in an animal dealer trigger."
     end
     local moved, reason
-    if pickupIdArg == nil or pickupIdArg == "all" then
+    if pickupId == 0 then
         moved, reason = self:loadAllAnimalPickupsOntoTrailer(trailer, farmId)
     else
-        local pickupId = tonumber(string.match(tostring(pickupIdArg), "%d+") or "")
-        if pickupId == nil then
-            return "Usage: gmAnimalMarketLoad [pickupId|all]"
-        end
         moved, reason = self:loadAnimalPickupOntoTrailer(pickupId, trailer, farmId)
     end
     if moved > 0 then
@@ -446,21 +529,39 @@ function GlobalMarket:consoleCommandAnimalMarketLoad(pickupIdArg)
     return "Nothing loaded: " .. tostring(reason)
 end
 
----Console: turns a listing into an NPC dealer listing (SP test: buy back own listed animals)
-function GlobalMarket:consoleCommandAnimalMarketMakeNpc(listingIdArg)
-    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError()
-    if guardError ~= nil then
-        return guardError
-    end
-    local listing = self:getAnimalListingById(tonumber(listingIdArg) or 0)
+---Test helper (Server): turns a listing into an NPC dealer listing (buy back own listed animals)
+---@param listingId number
+---@return boolean success
+---@return string|nil reason
+function GlobalMarket:makeAnimalListingNpc(listingId)
+    local listing = self:getAnimalListingById(listingId)
     if listing == nil then
-        return "Usage: gmAnimalMarketMakeNpc <id of an open listing>"
+        return false, "listingNotFound"
     end
     listing.isNpc = true
     listing.sellerFarmId = 0
     listing.sellerName = ""
-    if self.broadcastAnimalMarketState ~= nil then
-        self:broadcastAnimalMarketState()
+    self:broadcastAnimalMarketState()
+    return true, nil
+end
+
+---Console: turns a listing into an NPC dealer listing (test helper: host, dedicated server console or admin client)
+function GlobalMarket:consoleCommandAnimalMarketMakeNpc(listingIdArg)
+    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError(true)
+    if guardError ~= nil then
+        return guardError
     end
-    return string.format("Listing #%d is now an NPC dealer listing (no seller payout, dropped on expiry).", listing.id)
+    local listingId = tonumber(listingIdArg)
+    if listingId == nil then
+        return "Usage: gmAnimalMarketMakeNpc <id of an open listing>"
+    end
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_ADMIN_MAKE_NPC, 0, { targetId = listingId })
+        return "Admin request sent to the server."
+    end
+    local success, reason = self:makeAnimalListingNpc(listingId)
+    if not success then
+        return "Rejected: " .. tostring(reason)
+    end
+    return string.format("Listing #%d is now an NPC dealer listing (no seller payout, dropped on expiry).", listingId)
 end

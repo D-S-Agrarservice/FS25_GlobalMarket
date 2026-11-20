@@ -209,6 +209,29 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="No free pickup space at the dealer." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="The vehicle could not be loaded." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="You do not have permission to do this." />
+        <e k="ui_gm_animals_reason_invalid"                        v="These animals cannot be listed." />
+        <e k="ui_gm_animals_reason_unavailable"                    v="The animal market is not available in this savegame." />
+        <e k="ui_gm_animals_reason_notOwned"                       v="Only animals from your own barns and trailers are possible." />
+        <e k="ui_gm_animals_reason_notAtDealer"                    v="The livestock trailer must stand at the animal dealer." />
+        <e k="ui_gm_animals_reason_notEnoughAnimals"               v="This group does not have that many animals." />
+        <e k="ui_gm_animals_reason_notTradeable"                   v="These animals cannot be sold right now." />
+        <e k="ui_gm_animals_reason_notSupported"                   v="This animal type does not fit here." />
+        <e k="ui_gm_animals_reason_priceOutOfRange"                v="The price must be between %d %% and %d %% of the dealer value." />
+        <e k="ui_gm_animals_reason_durationOutOfRange"             v="The duration must be between %d and %d months." />
+        <e k="ui_gm_animals_reason_marketFull"                     v="The animal market is full." />
+        <e k="ui_gm_animals_reason_farmLimitReached"               v="Your farm already has %d animal listings." />
+        <e k="ui_gm_animals_reason_notAvailable"                   v="These animals do not exist on this server." />
+        <e k="ui_gm_animals_reason_listingNotFound"                v="This listing no longer exists." />
+        <e k="ui_gm_animals_reason_notOwner"                       v="This is not your listing." />
+        <e k="ui_gm_animals_reason_listingBusy"                    v="This listing is currently being processed." />
+        <e k="ui_gm_animals_reason_ownListing"                     v="You cannot buy your own listing." />
+        <e k="ui_gm_animals_reason_notEnoughMoney"                 v="Not enough money." />
+        <e k="ui_gm_animals_reason_noBarn"                         v="You have no suitable barn for these animals." />
+        <e k="ui_gm_animals_reason_noSpace"                        v="Not enough space for these animals." />
+        <e k="ui_gm_animals_reason_noDealer"                       v="This map has no animal dealer for pickup." />
+        <e k="ui_gm_animals_reason_pickupNotFound"                 v="No matching animals in the pickup box." />
+        <e k="ui_gm_animals_reason_noTrailer"                      v="No own livestock trailer stands at the animal dealer." />
+        <e k="ui_gm_animals_reason_noPermission"                   v="You do not have permission to do this." />
         <e k="ui_gm_subtab_vehicles"                               v="Used Vehicles" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />

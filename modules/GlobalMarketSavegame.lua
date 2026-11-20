@@ -363,6 +363,9 @@ function GlobalMarket:sendInitialClientState(connection, user, farm)
     if SyncVehicleMarketEvent ~= nil then
         connection:sendEvent(SyncVehicleMarketEvent.new(self.vehicleListings or {}))
     end
+    if SyncAnimalMarketEvent ~= nil then
+        connection:sendEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}))
+    end
 end
 
 FSBaseMission.sendInitialClientState = Utils.appendedFunction(FSBaseMission.sendInitialClientState, function(mission, connection, user, farm)

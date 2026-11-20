@@ -209,6 +209,29 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="Aucun emplacement de retrait libre chez le concessionnaire." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Le véhicule n'a pas pu être chargé." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Vous n'avez pas l'autorisation de faire cela." />
+        <e k="ui_gm_animals_reason_invalid"                        v="Ces animaux ne peuvent pas être mis en vente." />
+        <e k="ui_gm_animals_reason_unavailable"                    v="Le marché aux animaux n'est pas disponible dans cette partie." />
+        <e k="ui_gm_animals_reason_notOwned"                       v="Seuls les animaux de vos propres étables et remorques sont possibles." />
+        <e k="ui_gm_animals_reason_notAtDealer"                    v="La bétaillère doit se trouver chez le marchand de bestiaux." />
+        <e k="ui_gm_animals_reason_notEnoughAnimals"               v="Ce groupe ne compte pas autant d'animaux." />
+        <e k="ui_gm_animals_reason_notTradeable"                   v="Ces animaux ne peuvent pas être vendus pour le moment." />
+        <e k="ui_gm_animals_reason_notSupported"                   v="Ce type d'animal ne convient pas ici." />
+        <e k="ui_gm_animals_reason_priceOutOfRange"                v="Le prix doit être compris entre %d %% et %d %% de la valeur chez le marchand de bestiaux." />
+        <e k="ui_gm_animals_reason_durationOutOfRange"             v="La durée doit être comprise entre %d et %d mois." />
+        <e k="ui_gm_animals_reason_marketFull"                     v="Le marché aux animaux est plein." />
+        <e k="ui_gm_animals_reason_farmLimitReached"               v="Votre ferme a déjà %d annonces d'animaux." />
+        <e k="ui_gm_animals_reason_notAvailable"                   v="Ces animaux n'existent pas sur ce serveur." />
+        <e k="ui_gm_animals_reason_listingNotFound"                v="Cette annonce n'existe plus." />
+        <e k="ui_gm_animals_reason_notOwner"                       v="Cette annonce ne vous appartient pas." />
+        <e k="ui_gm_animals_reason_listingBusy"                    v="Cette annonce est en cours de traitement." />
+        <e k="ui_gm_animals_reason_ownListing"                     v="Vous ne pouvez pas acheter votre propre annonce." />
+        <e k="ui_gm_animals_reason_notEnoughMoney"                 v="Fonds insuffisants." />
+        <e k="ui_gm_animals_reason_noBarn"                         v="Vous n'avez aucune étable adaptée à ces animaux." />
+        <e k="ui_gm_animals_reason_noSpace"                        v="Pas assez de place pour ces animaux." />
+        <e k="ui_gm_animals_reason_noDealer"                       v="Cette carte n'a pas de marchand de bestiaux pour le retrait." />
+        <e k="ui_gm_animals_reason_pickupNotFound"                 v="Aucun animal correspondant dans le dépôt de retrait." />
+        <e k="ui_gm_animals_reason_noTrailer"                      v="Aucune de vos bétaillères ne se trouve chez le marchand de bestiaux." />
+        <e k="ui_gm_animals_reason_noPermission"                   v="Vous n'avez pas l'autorisation de faire cela." />
         <e k="ui_gm_subtab_vehicles"                               v="Véhicules d'occasion" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />

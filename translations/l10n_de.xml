@@ -209,6 +209,29 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="Kein freier Abholplatz beim Händler." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Das Fahrzeug konnte nicht geladen werden." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Dafür fehlt dir die Berechtigung." />
+        <e k="ui_gm_animals_reason_invalid"                        v="Diese Tiere können nicht angeboten werden." />
+        <e k="ui_gm_animals_reason_unavailable"                    v="Der Tiermarkt ist in diesem Spielstand nicht verfügbar." />
+        <e k="ui_gm_animals_reason_notOwned"                       v="Nur Tiere aus eigenen Ställen und Anhängern sind möglich." />
+        <e k="ui_gm_animals_reason_notAtDealer"                    v="Der Viehanhänger muss beim Viehhändler stehen." />
+        <e k="ui_gm_animals_reason_notEnoughAnimals"               v="So viele Tiere hat diese Gruppe nicht." />
+        <e k="ui_gm_animals_reason_notTradeable"                   v="Diese Tiere können gerade nicht verkauft werden." />
+        <e k="ui_gm_animals_reason_notSupported"                   v="Diese Tierart passt hier nicht hinein." />
+        <e k="ui_gm_animals_reason_priceOutOfRange"                v="Der Preis muss zwischen %d %% und %d %% des Händlerwerts liegen." />
+        <e k="ui_gm_animals_reason_durationOutOfRange"             v="Die Laufzeit muss zwischen %d und %d Monaten liegen." />
+        <e k="ui_gm_animals_reason_marketFull"                     v="Der Tiermarkt ist voll." />
+        <e k="ui_gm_animals_reason_farmLimitReached"               v="Dein Hof hat bereits %d Tierangebote." />
+        <e k="ui_gm_animals_reason_notAvailable"                   v="Diese Tiere gibt es auf diesem Server nicht." />
+        <e k="ui_gm_animals_reason_listingNotFound"                v="Das Angebot gibt es nicht mehr." />
+        <e k="ui_gm_animals_reason_notOwner"                       v="Das ist nicht dein Angebot." />
+        <e k="ui_gm_animals_reason_listingBusy"                    v="Das Angebot wird gerade bearbeitet." />
+        <e k="ui_gm_animals_reason_ownListing"                     v="Eigene Angebote kannst du nicht kaufen." />
+        <e k="ui_gm_animals_reason_notEnoughMoney"                 v="Nicht genug Geld." />
+        <e k="ui_gm_animals_reason_noBarn"                         v="Du hast keinen passenden Stall für diese Tiere." />
+        <e k="ui_gm_animals_reason_noSpace"                        v="Nicht genug Platz für diese Tiere." />
+        <e k="ui_gm_animals_reason_noDealer"                       v="Auf dieser Karte gibt es keinen Viehhändler zum Abholen." />
+        <e k="ui_gm_animals_reason_pickupNotFound"                 v="Im Abholfach liegen keine passenden Tiere." />
+        <e k="ui_gm_animals_reason_noTrailer"                      v="Kein eigener Viehanhänger steht beim Viehhändler." />
+        <e k="ui_gm_animals_reason_noPermission"                   v="Dafür fehlt dir die Berechtigung." />
         <e k="ui_gm_subtab_vehicles"                               v="Gebrauchtfahrzeuge" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />
