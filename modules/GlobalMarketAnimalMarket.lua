@@ -56,6 +56,11 @@ function GlobalMarket:initAnimalMarket()
     self.animalPickups = {}
     self.nextAnimalListingId = 1
     self.nextAnimalPickupId = 1
+    local incompatible = GlobalMarketAnimalListings.getIncompatibleMod()
+    if incompatible ~= nil and not self.hasLoggedAnimalMarketDisabled then
+        self.hasLoggedAnimalMarketDisabled = true
+        Logging.info("[FS25_GlobalMarket] Animal market disabled: '%s' replaces the animal cluster system.", incompatible)
+    end
 end
 
 ---Returns a listing by its local ID

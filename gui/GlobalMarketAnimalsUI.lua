@@ -317,7 +317,9 @@ function GlobalMarketUI:applyAnimalListsFilter(allowListFocus)
             end
         end
     end
-    if #self.myAnimalSections == 0 then
+    if not isAvailable then
+        self.myAnimalSections = { { title = nil, items = { { kind = "DISABLED" } } } }
+    elseif #self.myAnimalSections == 0 then
         table.insert(self.myAnimalSections, { title = nil, items = { { kind = "EMPTY_MY" } } })
     end
 
@@ -344,14 +346,16 @@ function GlobalMarketUI:applyAnimalListsFilter(allowListFocus)
         table.sort(items, compare)
         table.insert(self.marketAnimalSections, { title = getAnimalTypeTitle(typeIndex), items = items })
     end
-    if #self.marketAnimalSections == 0 then
+    if not isAvailable then
+        self.marketAnimalSections = { { title = nil, items = { { kind = "DISABLED" } } } }
+    elseif #self.marketAnimalSections == 0 then
         table.insert(self.marketAnimalSections, { title = nil, items = { { kind = "EMPTY_MARKET" } } })
     end
 
     if self.myAnimalsSubtitle ~= nil then
         local text
         if not isAvailable then
-            text = GlobalMarket.getAnimalMarketReasonText("unavailable")
+            text = self:getAnimalMarketDisabledText()
         else
             text = string.format(self.i18n:getText("ui_gm_animals_mySub"), #myListings, GlobalMarket.ANIMAL_MARKET.MAX_PER_FARM, groupCount)
         end
@@ -473,6 +477,16 @@ function GlobalMarketUI:updateAnimalsMenuButtons()
     self:setMenuButtonInfo(list)
     self:setMenuButtonInfoDirty()
     self:updateAnimalSelectionHint(row)
+end
+
+---Returns why the animal market is disabled (incompatible mod named if known)
+---@return string
+function GlobalMarketUI:getAnimalMarketDisabledText()
+    local modName = GlobalMarketAnimalListings.getIncompatibleMod()
+    if modName ~= nil then
+        return string.format(self.i18n:getText("ui_gm_animals_disabledByMod"), modName)
+    end
+    return GlobalMarket.getAnimalMarketReasonText("unavailable")
 end
 
 ---Returns the dealer's new price text ("not available at the dealer" if the dealer does not sell this age)
@@ -649,7 +663,9 @@ function GlobalMarketAnimalsUI:populateCellForItemInSection(list, section, index
     setCellText(cell, "condition", "")
     setCellText(cell, "value", "")
     setCellText(cell, "price", "")
-    if row.kind == "EMPTY_MY" or row.kind == "EMPTY_MARKET" then
+    if row.kind == "DISABLED" then
+        setCellText(cell, "name", ui:getAnimalMarketDisabledText(), COLOR_BLOCKED)
+    elseif row.kind == "EMPTY_MY" or row.kind == "EMPTY_MARKET" then
         setCellText(cell, "name", i18n:getText(row.kind == "EMPTY_MY" and "ui_gm_animals_empty_my" or "ui_gm_animals_empty_market"), COLOR_MUTED)
     elseif row.kind == "MY_GROUP" then
         setCellText(cell, "name", row.name, row.data.isEligible and COLOR_WHITE_TEXT or COLOR_MUTED)

@@ -63,6 +63,20 @@
                 <text text="$l10n_gm_help_p6_npc_text"/>
             </paragraph>
         </page>
+        <page title="$l10n_gm_help_p7_title" iconSliceId="animals_general">
+            <paragraph>
+                <title text="$l10n_gm_help_p7_selling_title"/>
+                <text text="$l10n_gm_help_p7_selling_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p7_buying_title"/>
+                <text text="$l10n_gm_help_p7_buying_text"/>
+            </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p7_npc_title"/>
+                <text text="$l10n_gm_help_p7_npc_text"/>
+            </paragraph>
+        </page>
     </category>
     <category title="$l10n_gm_help_cat_logistics">
         <page title="$l10n_gm_help_p3_title" iconSliceId="misc_transport">

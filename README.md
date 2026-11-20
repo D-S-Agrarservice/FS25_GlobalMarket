@@ -2,7 +2,7 @@
 
 # FS25_GlobalMarket
 
-**Commodity Market, Supply Contracts & Used Vehicle Market for Farming Simulator 25 — built for Singleplayer, Multiplayer and Dedicated Servers.**
+**Commodity Market, Supply Contracts, Used Vehicle & Animal Market for Farming Simulator 25 — built for Singleplayer, Multiplayer and Dedicated Servers.**
 
 ![Farming Simulator 25](https://img.shields.io/badge/Farming%20Simulator%2025-descVersion%20116-76b900?style=for-the-badge)
 ![Multiplayer](https://img.shields.io/badge/Multiplayer%20%26%20Dedi-Supported-007ec6?style=for-the-badge)
@@ -35,11 +35,12 @@ Developed by **D-S-Agrarservice [Floowy]** | Original concept & inspiration by *
 
 ### Overview
 
-**FS25_GlobalMarket** adds its own tab to the Farming Simulator 25 `ESC` menu that bundles three trading areas:
+**FS25_GlobalMarket** adds its own tab to the Farming Simulator 25 `ESC` menu that bundles four trading areas:
 
 1. **Commodity Market:** Buy and sell bulk crops, liquids, pallets, BigBags, IBC tanks and bales straight from your silos, production storages and object storages — with dynamic stock levels, saturation prices and Great Demand events.
 2. **Supply Contracts & Direct Offers:** Players and NPC contractors post delivery contracts with a price bonus; farms and NPC traders sell lots at up to `±10 %` of the market price.
 3. **Used Vehicle Market:** List your own vehicles and implements at your own asking price, and buy used vehicles from other farms and NPC dealers right in the basegame shop screen.
+4. **Animal Market:** Sell and buy livestock between farms and NPC animal dealers with their full state — age, health and pregnancy — delivered to your barn or picked up with your own livestock trailer at the animal dealer.
 
 Everything works **out of the box** with a simulated offline market — no external software required. With the optional companion app **[GlobalMarketClient](https://github.com/D-S-Agrarservice/GlobalMarketClient)** running alongside the game, your session joins a shared worldwide market where real player trades drive global supply, price trends and Great Demand events across servers.
 
@@ -74,11 +75,18 @@ Everything works **out of the box** with a simulated offline market — no exter
 * **Notices & Finances:** HUD notices for new listings, sales and returns (can be turned off per player); purchases and sales are booked to the basegame vehicle finance categories.
 * **Multiplayer:** Trading runs between all farms on your server. Cross-server listings via the GlobalMarketClient are planned.
 
+#### Animal Market
+* **Sell Exactly These Animals:** List a group from your own barn, or from your own livestock trailer standing at the animal dealer, at 80–200 % of its dealer value for 1–3 months (up to 10 listings per farm). Age, health and pregnancy travel with the animals (horses keep name and fitness); they do not age while listed.
+* **Buy With Delivery or Pickup:** Barn delivery into an automatically chosen or a selected barn plus the basegame transport fee, or pickup without fee: the animals wait in your pickup box and are loaded onto your own livestock trailer at the animal dealer — from the GM menu or with the normal key right at the dealer.
+* **Returns Without Losses:** Withdrawn or expired animals return to their original barn first, then to a barn with the same breed; if there is no space, they wait in the pickup box and are retried hourly.
+* **NPC Animal Dealers:** Dealers buy your listings (the cheaper, the faster, minus 5 % commission) and offer animals of their own — incl. pregnant animals and age stages the basegame dealer does not sell (admin setting: Off / Low / Normal).
+* **Packs, DLCs & Compatibility:** Only breeds that exist on the server are shown. Mods that replace the animal system (e.g. RealisticLivestock) disable the animal market with a notice.
+
 #### Native FS25 UI, Finances & Administration
-* **Native `InGameMenu` Integration:** Cleanly injected tab in the FS25 `ESC` menu with sub-tabs for the market, contracts and used vehicles, live search filtering, 3 switchable category layouts (*Detailed*, *Compact*, *Flat A–Z*), trend arrows and transparent cost breakdowns (base value, dealer markup and delivery fees).
+* **Native `InGameMenu` Integration:** Cleanly injected tab in the FS25 `ESC` menu with sub-tabs for the market, contracts and the marketplace (used vehicles & animals), live search filtering, 3 switchable category layouts (*Detailed*, *Compact*, *Flat A–Z*), trend arrows and transparent cost breakdowns (base value, dealer markup and delivery fees).
 * **In-Game Help:** Dedicated GlobalMarket pages in the FS25 help menu explain every area.
 * **Dedicated Server Ready (Nothing to Install on the Server):** A dynamic **Data-Host Token & Standby Failover** system lets Dedicated Servers join the live online market as soon as at least one connected player runs the GlobalMarketClient on their PC.
-* **Environment-Aware Admin Settings:** Separate configuration profiles for Singleplayer (`sp`), hosted Multiplayer (`mp`) and Dedicated Servers (`dedi`), configurable live from the FS25 game settings: delivery fees, dealer markup, market capacity, storage fees & decay, Great Demand mode, NPC activity, online contracts, contract limits, NPC board size and NPC vehicle dealers.
+* **Environment-Aware Admin Settings:** Separate configuration profiles for Singleplayer (`sp`), hosted Multiplayer (`mp`) and Dedicated Servers (`dedi`), configurable live from the FS25 game settings: delivery fees, dealer markup, market capacity, storage fees & decay, Great Demand mode, NPC activity, online contracts, contract limits, NPC board size, NPC vehicle dealers and NPC animal dealers.
 * **Finance Ledger Integration:** Dedicated `MoneyType` categories (simple or detailed view) in the native FS25 finances screen.
 
 ---
@@ -123,7 +131,7 @@ flowchart LR
 
 * **Automatic Token Failover:** If the active Data-Host disconnects or closes the GlobalMarketClient, the server seamlessly reassigns the Data-Host Token to the next connected standby player — or falls back cleanly to the simulated offline market without losing farm or storage data.
 * **Server-Wide Rate Limiting:** Online transactions are authoritatively validated on the FS25 server with a global `15 s` online sync cooldown to keep worldwide stock deltas consistent.
-* **Server-Authoritative Trading:** Contracts, offers and vehicle listings are processed on the FS25 server only and synced to all players via dedicated multiplayer events.
+* **Server-Authoritative Trading:** Contracts, offers, vehicle and animal listings are processed on the FS25 server only and synced to all players via dedicated multiplayer events.
 
 ---
 
@@ -153,7 +161,7 @@ When enabled in the settings, a compact status icon next to the top-right HUD in
 | :--- | :--- | :--- |
 | **Open / Close GlobalMarket Menu** | `Left Alt + M` *(or via the `ESC` menu tab)* | `ESC` menu paging |
 | **Switch Category View** *(Detailed / Compact / A–Z)* | `C` | `X` *(Menu Extra 1)* |
-| **Contracts & Used Vehicles Actions** *(accept, cancel, list, view & buy, filter / sort, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
+| **Contracts, Vehicle & Animal Market Actions** *(accept, cancel, list, buy, load onto trailer, filter / sort, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
 
 *(All keybindings can be customized in the standard FS25 controls menu.)*
 
@@ -248,8 +256,8 @@ Placeable modders can turn custom silos or object storages into official **Globa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Lean lifecycle orchestrator, InGameMenu injection & input bindings
 ├── modDesc.xml               # FS25 mod descriptor (descVersion 116)
-├── events/                   # 17 dedicated multiplayer sync, transaction, contract & vehicle market events
-├── gui/                      # Market UI, Contracts & Used Vehicles sub-tabs, three dialogs (controllers, XML layouts & profiles)
+├── events/                   # 19 dedicated multiplayer sync, transaction, contract, vehicle & animal market events
+├── gui/                      # Market UI, Contracts & Marketplace sub-tabs, four dialogs (controllers, XML layouts & profiles)
 │   ├── GlobalMarketUI.lua / .xml             # Main InGameMenu frame: storage & market lists, search, categories
 │   ├── GlobalMarketContractsUI.lua           # Sub-tab controller: supply contracts, direct offers & Pickup Inbox
 │   ├── GlobalMarketDialog.lua / .xml         # Buy/sell transaction dialog (storage, packaging format, fee preview)
@@ -257,11 +265,17 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketVehiclesUI.lua            # Sub-tab controller: own vehicles & listings, used vehicle market
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog to list a vehicle (asking price, duration)
 │   ├── GlobalMarketVehicleShopBridge.lua     # View & buy listings in the basegame shop screen
+│   ├── GlobalMarketAnimalsUI.lua             # Marketplace animal view: own groups, listings & pickup box, animal market
+│   ├── GlobalMarketAnimalDialog.lua / .xml   # Dialog to list animals or buy a listing (delivery or pickup)
 │   └── guiProfiles.xml                       # Shared GUI profiles
 ├── images/                   # Menu & UI texture assets (.dds)
 ├── modules/                  # Specialized domain modules:
 │   ├── GlobalMarketAPI.lua                   # 3-tier whitelist/blacklist/category & metadata API
 │   ├── GlobalMarketAccess.lua                # Multi-farm access & isolation hooks for GM Terminals
+│   ├── GlobalMarketAnimalListings.lua        # Animal snapshots (escrow), eligibility, dealer values & barn placement
+│   ├── GlobalMarketAnimalMarket.lua          # Animal listing store, returns, pickup box & savegame
+│   ├── GlobalMarketAnimalNpc.lua             # NPC animal dealers buying and listing animals
+│   ├── GlobalMarketAnimalTrade.lua           # Animal purchases, trailer loading, dealer detection, sync & notices
 │   ├── GlobalMarketBranding.lua              # 3-tier online market branding (synced name & local logo)
 │   ├── GlobalMarketCompatibilityManager.lua  # Dynamic mod conflict firewall & mitigation rules
 │   ├── GlobalMarketContracts.lua             # Supply contracts, stock-driven NPC board, escrow & penalties

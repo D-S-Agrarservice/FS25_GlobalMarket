@@ -2,7 +2,7 @@
 
 # FS25_GlobalMarket
 
-**Warenmarkt, Lieferverträge & Gebrauchtfahrzeugmarkt für den Landwirtschafts-Simulator 25 — entwickelt für Singleplayer, Multiplayer und Dedicated Server.**
+**Warenmarkt, Lieferverträge, Gebrauchtfahrzeug- & Tiermarkt für den Landwirtschafts-Simulator 25 — entwickelt für Singleplayer, Multiplayer und Dedicated Server.**
 
 ![Landwirtschafts-Simulator 25](https://img.shields.io/badge/LS25-descVersion%20116-76b900?style=for-the-badge)
 ![Multiplayer](https://img.shields.io/badge/Multiplayer%20%26%20Dedi-Unterst%C3%BCtzt-007ec6?style=for-the-badge)
@@ -35,11 +35,12 @@ Entwickelt von **D-S-Agrarservice [Floowy]** | Ursprüngliches Konzept & Inspira
 
 ### Überblick
 
-**FS25_GlobalMarket** bringt einen eigenen Reiter ins `ESC`-Menü des Landwirtschafts-Simulators 25, der drei Handelsbereiche bündelt:
+**FS25_GlobalMarket** bringt einen eigenen Reiter ins `ESC`-Menü des Landwirtschafts-Simulators 25, der vier Handelsbereiche bündelt:
 
 1. **Warenmarkt:** An- und Verkauf von Schüttgut, Flüssigkeiten, Paletten, BigBags, IBC-Tanks und Ballen direkt aus deinen Silos, Produktionslagern und Objektlagern — mit dynamischen Beständen, Sättigungspreisen und Großen Nachfragen.
 2. **Lieferverträge & Direktangebote:** Spieler und NPC-Abnehmer schreiben Lieferverträge mit Preisaufschlag aus; Höfe und NPC-Händler verkaufen Partien zu bis zu `±10 %` des Marktpreises.
 3. **Gebrauchtfahrzeugmarkt:** Eigene Fahrzeuge und Geräte zum Wunschpreis anbieten und Gebrauchte von anderen Höfen und NPC-Händlern direkt im Shop-Bildschirm des Spiels kaufen.
+4. **Tiermarkt:** Tiere zwischen Höfen und NPC-Viehhändlern handeln, mit ihrem vollen Zustand — Alter, Gesundheit und Trächtigkeit — geliefert in den Stall oder mit dem eigenen Viehanhänger beim Viehhändler abgeholt.
 
 Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne externe Zusatzprogramme. Läuft parallel zum Spiel die optionale Begleit-App **[GlobalMarketClient](https://github.com/D-S-Agrarservice/GlobalMarketClient)**, verbindet sich deine Sitzung mit dem gemeinsamen Online-Markt, auf dem echte Käufe und Verkäufe anderer Spieler serverübergreifend Angebot, Preistrends und Große Nachfragen beeinflussen.
 
@@ -74,11 +75,18 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **Meldungen & Finanzen:** HUD-Meldungen bei neuen Angeboten, Verkäufen und Rückgaben (pro Spieler abschaltbar); Käufe und Verkäufe landen in den Fahrzeug-Kategorien der Finanzübersicht des Spiels.
 * **Multiplayer:** Gehandelt wird zwischen allen Höfen auf deinem Server. Serverübergreifende Angebote über den GlobalMarketClient sind geplant.
 
+#### Tiermarkt
+* **Genau diese Tiere verkaufen:** Eine Gruppe aus dem eigenen Stall oder vom eigenen Viehanhänger beim Viehhändler lässt sich für 80–200 % ihres Händlerwerts und 1–3 Monate anbieten (bis zu 10 Angebote pro Hof). Alter, Gesundheit und Trächtigkeit reisen mit (Pferde behalten Name und Fitness); im Angebot altern die Tiere nicht.
+* **Kaufen mit Lieferung oder Abholung:** Lieferung in einen automatisch gewählten oder einen bestimmten Stall zuzüglich der Transportgebühr des Spiels, oder Abholung ohne Gebühr: Die Tiere warten im Abholfach und werden beim Viehhändler auf den eigenen Viehanhänger geladen — im GM-Menü oder mit der normalen Taste direkt am Händler.
+* **Rückgabe ohne Verluste:** Zurückgezogene oder abgelaufene Tiere kommen zuerst in ihren Ursprungsstall, sonst in einen Stall mit derselben Rasse; ohne Platz warten sie im Abholfach und werden stündlich erneut eingestellt.
+* **NPC-Viehhändler:** Händler kaufen eure Angebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an — auch trächtige und Altersstufen, die der Viehhändler des Spiels nicht verkauft (Admin-Einstellung: Aus / Wenig / Normal).
+* **Packs, DLCs & Kompatibilität:** Angezeigt werden nur Rassen, die es auf dem Server gibt. Mods, die das Tiersystem ersetzen (z. B. RealisticLivestock), deaktivieren den Tiermarkt mit Hinweis.
+
 #### Natives LS25-UI, Finanzen & Administration
-* **Saubere `InGameMenu`-Integration:** Eigener Reiter im `ESC`-Menü mit Unterreitern für Markt, Verträge und Gebrauchtfahrzeuge, Live-Suchfeld, 3 umschaltbaren Kategorie-Ansichten (*Detailliert*, *Kompakt*, *A–Z*), Preistrend-Pfeilen und transparenter Kostenaufschlüsselung (Warenwert, Händleraufschlag, Lieferkosten).
+* **Saubere `InGameMenu`-Integration:** Eigener Reiter im `ESC`-Menü mit Unterreitern für Markt, Verträge und Marktplatz (Gebrauchtfahrzeuge & Tiere), Live-Suchfeld, 3 umschaltbaren Kategorie-Ansichten (*Detailliert*, *Kompakt*, *A–Z*), Preistrend-Pfeilen und transparenter Kostenaufschlüsselung (Warenwert, Händleraufschlag, Lieferkosten).
 * **Ingame-Hilfe:** Eigene GlobalMarket-Seiten im Hilfemenü des Spiels erklären jeden Bereich.
 * **Dedicated-Server-tauglich (nichts auf dem Server zu installieren):** Über ein dynamisches **Data-Host-Token- & Standby-Failover-System** nimmt auch ein Dedicated Server live am Online-Markt teil, sobald mindestens ein verbundener Spieler auf seinem PC den GlobalMarketClient gestartet hat.
-* **Profilgetrennte Admin-Einstellungen:** Getrennte Einstellungsprofile für Singleplayer (`sp`), gehosteten Multiplayer (`mp`) und Dedicated Server (`dedi`), live einstellbar in den LS25-Spieleinstellungen: Lieferkosten, Händleraufschlag, Marktkapazität, Lagergebühren & Verfall, Große-Nachfrage-Modus, NPC-Aktivität, Online-Verträge, Vertragslimits, Größe des NPC-Bretts und NPC-Fahrzeughändler.
+* **Profilgetrennte Admin-Einstellungen:** Getrennte Einstellungsprofile für Singleplayer (`sp`), gehosteten Multiplayer (`mp`) und Dedicated Server (`dedi`), live einstellbar in den LS25-Spieleinstellungen: Lieferkosten, Händleraufschlag, Marktkapazität, Lagergebühren & Verfall, Große-Nachfrage-Modus, NPC-Aktivität, Online-Verträge, Vertragslimits, Größe des NPC-Bretts, NPC-Fahrzeughändler und NPC-Viehhändler.
 * **Finanzübersicht:** Eigene `MoneyType`-Buchungskategorien (kompakt oder detailliert umschaltbar) direkt im LS25-Finanzmenü.
 
 ---
@@ -123,7 +131,7 @@ flowchart LR
 
 * **Automatischer Token-Failover:** Verlässt der aktive Data-Host den Server oder schließt den GlobalMarketClient, übergibt der Server das Data-Host-Token nahtlos an den nächsten verbundenen Standby-Spieler — oder schaltet verlustfrei auf den simulierten Offline-Markt zurück.
 * **Serverseitiges Rate-Limiting:** Online-Transaktionen werden autoritativ vom LS25-Server geprüft und mit einem globalen `15 s`-Sync-Cooldown getaktet, damit weltweite Bestandsänderungen konsistent bleiben.
-* **Serverautoritativer Handel:** Verträge, Angebote und Fahrzeugangebote werden ausschließlich auf dem LS25-Server verarbeitet und über eigene Multiplayer-Events an alle Spieler verteilt.
+* **Serverautoritativer Handel:** Verträge, Angebote, Fahrzeug- und Tierangebote werden ausschließlich auf dem LS25-Server verarbeitet und über eigene Multiplayer-Events an alle Spieler verteilt.
 
 ---
 
@@ -153,7 +161,7 @@ Ist die Statusanzeige in den Einstellungen aktiviert, zeigt ein kompaktes Icon o
 | :--- | :--- | :--- |
 | **GlobalMarket-Menü öffnen / schließen** | `Links Alt + M` *(oder über den `ESC`-Menüreiter)* | `ESC`-Menü durchblättern |
 | **Kategorie-Ansicht wechseln** *(Detailliert / Kompakt / A–Z)* | `C` | `X` *(Menü Extra 1)* |
-| **Aktionen bei Verträgen & Gebrauchtfahrzeugen** *(annehmen, stornieren, anbieten, ansehen & kaufen, Filter / Sortierung, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
+| **Aktionen bei Verträgen, Fahrzeug- & Tiermarkt** *(annehmen, stornieren, anbieten, kaufen, auf Anhänger laden, Filter / Sortierung, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
 
 *(Alle Tastenbelegungen lassen sich in den normalen LS25-Steuerungsoptionen anpassen.)*
 
@@ -248,8 +256,8 @@ Placeable-Modder können eigene Silos oder Objektlager zu offiziellen **GlobalMa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Schlanker Lebenszyklus-Orchestrator, InGameMenu-Einbindung & Tastenbelegung
 ├── modDesc.xml               # LS25-Mod-Beschreibung (descVersion 116)
-├── events/                   # 17 eigene Multiplayer-Events für Sync, Transaktionen, Verträge & Fahrzeugmarkt
-├── gui/                      # Markt-UI, Unterreiter Verträge & Gebrauchtfahrzeuge, drei Dialoge (Controller, XML-Layouts & Profile)
+├── events/                   # 19 eigene Multiplayer-Events für Sync, Transaktionen, Verträge, Fahrzeug- & Tiermarkt
+├── gui/                      # Markt-UI, Unterreiter Verträge & Marktplatz, vier Dialoge (Controller, XML-Layouts & Profile)
 │   ├── GlobalMarketUI.lua / .xml             # InGameMenu-Hauptseite: Lager- & Marktlisten, Suche, Kategorien
 │   ├── GlobalMarketContractsUI.lua           # Unterreiter-Controller: Lieferverträge, Direktangebote & Abholfach
 │   ├── GlobalMarketDialog.lua / .xml         # Kauf-/Verkaufsdialog (Lager, Gebinde, Kostenvorschau)
@@ -257,11 +265,17 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketVehiclesUI.lua            # Unterreiter-Controller: eigene Fahrzeuge & Angebote, Gebrauchtmarkt
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog zum Anbieten eines Fahrzeugs (Preis, Laufzeit)
 │   ├── GlobalMarketVehicleShopBridge.lua     # Angebote im Shop-Bildschirm des Spiels ansehen & kaufen
+│   ├── GlobalMarketAnimalsUI.lua             # Tieransicht im Marktplatz: eigene Gruppen, Angebote & Abholfach, Tiermarkt
+│   ├── GlobalMarketAnimalDialog.lua / .xml   # Dialog zum Anbieten von Tieren oder Kaufen (Lieferung oder Abholung)
 │   └── guiProfiles.xml                       # Gemeinsame GUI-Profile
 ├── images/                   # Menü- & UI-Texturen (.dds)
 ├── modules/                  # Fachmodule:
 │   ├── GlobalMarketAPI.lua                   # 3-stufige Whitelist-/Blacklist-/Kategorie- & Metadaten-API
 │   ├── GlobalMarketAccess.lua                # Hofübergreifender Zugriff & Trennung bei GM-Terminals
+│   ├── GlobalMarketAnimalListings.lua        # Tier-Abbilder (Treuhand), Zulässigkeit, Händlerwerte & Stallplatzierung
+│   ├── GlobalMarketAnimalMarket.lua          # Tierangebote, Rückgaben, Abholfach & Spielstand
+│   ├── GlobalMarketAnimalNpc.lua             # NPC-Viehhändler: kaufen und bieten Tiere an
+│   ├── GlobalMarketAnimalTrade.lua           # Tierkäufe, Verladen, Händlererkennung, Sync & Meldungen
 │   ├── GlobalMarketBranding.lua              # 3-stufiges Online-Markt-Branding (synchronisierter Name & lokales Logo)
 │   ├── GlobalMarketCompatibilityManager.lua  # Dynamische Mod-Konflikt-Firewall & Gegenmaßnahmen
 │   ├── GlobalMarketContracts.lua             # Lieferverträge, bestandsgesteuertes NPC-Brett, Treuhand & Strafen
