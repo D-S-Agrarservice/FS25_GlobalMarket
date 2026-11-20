@@ -54,7 +54,7 @@
         <e k="gm_help_p7_buying_title"                             v="Acheter et retirer des animaux" />
         <e k="gm_help_p7_buying_text"                              v="À droite se trouvent les annonces des autres fermes et marchands, groupées par type d'animal, triables par prix, âge ou santé et filtrables par gestantes ou aptes à la reproduction.&#xA;- Livraison à l'étable : automatique ou dans une étable choisie avec assez de place, plus les frais de transport du marchand de bestiaux.&#xA;- Retrait sans frais de transport : les animaux vont dans le dépôt de retrait. Lorsque votre bétaillère est chez le marchand, chargez-les dans le menu GM avec 'Charger dans la bétaillère' ou directement chez le marchand avec la touche habituelle via 'Charger le dépôt GM dans la bétaillère'.&#xA;- Seules les races existant sur ce serveur sont affichées (les DLC et packs doivent être actifs)." />
         <e k="gm_help_p7_npc_title"                                v="Marchands &amp; réglages" />
-        <e k="gm_help_p7_npc_text"                                 v="Les marchands PNJ achètent vos annonces d'animaux - plus c'est bon marché, plus c'est rapide - et paient le prix moins 5 % de commission. Ils proposent aussi leurs propres animaux, y compris gestants et d'âges que le marchand de bestiaux habituel ne vend pas.&#xA;- Commerce d'animaux PNJ (admin) : Désactivé, Faible ou Normal.&#xA;- Les mods qui remplacent le système d'animaux (p. ex. RealisticLivestock) désactivent le marché aux animaux ; la raison est affichée dans le marché." />
+        <e k="gm_help_p7_npc_text"                                 v="Les marchands PNJ achètent vos annonces d'animaux - plus c'est bon marché, plus c'est rapide - et paient le prix moins 5 % de commission. Ils proposent aussi leurs propres animaux, y compris gestants et d'âges que le marchand de bestiaux habituel ne vend pas.&#xA;- Commerce d'animaux PNJ (admin) : Désactivé, Faible ou Normal.&#xA;- Les mods qui remplacent le système d'animaux (p. ex. RealisticLivestock) désactivent le marché aux animaux ; la raison est affichée dans le marché.&#xA;- Forte demande : environ une fois par mois, les marchands PNJ recherchent des animaux de boucherie en âge d'abattage d'un type (au moins 50 % de santé) et paient 20 à 40 % au-dessus de la valeur chez le marchand. Les groupes correspondants sont en vert et se vendent directement avec 'Vendre à la forte demande'. Le bonus, le temps restant et le quota ouvert sont affichés en haut de 'Mes animaux'." />
         <e k="gm_help_p3_title"                                    v="6. Stockages pris en charge, formats et terminaux GM" />
         <e k="gm_help_p3_storages_title"                           v="Silos de ferme, entrepôts d'objets et choix du format" />
         <e k="gm_help_p3_storages_text"                            v="Le Marché Global détecte automatiquement tous vos silos de vrac et de liquides ainsi que les entrepôts de balles et palettes basés sur les scripts standards de GIANTS.&#xA;- Choix du conditionnement : Dans la fenêtre d'échange, choisissez le stockage cible et le format souhaité (balles rondes/carrées, palette, BigBag ou cuve IBC).&#xA;- Remarque ensilage : Les balles en cours de fermentation sont verrouillées jusqu'à la fin de l'ensilage." />
@@ -139,7 +139,7 @@
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Faible" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
         <e k="ui_gm_settings_animalNpc"                            v="Commerce d'animaux PNJ" />
-        <e k="ui_gm_settings_animalNpc_desc"                       v="Contrôle les marchands du marché aux animaux GM. Faible/Normal : les marchands PNJ achètent vos annonces d'animaux (plus c'est bon marché, plus c'est rapide, moins 5 % de commission) et proposent leurs propres animaux, y compris gestants et d'âges que le marchand de bestiaux ne vend pas. Désactivé : échanges entre joueurs uniquement." />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Contrôle les marchands du marché aux animaux GM. Faible/Normal : les marchands PNJ achètent vos annonces d'animaux (plus c'est bon marché, plus c'est rapide, moins 5 % de commission) et proposent leurs propres animaux, y compris gestants et d'âges que le marchand de bestiaux ne vend pas. Désactivé : échanges entre joueurs uniquement. Il contrôle aussi les fortes demandes en animaux de boucherie (Normal environ une fois par mois, Faible plus rarement)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Notifier les nouvelles annonces de véhicules" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Affiche une notification HUD lorsqu'une autre ferme met un véhicule en vente sur le marché de véhicules d'occasion GM. Réglage personnel, ne s'applique qu'à vous." />
         <e k="ui_gm_settings_oc_all"                               v="Tous (En ligne &amp; Local)" />
@@ -295,6 +295,17 @@
         <e k="ui_gm_animals_reason_demandTooYoung"                 v="Ces animaux n'ont pas encore l'âge d'abattage." />
         <e k="ui_gm_animals_reason_demandUnhealthy"                v="Les animaux doivent avoir au moins %d %% de santé." />
         <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="La forte demande n'accepte plus autant d'animaux (encore %d)." />
+        <e k="ui_gm_animals_demandBanner"                          v="Forte demande : %s +%d %% | reste %s | %d animaux ouverts" />
+        <e k="ui_gm_animals_demand_days"                           v="%.1f jours" />
+        <e k="ui_gm_animals_demand_hours"                          v="%d h" />
+        <e k="ui_gm_animals_action_demandSell"                     v="Vendre à la forte demande" />
+        <e k="ui_gm_animals_action_demandSellShort"                v="Vendre" />
+        <e k="ui_gm_animals_dialog_titleDemand"                    v="Vendre à la forte demande : %s" />
+        <e k="ui_gm_animals_hint_demand"                           v="Forte demande : %s pour %d animaux (+%d %%)" />
+        <e k="ui_gm_animals_receipt_bonus"                         v="Bonus de forte demande (+%d %%)" />
+        <e k="ui_gm_animals_receipt_quota"                         v="Quota restant" />
+        <e k="ui_gm_animals_receipt_payout"                        v="Paiement" />
+        <e k="ui_gm_animals_animalsCount"                          v="%d animaux" />
         <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />

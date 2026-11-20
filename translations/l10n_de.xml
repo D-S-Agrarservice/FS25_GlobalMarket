@@ -54,7 +54,7 @@
         <e k="gm_help_p7_buying_title"                             v="Tiere kaufen &amp; abholen" />
         <e k="gm_help_p7_buying_text"                              v="Rechts stehen die Angebote anderer Höfe und Viehhändler, nach Tierart gruppiert, sortierbar nach Preis, Alter oder Gesundheit und filterbar nach trächtig oder zuchtreif.&#xA;- Lieferung in den Stall: automatisch oder in einen gewählten Stall mit genug Platz, zuzüglich der Transportgebühr des Viehhändlers.&#xA;- Abholung ohne Transportgebühr: Die Tiere kommen ins Abholfach. Steht dein Viehanhänger beim Viehhändler, lädst du sie im GM-Menü mit 'Auf Anhänger laden' oder direkt am Viehhändler mit der normalen Taste über 'GM-Abholfach auf den Anhänger laden'.&#xA;- Angezeigt werden nur Rassen, die es auf diesem Server gibt (DLCs und Packs müssen aktiv sein)." />
         <e k="gm_help_p7_npc_title"                                v="Viehhändler &amp; Einstellungen" />
-        <e k="gm_help_p7_npc_text"                                 v="NPC-Viehhändler kaufen eure Tierangebote - je günstiger, desto schneller - und zahlen den Preis abzüglich 5 % Provision. Außerdem bieten sie eigene Tiere an, auch trächtige und Altersstufen, die der normale Viehhändler nicht verkauft.&#xA;- NPC-Tierhandel (Admin): Aus, Wenig oder Normal.&#xA;- Mods, die das Tiersystem ersetzen (z. B. RealisticLivestock), deaktivieren den Tiermarkt; der Grund steht dann im Tiermarkt." />
+        <e k="gm_help_p7_npc_text"                                 v="NPC-Viehhändler kaufen eure Tierangebote - je günstiger, desto schneller - und zahlen den Preis abzüglich 5 % Provision. Außerdem bieten sie eigene Tiere an, auch trächtige und Altersstufen, die der normale Viehhändler nicht verkauft.&#xA;- NPC-Tierhandel (Admin): Aus, Wenig oder Normal.&#xA;- Mods, die das Tiersystem ersetzen (z. B. RealisticLivestock), deaktivieren den Tiermarkt; der Grund steht dann im Tiermarkt.&#xA;- Großnachfrage: Etwa einmal im Monat suchen NPC-Händler schlachtreife Masttiere einer Tierart (mindestens 50 % Gesundheit) und zahlen 20 bis 40 % über dem Händlerwert. Passende Gruppen sind grün markiert, verkauft wird direkt mit 'An Großnachfrage verkaufen'. Bonus, Restzeit und offenes Kontingent stehen oben bei 'Meine Tiere'." />
         <e k="gm_help_p3_title"                                    v="6. Unterstützte Lager, Gebinde &amp; GM-Terminals" />
         <e k="gm_help_p3_storages_title"                           v="Hofsilos, Objektlager &amp; Gebinde-Auswahl" />
         <e k="gm_help_p3_storages_text"                            v="Der Globale Markt erkennt automatisch alle eigenen Schüttgut- und Flüssigkeitssilos sowie Ballen- und Palettenlager, die auf den GIANTS-Standardskripten aufbauen.&#xA;- Freie Gebinde-Wahl: Im Handelsdialog wählst du das Ziellager und bei Objektlagern das gewünschte Format (Rund-/Quaderballen, Palette, BigBag oder IBC-Tank).&#xA;- Silage-Hinweis: Noch gärende Silageballen sind gesperrt, bis der Gärprozess vollständig abgeschlossen ist." />
@@ -139,7 +139,7 @@
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Wenig" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
         <e k="ui_gm_settings_animalNpc"                            v="NPC-Tierhandel" />
-        <e k="ui_gm_settings_animalNpc_desc"                       v="Steuert die Viehhändler im GM-Tiermarkt. Wenig/Normal: NPC-Händler kaufen eure Tierangebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an, auch trächtige und Altersstufen, die der Viehhändler nicht verkauft. Aus: Reiner Handel zwischen Spielern." />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Steuert die Viehhändler im GM-Tiermarkt. Wenig/Normal: NPC-Händler kaufen eure Tierangebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an, auch trächtige und Altersstufen, die der Viehhändler nicht verkauft. Aus: Reiner Handel zwischen Spielern. Außerdem steuert sie die Großnachfragen für Masttiere (Normal etwa monatlich, Wenig seltener)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Meldung bei neuen Fahrzeugangeboten" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Zeigt eine HUD-Meldung, wenn ein anderer Hof ein Fahrzeug im GM-Gebrauchtfahrzeugmarkt anbietet. Persönliche Einstellung, gilt nur für dich." />
         <e k="ui_gm_settings_oc_all"                               v="Alle (Online &amp; Lokal)" />
@@ -295,6 +295,17 @@
         <e k="ui_gm_animals_reason_demandTooYoung"                 v="Diese Tiere sind noch nicht schlachtreif." />
         <e k="ui_gm_animals_reason_demandUnhealthy"                v="Die Tiere brauchen mindestens %d %% Gesundheit." />
         <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="So viele Tiere nimmt die Großnachfrage nicht mehr an (noch %d)." />
+        <e k="ui_gm_animals_demandBanner"                          v="Großnachfrage: %s +%d %% | noch %s | %d Tiere offen" />
+        <e k="ui_gm_animals_demand_days"                           v="%.1f Tage" />
+        <e k="ui_gm_animals_demand_hours"                          v="%d Std." />
+        <e k="ui_gm_animals_action_demandSell"                     v="An Großnachfrage verkaufen" />
+        <e k="ui_gm_animals_action_demandSellShort"                v="Verkaufen" />
+        <e k="ui_gm_animals_dialog_titleDemand"                    v="An Großnachfrage verkaufen: %s" />
+        <e k="ui_gm_animals_hint_demand"                           v="Großnachfrage: %s für %d Tiere (+%d %%)" />
+        <e k="ui_gm_animals_receipt_bonus"                         v="Großnachfrage-Bonus (+%d %%)" />
+        <e k="ui_gm_animals_receipt_quota"                         v="Noch offenes Kontingent" />
+        <e k="ui_gm_animals_receipt_payout"                        v="Auszahlung" />
+        <e k="ui_gm_animals_animalsCount"                          v="%d Tiere" />
         <e k="ui_gm_subtab_vehicles"                               v="Marktplatz" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />

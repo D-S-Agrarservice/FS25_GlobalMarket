@@ -54,7 +54,7 @@
         <e k="gm_help_p7_buying_title"                             v="Comprar y recoger animales" />
         <e k="gm_help_p7_buying_text"                              v="A la derecha están las ofertas de otras granjas y tratantes, agrupadas por tipo de animal, ordenables por precio, edad o salud y filtrables por preñadas o aptas para criar.&#xA;- Entrega en el establo: automática o en un establo elegido con espacio suficiente, más la tarifa de transporte del tratante.&#xA;- Recogida sin tarifa de transporte: los animales van al depósito de recogida. Mientras tu remolque de ganado esté en el tratante, cárgalos en el menú GM con 'Cargar en el remolque' o directamente en el tratante con la tecla normal mediante 'Cargar el depósito GM en el remolque'.&#xA;- Solo se muestran razas que existen en este servidor (los DLC y packs deben estar activos)." />
         <e k="gm_help_p7_npc_title"                                v="Tratantes y ajustes" />
-        <e k="gm_help_p7_npc_text"                                 v="Los tratantes NPC compran tus ofertas de animales (cuanto más baratas, antes) y pagan el precio menos un 5 % de comisión. Además ofrecen animales propios, también preñados y de edades que el tratante normal no vende.&#xA;- Comercio de animales NPC (admin): Desactivado, Bajo o Normal.&#xA;- Los mods que sustituyen el sistema de animales (p. ej. RealisticLivestock) desactivan el mercado de animales; el motivo se muestra en el mercado." />
+        <e k="gm_help_p7_npc_text"                                 v="Los tratantes NPC compran tus ofertas de animales (cuanto más baratas, antes) y pagan el precio menos un 5 % de comisión. Además ofrecen animales propios, también preñados y de edades que el tratante normal no vende.&#xA;- Comercio de animales NPC (admin): Desactivado, Bajo o Normal.&#xA;- Los mods que sustituyen el sistema de animales (p. ej. RealisticLivestock) desactivan el mercado de animales; el motivo se muestra en el mercado.&#xA;- Gran demanda: aproximadamente una vez al mes los tratantes NPC buscan animales de carne en edad de sacrificio de un tipo (al menos 50 % de salud) y pagan del 20 al 40 % sobre el valor en el tratante. Los grupos adecuados aparecen en verde y se venden directamente con 'Vender a la gran demanda'. La bonificación, el tiempo restante y el cupo libre se muestran arriba en 'Mis animales'." />
         <e k="gm_help_p3_title"                                    v="6. Almacenes compatibles, formatos y terminales GM" />
         <e k="gm_help_p3_storages_title"                           v="Silos, almacenes de objetos y elección de formato" />
         <e k="gm_help_p3_storages_text"                            v="El Mercado Global detecta automáticamente tus silos de granel y líquidos, así como almacenes de pacas y palés basados en scripts estándar de GIANTS.&#xA;- Elección de formato: En el diálogo de comercio puedes elegir el almacén y el formato deseado (pacas redondas/cuadradas, palé, BigBag o depósito IBC).&#xA;- Nota sobre ensilado: Las pacas en fermentación no se pueden comerciar hasta completar el ensilado." />
@@ -139,7 +139,7 @@
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Bajo" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
         <e k="ui_gm_settings_animalNpc"                            v="Comercio de animales NPC" />
-        <e k="ui_gm_settings_animalNpc_desc"                       v="Controla a los tratantes del mercado de animales GM. Bajo/Normal: los tratantes NPC compran tus ofertas de animales (cuanto más baratas, antes; menos un 5 % de comisión) y ofrecen animales propios, también preñados y de edades que el tratante no vende. Desactivado: solo comercio entre jugadores." />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Controla a los tratantes del mercado de animales GM. Bajo/Normal: los tratantes NPC compran tus ofertas de animales (cuanto más baratas, antes; menos un 5 % de comisión) y ofrecen animales propios, también preñados y de edades que el tratante no vende. Desactivado: solo comercio entre jugadores. También controla las grandes demandas de animales de carne (Normal aproximadamente cada mes, Bajo con menos frecuencia)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Avisar de nuevas ofertas de vehículos" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Muestra un aviso en el HUD cuando otra granja pone a la venta un vehículo en el mercado de vehículos usados GM. Ajuste personal, solo se aplica a ti." />
         <e k="ui_gm_settings_oc_all"                               v="Todos (Online y Local)" />
@@ -295,6 +295,17 @@
         <e k="ui_gm_animals_reason_demandTooYoung"                 v="Estos animales aún no tienen edad de sacrificio." />
         <e k="ui_gm_animals_reason_demandUnhealthy"                v="Los animales necesitan al menos un %d %% de salud." />
         <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="La gran demanda ya no acepta tantos animales (quedan %d)." />
+        <e k="ui_gm_animals_demandBanner"                          v="Gran demanda: %s +%d %% | quedan %s | %d animales libres" />
+        <e k="ui_gm_animals_demand_days"                           v="%.1f días" />
+        <e k="ui_gm_animals_demand_hours"                          v="%d h" />
+        <e k="ui_gm_animals_action_demandSell"                     v="Vender a la gran demanda" />
+        <e k="ui_gm_animals_action_demandSellShort"                v="Vender" />
+        <e k="ui_gm_animals_dialog_titleDemand"                    v="Vender a la gran demanda: %s" />
+        <e k="ui_gm_animals_hint_demand"                           v="Gran demanda: %s por %d animales (+%d %%)" />
+        <e k="ui_gm_animals_receipt_bonus"                         v="Bonificación de gran demanda (+%d %%)" />
+        <e k="ui_gm_animals_receipt_quota"                         v="Cupo restante" />
+        <e k="ui_gm_animals_receipt_payout"                        v="Pago" />
+        <e k="ui_gm_animals_animalsCount"                          v="%d animales" />
         <e k="ui_gm_subtab_vehicles"                               v="Compraventa" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mis vehículos y ofertas" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Mercado de vehículos usados" />

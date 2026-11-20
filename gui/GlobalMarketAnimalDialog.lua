@@ -3,6 +3,7 @@
 -- Livestock market (#15): modal dialog with two modes.
 --   LIST: list animals of an own group (count, asking price in percent of the dealer value, duration)
 --   BUY:  buy a listing with barn delivery (automatic or chosen barn, plus transport fee) or dealer pickup
+--   DEMAND: sell animals of an own group to the active great demand (count, dealer value plus bonus)
 -- The server validates every request again; the dialog only prevents obviously impossible requests.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
@@ -12,6 +13,7 @@ local GlobalMarketAnimalDialog_mt = Class(GlobalMarketAnimalDialog, YesNoDialog)
 
 GlobalMarketAnimalDialog.MODE_LIST = 1
 GlobalMarketAnimalDialog.MODE_BUY = 2
+GlobalMarketAnimalDialog.MODE_DEMAND = 3
 GlobalMarketAnimalDialog.PRICE_STEP = 0.05
 GlobalMarketAnimalDialog.DEFAULT_DURATION = 1
 
@@ -43,6 +45,14 @@ end
 ---@param args table { listing, title, condition, image, farmId }
 function GlobalMarketAnimalDialog:showBuy(args)
     self.mode = GlobalMarketAnimalDialog.MODE_BUY
+    self.args = args or {}
+    g_gui:showDialog("GlobalMarketAnimalDialog")
+end
+
+---Opens the dialog to sell animals of an own group to the active great demand
+---@param args table { source, cluster, title, condition, image, farmId }
+function GlobalMarketAnimalDialog:showDemand(args)
+    self.mode = GlobalMarketAnimalDialog.MODE_DEMAND
     self.args = args or {}
     g_gui:showDialog("GlobalMarketAnimalDialog")
 end
@@ -96,10 +106,16 @@ function GlobalMarketAnimalDialog:onOpen()
     GlobalMarketAnimalDialog:superClass().onOpen(self)
     local args = self.args
     local isList = (self.mode == GlobalMarketAnimalDialog.MODE_LIST)
+    local isDemand = (self.mode == GlobalMarketAnimalDialog.MODE_DEMAND)
+    local titleKey, okKey = "ui_gm_animals_dialog_titleBuy", "ui_gm_animals_action_buy"
+    if isList then
+        titleKey, okKey = "ui_gm_animals_dialog_titleList", "ui_gm_vehicles_action_list"
+    elseif isDemand then
+        titleKey, okKey = "ui_gm_animals_dialog_titleDemand", "ui_gm_animals_action_demandSellShort"
+    end
 
     if self.dialogTitleElement ~= nil then
-        self.dialogTitleElement:setText(string.format(g_i18n:getText(isList and "ui_gm_animals_dialog_titleList"
-            or "ui_gm_animals_dialog_titleBuy"), tostring(args.title)))
+        self.dialogTitleElement:setText(string.format(g_i18n:getText(titleKey), tostring(args.title)))
     end
     if self.dialogAnimalIcon ~= nil then
         self.dialogAnimalIcon:setVisible(args.image ~= nil)
@@ -111,11 +127,13 @@ function GlobalMarketAnimalDialog:onOpen()
         self.headerBoxLayout:invalidateLayout()
     end
     if self.yesButton ~= nil then
-        self.yesButton:setText(g_i18n:getText(isList and "ui_gm_vehicles_action_list" or "ui_gm_animals_action_buy"))
+        self.yesButton:setText(g_i18n:getText(okKey))
     end
 
     if isList then
         self:setupListMode()
+    elseif isDemand then
+        self:setupDemandMode()
     else
         self:setupBuyMode()
     end
@@ -210,6 +228,27 @@ function GlobalMarketAnimalDialog:getListDealerNewPrice()
     end
     local count = getSelected(self.selector1, self.options1, 1)
     return (animalSystem:getAnimalBuyPrice(subTypeIndex, cluster.age) or 0) * count + cluster:getTranportationFee(count)
+end
+
+---DEMAND: count selector only (up to the group size and the remaining quota)
+function GlobalMarketAnimalDialog:setupDemandMode()
+    local gm = g_currentMission.globalMarket
+    local cluster = self.args.cluster
+    local maxCount = math.min(cluster ~= nil and cluster:getNumAnimals() or 0, gm:getAnimalDemandRemaining())
+    self.options1 = buildCountOptions(maxCount)
+    local countTexts = {}
+    for _, count in ipairs(self.options1) do
+        table.insert(countTexts, string.format(g_i18n:getText("ui_gm_animals_countOption"), count, maxCount))
+    end
+    if #countTexts == 0 then
+        self.options1 = { 0 }
+        countTexts = { string.format(g_i18n:getText("ui_gm_animals_countOption"), 0, 0) }
+    end
+    setSelector(self.selector1, countTexts, #self.options1)
+    self.selector1:setVisible(true)
+    self.selector1:setDisabled(#self.options1 <= 1)
+    self.selector2:setVisible(false)
+    self.selector3:setVisible(false)
 end
 
 ---BUY: delivery and barn selectors
@@ -322,6 +361,29 @@ function GlobalMarketAnimalDialog:updateReceipt()
             money(npcPayout), COLOR_MUTED)
         self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
             g_i18n:getText("ui_gm_vehicles_receipt_asking"), money(asking), getFactorColor(factor), COLOR_WHITE)
+    elseif self.mode == GlobalMarketAnimalDialog.MODE_DEMAND then
+        local gm = g_currentMission.globalMarket
+        local cluster = self.args.cluster
+        local count = getSelected(self.selector1, self.options1, 0)
+        local value = (cluster ~= nil) and math.floor(cluster:getSellPrice() * count + 0.5) or 0
+        local payout = (cluster ~= nil and gm.animalDemand ~= nil) and gm:getAnimalDemandPayout(cluster, count) or 0
+        local isEligible, reason = false, "demandInactive"
+        if cluster ~= nil and gm.animalDemand ~= nil then
+            isEligible, reason = gm:getAnimalDemandEligibility(self.args.source, self.args.farmId, cluster.id, count)
+        end
+        if not isEligible then
+            self.blockReason = reason or "invalid"
+        end
+        local bonusPct = (gm.animalDemand ~= nil) and math.floor((gm.animalDemand.bonus or 0) * 100 + 0.5) or 0
+        self:setReceiptRow(self.receiptRow1Label, self.receiptRow1Value,
+            g_i18n:getText("ui_gm_vehicles_receipt_dealer"), money(value), COLOR_MUTED)
+        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+            string.format(g_i18n:getText("ui_gm_animals_receipt_bonus"), bonusPct), money(payout - value), COLOR_GREEN)
+        self:setReceiptRow(self.receiptRow3Label, self.receiptRow3Value,
+            g_i18n:getText("ui_gm_animals_receipt_quota"),
+            string.format(g_i18n:getText("ui_gm_animals_animalsCount"), gm:getAnimalDemandRemaining()), COLOR_MUTED)
+        self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
+            g_i18n:getText("ui_gm_animals_receipt_payout"), money(payout), self.blockReason ~= nil and COLOR_RED or COLOR_GREEN, COLOR_WHITE)
     else
         local listing = self.args.listing
         local snapshot = listing.snapshot
@@ -375,7 +437,7 @@ end
 function GlobalMarketAnimalDialog:onClickSelector1(state)
     if self.mode == GlobalMarketAnimalDialog.MODE_LIST then
         self:updatePriceTexts(nil)
-    else
+    elseif self.mode == GlobalMarketAnimalDialog.MODE_BUY then
         self:updateBarnOptions()
     end
     self:updateReceipt()
@@ -402,6 +464,14 @@ function GlobalMarketAnimalDialog:onClickOk()
                 numAnimals = getSelected(self.selector1, self.options1, 1),
                 priceFactor = getSelected(self.selector2, self.options2, 1),
                 durationMonths = getSelected(self.selector3, self.options3, GlobalMarketAnimalDialog.DEFAULT_DURATION)
+            })
+        end
+    elseif self.mode == GlobalMarketAnimalDialog.MODE_DEMAND then
+        if args.source ~= nil and args.cluster ~= nil then
+            AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_DEMAND_SELL, args.farmId, {
+                object = args.source,
+                clusterId = args.cluster.id,
+                numAnimals = getSelected(self.selector1, self.options1, 0)
             })
         end
     elseif args.listing ~= nil then

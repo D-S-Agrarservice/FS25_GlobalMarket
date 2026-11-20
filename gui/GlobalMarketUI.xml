@@ -285,6 +285,7 @@
         <GuiElement profile="emptyPanel" with="anchorBottomLeft" id="subTabAnimalsContainer" position="0px 0px" size="1550px 790px" visible="false">
             <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="700px 750px" position="20px 40px">
                 <Text profile="globalMarketHeaderBright" text="$l10n_ui_gm_animals_myHeader" position="10px 715px" size="680px 30px" textSize="22px" />
+                <Text profile="fs25_textDefault" id="animalDemandBanner" text="" position="230px 719px" size="460px 24px" textAlignment="right" textSize="16px" textLayoutMode="resize" textColor="0.95 0.68 0.20 1" />
                 <Text profile="fs25_textDefault" id="myAnimalsSubtitle" text="" position="10px 695px" size="680px 22px" textAlignment="left" textSize="15px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
 
                 <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="700px 38px">

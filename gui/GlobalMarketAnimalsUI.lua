@@ -61,6 +61,12 @@ function GlobalMarketUI:initAnimalsButtonInfos()
         callback = function() self:onAnimalPrimaryAction() end,
         disabled = true
     }
+    self.animalsDemandButtonInfo = {
+        inputAction = InputAction.MENU_CANCEL,
+        text = self.i18n:getText("ui_gm_animals_action_demandSell"),
+        callback = function() self:onAnimalDemandAction() end,
+        disabled = false
+    }
     self.animalsCancelButtonInfo = {
         inputAction = InputAction.MENU_CANCEL,
         text = self.i18n:getText("ui_gm_vehicles_action_withdraw"),
@@ -224,10 +230,15 @@ local function addSourceSection(ui, sections, source, title, farmId)
             local name = getAnimalTitle(info)
             if ui:matchesVehicleQuery(name) then
                 local isEligible, reason = GlobalMarketAnimalListings.getEligibility(source, farmId, cluster.id, numAnimals)
-                table.insert(items, { kind = "MY_GROUP", name = name, info = info,
-                    data = { source = source, clusterId = cluster.id, isEligible = isEligible, reason = reason,
-                        value = GlobalMarketAnimalListings.getDealerValue(snapshotLike) or 0,
-                        newPrice = GlobalMarketAnimalListings.getDealerNewPrice(snapshotLike) } })
+                local data = { source = source, clusterId = cluster.id, isEligible = isEligible, reason = reason,
+                    value = GlobalMarketAnimalListings.getDealerValue(snapshotLike) or 0,
+                    newPrice = GlobalMarketAnimalListings.getDealerNewPrice(snapshotLike) }
+                -- Great demand (Stage 1b): one animal is enough to qualify, the count is chosen in the dialog
+                local gm = g_currentMission.globalMarket
+                if isEligible and gm ~= nil and gm.animalDemand ~= nil then
+                    data.demandOk, data.demandReason = gm:getAnimalDemandEligibility(source, farmId, cluster.id, 1)
+                end
+                table.insert(items, { kind = "MY_GROUP", name = name, info = info, data = data })
             end
         end
     end
@@ -352,6 +363,9 @@ function GlobalMarketUI:applyAnimalListsFilter(allowListFocus)
         table.insert(self.marketAnimalSections, { title = nil, items = { { kind = "EMPTY_MARKET" } } })
     end
 
+    if self.animalDemandBanner ~= nil then
+        self.animalDemandBanner:setText(isAvailable and self:getAnimalDemandBannerText() or "")
+    end
     if self.myAnimalsSubtitle ~= nil then
         local text
         if not isAvailable then
@@ -473,10 +487,31 @@ function GlobalMarketUI:updateAnimalsMenuButtons()
     end
     if self.animalsCancelButtonInfo ~= nil and row ~= nil and row.kind == "MY_LISTING" and not isSpectator then
         table.insert(list, self.animalsCancelButtonInfo)
+    elseif self.animalsDemandButtonInfo ~= nil and row ~= nil and row.kind == "MY_GROUP" and row.data.demandOk and not isSpectator then
+        table.insert(list, self.animalsDemandButtonInfo)
     end
     self:setMenuButtonInfo(list)
     self:setMenuButtonInfoDirty()
     self:updateAnimalSelectionHint(row)
+end
+
+---Returns the great demand banner text ("" without an active demand)
+---@return string
+function GlobalMarketUI:getAnimalDemandBannerText()
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    local demand = (gm ~= nil) and gm.animalDemand or nil
+    if demand == nil then
+        return ""
+    end
+    local hours = demand.hoursRemaining or 0
+    local timeText
+    if hours >= 24 then
+        timeText = string.format(self.i18n:getText("ui_gm_animals_demand_days"), hours / 24)
+    else
+        timeText = string.format(self.i18n:getText("ui_gm_animals_demand_hours"), math.max(1, math.ceil(hours)))
+    end
+    return string.format(self.i18n:getText("ui_gm_animals_demandBanner"), GlobalMarket.getAnimalDemandTypeTitle(demand.typeName),
+        math.floor((demand.bonus or 0) * 100 + 0.5), timeText, gm:getAnimalDemandRemaining())
 end
 
 ---Returns why the animal market is disabled (incompatible mod named if known)
@@ -487,6 +522,29 @@ function GlobalMarketUI:getAnimalMarketDisabledText()
         return string.format(self.i18n:getText("ui_gm_animals_disabledByMod"), modName)
     end
     return GlobalMarket.getAnimalMarketReasonText("unavailable")
+end
+
+---Returns the great demand part of a group hint ("" if the group does not match the demand)
+---@param row table MY_GROUP row
+---@return string
+function GlobalMarketUI:getAnimalDemandHintSuffix(row)
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    if gm == nil or gm.animalDemand == nil then
+        return ""
+    end
+    if row.data.demandOk then
+        local cluster = row.data.source:getClusterById(row.data.clusterId)
+        if cluster == nil then
+            return ""
+        end
+        local count = math.min(cluster:getNumAnimals(), gm:getAnimalDemandRemaining())
+        return " | " .. string.format(self.i18n:getText("ui_gm_animals_hint_demand"),
+            self.i18n:formatMoney(gm:getAnimalDemandPayout(cluster, count), 0, true, true), count,
+            math.floor((gm.animalDemand.bonus or 0) * 100 + 0.5))
+    elseif row.data.demandReason ~= nil and row.data.demandReason ~= "demandWrongType" then
+        return " | " .. GlobalMarket.getAnimalMarketReasonText(row.data.demandReason)
+    end
+    return ""
 end
 
 ---Returns the dealer's new price text ("not available at the dealer" if the dealer does not sell this age)
@@ -508,6 +566,7 @@ function GlobalMarketUI:updateAnimalSelectionHint(row)
         if row.data.isEligible then
             text = string.format(self.i18n:getText("ui_gm_animals_hint_group"), row.name, self:formatAnimalCondition(row.info),
                 self.i18n:formatMoney(row.data.value, 0, true, true), self:formatAnimalNewPrice(row.data.newPrice))
+            text = text .. self:getAnimalDemandHintSuffix(row)
         else
             text = string.format("%s | %s", row.name, GlobalMarket.getAnimalMarketReasonText(row.data.reason or "invalid"))
         end
@@ -591,6 +650,21 @@ function GlobalMarketUI:onAnimalPrimaryAction(overrideSection, overrideIndex)
     end
 end
 
+---Great demand action: sell animals of an own group to the active great demand (dialog)
+function GlobalMarketUI:onAnimalDemandAction(overrideSection, overrideIndex)
+    local row = self:getSelectedAnimalRow(overrideSection, overrideIndex)
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
+    if row == nil or row.kind ~= "MY_GROUP" or not row.data.demandOk or gm == nil or gm.animalDialog == nil then
+        return
+    end
+    local cluster = row.data.source:getClusterById(row.data.clusterId)
+    if cluster ~= nil then
+        gm.animalDialog:showDemand({ source = row.data.source, cluster = cluster, title = row.name,
+            condition = self:formatAnimalCondition(row.info), image = getAnimalImage(row.info), farmId = farmId })
+    end
+end
+
 ---Double-click/Enter on the left list (element ~= nil means mouse double-click)
 function GlobalMarketUI:onAnimalLeftAction(_, section, index, element)
     local row = self:getSelectedAnimalRow(section, index)
@@ -668,7 +742,11 @@ function GlobalMarketAnimalsUI:populateCellForItemInSection(list, section, index
     elseif row.kind == "EMPTY_MY" or row.kind == "EMPTY_MARKET" then
         setCellText(cell, "name", i18n:getText(row.kind == "EMPTY_MY" and "ui_gm_animals_empty_my" or "ui_gm_animals_empty_market"), COLOR_MUTED)
     elseif row.kind == "MY_GROUP" then
-        setCellText(cell, "name", row.name, row.data.isEligible and COLOR_WHITE_TEXT or COLOR_MUTED)
+        local nameColor = row.data.isEligible and COLOR_WHITE_TEXT or COLOR_MUTED
+        if row.data.demandOk then
+            nameColor = COLOR_BARGAIN
+        end
+        setCellText(cell, "name", row.name, nameColor)
         if row.data.isEligible then
             setCellText(cell, "condition", ui:formatAnimalCondition(row.info))
         else

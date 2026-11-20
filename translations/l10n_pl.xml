@@ -54,7 +54,7 @@
         <e k="gm_help_p7_buying_title"                             v="Kupowanie i odbiór zwierząt" />
         <e k="gm_help_p7_buying_text"                              v="Po prawej są oferty innych gospodarstw i handlarzy, pogrupowane według gatunku, sortowane według ceny, wieku lub zdrowia i filtrowane według ciąży lub gotowości do rozrodu.&#xA;- Dostawa do budynku: automatycznie lub do wybranego budynku z wystarczającym miejscem, plus opłata transportowa handlarza.&#xA;- Odbiór bez opłaty transportowej: zwierzęta trafiają do punktu odbioru. Gdy twoja przyczepa stoi u handlarza, załaduj je w menu GM przyciskiem 'Załaduj na przyczepę' lub bezpośrednio u handlarza zwykłym klawiszem przez 'Załaduj punkt odbioru GM na przyczepę'.&#xA;- Wyświetlane są tylko rasy dostępne na tym serwerze (DLC i pakiety muszą być aktywne)." />
         <e k="gm_help_p7_npc_title"                                v="Handlarze i ustawienia" />
-        <e k="gm_help_p7_npc_text"                                 v="Handlarze NPC kupują twoje oferty zwierząt - im taniej, tym szybciej - i płacą cenę minus 5 % prowizji. Oferują też własne zwierzęta, także ciężarne i w wieku, którego zwykły handlarz nie sprzedaje.&#xA;- Handel zwierzętami NPC (admin): Wył., Mało lub Normalnie.&#xA;- Mody zastępujące system zwierząt (np. RealisticLivestock) wyłączają targ zwierząt; powód jest widoczny na targu." />
+        <e k="gm_help_p7_npc_text"                                 v="Handlarze NPC kupują twoje oferty zwierząt - im taniej, tym szybciej - i płacą cenę minus 5 % prowizji. Oferują też własne zwierzęta, także ciężarne i w wieku, którego zwykły handlarz nie sprzedaje.&#xA;- Handel zwierzętami NPC (admin): Wył., Mało lub Normalnie.&#xA;- Mody zastępujące system zwierząt (np. RealisticLivestock) wyłączają targ zwierząt; powód jest widoczny na targu.&#xA;- Duży popyt: mniej więcej raz w miesiącu handlarze NPC szukają zwierząt rzeźnych w wieku ubojowym jednego gatunku (co najmniej 50 % zdrowia) i płacą od 20 do 40 % ponad wartość u handlarza. Pasujące grupy są zaznaczone na zielono i sprzedaje się je bezpośrednio przyciskiem 'Sprzedaj w ramach popytu'. Premia, pozostały czas i wolny limit są widoczne u góry w 'Moje zwierzęta'." />
         <e k="gm_help_p3_title"                                    v="6. Obsługiwane magazyny, formaty i terminale GM" />
         <e k="gm_help_p3_storages_title"                           v="Silosy, magazyny obiektów i wybór opakowania" />
         <e k="gm_help_p3_storages_text"                            v="Rynek Globalny automatycznie wykrywa wszystkie własne silosy na towary sypkie i płynne oraz magazyny bel i palet oparte na standardowych skryptach GIANTS.&#xA;- Wybór formatu: W oknie transakcji wybierasz magazyn docelowy, a dla magazynów obiektów także żądany format (bele okrągłe/kostki, paleta, BigBag lub zbiornik IBC).&#xA;- Uwaga dotycząca kiszonki: Bele w trakcie fermentacji są zablokowane do czasu pełnego zakiszenia." />
@@ -139,7 +139,7 @@
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Mało" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normalnie" />
         <e k="ui_gm_settings_animalNpc"                            v="Handel zwierzętami NPC" />
-        <e k="ui_gm_settings_animalNpc_desc"                       v="Steruje handlarzami na targu zwierząt GM. Mało/Normalnie: handlarze NPC kupują twoje oferty zwierząt (im taniej, tym szybciej, minus 5 % prowizji) i oferują własne zwierzęta, także ciężarne i w wieku, którego handlarz nie sprzedaje. Wył.: handel tylko między graczami." />
+        <e k="ui_gm_settings_animalNpc_desc"                       v="Steruje handlarzami na targu zwierząt GM. Mało/Normalnie: handlarze NPC kupują twoje oferty zwierząt (im taniej, tym szybciej, minus 5 % prowizji) i oferują własne zwierzęta, także ciężarne i w wieku, którego handlarz nie sprzedaje. Wył.: handel tylko między graczami. Steruje też dużym popytem na zwierzęta rzeźne (Normalnie mniej więcej co miesiąc, Mało rzadziej)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Powiadamiaj o nowych ofertach pojazdów" />
         <e k="ui_gm_settings_vehicleNotices_desc"                  v="Pokazuje powiadomienie HUD, gdy inne gospodarstwo wystawi pojazd na rynku pojazdów używanych GM. Ustawienie osobiste, dotyczy tylko ciebie." />
         <e k="ui_gm_settings_oc_all"                               v="Wszystkie (Online i Lokalne)" />
@@ -295,6 +295,17 @@
         <e k="ui_gm_animals_reason_demandTooYoung"                 v="Te zwierzęta nie osiągnęły jeszcze wieku ubojowego." />
         <e k="ui_gm_animals_reason_demandUnhealthy"                v="Zwierzęta potrzebują co najmniej %d %% zdrowia." />
         <e k="ui_gm_animals_reason_demandQuotaExceeded"            v="Duży popyt nie przyjmuje już tylu zwierząt (pozostało %d)." />
+        <e k="ui_gm_animals_demandBanner"                          v="Duży popyt: %s +%d %% | pozostało %s | %d zwierząt wolnych" />
+        <e k="ui_gm_animals_demand_days"                           v="%.1f dni" />
+        <e k="ui_gm_animals_demand_hours"                          v="%d godz." />
+        <e k="ui_gm_animals_action_demandSell"                     v="Sprzedaj w ramach popytu" />
+        <e k="ui_gm_animals_action_demandSellShort"                v="Sprzedaj" />
+        <e k="ui_gm_animals_dialog_titleDemand"                    v="Sprzedaj w ramach dużego popytu: %s" />
+        <e k="ui_gm_animals_hint_demand"                           v="Duży popyt: %s za %d zwierząt (+%d %%)" />
+        <e k="ui_gm_animals_receipt_bonus"                         v="Premia za duży popyt (+%d %%)" />
+        <e k="ui_gm_animals_receipt_quota"                         v="Pozostały limit" />
+        <e k="ui_gm_animals_receipt_payout"                        v="Wypłata" />
+        <e k="ui_gm_animals_animalsCount"                          v="%d zwierząt" />
         <e k="ui_gm_subtab_vehicles"                               v="Ogłoszenia" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />
