@@ -103,6 +103,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAPI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketContractDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketVehicleDialog.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketAnimalDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketContractsUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketVehiclesUI.lua")
@@ -235,6 +236,11 @@ function GlobalMarket:loadMap(name)
             local vehicleDialogController = GlobalMarketVehicleDialog.new()
             g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketVehicleDialog.xml", "GlobalMarketVehicleDialog", vehicleDialogController)
             self.vehicleDialog = vehicleDialogController
+
+            -- Livestock market dialog (#15); reuses profiles registered by the contract dialog
+            local animalDialogController = GlobalMarketAnimalDialog.new()
+            g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketAnimalDialog.xml", "GlobalMarketAnimalDialog", animalDialogController)
+            self.animalDialog = animalDialogController
 
             -- 2. Load Main Market UI
             local uiController = GlobalMarketUI.new()

@@ -258,6 +258,21 @@
         <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Pick them up with an own livestock trailer at the animal dealer." />
         <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | No space in your barns. Retried hourly, or pick them up at the animal dealer." />
         <e k="ui_gm_animals_confirmWithdraw"                       v="Withdraw the listing for %s? The animals return to your barns." />
+        <e k="ui_gm_animals_action_buy"                            v="Buy" />
+        <e k="ui_gm_animals_action_load"                           v="Load onto trailer" />
+        <e k="ui_gm_animals_dialog_titleList"                      v="List animals: %s" />
+        <e k="ui_gm_animals_dialog_titleBuy"                       v="Buy animals: %s" />
+        <e k="ui_gm_animals_countOption"                           v="Count: %d of %d" />
+        <e k="ui_gm_animals_delivery_barn"                         v="Delivery to the barn (+%s transport)" />
+        <e k="ui_gm_animals_delivery_pickup"                       v="Pickup at the animal dealer (no transport)" />
+        <e k="ui_gm_animals_barn_auto"                             v="Barn: automatic (%d free)" />
+        <e k="ui_gm_animals_barn_option"                           v="Barn: %s (%d free)" />
+        <e k="ui_gm_animals_barn_none"                             v="No barn with enough space" />
+        <e k="ui_gm_animals_barn_pickup"                           v="Barn: - (pickup)" />
+        <e k="ui_gm_animals_receipt_newPrice"                      v="Dealer new price" />
+        <e k="ui_gm_animals_receipt_price"                         v="Price (%d %% of the dealer value)" />
+        <e k="ui_gm_animals_receipt_transport"                     v="Transport to the barn" />
+        <e k="ui_gm_animals_receipt_total"                         v="Total" />
         <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />

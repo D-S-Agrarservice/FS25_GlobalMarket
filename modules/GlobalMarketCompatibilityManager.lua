@@ -353,7 +353,8 @@ function GMCompatibilityManager.isGmDialog(root)
         if type(candidate) == "table" and candidate.isa ~= nil then
             if (GlobalMarketDialog ~= nil and candidate:isa(GlobalMarketDialog))
                 or (GlobalMarketContractDialog ~= nil and candidate:isa(GlobalMarketContractDialog))
-                or (GlobalMarketVehicleDialog ~= nil and candidate:isa(GlobalMarketVehicleDialog)) then
+                or (GlobalMarketVehicleDialog ~= nil and candidate:isa(GlobalMarketVehicleDialog))
+                or (GlobalMarketAnimalDialog ~= nil and candidate:isa(GlobalMarketAnimalDialog)) then
                 return true
             end
         end

@@ -258,6 +258,21 @@
         <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Recógelos con un remolque de ganado propio en el tratante de animales." />
         <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | No hay espacio en tus establos. Nuevo intento cada hora, o recógelos en el tratante de animales." />
         <e k="ui_gm_animals_confirmWithdraw"                       v="¿Retirar la oferta de %s? Los animales vuelven a tus establos." />
+        <e k="ui_gm_animals_action_buy"                            v="Comprar" />
+        <e k="ui_gm_animals_action_load"                           v="Cargar en el remolque" />
+        <e k="ui_gm_animals_dialog_titleList"                      v="Poner animales a la venta: %s" />
+        <e k="ui_gm_animals_dialog_titleBuy"                       v="Comprar animales: %s" />
+        <e k="ui_gm_animals_countOption"                           v="Cantidad: %d de %d" />
+        <e k="ui_gm_animals_delivery_barn"                         v="Entrega en el establo (+%s de transporte)" />
+        <e k="ui_gm_animals_delivery_pickup"                       v="Recogida en el tratante de animales (sin transporte)" />
+        <e k="ui_gm_animals_barn_auto"                             v="Establo: automático (%d libres)" />
+        <e k="ui_gm_animals_barn_option"                           v="Establo: %s (%d libres)" />
+        <e k="ui_gm_animals_barn_none"                             v="Ningún establo con espacio suficiente" />
+        <e k="ui_gm_animals_barn_pickup"                           v="Establo: - (recogida)" />
+        <e k="ui_gm_animals_receipt_newPrice"                      v="Precio nuevo en el tratante" />
+        <e k="ui_gm_animals_receipt_price"                         v="Precio (%d %% del valor en el tratante)" />
+        <e k="ui_gm_animals_receipt_transport"                     v="Transporte al establo" />
+        <e k="ui_gm_animals_receipt_total"                         v="Total" />
         <e k="ui_gm_subtab_vehicles"                               v="Compraventa" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mis vehículos y ofertas" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Mercado de vehículos usados" />

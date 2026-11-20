@@ -258,6 +258,21 @@
         <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Récupérez-les avec votre bétaillère chez le marchand de bestiaux." />
         <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | Pas de place dans vos étables. Nouvel essai toutes les heures, ou retrait chez le marchand de bestiaux." />
         <e k="ui_gm_animals_confirmWithdraw"                       v="Retirer l'annonce pour %s ? Les animaux retournent dans vos étables." />
+        <e k="ui_gm_animals_action_buy"                            v="Acheter" />
+        <e k="ui_gm_animals_action_load"                           v="Charger dans la bétaillère" />
+        <e k="ui_gm_animals_dialog_titleList"                      v="Mettre en vente : %s" />
+        <e k="ui_gm_animals_dialog_titleBuy"                       v="Acheter : %s" />
+        <e k="ui_gm_animals_countOption"                           v="Nombre : %d sur %d" />
+        <e k="ui_gm_animals_delivery_barn"                         v="Livraison à l'étable (+%s de transport)" />
+        <e k="ui_gm_animals_delivery_pickup"                       v="Retrait chez le marchand de bestiaux (sans transport)" />
+        <e k="ui_gm_animals_barn_auto"                             v="Étable : automatique (%d libres)" />
+        <e k="ui_gm_animals_barn_option"                           v="Étable : %s (%d libres)" />
+        <e k="ui_gm_animals_barn_none"                             v="Aucune étable avec assez de place" />
+        <e k="ui_gm_animals_barn_pickup"                           v="Étable : - (retrait)" />
+        <e k="ui_gm_animals_receipt_newPrice"                      v="Prix neuf chez le marchand" />
+        <e k="ui_gm_animals_receipt_price"                         v="Prix (%d %% de la valeur chez le marchand)" />
+        <e k="ui_gm_animals_receipt_transport"                     v="Transport vers l'étable" />
+        <e k="ui_gm_animals_receipt_total"                         v="Total" />
         <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />

@@ -55,6 +55,12 @@ end
 
 ---Creates the footer button infos of the animal view (called from initVehiclesButtonInfos)
 function GlobalMarketUI:initAnimalsButtonInfos()
+    self.animalsPrimaryButtonInfo = {
+        inputAction = InputAction.MENU_ACCEPT,
+        text = self.i18n:getText("ui_gm_vehicles_action_list"),
+        callback = function() self:onAnimalPrimaryAction() end,
+        disabled = true
+    }
     self.animalsCancelButtonInfo = {
         inputAction = InputAction.MENU_CANCEL,
         text = self.i18n:getText("ui_gm_vehicles_action_withdraw"),
@@ -434,6 +440,22 @@ function GlobalMarketUI:updateAnimalsMenuButtons()
     local isSpectator = (farmId == nil or farmId <= 0 or farmId == FarmManager.SPECTATOR_FARM_ID)
     local list = { { inputAction = InputAction.MENU_BACK } }
 
+    local primary = self.animalsPrimaryButtonInfo
+    if primary ~= nil and row ~= nil and not isSpectator then
+        if row.kind == "MY_GROUP" then
+            primary.text = self.i18n:getText("ui_gm_vehicles_action_list")
+            primary.disabled = not row.data.isEligible
+            table.insert(list, primary)
+        elseif row.kind == "MARKET_LISTING" then
+            primary.text = self.i18n:getText("ui_gm_animals_action_buy")
+            primary.disabled = false
+            table.insert(list, primary)
+        elseif row.kind == "PICKUP" then
+            primary.text = self.i18n:getText("ui_gm_animals_action_load")
+            primary.disabled = GlobalMarket.getAnimalMarketTrailerAtDealer(farmId) == nil
+            table.insert(list, primary)
+        end
+    end
     if self.switchSubTabButtonInfo ~= nil then
         table.insert(list, self.switchSubTabButtonInfo)
     end
@@ -522,16 +544,54 @@ function GlobalMarketUI:onAnimalCancelAction(overrideSection, overrideIndex)
     end, nil, string.format(self.i18n:getText("ui_gm_animals_confirmWithdraw"), row.name))
 end
 
----Double-click/Enter on the left list (element ~= nil means mouse double-click)
-function GlobalMarketUI:onAnimalLeftAction(_, section, index, element)
-    local row = self:getSelectedAnimalRow(section, index)
-    if row ~= nil and row.kind == "MY_LISTING" and element ~= nil then
-        self:onAnimalCancelAction(section, index)
+---Primary action: list an own group (dialog), buy a listing (dialog) or load the pickup box onto the trailer
+function GlobalMarketUI:onAnimalPrimaryAction(overrideSection, overrideIndex)
+    local row = self:getSelectedAnimalRow(overrideSection, overrideIndex)
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
+    if row == nil or gm == nil or not GlobalMarketAnimalListings.getIsPlayerFarm(farmId) then
+        return
+    end
+    if row.kind == "MY_GROUP" then
+        if not row.data.isEligible then
+            InfoDialog.show(GlobalMarket.getAnimalMarketReasonText(row.data.reason or "invalid"), nil, nil, DialogElement.TYPE_WARNING)
+            return
+        end
+        local cluster = row.data.source:getClusterById(row.data.clusterId)
+        if cluster ~= nil and gm.animalDialog ~= nil then
+            gm.animalDialog:showList({ source = row.data.source, cluster = cluster, title = row.name,
+                condition = self:formatAnimalCondition(row.info), image = getAnimalImage(row.info), farmId = farmId })
+        end
+    elseif row.kind == "MARKET_LISTING" then
+        if gm.animalDialog ~= nil then
+            gm.animalDialog:showBuy({ listing = row.data, title = row.name,
+                condition = self:formatAnimalCondition(row.info), image = getAnimalImage(row.info), farmId = farmId })
+        end
+    elseif row.kind == "PICKUP" then
+        local trailer = GlobalMarket.getAnimalMarketTrailerAtDealer(farmId)
+        if trailer == nil then
+            InfoDialog.show(GlobalMarket.getAnimalMarketReasonText("noTrailer"), nil, nil, DialogElement.TYPE_WARNING)
+            return
+        end
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_LOAD, farmId, { object = trailer, targetId = row.data.id })
     end
 end
 
----Double-click/Enter on the market list (buy dialog follows in the next step)
+---Double-click/Enter on the left list (element ~= nil means mouse double-click)
+function GlobalMarketUI:onAnimalLeftAction(_, section, index, element)
+    local row = self:getSelectedAnimalRow(section, index)
+    if row ~= nil and row.kind == "MY_LISTING" then
+        if element ~= nil then
+            self:onAnimalCancelAction(section, index)
+        end
+        return
+    end
+    self:onAnimalPrimaryAction(section, index)
+end
+
+---Double-click/Enter on the market list
 function GlobalMarketUI:onAnimalRightAction(_, section, index)
+    self:onAnimalPrimaryAction(section, index)
 end
 
 -- =========================================================================
