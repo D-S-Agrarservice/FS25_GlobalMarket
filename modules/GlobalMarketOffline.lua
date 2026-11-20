@@ -570,6 +570,11 @@ function GlobalMarket:runOfflineSimulation()
         self:updateVehicleMarketHourly()
     end
 
+    -- Livestock market (#15): listing expiry and pending return retries
+    if self.updateAnimalMarketHourly ~= nil then
+        self:updateAnimalMarketHourly()
+    end
+
     if self.offlineMarketFillTypes == nil then
         return
     end

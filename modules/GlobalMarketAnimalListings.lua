@@ -130,6 +130,16 @@ function GlobalMarketAnimalListings.getSourceKind(object)
     return nil
 end
 
+---Returns true if a farm id belongs to an existing player farm (not spectator / unowned)
+---@param farmId number|nil
+---@return boolean
+function GlobalMarketAnimalListings.getIsPlayerFarm(farmId)
+    if farmId == nil or farmId == FarmManager.SPECTATOR_FARM_ID then
+        return false
+    end
+    return g_farmManager ~= nil and g_farmManager:getFarmById(farmId) ~= nil
+end
+
 ---Returns all barns of a farm (optionally only those supporting a subtype)
 ---@param farmId number
 ---@param subTypeIndex number|nil
@@ -137,7 +147,7 @@ end
 function GlobalMarketAnimalListings.getFarmBarns(farmId, subTypeIndex)
     local result = {}
     local husbandrySystem = (g_currentMission ~= nil) and g_currentMission.husbandrySystem or nil
-    if husbandrySystem == nil or farmId == nil then
+    if husbandrySystem == nil or not GlobalMarketAnimalListings.getIsPlayerFarm(farmId) then
         return result
     end
     local typeIndex = nil
@@ -167,7 +177,7 @@ function GlobalMarketAnimalListings.getEligibility(source, farmId, clusterId, nu
     if kind == nil or source.isDeleted then
         return false, "invalid"
     end
-    if source:getOwnerFarmId() ~= farmId then
+    if not GlobalMarketAnimalListings.getIsPlayerFarm(farmId) or source:getOwnerFarmId() ~= farmId then
         return false, "notOwned"
     end
     if kind == GlobalMarketAnimalListings.SOURCE_TRAILER and not GlobalMarketAnimalListings.getIsTrailerAtDealer(source) then
@@ -224,6 +234,10 @@ function GlobalMarketAnimalListings.takeFromSource(source, clusterId, numAnimals
         return nil
     end
     local snapshot = newSnapshot(copyCluster(cluster, numAnimals))
+    -- Remember the origin barn, returns go back there first
+    if GlobalMarketAnimalListings.getIsBarn(source) and source.getUniqueId ~= nil then
+        snapshot.originBarnId = source:getUniqueId()
+    end
     cluster:changeNumAnimals(-numAnimals)
     source:getClusterSystem():updateNow()
     return snapshot
@@ -388,7 +402,7 @@ function GlobalMarketAnimalListings.getFreeSlots(target, snapshot, farmId)
     if kind == nil or target.isDeleted then
         return 0, "invalid"
     end
-    if target:getOwnerFarmId() ~= farmId then
+    if not GlobalMarketAnimalListings.getIsPlayerFarm(farmId) or target:getOwnerFarmId() ~= farmId then
         return 0, "notOwned"
     end
     local subTypeIndex = cluster:getSubTypeIndex()
@@ -436,7 +450,21 @@ function GlobalMarketAnimalListings.placeIntoTarget(target, snapshot, numAnimals
     return moved
 end
 
----Returns the first barn of a farm with space for at least one animal of a snapshot
+---Returns true if a barn already holds animals of a subtype
+---@param barn table
+---@param subTypeIndex number
+---@return boolean
+local function getBarnHasSubType(barn, subTypeIndex)
+    for _, cluster in ipairs(barn:getClusterSystem():getClusters()) do
+        if cluster:getSubTypeIndex() == subTypeIndex and cluster:getNumAnimals() > 0 then
+            return true
+        end
+    end
+    return false
+end
+
+---Returns the best barn of a farm with space for at least one animal of a snapshot:
+---the origin barn first, then barns that already hold this subtype, then any matching barn
 ---@param farmId number
 ---@param snapshot table
 ---@return table|nil barn
@@ -444,12 +472,22 @@ function GlobalMarketAnimalListings.findBarnWithSpace(farmId, snapshot)
     if snapshot.cluster == nil then
         return nil
     end
-    for _, barn in ipairs(GlobalMarketAnimalListings.getFarmBarns(farmId, snapshot.cluster:getSubTypeIndex())) do
+    local subTypeIndex = snapshot.cluster:getSubTypeIndex()
+    local bestBarn, bestRank = nil, 0
+    for _, barn in ipairs(GlobalMarketAnimalListings.getFarmBarns(farmId, subTypeIndex)) do
         if GlobalMarketAnimalListings.getFreeSlots(barn, snapshot, farmId) > 0 then
-            return barn
+            local rank = 1
+            if snapshot.originBarnId ~= nil and barn.getUniqueId ~= nil and barn:getUniqueId() == snapshot.originBarnId then
+                rank = 3
+            elseif getBarnHasSubType(barn, subTypeIndex) then
+                rank = 2
+            end
+            if rank > bestRank then
+                bestBarn, bestRank = barn, rank
+            end
         end
     end
-    return nil
+    return bestBarn
 end
 
 -- =========================================================================
@@ -462,6 +500,9 @@ end
 ---@param snapshot table
 function GlobalMarketAnimalListings.writeSnapshotToXml(xmlFile, key, snapshot)
     xmlFile:setString(key .. "#subType", snapshot.subTypeName or "")
+    if snapshot.originBarnId ~= nil then
+        xmlFile:setString(key .. "#gmOriginBarn", snapshot.originBarnId)
+    end
     if snapshot.cluster ~= nil then
         snapshot.cluster:saveToXMLFile(xmlFile, key, nil)
         return
@@ -486,7 +527,7 @@ function GlobalMarketAnimalListings.readSnapshotFromXml(xmlFile, key)
     if subTypeName == nil or subTypeName == "" then
         return nil
     end
-    local snapshot = { subTypeName = subTypeName }
+    local snapshot = { subTypeName = subTypeName, originBarnId = xmlFile:getString(key .. "#gmOriginBarn") }
     local subTypeIndex = GlobalMarketAnimalListings.getSubTypeIndexByName(subTypeName)
     if subTypeIndex ~= nil then
         local cluster = g_currentMission.animalSystem:createClusterFromSubTypeIndex(subTypeIndex)
@@ -633,6 +674,11 @@ function GlobalMarket:consoleCommandAnimalMarketList()
             local name = (trailer.getFullName ~= nil) and trailer:getFullName() or "trailer"
             addSource(trailer, string.format("Trailer '%s'%s:", name,
                 GlobalMarketAnimalListings.getIsTrailerAtDealer(trailer) and " (at animal dealer)" or ""))
+        end
+    end
+    if self.getAnimalMarketConsoleLines ~= nil then
+        for _, line in ipairs(self:getAnimalMarketConsoleLines()) do
+            table.insert(lines, line)
         end
     end
     return table.concat(lines, "\n")

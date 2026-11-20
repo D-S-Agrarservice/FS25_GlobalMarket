@@ -222,6 +222,9 @@ function GlobalMarket:onFarmDeleted(farmId)
     if self.cleanupVehicleListingsForDeletedFarm ~= nil then
         self:cleanupVehicleListingsForDeletedFarm(farmId)
     end
+    if self.cleanupAnimalMarketForDeletedFarm ~= nil then
+        self:cleanupAnimalMarketForDeletedFarm(farmId)
+    end
 
     if contractsChanged then
         if self.replenishNpcContractsAndOffers ~= nil then

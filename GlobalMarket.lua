@@ -158,6 +158,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketVehicleMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalListings.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -301,6 +302,11 @@ function GlobalMarket:loadMap(name)
             self:initVehicleMarket()
         end
 
+        -- Initialize the livestock market (#15)
+        if self.initAnimalMarket ~= nil then
+            self:initAnimalMarket()
+        end
+
         -- Build the Server Whitelist based on the fully evaluated offline market
         -- Requirement: getIsServer must be true to generate the external sync file
         if g_currentMission:getIsServer() and self.initServerWhitelist ~= nil then
@@ -351,7 +357,10 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmVehicleMarketMakeNpc", "Turns a listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandVehicleMarketMakeNpc", self)
             addConsoleCommand("gmVehicleMarketSpawnNpc", "Creates NPC dealer vehicle listings now: [count=1]", "consoleCommandVehicleMarketSpawnNpc", self)
             addConsoleCommand("gmAdvanceVehicleMarket", "Advances vehicle market listing timers in months (expiry test)", "consoleCommandAdvanceVehicleMarket", self)
-            addConsoleCommand("gmAnimalMarketList", "Lists own barn/trailer animals (eligibility, dealer value, new price, flags)", "consoleCommandAnimalMarketList", self)
+            addConsoleCommand("gmAnimalMarketList", "Lists own barn/trailer animals (eligibility, dealer value, new price, flags), listings and pickup box", "consoleCommandAnimalMarketList", self)
+            addConsoleCommand("gmAnimalMarketSell", "Lists own animals: <clusterId> <count> [pricePercent=100] [months=1]", "consoleCommandAnimalMarketSell", self)
+            addConsoleCommand("gmAnimalMarketReturn", "Withdraws an own animal listing: <listingId|pending>", "consoleCommandAnimalMarketReturn", self)
+            addConsoleCommand("gmAdvanceAnimalMarket", "Advances animal market listing timers in months (expiry test)", "consoleCommandAdvanceAnimalMarket", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -371,6 +380,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmVehicleMarketSpawnNpc")
             removeConsoleCommand("gmAdvanceVehicleMarket")
             removeConsoleCommand("gmAnimalMarketList")
+            removeConsoleCommand("gmAnimalMarketSell")
+            removeConsoleCommand("gmAnimalMarketReturn")
+            removeConsoleCommand("gmAdvanceAnimalMarket")
             self.debugCommandsRegistered = false
         end
     end

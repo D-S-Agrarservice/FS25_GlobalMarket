@@ -157,6 +157,10 @@ function GlobalMarket:saveToXmlFile()
             self:saveVehicleMarketToXml(xmlFile)
         end
 
+        if self.saveAnimalMarketToXml ~= nil then
+            self:saveAnimalMarketToXml(xmlFile)
+        end
+
         xmlFile:save()
         xmlFile:delete()
 
@@ -313,6 +317,10 @@ function GlobalMarket:loadFromXMLFile()
 
             if self.loadVehicleMarketFromXml ~= nil then
                 self:loadVehicleMarketFromXml(xmlFile)
+            end
+
+            if self.loadAnimalMarketFromXml ~= nil then
+                self:loadAnimalMarketFromXml(xmlFile)
             end
 
             xmlFile:delete()
