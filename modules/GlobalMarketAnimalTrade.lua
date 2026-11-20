@@ -66,6 +66,81 @@ function GlobalMarket.getAnimalMarketTrailerAtDealer(farmId)
 end
 
 -- =========================================================================
+-- PICKUP BOX CHOICE AT THE ANIMAL DEALER (Client / host)
+-- =========================================================================
+
+-- Pickup box entries listed by name in the dealer choice dialog
+local DEALER_CHOICE_MAX_NAMES = 3
+
+---Returns the pickup box choice for an animal dealer activation, or nil if the basegame menu should open directly
+---(not a dealer, no own livestock trailer in the trigger, or an empty pickup box)
+---@param activatable table AnimalLoadingTriggerActivatable
+---@return table|nil choice { farmId, trailer, text }
+function GlobalMarket.getAnimalDealerPickupChoice(activatable)
+    local gm = (g_currentMission ~= nil) and g_currentMission.globalMarket or nil
+    local owner = (activatable ~= nil) and activatable.owner or nil
+    if gm == nil or owner == nil or owner.isDealer ~= true or owner.husbandry ~= nil or OptionDialog == nil then
+        return nil
+    end
+    if not GlobalMarketAnimalListings.getIsAvailable() then
+        return nil
+    end
+    local farmId = g_currentMission:getFarmId()
+    local trailer = owner.loadingVehicle
+    if not GlobalMarketAnimalListings.getIsPlayerFarm(farmId) or not GlobalMarketAnimalListings.getIsTrailer(trailer)
+        or trailer:getOwnerFarmId() ~= farmId or not g_currentMission:getHasPlayerPermission(Farm.PERMISSION.TRADE_ANIMALS) then
+        return nil
+    end
+    local names = {}
+    local numEntries = 0
+    for _, entry in ipairs(gm.animalPickups or {}) do
+        local numAnimals = GlobalMarketAnimalListings.getNumAnimals(entry.snapshot)
+        if entry.farmId == farmId and numAnimals > 0 then
+            numEntries = numEntries + 1
+            if numEntries <= DEALER_CHOICE_MAX_NAMES then
+                local info = GlobalMarketAnimalListings.getInfo(entry.snapshot)
+                table.insert(names, string.format("%dx %s", numAnimals, info.title))
+            end
+        end
+    end
+    if numEntries == 0 then
+        return nil
+    end
+    if numEntries > DEALER_CHOICE_MAX_NAMES then
+        table.insert(names, "...")
+    end
+    return {
+        farmId = farmId,
+        trailer = trailer,
+        text = string.format(g_i18n:getText("ui_gm_animals_dealer_text"), table.concat(names, ", "))
+    }
+end
+
+if AnimalLoadingTriggerActivatable ~= nil and AnimalLoadingTriggerActivatable.run ~= nil then
+    -- Same activate key as the basegame dealer: with a filled pickup box it first offers
+    -- "Manage animals" (basegame menu) or "Load GM pickup box" onto the own trailer in the trigger
+    AnimalLoadingTriggerActivatable.run = Utils.overwrittenFunction(AnimalLoadingTriggerActivatable.run, function(activatable, superFunc, ...)
+        local choice = GlobalMarket.getAnimalDealerPickupChoice(activatable)
+        if choice == nil then
+            return superFunc(activatable, ...)
+        end
+        local options = {
+            activatable.activateText or g_i18n:getText("animals_openAnimalScreen"),
+            g_i18n:getText("ui_gm_animals_dealer_load")
+        }
+        -- target == nil: the dialog calls callback(selectedIndex, args); 0 = back
+        OptionDialog.show(function(state)
+            if state == 1 then
+                superFunc(activatable)
+            elseif state == 2 then
+                AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_LOAD, choice.farmId,
+                    { object = choice.trailer, targetId = 0 })
+            end
+        end, choice.text, g_i18n:getText("ui_gm_animals_dealer_title"), options, 2)
+    end)
+end
+
+-- =========================================================================
 -- STATE SYNC
 -- =========================================================================
 

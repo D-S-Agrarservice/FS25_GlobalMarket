@@ -273,6 +273,9 @@
         <e k="ui_gm_animals_receipt_price"                         v="Cena (%d %% wartości u handlarza)" />
         <e k="ui_gm_animals_receipt_transport"                     v="Transport do budynku" />
         <e k="ui_gm_animals_receipt_total"                         v="Razem" />
+        <e k="ui_gm_animals_dealer_title"                          v="Targ zwierząt GM" />
+        <e k="ui_gm_animals_dealer_text"                           v="W punkcie odbioru GM czekają: %s" />
+        <e k="ui_gm_animals_dealer_load"                           v="Załaduj punkt odbioru GM na przyczepę" />
         <e k="ui_gm_subtab_vehicles"                               v="Ogłoszenia" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />

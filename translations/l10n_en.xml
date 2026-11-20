@@ -273,6 +273,9 @@
         <e k="ui_gm_animals_receipt_price"                         v="Price (%d %% of the dealer value)" />
         <e k="ui_gm_animals_receipt_transport"                     v="Transport to the barn" />
         <e k="ui_gm_animals_receipt_total"                         v="Total" />
+        <e k="ui_gm_animals_dealer_title"                          v="GM Animal Market" />
+        <e k="ui_gm_animals_dealer_text"                           v="Waiting in the GM pickup box: %s" />
+        <e k="ui_gm_animals_dealer_load"                           v="Load GM pickup box onto the trailer" />
         <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />
