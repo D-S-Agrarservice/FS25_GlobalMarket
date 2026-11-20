@@ -154,6 +154,7 @@ end
 ---@return string|nil reason
 function GlobalMarket:applyAnimalAuctionBid(listing, farmId, isNpc, factor, baseValue)
     local auction = listing.auction
+    local refundedAmount = auction.highReserved or 0
     local ok, reason, result = GlobalMarketAuction.placeBid(auction, farmId, isNpc, factor, baseValue, AUCTION_MONEY)
     if not ok then
         return false, reason
@@ -162,7 +163,7 @@ function GlobalMarket:applyAnimalAuctionBid(listing, farmId, isNpc, factor, base
     local snapshot = listing.snapshot
     if result.outbidFarmId ~= nil and not result.outbidIsNpc and result.outbidFarmId ~= farmId then
         self:notifyAnimalMarketFarms(GlobalMarket.ANIMAL_NOTICE.OUTBID, result.outbidFarmId, 0, snapshot.subTypeName,
-            GlobalMarketAnimalListings.getNumAnimals(snapshot), result.amount, "")
+            GlobalMarketAnimalListings.getNumAnimals(snapshot), refundedAmount, "")
     end
     if self.debugManager ~= nil then
         self.debugManager:info("AnimalMarket: Auction #%d bid by %s: %.0f%% = %d%s.", listing.id,
@@ -300,16 +301,9 @@ function GlobalMarket.getAnimalAuctionConsoleSuffix(listing)
         high, auction.bidCount or 0, auction.hoursRemaining or 0)
 end
 
----Shared guard: auction commands run on the SP/MP host until the network part (step 2-2) exists
+---Shared guard for the auction console commands (player actions; MP clients send AnimalMarketActionEvent)
 local function getAuctionConsoleGuardError()
-    local guardError = GlobalMarket.getAnimalMarketConsoleGuardError(false)
-    if guardError ~= nil then
-        return guardError
-    end
-    if not g_currentMission:getIsServer() then
-        return "Auction commands run on the SP/MP host for now."
-    end
-    return nil
+    return GlobalMarket.getAnimalMarketConsoleGuardError(false)
 end
 
 ---Console: lists own animals as an auction: <clusterId> <count> <startPercent> [buyNowPercent=0] [hours=12]
@@ -324,8 +318,16 @@ function GlobalMarket:consoleCommandAnimalAuctionCreate(clusterIdArg, countArg, 
     if source == nil or tonumber(startPctArg) == nil then
         return "Usage: gmAnimalAuctionCreate <clusterId> <count> <startPercent> [buyNowPercent=0] [hours=6|12|24|48]"
     end
-    local listing, reason = self:createAnimalAuction(source, clusterId, tonumber(countArg) or 0, farmId,
-        tonumber(startPctArg) / 100, (tonumber(buyNowPctArg) or 0) / 100, tonumber(hoursArg) or 12)
+    local numAnimals = tonumber(countArg) or 0
+    local startFactor = tonumber(startPctArg) / 100
+    local buyNowFactor = (tonumber(buyNowPctArg) or 0) / 100
+    local hours = tonumber(hoursArg) or 12
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_AUCTION_CREATE, farmId, { object = source,
+            clusterId = clusterId, numAnimals = numAnimals, priceFactor = startFactor, months = buyNowFactor, durationMonths = hours })
+        return "Auction request sent to the server (result as HUD notice)."
+    end
+    local listing, reason = self:createAnimalAuction(source, clusterId, numAnimals, farmId, startFactor, buyNowFactor, hours)
     if listing == nil then
         return "Auction rejected: " .. tostring(reason)
     end
@@ -343,6 +345,11 @@ function GlobalMarket:consoleCommandAnimalAuctionBid(listingIdArg, pctArg)
         return "Usage: gmAnimalAuctionBid <auction listingId> <percent|min>"
     end
     local factor = (pctArg == "min") and GlobalMarketAuction.getMinBidFactor(listing.auction) or ((tonumber(pctArg) or 0) / 100)
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_AUCTION_BID, g_currentMission:getFarmId(),
+            { targetId = listing.id, priceFactor = factor })
+        return "Bid sent to the server (result as HUD notice)."
+    end
     local success, reason = self:bidOnAnimalAuction(listing.id, g_currentMission:getFarmId(), factor)
     if not success then
         return "Bid rejected: " .. tostring(reason)
@@ -360,6 +367,10 @@ function GlobalMarket:consoleCommandAnimalAuctionBuyNow(listingIdArg)
     local listingId = tonumber(listingIdArg)
     if listingId == nil then
         return "Usage: gmAnimalAuctionBuyNow <auction listingId>"
+    end
+    if not g_currentMission:getIsServer() then
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_AUCTION_BUY_NOW, g_currentMission:getFarmId(), { targetId = listingId })
+        return "Buy-now request sent to the server (result as HUD notice)."
     end
     local success, reason = self:buyNowAnimalAuction(listingId, g_currentMission:getFarmId())
     return success and string.format("Auction #%d bought at the buy-now price.", listingId) or ("Buy-now rejected: " .. tostring(reason))

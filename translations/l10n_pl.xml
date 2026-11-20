@@ -306,6 +306,17 @@
         <e k="ui_gm_animals_receipt_quota"                         v="Pozostały limit" />
         <e k="ui_gm_animals_receipt_payout"                        v="Wypłata" />
         <e k="ui_gm_animals_animalsCount"                          v="%d zwierząt" />
+        <e k="ui_gm_animals_notice_outbid"                         v="Przebito: %s. Twoja oferta %s wróciła na twoje konto." />
+        <e k="ui_gm_animals_notice_auctionWon"                     v="Aukcja wygrana: %s za %s." />
+        <e k="ui_gm_animals_notice_auctionNoBid"                   v="Aukcja zakończona bez ofert: %s. Zwierzęta wracają do ciebie." />
+        <e k="ui_gm_animals_reason_isAuction"                      v="To jest aukcja. Złóż ofertę." />
+        <e k="ui_gm_animals_reason_notAuction"                     v="To nie jest aukcja." />
+        <e k="ui_gm_animals_reason_auctionHasBids"                 v="Ta aukcja ma już oferty i trwa do końca." />
+        <e k="ui_gm_animals_reason_bidTooLow"                      v="Oferta musi być wyższa od najwyższej o co najmniej %d %% wartości u handlarza." />
+        <e k="ui_gm_animals_reason_buyNowUnavailable"              v="Kup teraz nie jest już dostępne w tej aukcji." />
+        <e k="ui_gm_animals_reason_startOutOfRange"                v="Cena wywoławcza musi wynosić od %d %% do %d %% wartości u handlarza." />
+        <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="Cena Kup teraz musi być wyższa od wywoławczej o co najmniej %d %% i wynosić najwyżej %d %% wartości u handlarza." />
+        <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="Czas trwania musi wynosić 6, 12, 24 lub 48 godzin." />
         <e k="ui_gm_subtab_vehicles"                               v="Ogłoszenia" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />

@@ -22,6 +22,10 @@ AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC = 8
 AnimalMarketActionEvent.ACTION_DEMAND_SELL = 9
 AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_START = 10
 AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_END = 11
+-- Auctions (Stage 2): CREATE uses priceFactor = start, months = buy-now factor (0 = none), durationMonths = hours
+AnimalMarketActionEvent.ACTION_AUCTION_CREATE = 12
+AnimalMarketActionEvent.ACTION_AUCTION_BID = 13
+AnimalMarketActionEvent.ACTION_AUCTION_BUY_NOW = 14
 
 ---Returns true for the admin test helper actions
 ---@param action number
@@ -47,7 +51,8 @@ end
 ---  clusterId, numAnimals: CREATE / DEMAND_SELL; priceFactor, durationMonths: CREATE
 ---  targetId: listing ID (CANCEL / BUY / ADMIN_MAKE_NPC), pickup box ID (LOAD, 0 = all) count (ADMIN_SPAWN_NPC) or animal type index (ADMIN_DEMAND_START, 0 = random)
 ---  deliveryMode: GlobalMarket.ANIMAL_DELIVERY (BUY)
----  months: months to advance (ADMIN_ADVANCE)
+---  months: months to advance (ADMIN_ADVANCE) or buy-now factor (AUCTION_CREATE)
+---  AUCTION_CREATE: priceFactor = start factor, durationMonths = duration in hours; AUCTION_BID: priceFactor = bid factor
 function AnimalMarketActionEvent.new(action, farmId, args)
     local self = AnimalMarketActionEvent.emptyNew()
     args = args or {}
@@ -194,6 +199,15 @@ function AnimalMarketActionEvent.executeOnServer(gm, action, farmId, args, conne
         end
     elseif action == AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_END then
         gm:endAnimalDemand()
+    elseif action == AnimalMarketActionEvent.ACTION_AUCTION_CREATE then
+        local listing
+        listing, reason = gm:createAnimalAuction(args.object, args.clusterId, args.numAnimals, farmId,
+            args.priceFactor, args.months, args.durationMonths)
+        ok = listing ~= nil
+    elseif action == AnimalMarketActionEvent.ACTION_AUCTION_BID then
+        ok, reason = gm:bidOnAnimalAuction(args.targetId, farmId, args.priceFactor)
+    elseif action == AnimalMarketActionEvent.ACTION_AUCTION_BUY_NOW then
+        ok, reason = gm:buyNowAnimalAuction(args.targetId, farmId)
     elseif action == AnimalMarketActionEvent.ACTION_DEMAND_SELL then
         ok, reason = gm:sellAnimalsToDemand(args.object, args.clusterId, args.numAnimals, farmId)
     elseif action == AnimalMarketActionEvent.ACTION_CREATE then
@@ -275,6 +289,7 @@ function AnimalMarketActionEvent:run(connection)
         targetId = self.targetId,
         priceFactor = self.priceFactor,
         durationMonths = self.durationMonths,
-        deliveryMode = self.deliveryMode
+        deliveryMode = self.deliveryMode,
+        months = self.months
     }, connection)
 end

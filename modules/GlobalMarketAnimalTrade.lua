@@ -197,6 +197,14 @@ function GlobalMarket.getAnimalMarketReasonText(code)
         return string.format(text, cfg.DURATION_MIN, cfg.DURATION_MAX)
     elseif code == "farmLimitReached" then
         return string.format(text, cfg.MAX_PER_FARM)
+    elseif code == "startOutOfRange" and GlobalMarketAuction ~= nil then
+        local acfg = GlobalMarketAuction.CONFIG
+        return string.format(text, math.floor(acfg.START_FACTOR_MIN * 100 + 0.5), math.floor(acfg.START_FACTOR_MAX * 100 + 0.5))
+    elseif code == "buyNowOutOfRange" and GlobalMarketAuction ~= nil then
+        local acfg = GlobalMarketAuction.CONFIG
+        return string.format(text, math.floor(acfg.MIN_INCREMENT * 100 + 0.5), math.floor(acfg.BUY_NOW_FACTOR_MAX * 100 + 0.5))
+    elseif code == "bidTooLow" and GlobalMarketAuction ~= nil then
+        return string.format(text, math.floor(GlobalMarketAuction.CONFIG.MIN_INCREMENT * 100 + 0.5))
     elseif code == "demandUnhealthy" and GlobalMarket.ANIMAL_DEMAND ~= nil then
         return string.format(text, GlobalMarket.ANIMAL_DEMAND.MIN_HEALTH)
     elseif code == "demandQuotaExceeded" then
@@ -231,7 +239,10 @@ local NOTICE_TEXT_KEYS = {
     [GlobalMarket.ANIMAL_NOTICE.LOADED] = "ui_gm_animals_notice_loaded",
     [GlobalMarket.ANIMAL_NOTICE.DEMAND_START] = "ui_gm_animals_notice_demandStart",
     [GlobalMarket.ANIMAL_NOTICE.DEMAND_END] = "ui_gm_animals_notice_demandEnd",
-    [GlobalMarket.ANIMAL_NOTICE.DEMAND_SOLD] = "ui_gm_animals_notice_demandSold"
+    [GlobalMarket.ANIMAL_NOTICE.DEMAND_SOLD] = "ui_gm_animals_notice_demandSold",
+    [GlobalMarket.ANIMAL_NOTICE.OUTBID] = "ui_gm_animals_notice_outbid",
+    [GlobalMarket.ANIMAL_NOTICE.AUCTION_WON] = "ui_gm_animals_notice_auctionWon",
+    [GlobalMarket.ANIMAL_NOTICE.AUCTION_NO_BID] = "ui_gm_animals_notice_auctionNoBid"
 }
 
 ---Server: broadcasts a notice; clients filter by target farm (0 = all) and excluded farm
@@ -303,12 +314,14 @@ function GlobalMarket:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, 
     elseif kind == N.SOLD then
         local buyerName = (code == "npc") and g_i18n:getText("ui_gm_animals_npcName") or tostring(otherName)
         text = string.format(g_i18n:getText(key), animals, money, buyerName)
-    elseif kind == N.RETURNED or kind == N.RETURN_PENDING or kind == N.EXPIRED or kind == N.LOADED then
+    elseif kind == N.RETURNED or kind == N.RETURN_PENDING or kind == N.EXPIRED or kind == N.LOADED or kind == N.AUCTION_NO_BID then
         text = string.format(g_i18n:getText(key), animals)
     else
         text = string.format(g_i18n:getText(key), animals, money)
     end
-    if kind == N.NEW_LISTING or kind == N.RETURNED or kind == N.EXPIRED then
+    if kind == N.OUTBID then
+        color = FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 }
+    elseif kind == N.NEW_LISTING or kind == N.RETURNED or kind == N.EXPIRED or kind == N.AUCTION_NO_BID then
         color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
     elseif kind == N.RETURN_PENDING then
         color = FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 }

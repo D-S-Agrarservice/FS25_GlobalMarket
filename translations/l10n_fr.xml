@@ -306,6 +306,17 @@
         <e k="ui_gm_animals_receipt_quota"                         v="Quota restant" />
         <e k="ui_gm_animals_receipt_payout"                        v="Paiement" />
         <e k="ui_gm_animals_animalsCount"                          v="%d animaux" />
+        <e k="ui_gm_animals_notice_outbid"                         v="Surenchéri : %s. Votre offre de %s est de nouveau sur votre compte." />
+        <e k="ui_gm_animals_notice_auctionWon"                     v="Enchère remportée : %s pour %s." />
+        <e k="ui_gm_animals_notice_auctionNoBid"                   v="Enchère terminée sans offre : %s. Les animaux vous sont restitués." />
+        <e k="ui_gm_animals_reason_isAuction"                      v="C'est une enchère. Veuillez faire une offre." />
+        <e k="ui_gm_animals_reason_notAuction"                     v="Ce n'est pas une enchère." />
+        <e k="ui_gm_animals_reason_auctionHasBids"                 v="Cette enchère a déjà des offres et dure jusqu'à la fin." />
+        <e k="ui_gm_animals_reason_bidTooLow"                      v="L'offre doit dépasser la plus haute d'au moins %d %% de la valeur chez le marchand." />
+        <e k="ui_gm_animals_reason_buyNowUnavailable"              v="L'achat immédiat n'est plus disponible pour cette enchère." />
+        <e k="ui_gm_animals_reason_startOutOfRange"                v="Le prix de départ doit être compris entre %d %% et %d %% de la valeur chez le marchand." />
+        <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="Le prix d'achat immédiat doit dépasser le prix de départ d'au moins %d %% et ne pas dépasser %d %% de la valeur chez le marchand." />
+        <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="La durée doit être de 6, 12, 24 ou 48 heures." />
         <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />

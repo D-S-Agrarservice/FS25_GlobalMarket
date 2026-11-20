@@ -306,6 +306,17 @@
         <e k="ui_gm_animals_receipt_quota"                         v="Quota left" />
         <e k="ui_gm_animals_receipt_payout"                        v="Payout" />
         <e k="ui_gm_animals_animalsCount"                          v="%d animals" />
+        <e k="ui_gm_animals_notice_outbid"                         v="Outbid: %s. Your bid of %s is back on your account." />
+        <e k="ui_gm_animals_notice_auctionWon"                     v="Auction won: %s for %s." />
+        <e k="ui_gm_animals_notice_auctionNoBid"                   v="Auction ended without a bid: %s. The animals are returned to you." />
+        <e k="ui_gm_animals_reason_isAuction"                      v="This is an auction. Please place a bid." />
+        <e k="ui_gm_animals_reason_notAuction"                     v="This is not an auction." />
+        <e k="ui_gm_animals_reason_auctionHasBids"                 v="This auction already has bids and runs until its end." />
+        <e k="ui_gm_animals_reason_bidTooLow"                      v="The bid must be at least %d %% of the dealer value above the highest bid." />
+        <e k="ui_gm_animals_reason_buyNowUnavailable"              v="Buy-now is no longer available for this auction." />
+        <e k="ui_gm_animals_reason_startOutOfRange"                v="The start price must be between %d %% and %d %% of the dealer value." />
+        <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="The buy-now price must be at least %d %% above the start price and at most %d %% of the dealer value." />
+        <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="The duration must be 6, 12, 24 or 48 hours." />
         <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />

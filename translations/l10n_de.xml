@@ -306,6 +306,17 @@
         <e k="ui_gm_animals_receipt_quota"                         v="Noch offenes Kontingent" />
         <e k="ui_gm_animals_receipt_payout"                        v="Auszahlung" />
         <e k="ui_gm_animals_animalsCount"                          v="%d Tiere" />
+        <e k="ui_gm_animals_notice_outbid"                         v="Überboten: %s. Dein Gebot über %s ist wieder auf deinem Konto." />
+        <e k="ui_gm_animals_notice_auctionWon"                     v="Auktion gewonnen: %s für %s." />
+        <e k="ui_gm_animals_notice_auctionNoBid"                   v="Auktion ohne Gebot beendet: %s. Die Tiere gehen an dich zurück." />
+        <e k="ui_gm_animals_reason_isAuction"                      v="Das ist eine Auktion. Bitte mitbieten." />
+        <e k="ui_gm_animals_reason_notAuction"                     v="Das ist keine Auktion." />
+        <e k="ui_gm_animals_reason_auctionHasBids"                 v="Auf diese Auktion wurde schon geboten, sie läuft bis zum Ende." />
+        <e k="ui_gm_animals_reason_bidTooLow"                      v="Das Gebot muss mindestens %d %% des Händlerwerts über dem Höchstgebot liegen." />
+        <e k="ui_gm_animals_reason_buyNowUnavailable"              v="Sofortkauf ist bei dieser Auktion nicht mehr möglich." />
+        <e k="ui_gm_animals_reason_startOutOfRange"                v="Der Startpreis muss zwischen %d %% und %d %% des Händlerwerts liegen." />
+        <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="Der Sofortkaufpreis muss mindestens %d %% über dem Startpreis und höchstens bei %d %% des Händlerwerts liegen." />
+        <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="Die Laufzeit muss 6, 12, 24 oder 48 Stunden betragen." />
         <e k="ui_gm_subtab_vehicles"                               v="Marktplatz" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />

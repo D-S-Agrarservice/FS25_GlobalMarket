@@ -306,6 +306,17 @@
         <e k="ui_gm_animals_receipt_quota"                         v="Cupo restante" />
         <e k="ui_gm_animals_receipt_payout"                        v="Pago" />
         <e k="ui_gm_animals_animalsCount"                          v="%d animales" />
+        <e k="ui_gm_animals_notice_outbid"                         v="Superado: %s. Tu puja de %s vuelve a estar en tu cuenta." />
+        <e k="ui_gm_animals_notice_auctionWon"                     v="Subasta ganada: %s por %s." />
+        <e k="ui_gm_animals_notice_auctionNoBid"                   v="Subasta terminada sin pujas: %s. Los animales te son devueltos." />
+        <e k="ui_gm_animals_reason_isAuction"                      v="Esto es una subasta. Por favor, puja." />
+        <e k="ui_gm_animals_reason_notAuction"                     v="Esto no es una subasta." />
+        <e k="ui_gm_animals_reason_auctionHasBids"                 v="Esta subasta ya tiene pujas y dura hasta el final." />
+        <e k="ui_gm_animals_reason_bidTooLow"                      v="La puja debe superar la más alta en al menos un %d %% del valor en el tratante." />
+        <e k="ui_gm_animals_reason_buyNowUnavailable"              v="La compra inmediata ya no está disponible en esta subasta." />
+        <e k="ui_gm_animals_reason_startOutOfRange"                v="El precio de salida debe estar entre el %d %% y el %d %% del valor en el tratante." />
+        <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="El precio de compra inmediata debe superar el de salida en al menos un %d %% y como máximo ser el %d %% del valor en el tratante." />
+        <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="La duración debe ser de 6, 12, 24 o 48 horas." />
         <e k="ui_gm_subtab_vehicles"                               v="Compraventa" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mis vehículos y ofertas" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Mercado de vehículos usados" />
