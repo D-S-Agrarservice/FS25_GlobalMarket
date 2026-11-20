@@ -181,6 +181,15 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s est de nouveau disponible chez le concessionnaire." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="Impossible de restituer %s : la zone de retrait du concessionnaire est occupée. Nouvel essai toutes les heures." />
         <e k="ui_gm_vehicles_notice_expired"                       v="L'annonce pour %s a expiré. Le véhicule vous est restitué." />
+        <e k="ui_gm_animals_notice_listed"                         v="%s sont maintenant en vente pour %s sur le marché aux animaux GM." />
+        <e k="ui_gm_animals_notice_newListing"                     v="Nouveau sur le marché aux animaux GM : %s pour %s." />
+        <e k="ui_gm_animals_notice_bought"                         v="%s achetés pour %s et livrés dans vos étables." />
+        <e k="ui_gm_animals_notice_boughtPickup"                   v="%s achetés pour %s. Récupérez-les avec une bétaillère chez le marchand de bestiaux." />
+        <e k="ui_gm_animals_notice_sold"                           v="%s ont été vendus pour %s à %s." />
+        <e k="ui_gm_animals_notice_returned"                       v="%s sont de retour dans vos étables." />
+        <e k="ui_gm_animals_notice_returnPending"                  v="%s ne rentrent pas dans vos étables et attendent dans le dépôt de retrait GM. Nouvel essai toutes les heures." />
+        <e k="ui_gm_animals_notice_expired"                        v="L'annonce pour %s a expiré. Les animaux vous sont restitués." />
+        <e k="ui_gm_animals_notice_loaded"                         v="%s chargés dans la bétaillère." />
         <e k="ui_gm_vehicles_reason_invalid"                       v="Ce véhicule ne peut pas être mis en vente." />
         <e k="ui_gm_vehicles_reason_notTradeable"                  v="Cet objet n'a pas sa place sur le marché de véhicules." />
         <e k="ui_gm_vehicles_reason_notOwned"                      v="Seuls les véhicules achetés par votre ferme peuvent être mis en vente." />

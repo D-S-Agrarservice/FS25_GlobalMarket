@@ -181,6 +181,15 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s vuelve a estar disponible en el concesionario." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="No se ha podido devolver %s: la zona de recogida del concesionario está ocupada. Se reintentará cada hora." />
         <e k="ui_gm_vehicles_notice_expired"                       v="La oferta de %s ha caducado. El vehículo te será devuelto." />
+        <e k="ui_gm_animals_notice_listed"                         v="%s están ahora a la venta por %s en el mercado de animales GM." />
+        <e k="ui_gm_animals_notice_newListing"                     v="Nuevo en el mercado de animales GM: %s por %s." />
+        <e k="ui_gm_animals_notice_bought"                         v="%s comprados por %s y entregados en tus establos." />
+        <e k="ui_gm_animals_notice_boughtPickup"                   v="%s comprados por %s. Recógelos con un remolque de ganado en el tratante de animales." />
+        <e k="ui_gm_animals_notice_sold"                           v="%s se han vendido por %s a %s." />
+        <e k="ui_gm_animals_notice_returned"                       v="%s vuelven a estar en tus establos." />
+        <e k="ui_gm_animals_notice_returnPending"                  v="%s no caben en tus establos y esperan en el depósito de recogida GM. Nuevo intento cada hora." />
+        <e k="ui_gm_animals_notice_expired"                        v="La oferta de %s ha caducado. Los animales te serán devueltos." />
+        <e k="ui_gm_animals_notice_loaded"                         v="%s cargados en el remolque de ganado." />
         <e k="ui_gm_vehicles_reason_invalid"                       v="Este vehículo no se puede poner a la venta." />
         <e k="ui_gm_vehicles_reason_notTradeable"                  v="Este objeto no pertenece al mercado de vehículos." />
         <e k="ui_gm_vehicles_reason_notOwned"                      v="Solo se pueden vender vehículos propios comprados." />

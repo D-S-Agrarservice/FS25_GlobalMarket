@@ -181,6 +181,15 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s steht wieder beim Händler bereit." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="%s konnte nicht zurückgegeben werden: Der Abholplatz beim Händler ist belegt. Neuer Versuch stündlich." />
         <e k="ui_gm_vehicles_notice_expired"                       v="Das Angebot für %s ist abgelaufen. Das Fahrzeug geht an dich zurück." />
+        <e k="ui_gm_animals_notice_listed"                         v="%s stehen jetzt für %s im GM-Tiermarkt." />
+        <e k="ui_gm_animals_notice_newListing"                     v="Neu im GM-Tiermarkt: %s für %s." />
+        <e k="ui_gm_animals_notice_bought"                         v="%s für %s gekauft und in deine Ställe geliefert." />
+        <e k="ui_gm_animals_notice_boughtPickup"                   v="%s für %s gekauft. Abholung mit dem Viehanhänger beim Viehhändler." />
+        <e k="ui_gm_animals_notice_sold"                           v="%s wurden für %s an %s verkauft." />
+        <e k="ui_gm_animals_notice_returned"                       v="%s sind wieder in deinen Ställen." />
+        <e k="ui_gm_animals_notice_returnPending"                  v="%s passen nicht in deine Ställe und warten im GM-Abholfach. Neuer Versuch stündlich." />
+        <e k="ui_gm_animals_notice_expired"                        v="Das Angebot für %s ist abgelaufen. Die Tiere gehen an dich zurück." />
+        <e k="ui_gm_animals_notice_loaded"                         v="%s auf den Viehanhänger verladen." />
         <e k="ui_gm_vehicles_reason_invalid"                       v="Dieses Fahrzeug kann nicht angeboten werden." />
         <e k="ui_gm_vehicles_reason_notTradeable"                  v="Das gehört nicht in den Fahrzeugmarkt." />
         <e k="ui_gm_vehicles_reason_notOwned"                      v="Nur eigene, gekaufte Fahrzeuge können angeboten werden." />

@@ -181,6 +181,15 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s ponownie czeka u dealera." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="Nie można zwrócić %s: miejsce odbioru u dealera jest zajęte. Ponowna próba co godzinę." />
         <e k="ui_gm_vehicles_notice_expired"                       v="Oferta dla %s wygasła. Pojazd wraca do ciebie." />
+        <e k="ui_gm_animals_notice_listed"                         v="%s są teraz wystawione za %s na targu zwierząt GM." />
+        <e k="ui_gm_animals_notice_newListing"                     v="Nowość na targu zwierząt GM: %s za %s." />
+        <e k="ui_gm_animals_notice_bought"                         v="Kupiono %s za %s i dostarczono do twoich budynków." />
+        <e k="ui_gm_animals_notice_boughtPickup"                   v="Kupiono %s za %s. Odbierz je przyczepą do zwierząt u handlarza zwierząt." />
+        <e k="ui_gm_animals_notice_sold"                           v="%s sprzedano za %s gospodarstwu %s." />
+        <e k="ui_gm_animals_notice_returned"                       v="%s wróciły do twoich budynków." />
+        <e k="ui_gm_animals_notice_returnPending"                  v="%s nie mieszczą się w twoich budynkach i czekają w punkcie odbioru GM. Ponowna próba co godzinę." />
+        <e k="ui_gm_animals_notice_expired"                        v="Oferta dla %s wygasła. Zwierzęta wracają do ciebie." />
+        <e k="ui_gm_animals_notice_loaded"                         v="%s załadowano na przyczepę do zwierząt." />
         <e k="ui_gm_vehicles_reason_invalid"                       v="Tego pojazdu nie można wystawić." />
         <e k="ui_gm_vehicles_reason_notTradeable"                  v="Ten przedmiot nie należy do rynku pojazdów." />
         <e k="ui_gm_vehicles_reason_notOwned"                      v="Można wystawić tylko pojazdy będące własnością gospodarstwa." />

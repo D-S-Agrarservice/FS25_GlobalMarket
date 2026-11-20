@@ -181,6 +181,15 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s is back and ready at the dealer." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="%s could not be returned: the dealer's pickup area is blocked. Retrying every hour." />
         <e k="ui_gm_vehicles_notice_expired"                       v="The listing for %s has expired. The vehicle is returned to you." />
+        <e k="ui_gm_animals_notice_listed"                         v="%s are now listed for %s on the GM animal market." />
+        <e k="ui_gm_animals_notice_newListing"                     v="New on the GM animal market: %s for %s." />
+        <e k="ui_gm_animals_notice_bought"                         v="%s bought for %s and delivered to your barns." />
+        <e k="ui_gm_animals_notice_boughtPickup"                   v="%s bought for %s. Pick them up with a livestock trailer at the animal dealer." />
+        <e k="ui_gm_animals_notice_sold"                           v="%s were sold for %s to %s." />
+        <e k="ui_gm_animals_notice_returned"                       v="%s are back in your barns." />
+        <e k="ui_gm_animals_notice_returnPending"                  v="%s do not fit into your barns and wait in the GM pickup box. Retried hourly." />
+        <e k="ui_gm_animals_notice_expired"                        v="The listing for %s has expired. The animals are returned to you." />
+        <e k="ui_gm_animals_notice_loaded"                         v="%s loaded onto the livestock trailer." />
         <e k="ui_gm_vehicles_reason_invalid"                       v="This vehicle cannot be listed." />
         <e k="ui_gm_vehicles_reason_notTradeable"                  v="This item does not belong on the vehicle market." />
         <e k="ui_gm_vehicles_reason_notOwned"                      v="Only vehicles your farm owns can be listed." />

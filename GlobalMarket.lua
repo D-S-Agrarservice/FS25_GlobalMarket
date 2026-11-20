@@ -159,6 +159,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketVehicleTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalMarket.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -361,6 +362,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmAnimalMarketSell", "Lists own animals: <clusterId> <count> [pricePercent=100] [months=1]", "consoleCommandAnimalMarketSell", self)
             addConsoleCommand("gmAnimalMarketReturn", "Withdraws an own animal listing: <listingId|pending>", "consoleCommandAnimalMarketReturn", self)
             addConsoleCommand("gmAdvanceAnimalMarket", "Advances animal market listing timers in months (expiry test)", "consoleCommandAdvanceAnimalMarket", self)
+            addConsoleCommand("gmAnimalMarketBuy", "Buys an animal listing for the own farm: <listingId> [barn|pickup]", "consoleCommandAnimalMarketBuy", self)
+            addConsoleCommand("gmAnimalMarketLoad", "Loads pickup box animals onto an own livestock trailer at the animal dealer: [pickupId|all]", "consoleCommandAnimalMarketLoad", self)
+            addConsoleCommand("gmAnimalMarketMakeNpc", "Turns an animal listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandAnimalMarketMakeNpc", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -383,6 +387,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmAnimalMarketSell")
             removeConsoleCommand("gmAnimalMarketReturn")
             removeConsoleCommand("gmAdvanceAnimalMarket")
+            removeConsoleCommand("gmAnimalMarketBuy")
+            removeConsoleCommand("gmAnimalMarketLoad")
+            removeConsoleCommand("gmAnimalMarketMakeNpc")
             self.debugCommandsRegistered = false
         end
     end

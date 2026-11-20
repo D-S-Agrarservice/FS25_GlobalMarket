@@ -26,6 +26,26 @@ GlobalMarket.ANIMAL_PICKUP_REASON = {
     RETURN = "RETURN"    -- Returned listing that did not fit into the seller's barns (retried hourly)
 }
 
+-- How bought animals reach the buyer
+GlobalMarket.ANIMAL_DELIVERY = {
+    BARN = 1,    -- Into own barns, plus the basegame transport fee
+    PICKUP = 2   -- Into the pickup box, loaded onto a livestock trailer at the animal dealer
+}
+
+-- HUD notice kinds (sent as numbers to clients)
+GlobalMarket.ANIMAL_NOTICE = {
+    RESULT = 1,
+    LISTED = 2,
+    NEW_LISTING = 3,
+    BOUGHT = 4,
+    BOUGHT_PICKUP = 5,
+    SOLD = 6,
+    RETURNED = 7,
+    RETURN_PENDING = 8,
+    EXPIRED = 9,
+    LOADED = 10
+}
+
 -- =========================================================================
 -- STATE
 -- =========================================================================
@@ -93,10 +113,12 @@ local function broadcastState(self)
     end
 end
 
----Calls the HUD notice helper once it exists (step 3)
-local function notify(self, kind, targetFarmId, excludeFarmId, snapshot, price)
+---Sends a HUD notice about the animals of a snapshot (GlobalMarketAnimalTrade.lua)
+---@param numAnimals number|nil Animal count to show (default: current snapshot count)
+local function notify(self, kind, targetFarmId, excludeFarmId, snapshot, price, numAnimals)
     if self.notifyAnimalMarketFarms ~= nil then
-        self:notifyAnimalMarketFarms(kind, targetFarmId, excludeFarmId, snapshot, price)
+        self:notifyAnimalMarketFarms(kind, targetFarmId, excludeFarmId, snapshot.subTypeName,
+            numAnimals or GlobalMarketAnimalListings.getNumAnimals(snapshot), price or 0, "")
     end
 end
 
@@ -161,7 +183,9 @@ function GlobalMarket:createAnimalListing(source, clusterId, numAnimals, farmId,
     }
     table.insert(self.animalListings, listing)
 
-    notify(self, "NEW_LISTING", 0, farmId, snapshot, GlobalMarketAnimalListings.getListingPrice(listing) or 0)
+    local price = GlobalMarketAnimalListings.getListingPrice(listing) or 0
+    notify(self, GlobalMarket.ANIMAL_NOTICE.LISTED, farmId, 0, snapshot, price)
+    notify(self, GlobalMarket.ANIMAL_NOTICE.NEW_LISTING, 0, farmId, snapshot, price)
     broadcastState(self)
     if self.debugManager ~= nil then
         self.debugManager:info("AnimalMarket: Listing #%d created by farm %d (%s x%d, %.0f%% of dealer value, %d months).",
@@ -239,16 +263,17 @@ function GlobalMarket:returnAnimalListing(listing)
         return
     end
     local snapshot = listing.snapshot
+    local numAnimals = GlobalMarketAnimalListings.getNumAnimals(snapshot)
     self:deliverAnimalsToFarmBarns(snapshot, listing.sellerFarmId)
     if GlobalMarketAnimalListings.getNumAnimals(snapshot) > 0 then
         self:addAnimalPickup(listing.sellerFarmId, snapshot, GlobalMarket.ANIMAL_PICKUP_REASON.RETURN)
-        notify(self, "RETURN_PENDING", listing.sellerFarmId, 0, snapshot, 0)
+        notify(self, GlobalMarket.ANIMAL_NOTICE.RETURN_PENDING, listing.sellerFarmId, 0, snapshot, 0)
         if self.debugManager ~= nil then
             self.debugManager:info("AnimalMarket: Listing #%d partly returned, %d animal(s) wait in the pickup box of farm %d.",
                 listing.id, GlobalMarketAnimalListings.getNumAnimals(snapshot), listing.sellerFarmId)
         end
     else
-        notify(self, "RETURNED", listing.sellerFarmId, 0, snapshot, 0)
+        notify(self, GlobalMarket.ANIMAL_NOTICE.RETURNED, listing.sellerFarmId, 0, snapshot, 0, numAnimals)
         if self.debugManager ~= nil then
             self.debugManager:info("AnimalMarket: Listing #%d returned to farm %d.", listing.id, listing.sellerFarmId)
         end
@@ -314,7 +339,7 @@ function GlobalMarket:updateAnimalMarketHourly(customMonthDelta)
     end
     for _, listing in ipairs(expired) do
         if not listing.isNpc then
-            notify(self, "EXPIRED", listing.sellerFarmId, 0, listing.snapshot, 0)
+            notify(self, GlobalMarket.ANIMAL_NOTICE.EXPIRED, listing.sellerFarmId, 0, listing.snapshot, 0)
         end
         self:returnAnimalListing(listing)
     end
@@ -464,6 +489,7 @@ local function getConsoleGuardError()
     end
     return nil
 end
+GlobalMarket.getAnimalMarketConsoleGuardError = getConsoleGuardError
 
 ---Finds an own barn or livestock trailer holding a cluster
 ---@param farmId number
