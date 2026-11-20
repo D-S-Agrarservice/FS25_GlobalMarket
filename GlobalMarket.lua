@@ -159,11 +159,13 @@ source(GlobalMarket.dir .. "modules/GlobalMarketVehicleListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketVehicleNpc.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAuction.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalListings.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalMarket.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalDemand.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalAuction.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -380,6 +382,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmAnimalDemandStart", "Starts a great demand for meat animals now: [animal type, e.g. COW or PIG]", "consoleCommandAnimalDemandStart", self)
             addConsoleCommand("gmAnimalDemandEnd", "Ends the active great demand for meat animals", "consoleCommandAnimalDemandEnd", self)
             addConsoleCommand("gmAnimalDemandSell", "Sells own animals to the great demand: <clusterId> <count>", "consoleCommandAnimalDemandSell", self)
+            addConsoleCommand("gmAnimalAuctionCreate", "Lists own animals as auction: <clusterId> <count> <startPercent> [buyNowPercent=0] [hours=12]", "consoleCommandAnimalAuctionCreate", self)
+            addConsoleCommand("gmAnimalAuctionBid", "Bids on an animal auction: <listingId> <percent of dealer value|min>", "consoleCommandAnimalAuctionBid", self)
+            addConsoleCommand("gmAnimalAuctionBuyNow", "Buys an animal auction at its buy-now price: <listingId>", "consoleCommandAnimalAuctionBuyNow", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -409,6 +414,9 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmAnimalDemandStart")
             removeConsoleCommand("gmAnimalDemandEnd")
             removeConsoleCommand("gmAnimalDemandSell")
+            removeConsoleCommand("gmAnimalAuctionCreate")
+            removeConsoleCommand("gmAnimalAuctionBid")
+            removeConsoleCommand("gmAnimalAuctionBuyNow")
             self.debugCommandsRegistered = false
         end
     end

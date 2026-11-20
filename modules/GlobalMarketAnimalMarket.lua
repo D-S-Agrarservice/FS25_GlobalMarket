@@ -46,7 +46,10 @@ GlobalMarket.ANIMAL_NOTICE = {
     LOADED = 10,
     DEMAND_START = 11,   -- Great demand for meat animals (Stage 1b)
     DEMAND_END = 12,
-    DEMAND_SOLD = 13
+    DEMAND_SOLD = 13,
+    OUTBID = 14,         -- Auctions (Stage 2)
+    AUCTION_WON = 15,
+    AUCTION_NO_BID = 16
 }
 
 -- =========================================================================
@@ -145,9 +148,10 @@ end
 ---@param farmId number
 ---@param priceFactor number Asking price relative to the dealer value
 ---@param durationMonths number
+---@param auctionOptions table|nil { startFactor, buyNowFactor, durationHours } lists as auction (Stage 2)
 ---@return table|nil listing
 ---@return string|nil reason Error code if the listing was rejected
-function GlobalMarket:createAnimalListing(source, clusterId, numAnimals, farmId, priceFactor, durationMonths)
+function GlobalMarket:createAnimalListing(source, clusterId, numAnimals, farmId, priceFactor, durationMonths, auctionOptions)
     if g_currentMission == nil or not g_currentMission:getIsServer() then
         return nil, "notServer"
     end
@@ -157,13 +161,27 @@ function GlobalMarket:createAnimalListing(source, clusterId, numAnimals, farmId,
     if not isEligible then
         return nil, reason
     end
-    priceFactor = tonumber(priceFactor)
-    if priceFactor == nil or priceFactor < cfg.PRICE_FACTOR_MIN - 0.0001 or priceFactor > cfg.PRICE_FACTOR_MAX + 0.0001 then
-        return nil, "priceOutOfRange"
-    end
-    durationMonths = math.floor(tonumber(durationMonths) or 0)
-    if durationMonths < cfg.DURATION_MIN or durationMonths > cfg.DURATION_MAX then
-        return nil, "durationOutOfRange"
+    local auction = nil
+    if auctionOptions ~= nil then
+        local isValid, auctionReason = GlobalMarketAuction.validateOptions(auctionOptions.startFactor,
+            auctionOptions.buyNowFactor, auctionOptions.durationHours)
+        if not isValid then
+            return nil, auctionReason
+        end
+        auction = GlobalMarketAuction.create(tonumber(auctionOptions.startFactor), auctionOptions.buyNowFactor,
+            tonumber(auctionOptions.durationHours))
+        -- Auctions run on hours (auction.hoursRemaining); the price factor follows the current bid
+        priceFactor = auction.startFactor
+        durationMonths = 0
+    else
+        priceFactor = tonumber(priceFactor)
+        if priceFactor == nil or priceFactor < cfg.PRICE_FACTOR_MIN - 0.0001 or priceFactor > cfg.PRICE_FACTOR_MAX + 0.0001 then
+            return nil, "priceOutOfRange"
+        end
+        durationMonths = math.floor(tonumber(durationMonths) or 0)
+        if durationMonths < cfg.DURATION_MIN or durationMonths > cfg.DURATION_MAX then
+            return nil, "durationOutOfRange"
+        end
     end
     self.animalListings = self.animalListings or {}
     if #self.animalListings >= cfg.MAX_TOTAL then
@@ -188,9 +206,10 @@ function GlobalMarket:createAnimalListing(source, clusterId, numAnimals, farmId,
         sellerFarmId = farmId,
         sellerName = GlobalMarket.getVehicleMarketFarmName(farmId),
         isNpc = false,
-        saleMode = "FIXED",
+        saleMode = (auction ~= nil) and GlobalMarket.ANIMAL_SALE_MODE.AUCTION or GlobalMarket.ANIMAL_SALE_MODE.FIXED,
         priceFactor = priceFactor,
         monthsRemaining = durationMonths,
+        auction = auction,
         snapshot = snapshot
     }
     table.insert(self.animalListings, listing)
@@ -306,6 +325,11 @@ function GlobalMarket:cancelAnimalListing(listingId, farmId)
     if listing.sellerFarmId ~= farmId then
         return false, "notOwner"
     end
+    -- Auctions can only be withdrawn while nobody has bid
+    local blockReason = GlobalMarket.getAnimalAuctionCancelBlock ~= nil and GlobalMarket.getAnimalAuctionCancelBlock(listing) or nil
+    if blockReason ~= nil then
+        return false, blockReason
+    end
     self:returnAnimalListing(listing)
     return true, nil
 end
@@ -344,9 +368,12 @@ function GlobalMarket:updateAnimalMarketHourly(customMonthDelta)
 
     local expired = {}
     for _, listing in ipairs(self.animalListings or {}) do
-        listing.monthsRemaining = (listing.monthsRemaining or 0) - monthDelta
-        if listing.monthsRemaining <= 0 then
-            table.insert(expired, listing)
+        -- Auctions count down in hours (updateAnimalAuctionsHourly)
+        if listing.saleMode ~= GlobalMarket.ANIMAL_SALE_MODE.AUCTION then
+            listing.monthsRemaining = (listing.monthsRemaining or 0) - monthDelta
+            if listing.monthsRemaining <= 0 then
+                table.insert(expired, listing)
+            end
         end
     end
     for _, listing in ipairs(expired) do
@@ -355,11 +382,12 @@ function GlobalMarket:updateAnimalMarketHourly(customMonthDelta)
         end
         self:returnAnimalListing(listing)
     end
+    local auctionsChanged = (self.updateAnimalAuctionsHourly ~= nil) and self:updateAnimalAuctionsHourly(monthDelta)
     self:retryAnimalPickupReturns()
     local npcChanged = (self.updateAnimalMarketNpcs ~= nil) and self:updateAnimalMarketNpcs(monthDelta)
     local demandChanged = (self.updateAnimalDemandHourly ~= nil) and self:updateAnimalDemandHourly(monthDelta)
     -- Clients show remaining times, so the state is sent every hour while listings or a great demand exist
-    if #(self.animalListings or {}) > 0 or self.animalDemand ~= nil or npcChanged or demandChanged then
+    if #(self.animalListings or {}) > 0 or self.animalDemand ~= nil or npcChanged or demandChanged or auctionsChanged then
         broadcastState(self)
     end
 end
@@ -368,7 +396,8 @@ end
 ---@param farmId number
 ---@return boolean changed
 function GlobalMarket:cleanupAnimalMarketForDeletedFarm(farmId)
-    local changed = false
+    -- Auctions first: refund bidders of the deleted seller, drop bids of a deleted bidder
+    local changed = (self.cleanupAnimalAuctionsForDeletedFarm ~= nil) and self:cleanupAnimalAuctionsForDeletedFarm(farmId) or false
     local listings = self.animalListings or {}
     for i = #listings, 1, -1 do
         if not listings[i].isNpc and listings[i].sellerFarmId == farmId then
@@ -413,6 +442,9 @@ function GlobalMarket:saveAnimalMarketToXml(xmlFile)
         xmlFile:setString(key .. "#saleMode", listing.saleMode or "FIXED")
         xmlFile:setFloat(key .. "#priceFactor", listing.priceFactor or 1)
         xmlFile:setFloat(key .. "#monthsRemaining", listing.monthsRemaining or 0)
+        if listing.auction ~= nil then
+            GlobalMarketAuction.saveToXml(xmlFile, key .. ".auction", listing.auction)
+        end
         GlobalMarketAnimalListings.writeSnapshotToXml(xmlFile, key .. ".animals", listing.snapshot)
     end
     for i, entry in ipairs(self.animalPickups or {}) do
@@ -441,6 +473,14 @@ function GlobalMarket:loadAnimalMarketFromXml(xmlFile)
         local snapshot = GlobalMarketAnimalListings.readSnapshotFromXml(xmlFile, key .. ".animals")
         local id = xmlFile:getInt(key .. "#id")
         if snapshot ~= nil and id ~= nil then
+            local saleMode = xmlFile:getString(key .. "#saleMode", "FIXED")
+            local auction = nil
+            if saleMode == "AUCTION" then
+                auction = GlobalMarketAuction.loadFromXml(xmlFile, key .. ".auction")
+                if auction == nil then
+                    saleMode = "FIXED"
+                end
+            end
             table.insert(self.animalListings, {
                 id = id,
                 uid = xmlFile:getString(key .. "#uid", ""),
@@ -448,9 +488,10 @@ function GlobalMarket:loadAnimalMarketFromXml(xmlFile)
                 sellerFarmId = xmlFile:getInt(key .. "#sellerFarmId", 0),
                 sellerName = xmlFile:getString(key .. "#sellerName", ""),
                 isNpc = xmlFile:getBool(key .. "#isNpc", false),
-                saleMode = xmlFile:getString(key .. "#saleMode", "FIXED"),
+                saleMode = saleMode,
                 priceFactor = xmlFile:getFloat(key .. "#priceFactor", 1),
                 monthsRemaining = xmlFile:getFloat(key .. "#monthsRemaining", 0),
+                auction = auction,
                 snapshot = snapshot
             })
             maxListingId = math.max(maxListingId, id)
@@ -539,7 +580,8 @@ function GlobalMarket:getAnimalMarketConsoleLines()
         local price = GlobalMarketAnimalListings.getListingPrice(listing)
         table.insert(lines, string.format("  #%d %s x%d | %d months | seller farm %d%s | %.0f%% = %s | %.2f months left",
             listing.id, info.title, info.numAnimals, info.age, listing.sellerFarmId, listing.isNpc and " (NPC)" or "",
-            (listing.priceFactor or 1) * 100, price ~= nil and string.format("%d", price) or "n/a", listing.monthsRemaining or 0))
+            (listing.priceFactor or 1) * 100, price ~= nil and string.format("%d", price) or "n/a", listing.monthsRemaining or 0)
+            .. (GlobalMarket.getAnimalAuctionConsoleSuffix ~= nil and GlobalMarket.getAnimalAuctionConsoleSuffix(listing) or ""))
     end
     table.insert(lines, string.format("Pickup box (%d):", #(self.animalPickups or {})))
     for _, entry in ipairs(self.animalPickups or {}) do

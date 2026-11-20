@@ -203,7 +203,8 @@ function GlobalMarket:updateAnimalMarketNpcs(monthDelta)
     for _, listing in ipairs(self.animalListings or {}) do
         if listing.isNpc then
             npcCount = npcCount + 1
-        elseif GlobalMarketAnimalListings.getIsResolved(listing.snapshot) and math.random() < getNpcBuyChance(listing, monthDelta) then
+        elseif listing.saleMode ~= GlobalMarket.ANIMAL_SALE_MODE.AUCTION and GlobalMarketAnimalListings.getIsResolved(listing.snapshot)
+            and math.random() < getNpcBuyChance(listing, monthDelta) then
             table.insert(buyers, listing)
         end
     end

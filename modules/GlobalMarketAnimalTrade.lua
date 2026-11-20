@@ -389,6 +389,9 @@ function GlobalMarket:getAnimalPurchase(listingId, buyerFarmId, deliveryMode, ta
     if listing.status ~= GlobalMarket.ANIMAL_LISTING_STATUS.OPEN then
         return nil, "listingBusy"
     end
+    if listing.saleMode == GlobalMarket.ANIMAL_SALE_MODE.AUCTION then
+        return nil, "isAuction"
+    end
     if not listing.isNpc and listing.sellerFarmId == buyerFarmId then
         return nil, "ownListing"
     end
