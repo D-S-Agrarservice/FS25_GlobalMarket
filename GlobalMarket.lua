@@ -106,6 +106,7 @@ source(GlobalMarket.dir .. "gui/GlobalMarketVehicleDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketContractsUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketVehiclesUI.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketAnimalsUI.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketVehicleShopBridge.lua")
 
 -- Economy & Savegame Modules

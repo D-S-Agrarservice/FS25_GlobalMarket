@@ -232,7 +232,33 @@
         <e k="ui_gm_animals_reason_pickupNotFound"                 v="Aucun animal correspondant dans le dépôt de retrait." />
         <e k="ui_gm_animals_reason_noTrailer"                      v="Aucune de vos bétaillères ne se trouve chez le marchand de bestiaux." />
         <e k="ui_gm_animals_reason_noPermission"                   v="Vous n'avez pas l'autorisation de faire cela." />
-        <e k="ui_gm_subtab_vehicles"                               v="Véhicules d'occasion" />
+        <e k="ui_gm_market_showAnimals"                            v="Afficher les animaux" />
+        <e k="ui_gm_market_showVehicles"                           v="Afficher les véhicules" />
+        <e k="ui_gm_animals_myHeader"                              v="Mes animaux" />
+        <e k="ui_gm_animals_marketHeader"                          v="Marché aux animaux" />
+        <e k="ui_gm_animals_mySub"                                 v="Annonces : %d / %d | Groupes : %d" />
+        <e k="ui_gm_animals_col_animals"                           v="Animaux" />
+        <e k="ui_gm_animals_col_condition"                         v="Âge | Santé" />
+        <e k="ui_gm_animals_sec_myListings"                        v="Mes annonces" />
+        <e k="ui_gm_animals_sec_pickup"                            v="Dépôt de retrait" />
+        <e k="ui_gm_animals_atDealer"                              v="%s (chez le marchand de bestiaux)" />
+        <e k="ui_gm_animals_empty_my"                              v="Aucun animal dans vos étables." />
+        <e k="ui_gm_animals_empty_market"                          v="Aucune annonce d'animaux pour le moment." />
+        <e k="ui_gm_animals_condition"                             v="%d mois | %d %%" />
+        <e k="ui_gm_animals_pregnant"                              v="gestante %d %%" />
+        <e k="ui_gm_animals_breedingReady"                         v="apte à la reproduction" />
+        <e k="ui_gm_animals_pickup_bought"                         v="Prêt au retrait" />
+        <e k="ui_gm_animals_pickup_return"                         v="Retour en attente" />
+        <e k="ui_gm_animals_sort_health"                           v="Tri : Santé" />
+        <e k="ui_gm_animals_filter_pregnant"                       v="Filtre : Gestantes" />
+        <e k="ui_gm_animals_filter_breeding"                       v="Filtre : Aptes à la reproduction" />
+        <e k="ui_gm_animals_notAtDealerShop"                       v="non disponible chez le marchand" />
+        <e k="ui_gm_animals_hint_group"                            v="%s | %s | Valeur chez le marchand %s | Prix neuf chez le marchand : %s" />
+        <e k="ui_gm_animals_hint_listing"                          v="%s | Vendeur : %s | %s | %s (%d %%) | Prix neuf chez le marchand : %s | Transport vers l'étable : %s | reste %s" />
+        <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Récupérez-les avec votre bétaillère chez le marchand de bestiaux." />
+        <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | Pas de place dans vos étables. Nouvel essai toutes les heures, ou retrait chez le marchand de bestiaux." />
+        <e k="ui_gm_animals_confirmWithdraw"                       v="Retirer l'annonce pour %s ? Les animaux retournent dans vos étables." />
+        <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />
         <e k="ui_gm_vehicles_col_vehicle"                          v="Véhicule" />

@@ -119,8 +119,19 @@ function GlobalMarketUI:onClickSubTabContracts()
 end
 
 function GlobalMarketUI:onClickToggleSubTab()
-    -- Cycles Spot -> Contracts -> Vehicles -> Spot
-    local nextTab = (self.activeSubTab or GlobalMarketUI.SUBTAB_SPOT) + 1
+    -- Cycles Spot -> Contracts -> Marketplace (vehicles) -> Marketplace (animals) -> Spot
+    local current = self.activeSubTab or GlobalMarketUI.SUBTAB_SPOT
+    if current == GlobalMarketUI.SUBTAB_VEHICLES and GlobalMarketUI.MARKET_MODE_ANIMALS ~= nil then
+        if self.marketMode ~= GlobalMarketUI.MARKET_MODE_ANIMALS then
+            self.marketMode = GlobalMarketUI.MARKET_MODE_ANIMALS
+            self:setActiveSubTab(GlobalMarketUI.SUBTAB_VEHICLES, true)
+            return
+        end
+        self.marketMode = GlobalMarketUI.MARKET_MODE_VEHICLES
+    elseif current == GlobalMarketUI.SUBTAB_CONTRACTS then
+        self.marketMode = GlobalMarketUI.MARKET_MODE_VEHICLES
+    end
+    local nextTab = current + 1
     if nextTab > GlobalMarketUI.SUBTAB_VEHICLES then
         nextTab = GlobalMarketUI.SUBTAB_SPOT
     end

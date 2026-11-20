@@ -232,7 +232,33 @@
         <e k="ui_gm_animals_reason_pickupNotFound"                 v="Im Abholfach liegen keine passenden Tiere." />
         <e k="ui_gm_animals_reason_noTrailer"                      v="Kein eigener Viehanhänger steht beim Viehhändler." />
         <e k="ui_gm_animals_reason_noPermission"                   v="Dafür fehlt dir die Berechtigung." />
-        <e k="ui_gm_subtab_vehicles"                               v="Gebrauchtfahrzeuge" />
+        <e k="ui_gm_market_showAnimals"                            v="Tiere anzeigen" />
+        <e k="ui_gm_market_showVehicles"                           v="Fahrzeuge anzeigen" />
+        <e k="ui_gm_animals_myHeader"                              v="Meine Tiere" />
+        <e k="ui_gm_animals_marketHeader"                          v="Tiermarkt" />
+        <e k="ui_gm_animals_mySub"                                 v="Angebote: %d / %d | Gruppen: %d" />
+        <e k="ui_gm_animals_col_animals"                           v="Tiere" />
+        <e k="ui_gm_animals_col_condition"                         v="Alter | Gesundheit" />
+        <e k="ui_gm_animals_sec_myListings"                        v="Meine Angebote" />
+        <e k="ui_gm_animals_sec_pickup"                            v="Abholfach" />
+        <e k="ui_gm_animals_atDealer"                              v="%s (beim Viehhändler)" />
+        <e k="ui_gm_animals_empty_my"                              v="Keine Tiere in deinen Ställen." />
+        <e k="ui_gm_animals_empty_market"                          v="Zurzeit keine Tierangebote." />
+        <e k="ui_gm_animals_condition"                             v="%d Mon. | %d %%" />
+        <e k="ui_gm_animals_pregnant"                              v="trächtig %d %%" />
+        <e k="ui_gm_animals_breedingReady"                         v="zuchtreif" />
+        <e k="ui_gm_animals_pickup_bought"                         v="Abholbereit" />
+        <e k="ui_gm_animals_pickup_return"                         v="Rückgabe ausstehend" />
+        <e k="ui_gm_animals_sort_health"                           v="Sortierung: Gesundheit" />
+        <e k="ui_gm_animals_filter_pregnant"                       v="Filter: Trächtig" />
+        <e k="ui_gm_animals_filter_breeding"                       v="Filter: Zuchtreif" />
+        <e k="ui_gm_animals_notAtDealerShop"                       v="beim Händler nicht erhältlich" />
+        <e k="ui_gm_animals_hint_group"                            v="%s | %s | Händlerwert %s | Neupreis beim Händler: %s" />
+        <e k="ui_gm_animals_hint_listing"                          v="%s | Verkäufer: %s | %s | %s (%d %%) | Neupreis beim Händler: %s | Transport in den Stall: %s | noch %s" />
+        <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Mit einem eigenen Viehanhänger beim Viehhändler abholen." />
+        <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | Kein Platz in deinen Ställen. Neuer Versuch stündlich, oder beim Viehhändler abholen." />
+        <e k="ui_gm_animals_confirmWithdraw"                       v="Angebot für %s zurückziehen? Die Tiere gehen zurück in deine Ställe." />
+        <e k="ui_gm_subtab_vehicles"                               v="Marktplatz" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />
         <e k="ui_gm_vehicles_col_vehicle"                          v="Fahrzeug" />

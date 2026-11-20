@@ -240,6 +240,9 @@
                 <Text profile="fs25_textDefault" id="marketVehiclesSubtitle" text="" position="10px 695px" size="690px 22px" textAlignment="left" textSize="15px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
 
                 <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">
+                    <Button profile="globalMarketToolbarBtnAction" id="btnMarketModeToAnimals" position="0px 0px" text="$l10n_ui_gm_market_showAnimals" onClick="onClickToggleMarketMode">
+                        <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                    </Button>
                     <Button profile="globalMarketToolbarBtnMode" id="btnVehicleSort" position="450px 0px" text="$l10n_ui_gm_vehicles_sort_price" onClick="onClickCycleVehicleSort">
                         <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
                     </Button>
@@ -275,6 +278,88 @@
             <GuiElement profile="globalMarketFooterBox1">
                 <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
                 <Text profile="fs25_textDefault" id="vehiclesSelectionHint" position="40px 8px" size="1470px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
+            </GuiElement>
+        </GuiElement>
+
+        <!-- Sub-Tab 3b: Livestock market (shown inside the marketplace sub-tab via the vehicles/animals toggle) -->
+        <GuiElement profile="emptyPanel" with="anchorBottomLeft" id="subTabAnimalsContainer" position="0px 0px" size="1550px 790px" visible="false">
+            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="700px 750px" position="20px 40px">
+                <Text profile="globalMarketHeaderBright" text="$l10n_ui_gm_animals_myHeader" position="10px 715px" size="680px 30px" textSize="22px" />
+                <Text profile="fs25_textDefault" id="myAnimalsSubtitle" text="" position="10px 695px" size="680px 22px" textAlignment="left" textSize="15px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="700px 38px">
+                    <Text profile="globalMarketHeader" position="40px 8px" size="220px 24px" text="$l10n_ui_gm_animals_col_animals" />
+                    <Text profile="globalMarketHeaderRight" position="265px 8px" size="260px 24px" text="$l10n_ui_gm_animals_col_condition" />
+                    <Text profile="globalMarketHeaderRight" position="530px 8px" size="150px 24px" text="$l10n_ui_gm_vehicles_col_value" />
+                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="700px 2px" />
+                </GuiElement>
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="700px 592px">
+                    <SmoothList profile="emptyPanel" id="gmTableMyAnimals" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onAnimalLeftAction">
+                        <ListItem profile="globalMarketListItem" name="gmMyAnimalRowTemplate">
+                            <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                            <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="220px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellRight" position="265px 0px" size="260px 32px" textLayoutMode="resize" name="condition" />
+                            <Text profile="globalMarketRowCellRight" position="530px 0px" size="150px 32px" textLayoutMode="resize" name="value" />
+                        </ListItem>
+                        <ListItem profile="globalMarketSectionHeader" name="section">
+                            <Text profile="globalMarketSectionHeaderTitle" name="title" />
+                        </ListItem>
+                    </SmoothList>
+
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="globalMarketListSlider" dataElementId="gmTableMyAnimals" id="gmTableMyAnimalsSlider" />
+                    </ThreePartBitmap>
+                </GuiElement>
+            </GuiElement>
+
+            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="710px 750px" position="790px 40px">
+                <Text profile="globalMarketHeaderBright" text="$l10n_ui_gm_animals_marketHeader" position="10px 715px" size="690px 30px" textSize="22px" />
+                <Text profile="fs25_textDefault" id="animalMarketSubtitle" text="" position="10px 695px" size="690px 22px" textAlignment="left" textSize="15px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">
+                    <Button profile="globalMarketToolbarBtnAction" id="btnMarketModeToVehicles" position="0px 0px" text="$l10n_ui_gm_market_showVehicles" onClick="onClickToggleMarketMode">
+                        <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                    </Button>
+                    <Button profile="globalMarketToolbarBtnAction" id="btnAnimalFilter" position="225px 0px" text="$l10n_ui_gm_filter_all" onClick="onClickCycleAnimalFilter">
+                        <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                    </Button>
+                    <Button profile="globalMarketToolbarBtnMode" id="btnAnimalSort" position="450px 0px" text="$l10n_ui_gm_vehicles_sort_price" onClick="onClickCycleAnimalSort">
+                        <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                    </Button>
+                </GuiElement>
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="710px 38px">
+                    <Text profile="globalMarketHeader" position="40px 8px" size="200px 24px" text="$l10n_ui_gm_animals_col_animals" />
+                    <Text profile="globalMarketHeaderRight" position="245px 8px" size="260px 24px" text="$l10n_ui_gm_animals_col_condition" />
+                    <Text profile="globalMarketHeaderRight" position="510px 8px" size="180px 24px" text="$l10n_ui_gm_vehicles_col_price" />
+                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="710px 2px" />
+                </GuiElement>
+
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="710px 592px">
+                    <SmoothList profile="emptyPanel" id="gmTableAnimalMarket" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onAnimalRightAction">
+                        <ListItem profile="globalMarketListItem" name="gmAnimalMarketRowTemplate">
+                            <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
+                            <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="200px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellRight" position="245px 0px" size="260px 32px" textLayoutMode="resize" name="condition" />
+                            <Text profile="globalMarketRowCellRight" position="510px 0px" size="180px 32px" textLayoutMode="resize" name="price" />
+                        </ListItem>
+                        <ListItem profile="globalMarketSectionHeader" name="section">
+                            <Text profile="globalMarketSectionHeaderTitle" name="title" />
+                        </ListItem>
+                    </SmoothList>
+
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="globalMarketListSlider" dataElementId="gmTableAnimalMarket" id="gmTableAnimalMarketSlider" />
+                    </ThreePartBitmap>
+                </GuiElement>
+            </GuiElement>
+
+            <GuiElement profile="globalMarketFooterBox1">
+                <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
+                <Text profile="fs25_textDefault" id="animalsSelectionHint" position="40px 8px" size="1470px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
             </GuiElement>
         </GuiElement>
 

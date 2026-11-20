@@ -232,7 +232,33 @@
         <e k="ui_gm_animals_reason_pickupNotFound"                 v="Brak pasujących zwierząt w punkcie odbioru." />
         <e k="ui_gm_animals_reason_noTrailer"                      v="Żadna twoja przyczepa do zwierząt nie stoi u handlarza zwierząt." />
         <e k="ui_gm_animals_reason_noPermission"                   v="Nie masz do tego uprawnień." />
-        <e k="ui_gm_subtab_vehicles"                               v="Pojazdy używane" />
+        <e k="ui_gm_market_showAnimals"                            v="Pokaż zwierzęta" />
+        <e k="ui_gm_market_showVehicles"                           v="Pokaż pojazdy" />
+        <e k="ui_gm_animals_myHeader"                              v="Moje zwierzęta" />
+        <e k="ui_gm_animals_marketHeader"                          v="Targ zwierząt" />
+        <e k="ui_gm_animals_mySub"                                 v="Oferty: %d / %d | Grupy: %d" />
+        <e k="ui_gm_animals_col_animals"                           v="Zwierzęta" />
+        <e k="ui_gm_animals_col_condition"                         v="Wiek | Zdrowie" />
+        <e k="ui_gm_animals_sec_myListings"                        v="Moje oferty" />
+        <e k="ui_gm_animals_sec_pickup"                            v="Punkt odbioru" />
+        <e k="ui_gm_animals_atDealer"                              v="%s (u handlarza zwierząt)" />
+        <e k="ui_gm_animals_empty_my"                              v="Brak zwierząt w twoich budynkach." />
+        <e k="ui_gm_animals_empty_market"                          v="Obecnie brak ofert zwierząt." />
+        <e k="ui_gm_animals_condition"                             v="%d mies. | %d %%" />
+        <e k="ui_gm_animals_pregnant"                              v="ciężarna %d %%" />
+        <e k="ui_gm_animals_breedingReady"                         v="gotowa do rozrodu" />
+        <e k="ui_gm_animals_pickup_bought"                         v="Gotowe do odbioru" />
+        <e k="ui_gm_animals_pickup_return"                         v="Zwrot oczekuje" />
+        <e k="ui_gm_animals_sort_health"                           v="Sortuj: Zdrowie" />
+        <e k="ui_gm_animals_filter_pregnant"                       v="Filtr: Ciężarne" />
+        <e k="ui_gm_animals_filter_breeding"                       v="Filtr: Gotowe do rozrodu" />
+        <e k="ui_gm_animals_notAtDealerShop"                       v="niedostępne u handlarza" />
+        <e k="ui_gm_animals_hint_group"                            v="%s | %s | Wartość u handlarza %s | Cena nowych u handlarza: %s" />
+        <e k="ui_gm_animals_hint_listing"                          v="%s | Sprzedawca: %s | %s | %s (%d %%) | Cena nowych u handlarza: %s | Transport do budynku: %s | pozostało %s" />
+        <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Odbierz je własną przyczepą do zwierząt u handlarza zwierząt." />
+        <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | Brak miejsca w twoich budynkach. Ponowna próba co godzinę lub odbiór u handlarza zwierząt." />
+        <e k="ui_gm_animals_confirmWithdraw"                       v="Wycofać ofertę dla %s? Zwierzęta wracają do twoich budynków." />
+        <e k="ui_gm_subtab_vehicles"                               v="Ogłoszenia" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />
         <e k="ui_gm_vehicles_col_vehicle"                          v="Pojazd" />

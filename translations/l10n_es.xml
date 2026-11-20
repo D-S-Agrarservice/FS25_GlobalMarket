@@ -232,7 +232,33 @@
         <e k="ui_gm_animals_reason_pickupNotFound"                 v="No hay animales adecuados en el depósito de recogida." />
         <e k="ui_gm_animals_reason_noTrailer"                      v="Ningún remolque de ganado propio está en el tratante de animales." />
         <e k="ui_gm_animals_reason_noPermission"                   v="No tienes permiso para hacer esto." />
-        <e k="ui_gm_subtab_vehicles"                               v="Vehículos usados" />
+        <e k="ui_gm_market_showAnimals"                            v="Mostrar animales" />
+        <e k="ui_gm_market_showVehicles"                           v="Mostrar vehículos" />
+        <e k="ui_gm_animals_myHeader"                              v="Mis animales" />
+        <e k="ui_gm_animals_marketHeader"                          v="Mercado de animales" />
+        <e k="ui_gm_animals_mySub"                                 v="Ofertas: %d / %d | Grupos: %d" />
+        <e k="ui_gm_animals_col_animals"                           v="Animales" />
+        <e k="ui_gm_animals_col_condition"                         v="Edad | Salud" />
+        <e k="ui_gm_animals_sec_myListings"                        v="Mis ofertas" />
+        <e k="ui_gm_animals_sec_pickup"                            v="Depósito de recogida" />
+        <e k="ui_gm_animals_atDealer"                              v="%s (en el tratante de animales)" />
+        <e k="ui_gm_animals_empty_my"                              v="No hay animales en tus establos." />
+        <e k="ui_gm_animals_empty_market"                          v="Ahora mismo no hay ofertas de animales." />
+        <e k="ui_gm_animals_condition"                             v="%d mes. | %d %%" />
+        <e k="ui_gm_animals_pregnant"                              v="preñada %d %%" />
+        <e k="ui_gm_animals_breedingReady"                         v="apta para criar" />
+        <e k="ui_gm_animals_pickup_bought"                         v="Lista para recoger" />
+        <e k="ui_gm_animals_pickup_return"                         v="Devolución pendiente" />
+        <e k="ui_gm_animals_sort_health"                           v="Orden: Salud" />
+        <e k="ui_gm_animals_filter_pregnant"                       v="Filtro: Preñadas" />
+        <e k="ui_gm_animals_filter_breeding"                       v="Filtro: Aptas para criar" />
+        <e k="ui_gm_animals_notAtDealerShop"                       v="no disponible en el tratante" />
+        <e k="ui_gm_animals_hint_group"                            v="%s | %s | Valor en el tratante %s | Precio nuevo en el tratante: %s" />
+        <e k="ui_gm_animals_hint_listing"                          v="%s | Vendedor: %s | %s | %s (%d %%) | Precio nuevo en el tratante: %s | Transporte al establo: %s | quedan %s" />
+        <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Recógelos con un remolque de ganado propio en el tratante de animales." />
+        <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | No hay espacio en tus establos. Nuevo intento cada hora, o recógelos en el tratante de animales." />
+        <e k="ui_gm_animals_confirmWithdraw"                       v="¿Retirar la oferta de %s? Los animales vuelven a tus establos." />
+        <e k="ui_gm_subtab_vehicles"                               v="Compraventa" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mis vehículos y ofertas" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Mercado de vehículos usados" />
         <e k="ui_gm_vehicles_col_vehicle"                          v="Vehículo" />

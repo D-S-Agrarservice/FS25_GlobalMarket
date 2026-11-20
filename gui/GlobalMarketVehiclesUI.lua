@@ -39,6 +39,10 @@ function GlobalMarketUI:initVehiclesSubTab()
             list:setDelegate(GlobalMarketVehiclesUI)
         end
     end
+    -- Livestock market view inside the same sub-tab (#15)
+    if self.initAnimalsSubTab ~= nil then
+        self:initAnimalsSubTab()
+    end
 end
 
 ---Creates the footer button infos of the vehicles sub-tab (called on frame open)
@@ -61,12 +65,23 @@ function GlobalMarketUI:initVehiclesButtonInfos()
         callback = function() self:onClickCycleVehicleSort() end,
         disabled = false
     }
+    if self.initAnimalsButtonInfos ~= nil then
+        self:initAnimalsButtonInfos()
+    end
+end
+
+---Returns true while the marketplace sub-tab shows the animals instead of the vehicles (#15)
+---@return boolean
+local function getIsAnimalMode(ui)
+    return ui.getIsAnimalMode ~= nil and ui:getIsAnimalMode()
 end
 
 ---Shows or hides the vehicles container and styles its sub-tab button
 ---@param isVehicles boolean
 function GlobalMarketUI:applyVehiclesSubTabVisuals(isVehicles)
-    if self.subTabVehiclesContainer ~= nil then self.subTabVehiclesContainer:setVisible(isVehicles) end
+    local isAnimals = isVehicles and getIsAnimalMode(self)
+    if self.subTabVehiclesContainer ~= nil then self.subTabVehiclesContainer:setVisible(isVehicles and not isAnimals) end
+    if self.applyAnimalsSubTabVisuals ~= nil then self:applyAnimalsSubTabVisuals(isAnimals) end
     if self.bgSubTabVehiclesActive ~= nil then self.bgSubTabVehiclesActive:setVisible(isVehicles) end
     if self.bgSubTabVehiclesInactive ~= nil then self.bgSubTabVehiclesInactive:setVisible(not isVehicles) end
     if self.btnSubTabVehicles ~= nil then
@@ -84,6 +99,8 @@ end
 function GlobalMarketUI:applySubTabSearch(allowListFocus)
     if self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS and self.applyContractsListsFilter ~= nil then
         self:applyContractsListsFilter(allowListFocus)
+    elseif getIsAnimalMode(self) then
+        self:applyAnimalListsFilter(allowListFocus)
     elseif self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES then
         self:applyVehicleListsFilter(allowListFocus)
     end
@@ -92,7 +109,9 @@ end
 ---Returns the list that should receive focus in the active sub-tab
 ---@return table|nil list
 function GlobalMarketUI:getSubTabFocusList()
-    if self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES then
+    if getIsAnimalMode(self) then
+        return self:getAnimalFocusList()
+    elseif self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES then
         return (self.vehicleListFocus == "right") and self.gmTableVehicleMarket or self.gmTableMyVehicles
     elseif self.activeSubTab == GlobalMarketUI.SUBTAB_CONTRACTS then
         return (self.contractsListFocus == "right") and self.gmTableContractBoard or self.gmTableMyContracts
@@ -101,14 +120,16 @@ function GlobalMarketUI:getSubTabFocusList()
 end
 
 function GlobalMarketUI:updateVehiclesSubTabContent()
-    if self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES then
+    if getIsAnimalMode(self) then
+        self:applyAnimalListsFilter(false)
+    elseif self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES then
         self:applyVehicleListsFilter(false)
     end
 end
 
 ---Called by GlobalMarket whenever the synced listing state changed
 function GlobalMarketUI:onVehicleMarketChanged()
-    if self:getIsVisible() and self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES then
+    if self:getIsVisible() and self.activeSubTab == GlobalMarketUI.SUBTAB_VEHICLES and not getIsAnimalMode(self) then
         self:applyVehicleListsFilter(false)
     end
 end
@@ -348,6 +369,10 @@ end
 -- =========================================================================
 
 function GlobalMarketUI:updateVehiclesMenuButtons()
+    if getIsAnimalMode(self) then
+        self:updateAnimalsMenuButtons()
+        return
+    end
     local row = self:getSelectedVehicleRow()
     local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
     local isSpectator = (farmId == nil or farmId <= 0 or farmId == FarmManager.SPECTATOR_FARM_ID)

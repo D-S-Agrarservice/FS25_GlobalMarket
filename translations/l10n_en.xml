@@ -232,7 +232,33 @@
         <e k="ui_gm_animals_reason_pickupNotFound"                 v="No matching animals in the pickup box." />
         <e k="ui_gm_animals_reason_noTrailer"                      v="No own livestock trailer stands at the animal dealer." />
         <e k="ui_gm_animals_reason_noPermission"                   v="You do not have permission to do this." />
-        <e k="ui_gm_subtab_vehicles"                               v="Used Vehicles" />
+        <e k="ui_gm_market_showAnimals"                            v="Show animals" />
+        <e k="ui_gm_market_showVehicles"                           v="Show vehicles" />
+        <e k="ui_gm_animals_myHeader"                              v="My Animals" />
+        <e k="ui_gm_animals_marketHeader"                          v="Animal Market" />
+        <e k="ui_gm_animals_mySub"                                 v="Listings: %d / %d | Groups: %d" />
+        <e k="ui_gm_animals_col_animals"                           v="Animals" />
+        <e k="ui_gm_animals_col_condition"                         v="Age | Health" />
+        <e k="ui_gm_animals_sec_myListings"                        v="My Listings" />
+        <e k="ui_gm_animals_sec_pickup"                            v="Pickup Box" />
+        <e k="ui_gm_animals_atDealer"                              v="%s (at the animal dealer)" />
+        <e k="ui_gm_animals_empty_my"                              v="No animals in your barns." />
+        <e k="ui_gm_animals_empty_market"                          v="No animal listings at the moment." />
+        <e k="ui_gm_animals_condition"                             v="%d mo. | %d %%" />
+        <e k="ui_gm_animals_pregnant"                              v="pregnant %d %%" />
+        <e k="ui_gm_animals_breedingReady"                         v="ready to breed" />
+        <e k="ui_gm_animals_pickup_bought"                         v="Ready for pickup" />
+        <e k="ui_gm_animals_pickup_return"                         v="Return pending" />
+        <e k="ui_gm_animals_sort_health"                           v="Sort: Health" />
+        <e k="ui_gm_animals_filter_pregnant"                       v="Filter: Pregnant" />
+        <e k="ui_gm_animals_filter_breeding"                       v="Filter: Ready to breed" />
+        <e k="ui_gm_animals_notAtDealerShop"                       v="not available at the dealer" />
+        <e k="ui_gm_animals_hint_group"                            v="%s | %s | Dealer value %s | Dealer new price: %s" />
+        <e k="ui_gm_animals_hint_listing"                          v="%s | Seller: %s | %s | %s (%d %%) | Dealer new price: %s | Transport to the barn: %s | %s left" />
+        <e k="ui_gm_animals_hint_pickupBought"                     v="%s | Pick them up with an own livestock trailer at the animal dealer." />
+        <e k="ui_gm_animals_hint_pickupReturn"                     v="%s | No space in your barns. Retried hourly, or pick them up at the animal dealer." />
+        <e k="ui_gm_animals_confirmWithdraw"                       v="Withdraw the listing for %s? The animals return to your barns." />
+        <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />
         <e k="ui_gm_vehicles_col_vehicle"                          v="Vehicle" />
