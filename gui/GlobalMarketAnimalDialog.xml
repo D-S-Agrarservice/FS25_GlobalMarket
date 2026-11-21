@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <!-- ========================================================================================= -->
 <!-- FS25_GlobalMarket - GlobalMarketAnimalDialog.xml                                          -->
-<!-- Livestock market (#15): dialog to list own animals (count, asking price, duration) or     -->
-<!-- to buy a listing (barn delivery to a chosen/automatic barn, or dealer pickup).            -->
+<!-- Livestock market (#15): dialog to list own animals (fixed price or auction), to buy a     -->
+<!-- listing, to sell to a great demand or to bid on an auction. Up to five selectors; the     -->
+<!-- dialog height and the receipt position follow the number of visible selectors.           -->
 <!-- Reuses the receipt/dropdown profiles registered by GlobalMarketContractDialog.xml.        -->
 <!-- Author: D-S-Agrarservice                                                                  -->
 <!-- ========================================================================================= -->
@@ -35,7 +36,16 @@
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
-            <GuiElement profile="globalMarketAReceiptBox">
+            <MultiTextOption profile="globalMarketCDropdown4" id="selector4" onClick="onClickSelector4">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
+            <MultiTextOption profile="globalMarketADropdown5" id="selector5" onClick="onClickSelector5">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
+            <!-- Moved below the last visible selector by GlobalMarketAnimalDialog:applyLayout -->
+            <GuiElement profile="globalMarketAReceiptBox" id="receiptBox">
                 <Bitmap profile="globalMarketCReceiptCardBg" />
                 <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px 0px" size="536px 2px" with="anchorTopCenter" />
                 <Text profile="globalMarketCReceiptLabel" id="receiptRow1Label" position="18px -14px" text="" />
@@ -66,6 +76,10 @@
             <size value="36px 36px" />
             <imageSliceId value="noSlice" />
             <imageColor value="$preset_colorWhite" />
+        </Profile>
+        <Profile name="globalMarketADropdown5" extends="fs25_multiTextOption" with="anchorTopCenter">
+            <width value="460px" />
+            <position value="0px -274px" />
         </Profile>
         <Profile name="globalMarketAReceiptBox" extends="emptyPanel" with="anchorTopCenter">
             <size value="536px 172px" />

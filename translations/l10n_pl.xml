@@ -50,7 +50,7 @@
         <e k="gm_help_p6_npc_text"                                 v="Dealerzy NPC kupują twoje oferty - im taniej, tym szybciej - i płacą cenę minus 5 % prowizji. Wystawiają też własne używane pojazdy.&#xA;- Handel pojazdami NPC (admin): Wył., Mało lub Normalnie.&#xA;- Powiadamiaj o nowych ofertach pojazdów: osobiste powiadomienie HUD, gdy inne gospodarstwo wystawi pojazd." />
         <e k="gm_help_p7_title"                                    v="5. Targ zwierząt" />
         <e k="gm_help_p7_selling_title"                            v="Wystawianie zwierząt" />
-        <e k="gm_help_p7_selling_text"                             v="W zakładce Ogłoszenia przycisk 'Pokaż zwierzęta' przełącza na targ zwierząt. Po lewej widzisz swoje budynki z grupami zwierząt oraz przyczepę do zwierząt, gdy stoi u handlarza zwierząt.&#xA;- Wystawianie: wybierz liczbę (konie pojedynczo), cena od 80 do 200 % wartości u handlarza, czas od 1 do 3 miesięcy, do 10 ofert na gospodarstwo.&#xA;- Zwierzęta opuszczają budynek z wiekiem, zdrowiem i ciążą (konie z imieniem i kondycją) i nie starzeją się w czasie oferty.&#xA;- Po wycofaniu lub wygaśnięciu wracają do budynku, z którego pochodzą, a w razie braku miejsca do budynku z tą samą rasą. Jeśli nigdzie nie ma miejsca, czekają w punkcie odbioru, a próba jest ponawiana co godzinę." />
+        <e k="gm_help_p7_selling_text"                             v="W zakładce Ogłoszenia przycisk 'Pokaż zwierzęta' przełącza na targ zwierząt. Po lewej widzisz swoje budynki z grupami zwierząt oraz przyczepę do zwierząt, gdy stoi u handlarza zwierząt.&#xA;- Wystawianie: wybierz liczbę (konie pojedynczo), cena od 80 do 200 % wartości u handlarza, czas od 1 do 3 miesięcy, do 10 ofert na gospodarstwo.&#xA;- Zwierzęta opuszczają budynek z wiekiem, zdrowiem i ciążą (konie z imieniem i kondycją) i nie starzeją się w czasie oferty.&#xA;- Po wycofaniu lub wygaśnięciu wracają do budynku, z którego pochodzą, a w razie braku miejsca do budynku z tą samą rasą. Jeśli nigdzie nie ma miejsca, czekają w punkcie odbioru, a próba jest ponawiana co godzinę.&#xA;- Aukcje: przy wystawianiu wybierz 'Sposób sprzedaży: Aukcja' (cena wywoławcza od 50 do 150 %, czas od 6 do 48 godzin, opcjonalnie Kup teraz). Oferta jest od razu rezerwowana; przebity licytujący natychmiast odzyskuje pieniądze, własne oferty można podnosić. Oferta w ostatniej godzinie przedłuża aukcję o godzinę. Aukcji z ofertami nie można wycofać. Twoje oferty są po lewej w sekcji 'Moje oferty'." />
         <e k="gm_help_p7_buying_title"                             v="Kupowanie i odbiór zwierząt" />
         <e k="gm_help_p7_buying_text"                              v="Po prawej są oferty innych gospodarstw i handlarzy, pogrupowane według gatunku, sortowane według ceny, wieku lub zdrowia i filtrowane według ciąży lub gotowości do rozrodu.&#xA;- Dostawa do budynku: automatycznie lub do wybranego budynku z wystarczającym miejscem, plus opłata transportowa handlarza.&#xA;- Odbiór bez opłaty transportowej: zwierzęta trafiają do punktu odbioru. Gdy twoja przyczepa stoi u handlarza, załaduj je w menu GM przyciskiem 'Załaduj na przyczepę' lub bezpośrednio u handlarza zwykłym klawiszem przez 'Załaduj punkt odbioru GM na przyczepę'.&#xA;- Wyświetlane są tylko rasy dostępne na tym serwerze (DLC i pakiety muszą być aktywne)." />
         <e k="gm_help_p7_npc_title"                                v="Handlarze i ustawienia" />
@@ -317,6 +317,32 @@
         <e k="ui_gm_animals_reason_startOutOfRange"                v="Cena wywoławcza musi wynosić od %d %% do %d %% wartości u handlarza." />
         <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="Cena Kup teraz musi być wyższa od wywoławczej o co najmniej %d %% i wynosić najwyżej %d %% wartości u handlarza." />
         <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="Czas trwania musi wynosić 6, 12, 24 lub 48 godzin." />
+        <e k="ui_gm_animals_saleMode_fixed"                        v="Sposób sprzedaży: Stała cena" />
+        <e k="ui_gm_animals_saleMode_auction"                      v="Sposób sprzedaży: Aukcja" />
+        <e k="ui_gm_animals_startPriceOption"                      v="Cena wywoławcza: %d %% (%s)" />
+        <e k="ui_gm_animals_durationHours"                         v="Czas trwania: %d godz." />
+        <e k="ui_gm_animals_buyNowOff"                             v="Kup teraz: wył." />
+        <e k="ui_gm_animals_buyNowOption"                          v="Kup teraz: %d %% (%s)" />
+        <e k="ui_gm_animals_buyNowNone"                            v="bez Kup teraz" />
+        <e k="ui_gm_animals_bidOption"                             v="Oferta: %d %% (%s)" />
+        <e k="ui_gm_animals_bidBuyNow"                             v="Kup teraz: %s" />
+        <e k="ui_gm_animals_noBidYet"                              v="brak ofert" />
+        <e k="ui_gm_animals_dialog_titleBid"                       v="Licytuj: %s" />
+        <e k="ui_gm_animals_action_auction"                        v="Wystaw na aukcję" />
+        <e k="ui_gm_animals_action_bid"                            v="Licytuj" />
+        <e k="ui_gm_animals_action_buyNow"                         v="Kup teraz" />
+        <e k="ui_gm_animals_receipt_startPrice"                    v="Cena wywoławcza" />
+        <e k="ui_gm_animals_receipt_buyNow"                        v="Cena Kup teraz" />
+        <e k="ui_gm_animals_receipt_highBid"                       v="Najwyższa oferta (%d ofert)" />
+        <e k="ui_gm_animals_receipt_reserved"                      v="Już zarezerwowane przez ciebie" />
+        <e k="ui_gm_animals_receipt_toReserve"                     v="Do zarezerwowania teraz" />
+        <e k="ui_gm_animals_sec_myBids"                            v="Moje oferty" />
+        <e k="ui_gm_animals_bidState_high"                         v="Najwyższa oferta" />
+        <e k="ui_gm_animals_bidState_outbid"                       v="Przebito" />
+        <e k="ui_gm_animals_auctionStatus"                         v="Aukcja: %d ofert | pozostało %s" />
+        <e k="ui_gm_animals_auctionPrice"                          v="Aukcja %s | %s" />
+        <e k="ui_gm_animals_filter_auctions"                       v="Filtr: Tylko aukcje" />
+        <e k="ui_gm_animals_hint_auction"                          v="%s | Sprzedawca: %s | %s | Najwyższa oferta: %s (%d ofert) | Minimalna oferta: %s | Kup teraz: %s | pozostało %s" />
         <e k="ui_gm_subtab_vehicles"                               v="Ogłoszenia" />
         <e k="ui_gm_vehicles_myHeader"                             v="Moje pojazdy i oferty" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Rynek pojazdów używanych" />

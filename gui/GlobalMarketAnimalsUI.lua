@@ -22,8 +22,9 @@ GlobalMarketUI.ANIMAL_SORT_KEYS = {
 GlobalMarketUI.ANIMAL_FILTER_ALL      = 1
 GlobalMarketUI.ANIMAL_FILTER_PREGNANT = 2
 GlobalMarketUI.ANIMAL_FILTER_BREEDING = 3
+GlobalMarketUI.ANIMAL_FILTER_AUCTIONS = 4
 GlobalMarketUI.ANIMAL_FILTER_KEYS = {
-    "ui_gm_filter_all", "ui_gm_animals_filter_pregnant", "ui_gm_animals_filter_breeding"
+    "ui_gm_filter_all", "ui_gm_animals_filter_pregnant", "ui_gm_animals_filter_breeding", "ui_gm_animals_filter_auctions"
 }
 
 local COLOR_WHITE_TEXT = { 1, 1, 1, 1 }
@@ -189,8 +190,10 @@ end
 ---@param ui table
 ---@param info table
 ---@return boolean
-local function passesFilter(ui, info)
-    if ui.animalFilter == GlobalMarketUI.ANIMAL_FILTER_PREGNANT then
+local function passesFilter(ui, info, listing)
+    if ui.animalFilter == GlobalMarketUI.ANIMAL_FILTER_AUCTIONS then
+        return GlobalMarket.getIsAnimalAuction(listing)
+    elseif ui.animalFilter == GlobalMarketUI.ANIMAL_FILTER_PREGNANT then
         return info.isPregnant
     elseif ui.animalFilter == GlobalMarketUI.ANIMAL_FILTER_BREEDING then
         return info.isBreedingReady
@@ -269,7 +272,7 @@ function GlobalMarketUI:applyAnimalListsFilter(allowListFocus)
 
     local isAvailable = GlobalMarketAnimalListings.getIsAvailable()
     local isPlayerFarm = GlobalMarketAnimalListings.getIsPlayerFarm(farmId)
-    local myListings, pickups, marketByType = {}, {}, {}
+    local myListings, myBids, pickups, marketByType = {}, {}, {}, {}
     local marketCount, groupCount = 0, 0
 
     if isAvailable then
@@ -285,7 +288,11 @@ function GlobalMarketUI:applyAnimalListsFilter(allowListFocus)
                         row.kind = "MY_LISTING"
                         table.insert(myListings, row)
                     end
-                elseif self:matchesVehicleQuery(name) and passesFilter(self, info) then
+                elseif self:matchesVehicleQuery(name) and passesFilter(self, info, listing) then
+                    -- Auctions this farm took part in are also listed on the left ("My bids")
+                    if GlobalMarket.getIsAnimalAuction(listing) and listing.auction.bidders ~= nil and listing.auction.bidders[farmId] then
+                        table.insert(myBids, { kind = "MY_BID", data = listing, name = name, info = info, price = row.price })
+                    end
                     local typeIndex = g_currentMission.animalSystem:getTypeIndexBySubTypeIndex(info.subTypeIndex) or 0
                     marketByType[typeIndex] = marketByType[typeIndex] or {}
                     table.insert(marketByType[typeIndex], row)
@@ -309,6 +316,9 @@ function GlobalMarketUI:applyAnimalListsFilter(allowListFocus)
     self.myAnimalSections = {}
     if #myListings > 0 then
         table.insert(self.myAnimalSections, { title = self.i18n:getText("ui_gm_animals_sec_myListings"), items = myListings })
+    end
+    if #myBids > 0 then
+        table.insert(self.myAnimalSections, { title = self.i18n:getText("ui_gm_animals_sec_myBids"), items = myBids })
     end
     if #pickups > 0 then
         table.insert(self.myAnimalSections, { title = self.i18n:getText("ui_gm_animals_sec_pickup"), items = pickups })
@@ -464,8 +474,9 @@ function GlobalMarketUI:updateAnimalsMenuButtons()
             primary.text = self.i18n:getText("ui_gm_vehicles_action_list")
             primary.disabled = not row.data.isEligible
             table.insert(list, primary)
-        elseif row.kind == "MARKET_LISTING" then
-            primary.text = self.i18n:getText("ui_gm_animals_action_buy")
+        elseif row.kind == "MARKET_LISTING" or row.kind == "MY_BID" then
+            local isAuction = GlobalMarket.getIsAnimalAuction(row.data)
+            primary.text = self.i18n:getText(isAuction and "ui_gm_animals_action_bid" or "ui_gm_animals_action_buy")
             primary.disabled = false
             table.insert(list, primary)
         elseif row.kind == "PICKUP" then
@@ -485,7 +496,8 @@ function GlobalMarketUI:updateAnimalsMenuButtons()
         self.animalsFilterButtonInfo.text = self:getAnimalFilterText()
         table.insert(list, self.animalsFilterButtonInfo)
     end
-    if self.animalsCancelButtonInfo ~= nil and row ~= nil and row.kind == "MY_LISTING" and not isSpectator then
+    if self.animalsCancelButtonInfo ~= nil and row ~= nil and row.kind == "MY_LISTING" and not isSpectator
+        and GlobalMarket.getAnimalAuctionCancelBlock(row.data) == nil then
         table.insert(list, self.animalsCancelButtonInfo)
     elseif self.animalsDemandButtonInfo ~= nil and row ~= nil and row.kind == "MY_GROUP" and row.data.demandOk and not isSpectator then
         table.insert(list, self.animalsDemandButtonInfo)
@@ -493,6 +505,34 @@ function GlobalMarketUI:updateAnimalsMenuButtons()
     self:setMenuButtonInfo(list)
     self:setMenuButtonInfoDirty()
     self:updateAnimalSelectionHint(row)
+end
+
+---Returns a remaining time text ("2.5 days" or "5 h")
+---@param hours number
+---@return string
+function GlobalMarketUI:formatAnimalHours(hours)
+    hours = hours or 0
+    if hours >= 24 then
+        return string.format(self.i18n:getText("ui_gm_animals_demand_days"), hours / 24)
+    end
+    return string.format(self.i18n:getText("ui_gm_animals_demand_hours"), math.max(1, math.ceil(hours)))
+end
+
+---Returns true if the local farm holds the highest bid of an auction listing
+---@param listing table
+---@return boolean
+local function getIsOwnHighBid(listing)
+    local auction = listing.auction
+    local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
+    return auction ~= nil and auction.highFactor ~= nil and not auction.highIsNpc and auction.highFarmId == farmId
+end
+
+---Returns the auction status text "4 bids | 5 h left"
+---@param listing table
+---@return string
+function GlobalMarketUI:formatAnimalAuctionStatus(listing)
+    return string.format(self.i18n:getText("ui_gm_animals_auctionStatus"), GlobalMarketAuction.getBidCount(listing.auction),
+        self:formatAnimalHours(listing.auction.hoursRemaining))
 end
 
 ---Returns the great demand banner text ("" without an active demand)
@@ -503,13 +543,7 @@ function GlobalMarketUI:getAnimalDemandBannerText()
     if demand == nil then
         return ""
     end
-    local hours = demand.hoursRemaining or 0
-    local timeText
-    if hours >= 24 then
-        timeText = string.format(self.i18n:getText("ui_gm_animals_demand_days"), hours / 24)
-    else
-        timeText = string.format(self.i18n:getText("ui_gm_animals_demand_hours"), math.max(1, math.ceil(hours)))
-    end
+    local timeText = self:formatAnimalHours(demand.hoursRemaining)
     return string.format(self.i18n:getText("ui_gm_animals_demandBanner"), GlobalMarket.getAnimalDemandTypeTitle(demand.typeName),
         math.floor((demand.bonus or 0) * 100 + 0.5), timeText, gm:getAnimalDemandRemaining())
 end
@@ -574,6 +608,24 @@ function GlobalMarketUI:updateAnimalSelectionHint(row)
         local isReturn = (row.data.reason == GlobalMarket.ANIMAL_PICKUP_REASON.RETURN)
         text = string.format(self.i18n:getText(isReturn and "ui_gm_animals_hint_pickupReturn" or "ui_gm_animals_hint_pickupBought"),
             row.name)
+    elseif row ~= nil and (row.kind == "MY_LISTING" or row.kind == "MARKET_LISTING" or row.kind == "MY_BID")
+        and GlobalMarket.getIsAnimalAuction(row.data) then
+        local listing = row.data
+        local auction = listing.auction
+        local baseValue = GlobalMarketAnimalListings.getDealerValue(listing.snapshot) or 0
+        local buyNowText = self.i18n:getText("ui_gm_animals_buyNowNone")
+        if GlobalMarketAuction.getIsBuyNowAvailable(auction) then
+            buyNowText = self.i18n:formatMoney(GlobalMarketAuction.getAmount(auction.buyNowFactor, baseValue), 0, true, true)
+        end
+        text = string.format(self.i18n:getText("ui_gm_animals_hint_auction"), row.name,
+            listing.isNpc and self.i18n:getText("ui_gm_animals_npcName") or tostring(listing.sellerName),
+            self:formatAnimalCondition(row.info), self.i18n:formatMoney(row.price, 0, true, true),
+            GlobalMarketAuction.getBidCount(auction),
+            self.i18n:formatMoney(GlobalMarketAuction.getAmount(GlobalMarketAuction.getMinBidFactor(auction), baseValue), 0, true, true),
+            buyNowText, self:formatAnimalHours(auction.hoursRemaining))
+        if getIsOwnHighBid(listing) then
+            text = text .. " | " .. self.i18n:getText("ui_gm_animals_bidState_high")
+        end
     elseif row ~= nil and (row.kind == "MY_LISTING" or row.kind == "MARKET_LISTING") then
         local listing = row.data
         text = string.format(self.i18n:getText("ui_gm_animals_hint_listing"), row.name,
@@ -633,6 +685,11 @@ function GlobalMarketUI:onAnimalPrimaryAction(overrideSection, overrideIndex)
         local cluster = row.data.source:getClusterById(row.data.clusterId)
         if cluster ~= nil and gm.animalDialog ~= nil then
             gm.animalDialog:showList({ source = row.data.source, cluster = cluster, title = row.name,
+                condition = self:formatAnimalCondition(row.info), image = getAnimalImage(row.info), farmId = farmId })
+        end
+    elseif (row.kind == "MARKET_LISTING" or row.kind == "MY_BID") and GlobalMarket.getIsAnimalAuction(row.data) then
+        if gm.animalDialog ~= nil then
+            gm.animalDialog:showBid({ listing = row.data, title = row.name,
                 condition = self:formatAnimalCondition(row.info), image = getAnimalImage(row.info), farmId = farmId })
         end
     elseif row.kind == "MARKET_LISTING" then
@@ -761,14 +818,29 @@ function GlobalMarketAnimalsUI:populateCellForItemInSection(list, section, index
         setCellText(cell, "value", i18n:formatMoney(row.value, 0, true, true))
     elseif row.kind == "MY_LISTING" then
         setCellText(cell, "name", row.name)
-        setCellText(cell, "condition", string.format(i18n:getText("ui_gm_vehicles_status_open"),
-            string.format(i18n:getText("ui_gm_months_short"), math.max(0, row.data.monthsRemaining or 0))))
+        if GlobalMarket.getIsAnimalAuction(row.data) then
+            setCellText(cell, "condition", ui:formatAnimalAuctionStatus(row.data), COLOR_MARKUP)
+        else
+            setCellText(cell, "condition", string.format(i18n:getText("ui_gm_vehicles_status_open"),
+                string.format(i18n:getText("ui_gm_months_short"), math.max(0, row.data.monthsRemaining or 0))))
+        end
         setCellText(cell, "value", i18n:formatMoney(row.price, 0, true, true), getPriceFactorColor(row.data.priceFactor or 1))
+    elseif row.kind == "MY_BID" then
+        setCellText(cell, "name", row.name)
+        local isHigh = getIsOwnHighBid(row.data)
+        setCellText(cell, "condition", string.format("%s | %s", i18n:getText(isHigh and "ui_gm_animals_bidState_high" or "ui_gm_animals_bidState_outbid"),
+            ui:formatAnimalHours(row.data.auction.hoursRemaining)), isHigh and COLOR_BARGAIN or COLOR_BLOCKED)
+        setCellText(cell, "value", i18n:formatMoney(row.price, 0, true, true))
     elseif row.kind == "MARKET_LISTING" then
         setCellText(cell, "name", row.name)
         setCellText(cell, "condition", ui:formatAnimalCondition(row.info))
-        setCellText(cell, "price", string.format("%s (%d %%)", i18n:formatMoney(row.price, 0, true, true),
-            math.floor((row.data.priceFactor or 1) * 100 + 0.5)), getPriceFactorColor(row.data.priceFactor or 1))
+        if GlobalMarket.getIsAnimalAuction(row.data) then
+            setCellText(cell, "price", string.format(i18n:getText("ui_gm_animals_auctionPrice"), i18n:formatMoney(row.price, 0, true, true),
+                ui:formatAnimalHours(row.data.auction.hoursRemaining)), getIsOwnHighBid(row.data) and COLOR_BARGAIN or COLOR_MARKUP)
+        else
+            setCellText(cell, "price", string.format("%s (%d %%)", i18n:formatMoney(row.price, 0, true, true),
+                math.floor((row.data.priceFactor or 1) * 100 + 0.5)), getPriceFactorColor(row.data.priceFactor or 1))
+        end
     end
 end
 

@@ -50,7 +50,7 @@
         <e k="gm_help_p6_npc_text"                                 v="NPC-Händler kaufen eure Angebote - je günstiger, desto schneller - und zahlen den Preis abzüglich 5 % Provision. Außerdem bieten sie eigene Gebrauchtfahrzeuge an.&#xA;- NPC-Fahrzeughandel (Admin): Aus, Wenig oder Normal.&#xA;- Meldung bei neuen Fahrzeugangeboten: persönliche HUD-Meldung, wenn ein anderer Hof ein Fahrzeug anbietet." />
         <e k="gm_help_p7_title"                                    v="5. Tiermarkt" />
         <e k="gm_help_p7_selling_title"                            v="Tiere anbieten" />
-        <e k="gm_help_p7_selling_text"                             v="Im Reiter Marktplatz schaltest du mit 'Tiere anzeigen' zum Tiermarkt. Links stehen deine Ställe mit ihren Tiergruppen und dein Viehanhänger, wenn er beim Viehhändler steht.&#xA;- Anbieten: Anzahl wählen (Pferde einzeln), Preis 80 bis 200 % des Händlerwerts, Laufzeit 1 bis 3 Monate, bis zu 10 Angebote pro Hof.&#xA;- Die Tiere verlassen den Stall mit Alter, Gesundheit und Trächtigkeit (Pferde mit Name und Fitness) und altern während des Angebots nicht.&#xA;- Beim Zurückziehen oder Ablauf kommen sie zurück in ihren Ursprungsstall, sonst in einen Stall mit derselben Rasse. Ist nirgends Platz, warten sie im Abholfach und werden stündlich erneut eingestellt." />
+        <e k="gm_help_p7_selling_text"                             v="Im Reiter Marktplatz schaltest du mit 'Tiere anzeigen' zum Tiermarkt. Links stehen deine Ställe mit ihren Tiergruppen und dein Viehanhänger, wenn er beim Viehhändler steht.&#xA;- Anbieten: Anzahl wählen (Pferde einzeln), Preis 80 bis 200 % des Händlerwerts, Laufzeit 1 bis 3 Monate, bis zu 10 Angebote pro Hof.&#xA;- Die Tiere verlassen den Stall mit Alter, Gesundheit und Trächtigkeit (Pferde mit Name und Fitness) und altern während des Angebots nicht.&#xA;- Beim Zurückziehen oder Ablauf kommen sie zurück in ihren Ursprungsstall, sonst in einen Stall mit derselben Rasse. Ist nirgends Platz, warten sie im Abholfach und werden stündlich erneut eingestellt.&#xA;- Auktionen: Beim Anbieten 'Verkaufsart: Auktion' wählen (Startpreis 50 bis 150 %, Laufzeit 6 bis 48 Stunden, optional Sofortkauf). Ein Gebot wird sofort reserviert; wer überboten wird, bekommt sein Geld sofort zurück, eigene Gebote lassen sich erhöhen. Ein Gebot in der letzten Stunde verlängert um eine Stunde. Mit Geboten kann eine Auktion nicht mehr zurückgezogen werden. Eigene Gebote stehen links unter 'Meine Gebote'." />
         <e k="gm_help_p7_buying_title"                             v="Tiere kaufen &amp; abholen" />
         <e k="gm_help_p7_buying_text"                              v="Rechts stehen die Angebote anderer Höfe und Viehhändler, nach Tierart gruppiert, sortierbar nach Preis, Alter oder Gesundheit und filterbar nach trächtig oder zuchtreif.&#xA;- Lieferung in den Stall: automatisch oder in einen gewählten Stall mit genug Platz, zuzüglich der Transportgebühr des Viehhändlers.&#xA;- Abholung ohne Transportgebühr: Die Tiere kommen ins Abholfach. Steht dein Viehanhänger beim Viehhändler, lädst du sie im GM-Menü mit 'Auf Anhänger laden' oder direkt am Viehhändler mit der normalen Taste über 'GM-Abholfach auf den Anhänger laden'.&#xA;- Angezeigt werden nur Rassen, die es auf diesem Server gibt (DLCs und Packs müssen aktiv sein)." />
         <e k="gm_help_p7_npc_title"                                v="Viehhändler &amp; Einstellungen" />
@@ -317,6 +317,32 @@
         <e k="ui_gm_animals_reason_startOutOfRange"                v="Der Startpreis muss zwischen %d %% und %d %% des Händlerwerts liegen." />
         <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="Der Sofortkaufpreis muss mindestens %d %% über dem Startpreis und höchstens bei %d %% des Händlerwerts liegen." />
         <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="Die Laufzeit muss 6, 12, 24 oder 48 Stunden betragen." />
+        <e k="ui_gm_animals_saleMode_fixed"                        v="Verkaufsart: Festpreis" />
+        <e k="ui_gm_animals_saleMode_auction"                      v="Verkaufsart: Auktion" />
+        <e k="ui_gm_animals_startPriceOption"                      v="Startpreis: %d %% (%s)" />
+        <e k="ui_gm_animals_durationHours"                         v="Laufzeit: %d Std." />
+        <e k="ui_gm_animals_buyNowOff"                             v="Sofortkauf: aus" />
+        <e k="ui_gm_animals_buyNowOption"                          v="Sofortkauf: %d %% (%s)" />
+        <e k="ui_gm_animals_buyNowNone"                            v="kein Sofortkauf" />
+        <e k="ui_gm_animals_bidOption"                             v="Gebot: %d %% (%s)" />
+        <e k="ui_gm_animals_bidBuyNow"                             v="Sofortkauf: %s" />
+        <e k="ui_gm_animals_noBidYet"                              v="noch kein Gebot" />
+        <e k="ui_gm_animals_dialog_titleBid"                       v="Mitbieten: %s" />
+        <e k="ui_gm_animals_action_auction"                        v="Versteigern" />
+        <e k="ui_gm_animals_action_bid"                            v="Bieten" />
+        <e k="ui_gm_animals_action_buyNow"                         v="Sofort kaufen" />
+        <e k="ui_gm_animals_receipt_startPrice"                    v="Startpreis" />
+        <e k="ui_gm_animals_receipt_buyNow"                        v="Sofortkaufpreis" />
+        <e k="ui_gm_animals_receipt_highBid"                       v="Höchstgebot (%d Gebote)" />
+        <e k="ui_gm_animals_receipt_reserved"                      v="Von dir bereits reserviert" />
+        <e k="ui_gm_animals_receipt_toReserve"                     v="Jetzt zu reservieren" />
+        <e k="ui_gm_animals_sec_myBids"                            v="Meine Gebote" />
+        <e k="ui_gm_animals_bidState_high"                         v="Höchstbietender" />
+        <e k="ui_gm_animals_bidState_outbid"                       v="Überboten" />
+        <e k="ui_gm_animals_auctionStatus"                         v="Auktion: %d Gebote | noch %s" />
+        <e k="ui_gm_animals_auctionPrice"                          v="Auktion %s | %s" />
+        <e k="ui_gm_animals_filter_auctions"                       v="Filter: Nur Auktionen" />
+        <e k="ui_gm_animals_hint_auction"                          v="%s | Verkäufer: %s | %s | Höchstgebot: %s (%d Gebote) | Mindestgebot: %s | Sofortkauf: %s | noch %s" />
         <e k="ui_gm_subtab_vehicles"                               v="Marktplatz" />
         <e k="ui_gm_vehicles_myHeader"                             v="Meine Fahrzeuge &amp; Angebote" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Gebrauchtfahrzeugmarkt" />

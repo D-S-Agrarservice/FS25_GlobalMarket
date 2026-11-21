@@ -50,7 +50,7 @@
         <e k="gm_help_p6_npc_text"                                 v="NPC dealers buy your listings - the cheaper, the faster - and pay the price minus 5 % commission. They also list used vehicles of their own.&#xA;- NPC Vehicle Trading (admin): Off, Low or Normal.&#xA;- Notify About New Vehicle Listings: personal HUD notice when another farm lists a vehicle." />
         <e k="gm_help_p7_title"                                    v="5. Animal Market" />
         <e k="gm_help_p7_selling_title"                            v="Listing Animals" />
-        <e k="gm_help_p7_selling_text"                             v="In the Marketplace tab, 'Show animals' switches to the animal market. On the left you see your barns with their animal groups and your livestock trailer while it stands at the animal dealer.&#xA;- Listing: choose the count (horses single), price 80 to 200 % of the dealer value, duration 1 to 3 months, up to 10 listings per farm.&#xA;- The animals leave the barn with their age, health and pregnancy (horses with name and fitness) and do not age while listed.&#xA;- When withdrawn or expired they return to their original barn, otherwise to a barn with the same breed. If there is no space anywhere, they wait in the pickup box and are moved in again every hour." />
+        <e k="gm_help_p7_selling_text"                             v="In the Marketplace tab, 'Show animals' switches to the animal market. On the left you see your barns with their animal groups and your livestock trailer while it stands at the animal dealer.&#xA;- Listing: choose the count (horses single), price 80 to 200 % of the dealer value, duration 1 to 3 months, up to 10 listings per farm.&#xA;- The animals leave the barn with their age, health and pregnancy (horses with name and fitness) and do not age while listed.&#xA;- When withdrawn or expired they return to their original barn, otherwise to a barn with the same breed. If there is no space anywhere, they wait in the pickup box and are moved in again every hour.&#xA;- Auctions: choose 'Sale mode: Auction' when listing (start price 50 to 150 %, duration 6 to 48 hours, optional buy-now). A bid is reserved immediately; outbid bidders get their money back at once, own bids can be raised. A bid in the last hour extends the auction by one hour. An auction with bids cannot be withdrawn. Your bids are shown on the left under 'My Bids'." />
         <e k="gm_help_p7_buying_title"                             v="Buying &amp; Picking Up Animals" />
         <e k="gm_help_p7_buying_text"                              v="On the right you find listings of other farms and animal dealers, grouped by animal type, sortable by price, age or health and filterable by pregnant or ready to breed.&#xA;- Barn delivery: automatic or into a chosen barn with enough space, plus the animal dealer's transport fee.&#xA;- Pickup without transport fee: the animals go into the pickup box. While your livestock trailer stands at the animal dealer, load them in the GM menu with 'Load onto trailer' or directly at the dealer with the normal key via 'Load GM pickup box onto the trailer'.&#xA;- Only breeds that exist on this server are shown (DLCs and packs must be active)." />
         <e k="gm_help_p7_npc_title"                                v="Animal Dealers &amp; Settings" />
@@ -317,6 +317,32 @@
         <e k="ui_gm_animals_reason_startOutOfRange"                v="The start price must be between %d %% and %d %% of the dealer value." />
         <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="The buy-now price must be at least %d %% above the start price and at most %d %% of the dealer value." />
         <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="The duration must be 6, 12, 24 or 48 hours." />
+        <e k="ui_gm_animals_saleMode_fixed"                        v="Sale mode: Fixed price" />
+        <e k="ui_gm_animals_saleMode_auction"                      v="Sale mode: Auction" />
+        <e k="ui_gm_animals_startPriceOption"                      v="Start price: %d %% (%s)" />
+        <e k="ui_gm_animals_durationHours"                         v="Duration: %d h" />
+        <e k="ui_gm_animals_buyNowOff"                             v="Buy-now: off" />
+        <e k="ui_gm_animals_buyNowOption"                          v="Buy-now: %d %% (%s)" />
+        <e k="ui_gm_animals_buyNowNone"                            v="no buy-now" />
+        <e k="ui_gm_animals_bidOption"                             v="Bid: %d %% (%s)" />
+        <e k="ui_gm_animals_bidBuyNow"                             v="Buy-now: %s" />
+        <e k="ui_gm_animals_noBidYet"                              v="no bid yet" />
+        <e k="ui_gm_animals_dialog_titleBid"                       v="Bid: %s" />
+        <e k="ui_gm_animals_action_auction"                        v="Auction" />
+        <e k="ui_gm_animals_action_bid"                            v="Bid" />
+        <e k="ui_gm_animals_action_buyNow"                         v="Buy now" />
+        <e k="ui_gm_animals_receipt_startPrice"                    v="Start price" />
+        <e k="ui_gm_animals_receipt_buyNow"                        v="Buy-now price" />
+        <e k="ui_gm_animals_receipt_highBid"                       v="Highest bid (%d bids)" />
+        <e k="ui_gm_animals_receipt_reserved"                      v="Already reserved by you" />
+        <e k="ui_gm_animals_receipt_toReserve"                     v="To reserve now" />
+        <e k="ui_gm_animals_sec_myBids"                            v="My Bids" />
+        <e k="ui_gm_animals_bidState_high"                         v="Highest bidder" />
+        <e k="ui_gm_animals_bidState_outbid"                       v="Outbid" />
+        <e k="ui_gm_animals_auctionStatus"                         v="Auction: %d bids | %s left" />
+        <e k="ui_gm_animals_auctionPrice"                          v="Auction %s | %s" />
+        <e k="ui_gm_animals_filter_auctions"                       v="Filter: Auctions only" />
+        <e k="ui_gm_animals_hint_auction"                          v="%s | Seller: %s | %s | Highest bid: %s (%d bids) | Minimum bid: %s | Buy-now: %s | %s left" />
         <e k="ui_gm_subtab_vehicles"                               v="Marketplace" />
         <e k="ui_gm_vehicles_myHeader"                             v="My Vehicles &amp; Listings" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Used Vehicle Market" />

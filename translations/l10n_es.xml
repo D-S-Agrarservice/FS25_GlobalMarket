@@ -50,7 +50,7 @@
         <e k="gm_help_p6_npc_text"                                 v="Los concesionarios NPC compran tus ofertas (cuanto más baratas, antes) y pagan el precio menos un 5 % de comisión. Además ponen a la venta sus propios vehículos usados.&#xA;- Comercio de vehículos NPC (admin): Desactivado, Bajo o Normal.&#xA;- Avisar de nuevas ofertas de vehículos: aviso personal en el HUD cuando otra granja pone un vehículo a la venta." />
         <e k="gm_help_p7_title"                                    v="5. Mercado de animales" />
         <e k="gm_help_p7_selling_title"                            v="Poner animales a la venta" />
-        <e k="gm_help_p7_selling_text"                             v="En la pestaña Compraventa, 'Mostrar animales' cambia al mercado de animales. A la izquierda ves tus establos con sus grupos de animales y tu remolque de ganado mientras esté en el tratante de animales.&#xA;- Poner a la venta: elige la cantidad (caballos de uno en uno), precio del 80 al 200 % del valor en el tratante, duración de 1 a 3 meses, hasta 10 ofertas por granja.&#xA;- Los animales salen del establo con su edad, salud y preñez (caballos con nombre y forma física) y no envejecen mientras están a la venta.&#xA;- Al retirarlos o caducar vuelven a su establo de origen o, si no, a un establo con la misma raza. Si no hay espacio, esperan en el depósito de recogida y se reintenta cada hora." />
+        <e k="gm_help_p7_selling_text"                             v="En la pestaña Compraventa, 'Mostrar animales' cambia al mercado de animales. A la izquierda ves tus establos con sus grupos de animales y tu remolque de ganado mientras esté en el tratante de animales.&#xA;- Poner a la venta: elige la cantidad (caballos de uno en uno), precio del 80 al 200 % del valor en el tratante, duración de 1 a 3 meses, hasta 10 ofertas por granja.&#xA;- Los animales salen del establo con su edad, salud y preñez (caballos con nombre y forma física) y no envejecen mientras están a la venta.&#xA;- Al retirarlos o caducar vuelven a su establo de origen o, si no, a un establo con la misma raza. Si no hay espacio, esperan en el depósito de recogida y se reintenta cada hora.&#xA;- Subastas: al poner a la venta elige 'Tipo de venta: Subasta' (precio de salida del 50 al 150 %, duración de 6 a 48 horas, compra inmediata opcional). Una puja se reserva de inmediato; quien es superado recupera su dinero al instante y las pujas propias se pueden aumentar. Una puja en la última hora alarga la subasta una hora. Una subasta con pujas no se puede retirar. Tus pujas aparecen a la izquierda en 'Mis pujas'." />
         <e k="gm_help_p7_buying_title"                             v="Comprar y recoger animales" />
         <e k="gm_help_p7_buying_text"                              v="A la derecha están las ofertas de otras granjas y tratantes, agrupadas por tipo de animal, ordenables por precio, edad o salud y filtrables por preñadas o aptas para criar.&#xA;- Entrega en el establo: automática o en un establo elegido con espacio suficiente, más la tarifa de transporte del tratante.&#xA;- Recogida sin tarifa de transporte: los animales van al depósito de recogida. Mientras tu remolque de ganado esté en el tratante, cárgalos en el menú GM con 'Cargar en el remolque' o directamente en el tratante con la tecla normal mediante 'Cargar el depósito GM en el remolque'.&#xA;- Solo se muestran razas que existen en este servidor (los DLC y packs deben estar activos)." />
         <e k="gm_help_p7_npc_title"                                v="Tratantes y ajustes" />
@@ -317,6 +317,32 @@
         <e k="ui_gm_animals_reason_startOutOfRange"                v="El precio de salida debe estar entre el %d %% y el %d %% del valor en el tratante." />
         <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="El precio de compra inmediata debe superar el de salida en al menos un %d %% y como máximo ser el %d %% del valor en el tratante." />
         <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="La duración debe ser de 6, 12, 24 o 48 horas." />
+        <e k="ui_gm_animals_saleMode_fixed"                        v="Tipo de venta: Precio fijo" />
+        <e k="ui_gm_animals_saleMode_auction"                      v="Tipo de venta: Subasta" />
+        <e k="ui_gm_animals_startPriceOption"                      v="Precio de salida: %d %% (%s)" />
+        <e k="ui_gm_animals_durationHours"                         v="Duración: %d h" />
+        <e k="ui_gm_animals_buyNowOff"                             v="Compra inmediata: no" />
+        <e k="ui_gm_animals_buyNowOption"                          v="Compra inmediata: %d %% (%s)" />
+        <e k="ui_gm_animals_buyNowNone"                            v="sin compra inmediata" />
+        <e k="ui_gm_animals_bidOption"                             v="Puja: %d %% (%s)" />
+        <e k="ui_gm_animals_bidBuyNow"                             v="Compra inmediata: %s" />
+        <e k="ui_gm_animals_noBidYet"                              v="aún sin pujas" />
+        <e k="ui_gm_animals_dialog_titleBid"                       v="Pujar: %s" />
+        <e k="ui_gm_animals_action_auction"                        v="Subastar" />
+        <e k="ui_gm_animals_action_bid"                            v="Pujar" />
+        <e k="ui_gm_animals_action_buyNow"                         v="Comprar ya" />
+        <e k="ui_gm_animals_receipt_startPrice"                    v="Precio de salida" />
+        <e k="ui_gm_animals_receipt_buyNow"                        v="Precio de compra inmediata" />
+        <e k="ui_gm_animals_receipt_highBid"                       v="Puja más alta (%d pujas)" />
+        <e k="ui_gm_animals_receipt_reserved"                      v="Ya reservado por ti" />
+        <e k="ui_gm_animals_receipt_toReserve"                     v="A reservar ahora" />
+        <e k="ui_gm_animals_sec_myBids"                            v="Mis pujas" />
+        <e k="ui_gm_animals_bidState_high"                         v="Mejor postor" />
+        <e k="ui_gm_animals_bidState_outbid"                       v="Superado" />
+        <e k="ui_gm_animals_auctionStatus"                         v="Subasta: %d pujas | quedan %s" />
+        <e k="ui_gm_animals_auctionPrice"                          v="Subasta %s | %s" />
+        <e k="ui_gm_animals_filter_auctions"                       v="Filtro: Solo subastas" />
+        <e k="ui_gm_animals_hint_auction"                          v="%s | Vendedor: %s | %s | Puja más alta: %s (%d pujas) | Puja mínima: %s | Compra inmediata: %s | quedan %s" />
         <e k="ui_gm_subtab_vehicles"                               v="Compraventa" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mis vehículos y ofertas" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Mercado de vehículos usados" />

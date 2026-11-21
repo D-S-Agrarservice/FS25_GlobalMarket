@@ -50,7 +50,7 @@
         <e k="gm_help_p6_npc_text"                                 v="Les concessionnaires PNJ achètent vos annonces - plus c'est bon marché, plus c'est rapide - et paient le prix moins 5 % de commission. Ils mettent aussi en vente leurs propres véhicules d'occasion.&#xA;- Commerce de véhicules PNJ (admin) : Désactivé, Faible ou Normal.&#xA;- Notifier les nouvelles annonces de véhicules : notification HUD personnelle lorsqu'une autre ferme met un véhicule en vente." />
         <e k="gm_help_p7_title"                                    v="5. Marché aux animaux" />
         <e k="gm_help_p7_selling_title"                            v="Mettre des animaux en vente" />
-        <e k="gm_help_p7_selling_text"                             v="Dans l'onglet Petites annonces, 'Afficher les animaux' bascule vers le marché aux animaux. À gauche se trouvent vos étables avec leurs groupes d'animaux et votre bétaillère lorsqu'elle est chez le marchand de bestiaux.&#xA;- Mise en vente : choisissez le nombre (chevaux à l'unité), prix de 80 à 200 % de la valeur chez le marchand, durée de 1 à 3 mois, jusqu'à 10 annonces par ferme.&#xA;- Les animaux quittent l'étable avec leur âge, leur santé et leur gestation (chevaux avec nom et condition physique) et ne vieillissent pas pendant l'annonce.&#xA;- En cas de retrait ou d'expiration, ils retournent dans leur étable d'origine, sinon dans une étable de la même race. S'il n'y a de place nulle part, ils attendent dans le dépôt de retrait et un nouvel essai a lieu toutes les heures." />
+        <e k="gm_help_p7_selling_text"                             v="Dans l'onglet Petites annonces, 'Afficher les animaux' bascule vers le marché aux animaux. À gauche se trouvent vos étables avec leurs groupes d'animaux et votre bétaillère lorsqu'elle est chez le marchand de bestiaux.&#xA;- Mise en vente : choisissez le nombre (chevaux à l'unité), prix de 80 à 200 % de la valeur chez le marchand, durée de 1 à 3 mois, jusqu'à 10 annonces par ferme.&#xA;- Les animaux quittent l'étable avec leur âge, leur santé et leur gestation (chevaux avec nom et condition physique) et ne vieillissent pas pendant l'annonce.&#xA;- En cas de retrait ou d'expiration, ils retournent dans leur étable d'origine, sinon dans une étable de la même race. S'il n'y a de place nulle part, ils attendent dans le dépôt de retrait et un nouvel essai a lieu toutes les heures.&#xA;- Enchères : lors de la mise en vente, choisissez 'Mode de vente : Enchère' (prix de départ de 50 à 150 %, durée de 6 à 48 heures, achat immédiat facultatif). Une offre est réservée immédiatement ; un enchérisseur surenchéri récupère aussitôt son argent, vos offres peuvent être augmentées. Une offre dans la dernière heure prolonge l'enchère d'une heure. Une enchère avec des offres ne peut plus être retirée. Vos offres apparaissent à gauche sous 'Mes offres'." />
         <e k="gm_help_p7_buying_title"                             v="Acheter et retirer des animaux" />
         <e k="gm_help_p7_buying_text"                              v="À droite se trouvent les annonces des autres fermes et marchands, groupées par type d'animal, triables par prix, âge ou santé et filtrables par gestantes ou aptes à la reproduction.&#xA;- Livraison à l'étable : automatique ou dans une étable choisie avec assez de place, plus les frais de transport du marchand de bestiaux.&#xA;- Retrait sans frais de transport : les animaux vont dans le dépôt de retrait. Lorsque votre bétaillère est chez le marchand, chargez-les dans le menu GM avec 'Charger dans la bétaillère' ou directement chez le marchand avec la touche habituelle via 'Charger le dépôt GM dans la bétaillère'.&#xA;- Seules les races existant sur ce serveur sont affichées (les DLC et packs doivent être actifs)." />
         <e k="gm_help_p7_npc_title"                                v="Marchands &amp; réglages" />
@@ -317,6 +317,32 @@
         <e k="ui_gm_animals_reason_startOutOfRange"                v="Le prix de départ doit être compris entre %d %% et %d %% de la valeur chez le marchand." />
         <e k="ui_gm_animals_reason_buyNowOutOfRange"               v="Le prix d'achat immédiat doit dépasser le prix de départ d'au moins %d %% et ne pas dépasser %d %% de la valeur chez le marchand." />
         <e k="ui_gm_animals_reason_auctionDurationInvalid"         v="La durée doit être de 6, 12, 24 ou 48 heures." />
+        <e k="ui_gm_animals_saleMode_fixed"                        v="Mode de vente : Prix fixe" />
+        <e k="ui_gm_animals_saleMode_auction"                      v="Mode de vente : Enchère" />
+        <e k="ui_gm_animals_startPriceOption"                      v="Prix de départ : %d %% (%s)" />
+        <e k="ui_gm_animals_durationHours"                         v="Durée : %d h" />
+        <e k="ui_gm_animals_buyNowOff"                             v="Achat immédiat : non" />
+        <e k="ui_gm_animals_buyNowOption"                          v="Achat immédiat : %d %% (%s)" />
+        <e k="ui_gm_animals_buyNowNone"                            v="pas d'achat immédiat" />
+        <e k="ui_gm_animals_bidOption"                             v="Offre : %d %% (%s)" />
+        <e k="ui_gm_animals_bidBuyNow"                             v="Achat immédiat : %s" />
+        <e k="ui_gm_animals_noBidYet"                              v="pas encore d'offre" />
+        <e k="ui_gm_animals_dialog_titleBid"                       v="Enchérir : %s" />
+        <e k="ui_gm_animals_action_auction"                        v="Mettre aux enchères" />
+        <e k="ui_gm_animals_action_bid"                            v="Enchérir" />
+        <e k="ui_gm_animals_action_buyNow"                         v="Acheter maintenant" />
+        <e k="ui_gm_animals_receipt_startPrice"                    v="Prix de départ" />
+        <e k="ui_gm_animals_receipt_buyNow"                        v="Prix d'achat immédiat" />
+        <e k="ui_gm_animals_receipt_highBid"                       v="Offre la plus haute (%d offres)" />
+        <e k="ui_gm_animals_receipt_reserved"                      v="Déjà réservé par vous" />
+        <e k="ui_gm_animals_receipt_toReserve"                     v="À réserver maintenant" />
+        <e k="ui_gm_animals_sec_myBids"                            v="Mes offres" />
+        <e k="ui_gm_animals_bidState_high"                         v="Meilleur enchérisseur" />
+        <e k="ui_gm_animals_bidState_outbid"                       v="Surenchéri" />
+        <e k="ui_gm_animals_auctionStatus"                         v="Enchère : %d offres | reste %s" />
+        <e k="ui_gm_animals_auctionPrice"                          v="Enchère %s | %s" />
+        <e k="ui_gm_animals_filter_auctions"                       v="Filtre : Enchères uniquement" />
+        <e k="ui_gm_animals_hint_auction"                          v="%s | Vendeur : %s | %s | Offre la plus haute : %s (%d offres) | Offre minimale : %s | Achat immédiat : %s | reste %s" />
         <e k="ui_gm_subtab_vehicles"                               v="Petites annonces" />
         <e k="ui_gm_vehicles_myHeader"                             v="Mes véhicules et annonces" />
         <e k="ui_gm_vehicles_marketHeader"                         v="Marché de véhicules d'occasion" />
