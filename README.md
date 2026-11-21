@@ -40,7 +40,7 @@ Developed by **D-S-Agrarservice [Floowy]** | Original concept & inspiration by *
 1. **Commodity Market:** Buy and sell bulk crops, liquids, pallets, BigBags, IBC tanks and bales straight from your silos, production storages and object storages — with dynamic stock levels, saturation prices and Great Demand events.
 2. **Supply Contracts & Direct Offers:** Players and NPC contractors post delivery contracts with a price bonus; farms and NPC traders sell lots at up to `±10 %` of the market price.
 3. **Used Vehicle Market:** List your own vehicles and implements at your own asking price, and buy used vehicles from other farms and NPC dealers right in the basegame shop screen.
-4. **Animal Market:** Sell and buy livestock between farms and NPC animal dealers with their full state — age, health and pregnancy — delivered to your barn or picked up with your own livestock trailer at the animal dealer.
+4. **Animal Market:** Sell and buy livestock between farms and NPC animal dealers with their full state — age, health and pregnancy — delivered to your barn or picked up with your own livestock trailer at the animal dealer; at a fixed price or as an auction.
 
 Everything works **out of the box** with a simulated offline market — no external software required. With the optional companion app **[GlobalMarketClient](https://github.com/D-S-Agrarservice/GlobalMarketClient)** running alongside the game, your session joins a shared worldwide market where real player trades drive global supply, price trends and Great Demand events across servers.
 
@@ -79,7 +79,9 @@ Everything works **out of the box** with a simulated offline market — no exter
 * **Sell Exactly These Animals:** List a group from your own barn, or from your own livestock trailer standing at the animal dealer, at 80–200 % of its dealer value for 1–3 months (up to 10 listings per farm). Age, health and pregnancy travel with the animals (horses keep name and fitness); they do not age while listed.
 * **Buy With Delivery or Pickup:** Barn delivery into an automatically chosen or a selected barn plus the basegame transport fee, or pickup without fee: the animals wait in your pickup box and are loaded onto your own livestock trailer at the animal dealer — from the GM menu or with the normal key right at the dealer.
 * **Returns Without Losses:** Withdrawn or expired animals return to their original barn first, then to a barn with the same breed; if there is no space, they wait in the pickup box and are retried hourly.
-* **NPC Animal Dealers:** Dealers buy your listings (the cheaper, the faster, minus 5 % commission) and offer animals of their own — incl. pregnant animals and age stages the basegame dealer does not sell (admin setting: Off / Low / Normal).
+* **Auctions:** Instead of a fixed price, animals can be auctioned: start price 50–150 % of the dealer value, duration 6, 12, 24 or 48 hours, optional buy-now price. Bids are reserved at once, an outbid bidder gets the money back immediately, own bids can be raised. A bid in the last hour extends the auction by one hour; an auction with bids can no longer be withdrawn. Own bids are listed under "My bids", a filter shows auctions only.
+* **NPC Animal Dealers:** Dealers buy your listings (the cheaper, the faster, minus 5 % commission) and offer animals of their own — incl. pregnant animals and age stages the basegame dealer does not sell, some of them as auctions. NPC dealers also bid on auctions, each up to a hidden limit; pregnant and very healthy animals are worth more to them (admin setting: Off / Low / Normal).
+* **Great Demand for Slaughter Animals:** About once a month, NPC dealers look for slaughter-ready meat animals of one animal type for 1–3 days (at least 50 % health) and pay 20–40 % above the dealer value. Matching groups are highlighted in the menu and sold directly.
 * **Packs, DLCs & Compatibility:** Only breeds that exist on the server are shown. Mods that replace the animal system (e.g. RealisticLivestock) disable the animal market with a notice.
 
 #### Native FS25 UI, Finances & Administration
@@ -87,6 +89,7 @@ Everything works **out of the box** with a simulated offline market — no exter
 * **In-Game Help:** Dedicated GlobalMarket pages in the FS25 help menu explain every area.
 * **Dedicated Server Ready (Nothing to Install on the Server):** A dynamic **Data-Host Token & Standby Failover** system lets Dedicated Servers join the live online market as soon as at least one connected player runs the GlobalMarketClient on their PC.
 * **Environment-Aware Admin Settings:** Separate configuration profiles for Singleplayer (`sp`), hosted Multiplayer (`mp`) and Dedicated Servers (`dedi`), configurable live from the FS25 game settings: delivery fees, dealer markup, market capacity, storage fees & decay, Great Demand mode, NPC activity, online contracts, contract limits, NPC board size, NPC vehicle dealers and NPC animal dealers.
+* **Basegame Farm Permissions:** Admins and farm managers may do everything, other farm members only what their role allows — "buy vehicles" / "sell vehicles" on the vehicle market, "trade animals" on the animal market, "manage contracts" for delivery contracts. The server checks every request, the menu answers first with a notice; while the menu is open, errors show as a dialog instead of the HUD.
 * **Finance Ledger Integration:** Dedicated `MoneyType` categories (simple or detailed view) in the native FS25 finances screen.
 
 ---
@@ -161,7 +164,7 @@ When enabled in the settings, a compact status icon next to the top-right HUD in
 | :--- | :--- | :--- |
 | **Open / Close GlobalMarket Menu** | `Left Alt + M` *(or via the `ESC` menu tab)* | `ESC` menu paging |
 | **Switch Category View** *(Detailed / Compact / A–Z)* | `C` | `X` *(Menu Extra 1)* |
-| **Contracts, Vehicle & Animal Market Actions** *(accept, cancel, list, buy, load onto trailer, filter / sort, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
+| **Contracts, Vehicle & Animal Market Actions** *(accept, cancel, list, buy, bid, load onto trailer, filter / sort, tag station on map, switch view)* | As shown in the menu footer | As shown in the menu footer |
 
 *(All keybindings can be customized in the standard FS25 controls menu.)*
 
@@ -265,17 +268,21 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketVehiclesUI.lua            # Sub-tab controller: own vehicles & listings, used vehicle market
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog to list a vehicle (asking price, duration)
 │   ├── GlobalMarketVehicleShopBridge.lua     # View & buy listings in the basegame shop screen
-│   ├── GlobalMarketAnimalsUI.lua             # Marketplace animal view: own groups, listings & pickup box, animal market
-│   ├── GlobalMarketAnimalDialog.lua / .xml   # Dialog to list animals or buy a listing (delivery or pickup)
+│   ├── GlobalMarketAnimalsUI.lua             # Marketplace animal view: own groups, listings, bids & pickup box, animal market
+│   ├── GlobalMarketAnimalDialog.lua / .xml   # Dialog to list (fixed price/auction), buy, bid & sell to the great demand
 │   └── guiProfiles.xml                       # Shared GUI profiles
 ├── images/                   # Menu & UI texture assets (.dds)
 ├── modules/                  # Specialized domain modules:
 │   ├── GlobalMarketAPI.lua                   # 3-tier whitelist/blacklist/category & metadata API
 │   ├── GlobalMarketAccess.lua                # Multi-farm access & isolation hooks for GM Terminals
+│   ├── GlobalMarketAnimalAuction.lua         # Animal auctions: bids, buy-now, settlement & delivery
+│   ├── GlobalMarketAnimalAuctionNpc.lua      # NPC bidders with hidden limits for animal auctions
+│   ├── GlobalMarketAnimalDemand.lua          # Great demand for slaughter-ready meat animals
 │   ├── GlobalMarketAnimalListings.lua        # Animal snapshots (escrow), eligibility, dealer values & barn placement
 │   ├── GlobalMarketAnimalMarket.lua          # Animal listing store, returns, pickup box & savegame
 │   ├── GlobalMarketAnimalNpc.lua             # NPC animal dealers buying and listing animals
 │   ├── GlobalMarketAnimalTrade.lua           # Animal purchases, trailer loading, dealer detection, sync & notices
+│   ├── GlobalMarketAuction.lua               # Generic auction engine: escrow, minimum increment, extension, savegame
 │   ├── GlobalMarketBranding.lua              # 3-tier online market branding (synced name & local logo)
 │   ├── GlobalMarketCompatibilityManager.lua  # Dynamic mod conflict firewall & mitigation rules
 │   ├── GlobalMarketContracts.lua             # Supply contracts, stock-driven NPC board, escrow & penalties
@@ -289,6 +296,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketOffers.lua                # ±10 % direct offers, NPC buying & contracts savegame persistence
 │   ├── GlobalMarketOffline.lua               # Map Spy pricing, local NPC simulation & Great Demands
 │   ├── GlobalMarketOnline.lua                # Online trend pricing, client version floor & offline state restore
+│   ├── GlobalMarketPermissions.lua           # Basegame farm permissions for the markets & in-menu errors
 │   ├── GlobalMarketSavegame.lua              # Savegame persistence for market stock & GM Terminals
 │   ├── GlobalMarketSettings.lua              # Environment-aware (sp/mp/dedi) settings injection
 │   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage discovery & market transfers

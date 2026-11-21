@@ -40,7 +40,7 @@ Entwickelt von **D-S-Agrarservice [Floowy]** | Ursprüngliches Konzept & Inspira
 1. **Warenmarkt:** An- und Verkauf von Schüttgut, Flüssigkeiten, Paletten, BigBags, IBC-Tanks und Ballen direkt aus deinen Silos, Produktionslagern und Objektlagern — mit dynamischen Beständen, Sättigungspreisen und Großen Nachfragen.
 2. **Lieferverträge & Direktangebote:** Spieler und NPC-Abnehmer schreiben Lieferverträge mit Preisaufschlag aus; Höfe und NPC-Händler verkaufen Partien zu bis zu `±10 %` des Marktpreises.
 3. **Gebrauchtfahrzeugmarkt:** Eigene Fahrzeuge und Geräte zum Wunschpreis anbieten und Gebrauchte von anderen Höfen und NPC-Händlern direkt im Shop-Bildschirm des Spiels kaufen.
-4. **Tiermarkt:** Tiere zwischen Höfen und NPC-Viehhändlern handeln, mit ihrem vollen Zustand — Alter, Gesundheit und Trächtigkeit — geliefert in den Stall oder mit dem eigenen Viehanhänger beim Viehhändler abgeholt.
+4. **Tiermarkt:** Tiere zwischen Höfen und NPC-Viehhändlern handeln, mit ihrem vollen Zustand — Alter, Gesundheit und Trächtigkeit — geliefert in den Stall oder mit dem eigenen Viehanhänger beim Viehhändler abgeholt; zum Festpreis oder als Auktion.
 
 Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne externe Zusatzprogramme. Läuft parallel zum Spiel die optionale Begleit-App **[GlobalMarketClient](https://github.com/D-S-Agrarservice/GlobalMarketClient)**, verbindet sich deine Sitzung mit dem gemeinsamen Online-Markt, auf dem echte Käufe und Verkäufe anderer Spieler serverübergreifend Angebot, Preistrends und Große Nachfragen beeinflussen.
 
@@ -79,7 +79,9 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **Genau diese Tiere verkaufen:** Eine Gruppe aus dem eigenen Stall oder vom eigenen Viehanhänger beim Viehhändler lässt sich für 80–200 % ihres Händlerwerts und 1–3 Monate anbieten (bis zu 10 Angebote pro Hof). Alter, Gesundheit und Trächtigkeit reisen mit (Pferde behalten Name und Fitness); im Angebot altern die Tiere nicht.
 * **Kaufen mit Lieferung oder Abholung:** Lieferung in einen automatisch gewählten oder einen bestimmten Stall zuzüglich der Transportgebühr des Spiels, oder Abholung ohne Gebühr: Die Tiere warten im Abholfach und werden beim Viehhändler auf den eigenen Viehanhänger geladen — im GM-Menü oder mit der normalen Taste direkt am Händler.
 * **Rückgabe ohne Verluste:** Zurückgezogene oder abgelaufene Tiere kommen zuerst in ihren Ursprungsstall, sonst in einen Stall mit derselben Rasse; ohne Platz warten sie im Abholfach und werden stündlich erneut eingestellt.
-* **NPC-Viehhändler:** Händler kaufen eure Angebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an — auch trächtige und Altersstufen, die der Viehhändler des Spiels nicht verkauft (Admin-Einstellung: Aus / Wenig / Normal).
+* **Auktionen:** Statt zum Festpreis lassen sich Tiere versteigern: Startpreis 50–150 % des Händlerwerts, Laufzeit 6, 12, 24 oder 48 Stunden, optional mit Sofortkauf. Gebote werden sofort reserviert, wer überboten wird, bekommt sein Geld sofort zurück, eigene Gebote lassen sich erhöhen. Ein Gebot in der letzten Stunde verlängert um eine Stunde; mit Geboten lässt sich eine Auktion nicht mehr zurückziehen. Eigene Gebote stehen unter „Meine Gebote“, ein Filter zeigt nur Auktionen.
+* **NPC-Viehhändler:** Händler kaufen eure Angebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an — auch trächtige und Altersstufen, die der Viehhändler des Spiels nicht verkauft, teils als Auktion. Bei Auktionen bieten NPC-Händler mit, jeder bis zu einem verdeckten Limit; trächtige und sehr gesunde Tiere sind ihnen mehr wert (Admin-Einstellung: Aus / Wenig / Normal).
+* **Großnachfrage nach Schlachttieren:** Etwa einmal im Monat suchen NPC-Händler für 1–3 Tage schlachtreife Masttiere einer Tierart (mindestens 50 % Gesundheit) und zahlen 20–40 % über dem Händlerwert. Passende Gruppen sind im Menü markiert und werden direkt verkauft.
 * **Packs, DLCs & Kompatibilität:** Angezeigt werden nur Rassen, die es auf dem Server gibt. Mods, die das Tiersystem ersetzen (z. B. RealisticLivestock), deaktivieren den Tiermarkt mit Hinweis.
 
 #### Natives LS25-UI, Finanzen & Administration
@@ -87,6 +89,7 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **Ingame-Hilfe:** Eigene GlobalMarket-Seiten im Hilfemenü des Spiels erklären jeden Bereich.
 * **Dedicated-Server-tauglich (nichts auf dem Server zu installieren):** Über ein dynamisches **Data-Host-Token- & Standby-Failover-System** nimmt auch ein Dedicated Server live am Online-Markt teil, sobald mindestens ein verbundener Spieler auf seinem PC den GlobalMarketClient gestartet hat.
 * **Profilgetrennte Admin-Einstellungen:** Getrennte Einstellungsprofile für Singleplayer (`sp`), gehosteten Multiplayer (`mp`) und Dedicated Server (`dedi`), live einstellbar in den LS25-Spieleinstellungen: Lieferkosten, Händleraufschlag, Marktkapazität, Lagergebühren & Verfall, Große-Nachfrage-Modus, NPC-Aktivität, Online-Verträge, Vertragslimits, Größe des NPC-Bretts, NPC-Fahrzeughändler und NPC-Viehhändler.
+* **Hofrechte des Spiels:** Admins und Hofmanager dürfen alles, andere Hofmitglieder nur, was ihre Rolle erlaubt — „Fahrzeuge kaufen“ / „Fahrzeuge verkaufen“ im Fahrzeugmarkt, „Tiere handeln“ im Tiermarkt, „Aufträge verwalten“ bei Lieferverträgen. Der Server prüft jede Anfrage, das Menü antwortet vorher mit einem Hinweis; Fehler erscheinen bei geöffnetem Menü als Dialog statt im HUD.
 * **Finanzübersicht:** Eigene `MoneyType`-Buchungskategorien (kompakt oder detailliert umschaltbar) direkt im LS25-Finanzmenü.
 
 ---
@@ -161,7 +164,7 @@ Ist die Statusanzeige in den Einstellungen aktiviert, zeigt ein kompaktes Icon o
 | :--- | :--- | :--- |
 | **GlobalMarket-Menü öffnen / schließen** | `Links Alt + M` *(oder über den `ESC`-Menüreiter)* | `ESC`-Menü durchblättern |
 | **Kategorie-Ansicht wechseln** *(Detailliert / Kompakt / A–Z)* | `C` | `X` *(Menü Extra 1)* |
-| **Aktionen bei Verträgen, Fahrzeug- & Tiermarkt** *(annehmen, stornieren, anbieten, kaufen, auf Anhänger laden, Filter / Sortierung, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
+| **Aktionen bei Verträgen, Fahrzeug- & Tiermarkt** *(annehmen, stornieren, anbieten, kaufen, bieten, auf Anhänger laden, Filter / Sortierung, Station markieren, Ansicht wechseln)* | Wie in der Fußleiste des Menüs angezeigt | Wie in der Fußleiste des Menüs angezeigt |
 
 *(Alle Tastenbelegungen lassen sich in den normalen LS25-Steuerungsoptionen anpassen.)*
 
@@ -265,17 +268,21 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketVehiclesUI.lua            # Unterreiter-Controller: eigene Fahrzeuge & Angebote, Gebrauchtmarkt
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog zum Anbieten eines Fahrzeugs (Preis, Laufzeit)
 │   ├── GlobalMarketVehicleShopBridge.lua     # Angebote im Shop-Bildschirm des Spiels ansehen & kaufen
-│   ├── GlobalMarketAnimalsUI.lua             # Tieransicht im Marktplatz: eigene Gruppen, Angebote & Abholfach, Tiermarkt
-│   ├── GlobalMarketAnimalDialog.lua / .xml   # Dialog zum Anbieten von Tieren oder Kaufen (Lieferung oder Abholung)
+│   ├── GlobalMarketAnimalsUI.lua             # Tieransicht im Marktplatz: eigene Gruppen, Angebote, Gebote & Abholfach, Tiermarkt
+│   ├── GlobalMarketAnimalDialog.lua / .xml   # Dialog zum Anbieten (Festpreis/Auktion), Kaufen, Bieten & Verkauf an die Großnachfrage
 │   └── guiProfiles.xml                       # Gemeinsame GUI-Profile
 ├── images/                   # Menü- & UI-Texturen (.dds)
 ├── modules/                  # Fachmodule:
 │   ├── GlobalMarketAPI.lua                   # 3-stufige Whitelist-/Blacklist-/Kategorie- & Metadaten-API
 │   ├── GlobalMarketAccess.lua                # Hofübergreifender Zugriff & Trennung bei GM-Terminals
+│   ├── GlobalMarketAnimalAuction.lua         # Tierauktionen: Gebote, Sofortkauf, Abschluss & Lieferung
+│   ├── GlobalMarketAnimalAuctionNpc.lua      # NPC-Bieter mit verdecktem Limit für Tierauktionen
+│   ├── GlobalMarketAnimalDemand.lua          # Großnachfrage nach schlachtreifen Masttieren
 │   ├── GlobalMarketAnimalListings.lua        # Tier-Abbilder (Treuhand), Zulässigkeit, Händlerwerte & Stallplatzierung
 │   ├── GlobalMarketAnimalMarket.lua          # Tierangebote, Rückgaben, Abholfach & Spielstand
 │   ├── GlobalMarketAnimalNpc.lua             # NPC-Viehhändler: kaufen und bieten Tiere an
 │   ├── GlobalMarketAnimalTrade.lua           # Tierkäufe, Verladen, Händlererkennung, Sync & Meldungen
+│   ├── GlobalMarketAuction.lua               # Allgemeine Auktions-Engine: Treuhand, Mindestschritt, Verlängerung, Spielstand
 │   ├── GlobalMarketBranding.lua              # 3-stufiges Online-Markt-Branding (synchronisierter Name & lokales Logo)
 │   ├── GlobalMarketCompatibilityManager.lua  # Dynamische Mod-Konflikt-Firewall & Gegenmaßnahmen
 │   ├── GlobalMarketContracts.lua             # Lieferverträge, bestandsgesteuertes NPC-Brett, Treuhand & Strafen
@@ -289,6 +296,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketOffers.lua                # ±10 %-Direktangebote, NPC-Käufe & Spielstand für Verträge
 │   ├── GlobalMarketOffline.lua               # Map-Spy-Preise, lokale NPC-Simulation & Große Nachfragen
 │   ├── GlobalMarketOnline.lua                # Online-Trendpreise, Mindestversion des Clients & Offline-Rückfall
+│   ├── GlobalMarketPermissions.lua           # Hofrechte des Spiels für die Märkte & Fehlermeldungen im Menü
 │   ├── GlobalMarketSavegame.lua              # Spielstand für Marktbestände & GM-Terminals
 │   ├── GlobalMarketSettings.lua              # Profilgetrennte (sp/mp/dedi) Einstellungen
 │   ├── GlobalMarketStorage.lua               # Erkennung von Silos/Objektlagern & Markttransfers
