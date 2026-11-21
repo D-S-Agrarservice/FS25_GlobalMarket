@@ -166,6 +166,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAnimalTrade.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalDemand.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalAuction.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketAnimalAuctionNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -378,13 +379,14 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             addConsoleCommand("gmAnimalMarketBuy", "Buys an animal listing for the own farm: <listingId> [barn|pickup]", "consoleCommandAnimalMarketBuy", self)
             addConsoleCommand("gmAnimalMarketLoad", "Loads pickup box animals onto an own livestock trailer at the animal dealer: [pickupId|all]", "consoleCommandAnimalMarketLoad", self)
             addConsoleCommand("gmAnimalMarketMakeNpc", "Turns an animal listing into an NPC dealer listing (SP buy test): <listingId>", "consoleCommandAnimalMarketMakeNpc", self)
-            addConsoleCommand("gmAnimalMarketSpawnNpc", "Creates NPC animal dealer listings now: [count=1]", "consoleCommandAnimalMarketSpawnNpc", self)
+            addConsoleCommand("gmAnimalMarketSpawnNpc", "Creates NPC animal dealer listings now: [count=1] [auction]", "consoleCommandAnimalMarketSpawnNpc", self)
             addConsoleCommand("gmAnimalDemandStart", "Starts a great demand for meat animals now: [animal type, e.g. COW or PIG]", "consoleCommandAnimalDemandStart", self)
             addConsoleCommand("gmAnimalDemandEnd", "Ends the active great demand for meat animals", "consoleCommandAnimalDemandEnd", self)
             addConsoleCommand("gmAnimalDemandSell", "Sells own animals to the great demand: <clusterId> <count>", "consoleCommandAnimalDemandSell", self)
             addConsoleCommand("gmAnimalAuctionCreate", "Lists own animals as auction: <clusterId> <count> <startPercent> [buyNowPercent=0] [hours=12]", "consoleCommandAnimalAuctionCreate", self)
             addConsoleCommand("gmAnimalAuctionBid", "Bids on an animal auction: <listingId> <percent of dealer value|min>", "consoleCommandAnimalAuctionBid", self)
             addConsoleCommand("gmAnimalAuctionBuyNow", "Buys an animal auction at its buy-now price: <listingId>", "consoleCommandAnimalAuctionBuyNow", self)
+            addConsoleCommand("gmAnimalAuctionNpcBid", "An NPC places the minimum bid on an animal auction now: <listingId>", "consoleCommandAnimalAuctionNpcBid", self)
             self.debugCommandsRegistered = true
         end
     else
@@ -417,6 +419,7 @@ function GlobalMarket:syncDebugConsoleCommands(forceRemove)
             removeConsoleCommand("gmAnimalAuctionCreate")
             removeConsoleCommand("gmAnimalAuctionBid")
             removeConsoleCommand("gmAnimalAuctionBuyNow")
+            removeConsoleCommand("gmAnimalAuctionNpcBid")
             self.debugCommandsRegistered = false
         end
     end

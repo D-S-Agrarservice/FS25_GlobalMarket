@@ -444,6 +444,9 @@ function GlobalMarket:saveAnimalMarketToXml(xmlFile)
         xmlFile:setFloat(key .. "#monthsRemaining", listing.monthsRemaining or 0)
         if listing.auction ~= nil then
             GlobalMarketAuction.saveToXml(xmlFile, key .. ".auction", listing.auction)
+            if GlobalMarketAnimalAuctionNpc ~= nil then
+                GlobalMarketAnimalAuctionNpc.saveToXml(xmlFile, key .. ".auction", listing.auction)
+            end
         end
         GlobalMarketAnimalListings.writeSnapshotToXml(xmlFile, key .. ".animals", listing.snapshot)
     end
@@ -479,6 +482,8 @@ function GlobalMarket:loadAnimalMarketFromXml(xmlFile)
                 auction = GlobalMarketAuction.loadFromXml(xmlFile, key .. ".auction")
                 if auction == nil then
                     saleMode = "FIXED"
+                elseif GlobalMarketAnimalAuctionNpc ~= nil then
+                    GlobalMarketAnimalAuctionNpc.loadFromXml(xmlFile, key .. ".auction", auction)
                 end
             end
             table.insert(self.animalListings, {

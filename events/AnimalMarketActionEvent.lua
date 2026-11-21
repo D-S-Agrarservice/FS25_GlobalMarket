@@ -26,6 +26,8 @@ AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_END = 11
 AnimalMarketActionEvent.ACTION_AUCTION_CREATE = 12
 AnimalMarketActionEvent.ACTION_AUCTION_BID = 13
 AnimalMarketActionEvent.ACTION_AUCTION_BUY_NOW = 14
+-- Admin test helper (Stage 2): an NPC places the minimum bid on targetId
+AnimalMarketActionEvent.ACTION_ADMIN_AUCTION_NPC_BID = 15
 
 ---Returns true for the admin test helper actions
 ---@param action number
@@ -37,6 +39,7 @@ local function getIsAdminAction(action)
         or action == AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC
         or action == AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_START
         or action == AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_END
+        or action == AnimalMarketActionEvent.ACTION_ADMIN_AUCTION_NPC_BID
 end
 
 function AnimalMarketActionEvent.emptyNew()
@@ -49,9 +52,9 @@ end
 ---@param args table|nil
 ---  object: barn or trailer to list from (CREATE / DEMAND_SELL), target barn (BUY, optional), trailer (LOAD, optional)
 ---  clusterId, numAnimals: CREATE / DEMAND_SELL; priceFactor, durationMonths: CREATE
----  targetId: listing ID (CANCEL / BUY / ADMIN_MAKE_NPC), pickup box ID (LOAD, 0 = all) count (ADMIN_SPAWN_NPC) or animal type index (ADMIN_DEMAND_START, 0 = random)
+---  targetId: listing ID (CANCEL / BUY / ADMIN_MAKE_NPC / ADMIN_AUCTION_NPC_BID), pickup box ID (LOAD, 0 = all) count (ADMIN_SPAWN_NPC) or animal type index (ADMIN_DEMAND_START, 0 = random)
 ---  deliveryMode: GlobalMarket.ANIMAL_DELIVERY (BUY)
----  months: months to advance (ADMIN_ADVANCE) or buy-now factor (AUCTION_CREATE)
+---  months: months to advance (ADMIN_ADVANCE), buy-now factor (AUCTION_CREATE) or 1 = only auctions (ADMIN_SPAWN_NPC)
 ---  AUCTION_CREATE: priceFactor = start factor, durationMonths = duration in hours; AUCTION_BID: priceFactor = bid factor
 function AnimalMarketActionEvent.new(action, farmId, args)
     local self = AnimalMarketActionEvent.emptyNew()
@@ -192,7 +195,9 @@ function AnimalMarketActionEvent.executeOnServer(gm, action, farmId, args, conne
     elseif action == AnimalMarketActionEvent.ACTION_ADMIN_RETRY_RETURNS then
         gm:retryAnimalPickupReturns()
     elseif action == AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC then
-        gm:spawnNpcAnimalListings(args.targetId)
+        gm:spawnNpcAnimalListings(args.targetId, (args.months or 0) > 0)
+    elseif action == AnimalMarketActionEvent.ACTION_ADMIN_AUCTION_NPC_BID then
+        ok, reason = gm:forceNpcAuctionBid(args.targetId)
     elseif action == AnimalMarketActionEvent.ACTION_ADMIN_DEMAND_START then
         if gm.animalDemand == nil then
             gm:startAnimalDemand(args.targetId)

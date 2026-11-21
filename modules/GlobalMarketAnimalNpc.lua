@@ -2,7 +2,8 @@
 -- FS25_GlobalMarket - GlobalMarketAnimalNpc.lua
 -- Livestock market (#15), Stage 1 NPC trading: NPC animal dealers buy player listings
 -- (price-dependent, minus commission) and list generated animals of their own, incl. age
--- stages and pregnant animals the basegame dealer does not sell.
+-- stages and pregnant animals the basegame dealer does not sell. Some NPC listings are
+-- auctions (Stage 2); NPC bidders live in GlobalMarketAnimalAuctionNpc.lua.
 -- Controlled by the admin setting "NPC animal trading" (Off / Low / Normal).
 -- Author: D-S-Agrarservice
 -- =========================================================================================
@@ -38,7 +39,16 @@ GlobalMarket.ANIMAL_NPC = {
     -- Animal types kept in large flocks
     LARGE_GROUP_TYPES = { CHICKEN = true },
     LARGE_GROUP_MIN = 10,
-    LARGE_GROUP_MAX = 50
+    LARGE_GROUP_MAX = 50,
+    -- NPC auctions (Stage 2): share of new NPC listings, higher for pregnant or very healthy animals
+    AUCTION_CHANCE = 0.25,
+    AUCTION_CHANCE_SPECIAL = 0.50,
+    AUCTION_SPECIAL_HEALTH = 90,
+    AUCTION_START_MIN = 0.60,
+    AUCTION_START_MAX = 1.00,
+    AUCTION_BUY_NOW_CHANCE = 0.50,
+    AUCTION_BUY_NOW_MIN = 1.40,
+    AUCTION_BUY_NOW_MAX = 1.80
 }
 
 -- =========================================================================
@@ -144,9 +154,35 @@ function GlobalMarket.buildNpcAnimalCluster(subTypeIndex)
     return cluster
 end
 
+---Returns a random factor between min and max in 5 % steps
+---@param min number
+---@param max number
+---@return number
+local function rollStepFactor(min, max)
+    local steps = math.max(0, math.floor((max - min) / 0.05 + 0.5))
+    return math.floor((min + math.random(0, steps) * 0.05) * 100 + 0.5) / 100
+end
+
+---Turns a new NPC listing into an auction (start price, optional buy-now price, random duration)
+---@param listing table
+local function makeNpcAuction(listing)
+    local npc = GlobalMarket.ANIMAL_NPC
+    local startFactor = rollStepFactor(npc.AUCTION_START_MIN, npc.AUCTION_START_MAX)
+    local buyNowFactor = 0
+    if math.random() < npc.AUCTION_BUY_NOW_CHANCE then
+        buyNowFactor = rollStepFactor(npc.AUCTION_BUY_NOW_MIN, npc.AUCTION_BUY_NOW_MAX)
+    end
+    local durations = GlobalMarketAuction.CONFIG.DURATIONS
+    listing.saleMode = GlobalMarket.ANIMAL_SALE_MODE.AUCTION
+    listing.auction = GlobalMarketAuction.create(startFactor, buyNowFactor, durations[math.random(1, #durations)])
+    listing.priceFactor = startFactor
+    listing.monthsRemaining = 1
+end
+
 ---Creates one NPC dealer listing with generated animals
+---@param forceAuction boolean|nil true = always an auction (test helper)
 ---@return table|nil listing
-function GlobalMarket:createNpcAnimalListing()
+function GlobalMarket:createNpcAnimalListing(forceAuction)
     local npc = GlobalMarket.ANIMAL_NPC
     local candidates = getNpcSubTypeCandidates()
     if #candidates == 0 then
@@ -175,10 +211,17 @@ function GlobalMarket:createNpcAnimalListing()
         monthsRemaining = math.random(npc.DURATION_MIN, npc.DURATION_MAX),
         snapshot = snapshot
     }
+    if GlobalMarketAuction ~= nil and GlobalMarket.ANIMAL_SALE_MODE ~= nil then
+        local isSpecial = cluster.reproduction > 0 or cluster.health >= npc.AUCTION_SPECIAL_HEALTH
+        if forceAuction or math.random() < (isSpecial and npc.AUCTION_CHANCE_SPECIAL or npc.AUCTION_CHANCE) then
+            makeNpcAuction(listing)
+        end
+    end
     table.insert(self.animalListings, listing)
     if self.debugManager ~= nil then
-        self.debugManager:info("AnimalMarket: NPC listing #%d created (%s x%d, %d months, health %d, pregnant %d%%, %.0f%%).",
-            id, snapshot.subTypeName, cluster.numAnimals, cluster.age, cluster.health, cluster.reproduction, listing.priceFactor * 100)
+        self.debugManager:info("AnimalMarket: NPC listing #%d created (%s x%d, %d months, health %d, pregnant %d%%, %.0f%%)%s.",
+            id, snapshot.subTypeName, cluster.numAnimals, cluster.age, cluster.health, cluster.reproduction, listing.priceFactor * 100,
+            (GlobalMarket.getAnimalAuctionConsoleSuffix ~= nil) and GlobalMarket.getAnimalAuctionConsoleSuffix(listing) or "")
     end
     return listing
 end
@@ -223,7 +266,8 @@ function GlobalMarket:updateAnimalMarketNpcs(monthDelta)
     return changed
 end
 
----Reacts to a changed NPC level; "Off" removes all open NPC listings and ends a great demand (server)
+---Reacts to a changed NPC level; "Off" removes all open NPC listings, ends a great demand and
+---lets the NPC bidders leave; NPC auctions with a player's highest bid end with the player winning (server)
 ---@param level number
 function GlobalMarket:onAnimalNpcModeChanged(level)
     if (level or 0) > 0 or g_currentMission == nil or not g_currentMission:getIsServer() then
@@ -232,6 +276,9 @@ function GlobalMarket:onAnimalNpcModeChanged(level)
     -- Great demands come from NPC dealers as well (Stage 1b)
     if self.animalDemand ~= nil and self.endAnimalDemand ~= nil then
         self:endAnimalDemand()
+    end
+    if self.endAnimalAuctionNpcs ~= nil then
+        self:endAnimalAuctionNpcs()
     end
     local listings = self.animalListings or {}
     local removed = 0
@@ -248,11 +295,12 @@ end
 
 ---Test helper (Server): creates NPC listings immediately
 ---@param count number
+---@param forceAuction boolean|nil true = only auctions
 ---@return number created
-function GlobalMarket:spawnNpcAnimalListings(count)
+function GlobalMarket:spawnNpcAnimalListings(count, forceAuction)
     local created = 0
     for _ = 1, math.clamp(math.floor(count or 1), 1, 20) do
-        if #self.animalListings < GlobalMarket.ANIMAL_MARKET.MAX_TOTAL and self:createNpcAnimalListing() ~= nil then
+        if #self.animalListings < GlobalMarket.ANIMAL_MARKET.MAX_TOTAL and self:createNpcAnimalListing(forceAuction) ~= nil then
             created = created + 1
         end
     end
@@ -262,16 +310,19 @@ function GlobalMarket:spawnNpcAnimalListings(count)
     return created
 end
 
----Console: creates NPC listings now (host, dedicated server console or admin client): [count=1]
-function GlobalMarket:consoleCommandAnimalMarketSpawnNpc(countArg)
+---Console: creates NPC listings now (host, dedicated server console or admin client): [count=1] [auction]
+function GlobalMarket:consoleCommandAnimalMarketSpawnNpc(countArg, modeArg)
     local guardError = GlobalMarket.getAnimalMarketConsoleGuardError(true)
     if guardError ~= nil then
         return guardError
     end
     local count = math.clamp(tonumber(countArg) or 1, 1, 20)
+    local forceAuction = modeArg ~= nil and string.lower(tostring(modeArg)) == "auction"
     if not g_currentMission:getIsServer() then
-        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC, 0, { targetId = count })
+        AnimalMarketActionEvent.dispatch(AnimalMarketActionEvent.ACTION_ADMIN_SPAWN_NPC, 0,
+            { targetId = count, months = forceAuction and 1 or 0 })
         return "Admin request sent to the server."
     end
-    return string.format("Created %d NPC animal listing(s).", self:spawnNpcAnimalListings(count))
+    return string.format("Created %d NPC animal %s.", self:spawnNpcAnimalListings(count, forceAuction),
+        forceAuction and "auction(s)" or "listing(s)")
 end

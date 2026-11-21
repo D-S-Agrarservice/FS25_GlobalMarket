@@ -160,6 +160,9 @@ function GlobalMarket:applyAnimalAuctionBid(listing, farmId, isNpc, factor, base
         return false, reason
     end
     listing.priceFactor = GlobalMarketAuction.getCurrentFactor(auction)
+    if GlobalMarket.onAnimalAuctionBidPlaced ~= nil then
+        GlobalMarket.onAnimalAuctionBidPlaced(auction, isNpc, result)
+    end
     local snapshot = listing.snapshot
     if result.outbidFarmId ~= nil and not result.outbidIsNpc and result.outbidFarmId ~= farmId then
         self:notifyAnimalMarketFarms(GlobalMarket.ANIMAL_NOTICE.OUTBID, result.outbidFarmId, 0, snapshot.subTypeName,
@@ -243,6 +246,8 @@ function GlobalMarket:updateAnimalAuctionsHourly(monthDelta)
     end
     local daysPerPeriod = (g_currentMission.environment ~= nil and g_currentMission.environment.daysPerPeriod) or 1
     local hours = monthDelta * 24 * math.max(1, daysPerPeriod)
+    -- NPC bidders act first (GlobalMarketAnimalAuctionNpc.lua); a buy-now may end an auction here
+    local npcChanged = (self.updateAnimalAuctionNpcs ~= nil) and self:updateAnimalAuctionNpcs(hours) or false
     local ended = {}
     for _, listing in ipairs(self.animalListings or {}) do
         if GlobalMarket.getIsAnimalAuction(listing) and listing.status == GlobalMarket.ANIMAL_LISTING_STATUS.OPEN
@@ -253,7 +258,7 @@ function GlobalMarket:updateAnimalAuctionsHourly(monthDelta)
     for _, listing in ipairs(ended) do
         self:finishAnimalAuction(listing)
     end
-    return #ended > 0
+    return #ended > 0 or npcChanged
 end
 
 ---Farm deletion: refunds bidders on auctions of the deleted seller and drops bids of a deleted bidder
