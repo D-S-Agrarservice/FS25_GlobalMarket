@@ -218,6 +218,7 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="No hay espacio libre de recogida en el concesionario." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="No se ha podido cargar el vehículo." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="No tienes permiso para hacer esto." />
+        <e k="ui_gm_noPermission"                                  v="No tienes permiso para hacer esto." />
         <e k="ui_gm_animals_reason_invalid"                        v="Estos animales no se pueden poner a la venta." />
         <e k="ui_gm_animals_reason_unavailable"                    v="El mercado de animales no está disponible en esta partida." />
         <e k="ui_gm_animals_reason_notOwned"                       v="Solo se permiten animales de tus propios establos y remolques." />

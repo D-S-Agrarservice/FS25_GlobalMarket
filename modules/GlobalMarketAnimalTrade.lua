@@ -286,6 +286,10 @@ function GlobalMarket:showAnimalMarketNotice(kind, targetFarmId, excludeFarmId, 
         return
     end
     if kind == GlobalMarket.ANIMAL_NOTICE.RESULT then
+        -- The HUD is hidden behind the menu: show the reason where the player is
+        if GlobalMarket.showResultInMarketMenu ~= nil and GlobalMarket.showResultInMarketMenu(GlobalMarket.getAnimalMarketReasonText(code)) then
+            return
+        end
         if g_currentMission.hud.addSideNotification ~= nil then
             g_currentMission.hud:addSideNotification(FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 },
                 GlobalMarket.getAnimalMarketReasonText(code), 8000)

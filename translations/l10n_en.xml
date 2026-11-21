@@ -218,6 +218,7 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="No free pickup space at the dealer." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="The vehicle could not be loaded." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="You do not have permission to do this." />
+        <e k="ui_gm_noPermission"                                  v="You do not have permission to do this." />
         <e k="ui_gm_animals_reason_invalid"                        v="These animals cannot be listed." />
         <e k="ui_gm_animals_reason_unavailable"                    v="The animal market is not available in this savegame." />
         <e k="ui_gm_animals_reason_notOwned"                       v="Only animals from your own barns and trailers are possible." />

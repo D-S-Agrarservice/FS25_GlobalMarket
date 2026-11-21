@@ -447,6 +447,9 @@ function GlobalMarketUI:onVehiclePrimaryAction(overrideSection, overrideIndex)
         return
     end
     if row.kind == "MY_VEHICLE" then
+        if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.SELL_VEHICLE) then
+            return
+        end
         if not row.data.isEligible then
             InfoDialog.show(GlobalMarket.getVehicleMarketReasonText(row.data.reason or "invalid"), nil, nil, DialogElement.TYPE_WARNING)
         elseif gm.vehicleDialog ~= nil then
@@ -454,6 +457,9 @@ function GlobalMarketUI:onVehiclePrimaryAction(overrideSection, overrideIndex)
         end
     elseif row.kind == "MARKET_LISTING" then
         local listing = row.data
+        if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.BUY_VEHICLE) then
+            return
+        end
         -- Preferred: view & buy in the basegame shop screen (exact configuration and paint)
         if GlobalMarketVehicleShopBridge ~= nil and GlobalMarketVehicleShopBridge.openListing(listing, farmId) then
             return
@@ -474,6 +480,9 @@ function GlobalMarketUI:onVehicleCancelAction(overrideSection, overrideIndex)
     local row = self:getSelectedVehicleRow(overrideSection, overrideIndex)
     local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
     if row == nil or row.kind ~= "MY_LISTING" or row.data.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
+        return
+    end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.SELL_VEHICLE) then
         return
     end
     local listing = row.data

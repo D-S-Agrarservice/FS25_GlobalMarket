@@ -565,6 +565,9 @@ function GlobalMarketUI:onClickCreatePlayerContract()
     if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
         return
     end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.MANAGE_CONTRACTS) then
+        return
+    end
     gm.contractDialog:show(GlobalMarketContractDialog.MODE_CREATE_CONTRACT, {
         farmId = farmId
     }, self.onContractDialogDone, self)
@@ -575,6 +578,9 @@ function GlobalMarketUI:onClickCreateDirectOffer()
     if gm == nil or gm.contractDialog == nil then return end
     local farmId = g_currentMission:getFarmId()
     if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
+        return
+    end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.MANAGE_CONTRACTS) then
         return
     end
     local owned = gm:getAggregatedStorageData(farmId) or {}
@@ -645,6 +651,9 @@ function GlobalMarketUI:onContractCancelAction(overrideSection, overrideIndex)
     if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
         return
     end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.MANAGE_CONTRACTS) then
+        return
+    end
     local desc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(row.fillType) or nil
     local ftTitle = (desc ~= nil and desc.title) or row.fillType
 
@@ -691,6 +700,9 @@ function GlobalMarketUI:onContractPrimaryAction(overrideSection, overrideIndex, 
 
     local farmId = g_currentMission:getFarmId()
     if farmId == nil or farmId <= 0 or (FarmManager ~= nil and farmId == FarmManager.SPECTATOR_FARM_ID) then
+        return
+    end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.MANAGE_CONTRACTS) then
         return
     end
     local desc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(row.fillType) or nil

@@ -660,7 +660,16 @@ function GlobalMarketUI:onAnimalCancelAction(overrideSection, overrideIndex)
     if row == nil or row.kind ~= "MY_LISTING" then
         return
     end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.TRADE_ANIMALS) then
+        return
+    end
     local listing = row.data
+    -- Auctions with bids cannot be withdrawn: answer here instead of asking the server
+    local blockReason = (GlobalMarket.getAnimalAuctionCancelBlock ~= nil) and GlobalMarket.getAnimalAuctionCancelBlock(listing) or nil
+    if blockReason ~= nil then
+        InfoDialog.show(GlobalMarket.getAnimalMarketReasonText(blockReason), nil, nil, DialogElement.TYPE_WARNING)
+        return
+    end
     -- target == nil: YesNoDialog calls callback(yes, args)
     YesNoDialog.show(function(yes)
         if yes == true then
@@ -675,6 +684,9 @@ function GlobalMarketUI:onAnimalPrimaryAction(overrideSection, overrideIndex)
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
     if row == nil or gm == nil or not GlobalMarketAnimalListings.getIsPlayerFarm(farmId) then
+        return
+    end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.TRADE_ANIMALS) then
         return
     end
     if row.kind == "MY_GROUP" then
@@ -713,6 +725,9 @@ function GlobalMarketUI:onAnimalDemandAction(overrideSection, overrideIndex)
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     local farmId = g_currentMission ~= nil and g_currentMission:getFarmId() or 0
     if row == nil or row.kind ~= "MY_GROUP" or not row.data.demandOk or gm == nil or gm.animalDialog == nil then
+        return
+    end
+    if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.TRADE_ANIMALS) then
         return
     end
     local cluster = row.data.source:getClusterById(row.data.clusterId)

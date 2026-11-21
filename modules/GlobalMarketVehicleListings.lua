@@ -110,6 +110,25 @@ local function getConsumerFillUnits(vehicle)
     return set
 end
 
+---Returns true if somebody sits in the vehicle (driver or passenger, incl. the requester) or a helper drives it.
+---The controlled state is known on all clients, unlike the driver's connection used by getIsInUse.
+---@param vehicle table
+---@return boolean
+local function getIsOccupied(vehicle)
+    if vehicle.getIsControlled ~= nil and vehicle:getIsControlled() then
+        return true
+    end
+    local passengers = vehicle.spec_enterablePassenger
+    if passengers ~= nil and passengers.available and passengers.passengerSeats ~= nil then
+        for _, seat in ipairs(passengers.passengerSeats) do
+            if seat.isUsed then
+                return true
+            end
+        end
+    end
+    return vehicle.getIsAIActive ~= nil and vehicle:getIsAIActive()
+end
+
 ---Checks whether a vehicle may be listed on the vehicle market by a farm
 ---@param vehicle table|nil
 ---@param farmId number
@@ -128,8 +147,7 @@ function GlobalMarketVehicleListings.getEligibility(vehicle, farmId, connection)
     if vehicle.propertyState ~= VehiclePropertyState.OWNED or vehicle:getOwnerFarmId() ~= farmId then
         return false, "notOwned"
     end
-    if (vehicle.getIsInUse ~= nil and vehicle:getIsInUse(connection))
-        or (vehicle.getIsAIActive ~= nil and vehicle:getIsAIActive()) then
+    if getIsOccupied(vehicle) or (vehicle.getIsInUse ~= nil and vehicle:getIsInUse(connection)) then
         return false, "inUse"
     end
     if vehicle.getAttacherVehicle ~= nil and vehicle:getAttacherVehicle() ~= nil then

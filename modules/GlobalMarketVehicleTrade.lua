@@ -120,6 +120,10 @@ function GlobalMarket:showVehicleMarketNotice(kind, targetFarmId, excludeFarmId,
     if kind == N.RESULT then
         text = GlobalMarket.getVehicleMarketReasonText(code)
         color = FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 }
+        -- The HUD is hidden behind the menu: show the reason where the player is
+        if GlobalMarket.showResultInMarketMenu ~= nil and GlobalMarket.showResultInMarketMenu(text) then
+            return
+        end
     elseif kind == N.LISTED then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_listed"), name, money)
     elseif kind == N.NEW_LISTING then

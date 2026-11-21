@@ -253,6 +253,15 @@ function ContractActionEvent:run(connection)
         end
     end
 
+    -- Basegame farm rights: admins and farm managers always, other members need "manage contracts"
+    if not g_currentMission:getHasPlayerPermission(Farm.PERMISSION.MANAGE_CONTRACTS, connection, self.farmId) then
+        if GlobalMarket.debugManager ~= nil then
+            GlobalMarket.debugManager:warning("Contracts (Server): Blocked action %d of farm %d without permission.",
+                self.actionType or 0, self.farmId)
+        end
+        return
+    end
+
     local cleanFmt = (self.formatXml ~= "" and self.formatXml ~= 0) and self.formatXml or nil
     local cleanCap = (self.capacityPerObject ~= nil and self.capacityPerObject > 0) and self.capacityPerObject or nil
     ContractActionEvent.executeOnServer(

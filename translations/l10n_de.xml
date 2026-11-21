@@ -218,6 +218,7 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="Kein freier Abholplatz beim Händler." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Das Fahrzeug konnte nicht geladen werden." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Dafür fehlt dir die Berechtigung." />
+        <e k="ui_gm_noPermission"                                  v="Dafür fehlt dir die Berechtigung." />
         <e k="ui_gm_animals_reason_invalid"                        v="Diese Tiere können nicht angeboten werden." />
         <e k="ui_gm_animals_reason_unavailable"                    v="Der Tiermarkt ist in diesem Spielstand nicht verfügbar." />
         <e k="ui_gm_animals_reason_notOwned"                       v="Nur Tiere aus eigenen Ställen und Anhängern sind möglich." />
