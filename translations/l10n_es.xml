@@ -179,6 +179,11 @@
         <e k="ui_gm_settings_showIcon_desc"                        v="Activa o desactiva la visibilidad del icono de estado de GlobalMarket en el HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM Sistema y Compatibilidad" />
         <e k="ui_gm_storage_only"                                  v="(Solo GM)" />
+        <e k="ui_gm_mapPrice_hint"                                 v="%s | Precio en el mapa Ø %s · Mejor punto de venta: %s (%s) · Mercado %s" />
+        <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | Ningún punto de venta del mapa acepta este producto" />
+        <e k="ui_gm_mapPrice_above"                                v="%d %% sobre Ø" />
+        <e k="ui_gm_mapPrice_below"                                v="%d %% bajo Ø" />
+        <e k="ui_gm_mapPrice_same"                                 v="al nivel de Ø" />
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Almacén GM: vaciado en %s" />
         <e k="ui_gm_storage_feesHigh"                              v="tasas de almacenamiento elevadas" />

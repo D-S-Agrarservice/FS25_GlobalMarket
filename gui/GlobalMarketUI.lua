@@ -895,7 +895,12 @@ function GlobalMarketUI:onListSelectionChanged(list, section, index)
     local sections = (self.currentListFocus == "storage") and self.storageSections or self.marketSections
     local hasValidItem = (section ~= nil and index ~= nil and section > 0 and index > 0
         and sections[section] ~= nil and sections[section].items ~= nil and sections[section].items[index] ~= nil)
-    GlobalMarketStorageAge.updateSelectionHint(self, (hasValidItem and self.currentListFocus == "storage") and sections[section].items[index] or nil)
+    local selectedItem = hasValidItem and sections[section].items[index] or nil
+    if self.currentListFocus == "market" then
+        GlobalMarketMapPriceHint.updateSelectionHint(self, selectedItem)
+    else
+        GlobalMarketStorageAge.updateSelectionHint(self, selectedItem)
+    end
 
     if self.actionButtonInfo ~= nil then
         self.actionButtonInfo.disabled = not hasValidItem

@@ -179,6 +179,11 @@
         <e k="ui_gm_settings_showIcon_desc"                        v="Active ou désactive la visibilité de l'icône d'état GlobalMarket dans le HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM Système &amp; Compatibilité" />
         <e k="ui_gm_storage_only"                                  v="(GM uniquement)" />
+        <e k="ui_gm_mapPrice_hint"                                 v="%s | Prix carte moy. %s · Meilleur point de vente : %s (%s) · Marché %s" />
+        <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | Aucun point de vente de la carte n'accepte ce produit" />
+        <e k="ui_gm_mapPrice_above"                                v="%d %% au-dessus de la moy." />
+        <e k="ui_gm_mapPrice_below"                                v="%d %% en dessous de la moy." />
+        <e k="ui_gm_mapPrice_same"                                 v="au niveau de la moy." />
         <e k="ui_gm_storage_split"                                 v="(Ferme : %s | GM : %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Stock GM : évacuation dans %s" />
         <e k="ui_gm_storage_feesHigh"                              v="frais de stockage majorés" />
