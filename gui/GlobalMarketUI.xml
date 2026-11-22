@@ -37,24 +37,24 @@
 
         <!-- Sub-Tab 1: Spot Market -->
         <GuiElement profile="emptyPanel" with="anchorBottomLeft" id="subTabSpotContainer" position="0px 0px" size="1550px 790px">
-            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="700px 750px" position="20px 40px">
-                <Text profile="globalMarketHeaderBright" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="10px 715px" size="680px 30px" textSize="22px" />
+            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="640px 750px" position="20px 40px">
+                <Text profile="globalMarketHeaderBright" text="$l10n_ui_ingameMenuGlobalMarketHeaderStorage" position="10px 715px" size="620px 30px" textSize="22px" />
 
-                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="700px 38px">
-                    <Text profile="globalMarketHeader" position="40px 8px" size="310px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
-                    <Text profile="globalMarketHeaderRight" position="360px 8px" size="320px 24px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
-                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="700px 2px" />
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="640px 38px">
+                    <Text profile="globalMarketHeader" position="40px 8px" size="250px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                    <Text profile="globalMarketHeaderRight" position="320px 8px" size="300px 24px" text="$l10n_ui_ingameMenuGlobalMarketAvailable" />
+                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="640px 2px" />
                 </GuiElement>
 
                 <!-- Wrapper container to constrain the list and provide an anchor point for the slider -->
-                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="700px 592px">
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="640px 592px">
                     <SmoothList profile="emptyPanel" id="gmTableStorage" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
                         <ListItem profile="globalMarketListItem" name="gmTableStorageRowTemplate">
                             <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                             <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="282px 32px" name="name" />
-                            <Bitmap profile="globalMarketRowCellAgeIcon" name="ageIcon" position="326px 0px" visible="false" />
-                            <Text profile="globalMarketRowCellRight" position="360px 0px" size="320px 32px" name="amount" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="242px 32px" name="name" />
+                            <Bitmap profile="globalMarketRowCellAgeIcon" name="ageIcon" position="286px 0px" visible="false" />
+                            <Text profile="globalMarketRowCellRight" position="320px 0px" size="300px 32px" textLayoutMode="resize" name="amount" />
                         </ListItem>
                         <ListItem profile="globalMarketSectionHeader" name="section">
                             <Text profile="globalMarketSectionHeaderTitle" name="title" />
@@ -67,34 +67,34 @@
                 </GuiElement>
             </GuiElement>
 
-            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="710px 750px" position="790px 40px">
-                <Bitmap profile="globalMarketCustomLogo" id="marketCustomLogo" position="10px 748px" size="240px 120px" visible="false" />
-                <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="690px 30px" textSize="22px" textLayoutMode="resize" />
-                <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="690px 24px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
+            <GuiElement profile="emptyPanel" with="anchorBottomLeft" size="770px 750px" position="730px 40px">
+                <Bitmap profile="globalMarketCustomLogo" id="marketCustomLogo" position="70px 748px" size="240px 120px" visible="false" />
+                <Text profile="globalMarketHeaderBright" id="marketStatusTitle" text="$l10n_ui_ingameMenuGlobalMarketOffline" position="10px 715px" size="750px 30px" textSize="22px" textLayoutMode="resize" />
+                <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="750px 24px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
 
-                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">
-                    <Button profile="globalMarketToolbarBtnMode" id="btnCategoryMode" position="450px 0px" text="$l10n_ui_gm_cat_mode_detailed" onClick="onClickToggleCategoryMode">
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="770px 34px">
+                    <Button profile="globalMarketToolbarBtnMode" id="btnCategoryMode" position="510px 0px" text="$l10n_ui_gm_cat_mode_detailed" onClick="onClickToggleCategoryMode">
                         <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
                     </Button>
                 </GuiElement>
 
-                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="710px 38px">
-                    <Text profile="globalMarketHeader" position="10px 8px" size="240px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
-                    <Text profile="globalMarketHeaderRight" position="260px 8px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
-                    <Text profile="globalMarketHeader" position="440px 8px" size="100px 24px" text="$l10n_ui_gm_trend" />
-                    <Text profile="globalMarketHeaderRight" position="510px 8px" size="180px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
-                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="710px 2px" />
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 608px" size="770px 38px">
+                    <Text profile="globalMarketHeader" position="10px 8px" size="280px 24px" text="$l10n_ui_ingameMenuGlobalMarketFruit" />
+                    <Text profile="globalMarketHeaderRight" position="300px 8px" size="150px 24px" text="$l10n_ui_ingameMenuGlobalMarketPrice" />
+                    <Text profile="globalMarketHeader" position="480px 8px" size="100px 24px" text="$l10n_ui_gm_trend" />
+                    <Text profile="globalMarketHeaderRight" position="530px 8px" size="220px 24px" text="$l10n_ui_ingameMenuGlobalMarketCount" />
+                    <ThreePartBitmap profile="fs25_lineSeparatorBottom" position="0px 0px" size="770px 2px" />
                 </GuiElement>
 
-                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="710px 592px">
+                <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 10px" size="770px 592px">
                     <SmoothList profile="emptyPanel" id="gmTableMarket" size="100% 100%" listSectionHeader="section" handleFocus="true" selectedWithoutFocus="false" showHighlights="true" onDoubleClick="onButtonAction">
                         <ListItem profile="globalMarketListItem" name="gmTableMarketRowTemplate">
                             <Bitmap name="alternating" size="100% 100%" imageColor="1 1 1 0.05" />
                             <Bitmap profile="globalMarketRowCellImage" name="icon" position="8px 0px" />
-                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="235px 32px" textLayoutMode="resize" name="name" />
-                            <Text profile="globalMarketRowCellRight" position="260px 0px" size="150px 32px" name="price" />
-                            <Bitmap profile="globalMarketRowCellArrow" position="452px 2px" name="trend" />
-                            <Text profile="globalMarketRowCellRight" position="510px 0px" size="180px 32px" name="amount" />
+                            <Text profile="globalMarketRowCellLeftBright" position="40px 0px" size="275px 32px" textLayoutMode="resize" name="name" />
+                            <Text profile="globalMarketRowCellRight" position="300px 0px" size="150px 32px" name="price" />
+                            <Bitmap profile="globalMarketRowCellArrow" position="492px 2px" name="trend" />
+                            <Text profile="globalMarketRowCellRight" position="530px 0px" size="220px 32px" name="amount" />
                         </ListItem>
                         <ListItem profile="globalMarketSectionHeader" name="section">
                             <Text profile="globalMarketSectionHeaderTitle" name="title" />
@@ -110,8 +110,8 @@
             <GuiElement profile="globalMarketFooterBox1">
                 <ThreePartBitmap profile="fs25_lineSeparatorTop" position="0px -15dp" />
                 <Text profile="globalMarketHeaderBright" position="40px 0px" text="$l10n_ui_gm_total_storage"/>
-                <Text profile="globalMarketHeaderRightBright" position="380px 0px" size="320px 32px" id="totalStorageDisplay" text="0 L"/>
-                <Text profile="fs25_textDefault" id="storageAgeHint" position="790px 2px" size="710px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
+                <Text profile="globalMarketHeaderRightBright" position="340px 0px" size="300px 32px" id="totalStorageDisplay" text="0 L"/>
+                <Text profile="fs25_textDefault" id="storageAgeHint" position="730px 2px" size="770px 28px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.88 0.90 0.92 1" text="" />
             </GuiElement>
         </GuiElement>
 

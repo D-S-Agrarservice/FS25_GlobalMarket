@@ -486,7 +486,7 @@
         <e k="ui_gm_warning_smart_conflict"                        v="Avertissement GlobalMarket : Le mod '%s' pourrait causer des conflits !" />
 
         <e k="ui_ingameMenuGlobalMarketAvailable"                  v="Quantité disponible" />
-        <e k="ui_ingameMenuGlobalMarketCount"                      v="Nombre" />
+        <e k="ui_ingameMenuGlobalMarketCount"                      v="Quantité disponible" />
         <e k="ui_ingameMenuGlobalMarketFruit"                      v="Produit" />
         <e k="ui_ingameMenuGlobalMarketHeaderMarket"               v="Marché Global" />
         <e k="ui_ingameMenuGlobalMarketHeaderStorage"              v="Inventaire de stockage" />
