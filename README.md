@@ -85,7 +85,7 @@ Everything works **out of the box** with a simulated offline market — no exter
 * **Packs, DLCs & Compatibility:** Only breeds that exist on the server are shown. Mods that replace the animal system (e.g. RealisticLivestock) disable the animal market with a notice.
 
 #### Native FS25 UI, Finances & Administration
-* **Native `InGameMenu` Integration:** Cleanly injected tab in the FS25 `ESC` menu with sub-tabs for the market, contracts and the marketplace (used vehicles & animals), live search filtering, 3 switchable category layouts (*Detailed*, *Compact*, *Flat A–Z*), trend arrows and transparent cost breakdowns (base value, dealer markup and delivery fees).
+* **Native `InGameMenu` Integration:** Cleanly injected tab in the FS25 `ESC` menu with sub-tabs for the market, contracts and the marketplace (used vehicles & animals), live search filtering, 3 switchable category layouts (*Detailed*, *Compact*, *Flat A–Z*), trend arrows, a map price comparison (map average, best selling point and the market's difference in the footer for the selected good) and transparent cost breakdowns (base value, dealer markup and delivery fees).
 * **In-Game Help:** Dedicated GlobalMarket pages in the FS25 help menu explain every area.
 * **Dedicated Server Ready (Nothing to Install on the Server):** A dynamic **Data-Host Token & Standby Failover** system lets Dedicated Servers join the live online market as soon as at least one connected player runs the GlobalMarketClient on their PC.
 * **Environment-Aware Admin Settings:** Separate configuration profiles for Singleplayer (`sp`), hosted Multiplayer (`mp`) and Dedicated Servers (`dedi`), configurable live from the FS25 game settings: delivery fees, dealer markup, market capacity, storage fees & decay, Great Demand mode, NPC activity, online contracts, contract limits, NPC board size, NPC vehicle dealers and NPC animal dealers.
@@ -293,6 +293,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketDebug.lua                 # Leveled logger with round-robin dump rotation
 │   ├── GlobalMarketFarmCleanup.lua           # Cleanup of farm-keyed GM data on farm deletion
 │   ├── GlobalMarketFinance.lua               # MoneyType registration, ledger routing, GM storage fees & decay
+│   ├── GlobalMarketMapPriceHint.lua          # Spot market map price comparison: average, best selling point
 │   ├── GlobalMarketOffers.lua                # ±10 % direct offers, NPC buying & contracts savegame persistence
 │   ├── GlobalMarketOffline.lua               # Map Spy pricing, local NPC simulation & Great Demands
 │   ├── GlobalMarketOnline.lua                # Online trend pricing, client version floor & offline state restore

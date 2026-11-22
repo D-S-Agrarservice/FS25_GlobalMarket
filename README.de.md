@@ -85,7 +85,7 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **Packs, DLCs & Kompatibilität:** Angezeigt werden nur Rassen, die es auf dem Server gibt. Mods, die das Tiersystem ersetzen (z. B. RealisticLivestock), deaktivieren den Tiermarkt mit Hinweis.
 
 #### Natives LS25-UI, Finanzen & Administration
-* **Saubere `InGameMenu`-Integration:** Eigener Reiter im `ESC`-Menü mit Unterreitern für Markt, Verträge und Marktplatz (Gebrauchtfahrzeuge & Tiere), Live-Suchfeld, 3 umschaltbaren Kategorie-Ansichten (*Detailliert*, *Kompakt*, *A–Z*), Preistrend-Pfeilen und transparenter Kostenaufschlüsselung (Warenwert, Händleraufschlag, Lieferkosten).
+* **Saubere `InGameMenu`-Integration:** Eigener Reiter im `ESC`-Menü mit Unterreitern für Markt, Verträge und Marktplatz (Gebrauchtfahrzeuge & Tiere), Live-Suchfeld, 3 umschaltbaren Kategorie-Ansichten (*Detailliert*, *Kompakt*, *A–Z*), Preistrend-Pfeilen, Kartenpreis-Vergleich (Ø-Preis der Karte, beste Verkaufsstelle und Abstand des Marktpreises in der Fußzeile der ausgewählten Ware) und transparenter Kostenaufschlüsselung (Warenwert, Händleraufschlag, Lieferkosten).
 * **Ingame-Hilfe:** Eigene GlobalMarket-Seiten im Hilfemenü des Spiels erklären jeden Bereich.
 * **Dedicated-Server-tauglich (nichts auf dem Server zu installieren):** Über ein dynamisches **Data-Host-Token- & Standby-Failover-System** nimmt auch ein Dedicated Server live am Online-Markt teil, sobald mindestens ein verbundener Spieler auf seinem PC den GlobalMarketClient gestartet hat.
 * **Profilgetrennte Admin-Einstellungen:** Getrennte Einstellungsprofile für Singleplayer (`sp`), gehosteten Multiplayer (`mp`) und Dedicated Server (`dedi`), live einstellbar in den LS25-Spieleinstellungen: Lieferkosten, Händleraufschlag, Marktkapazität, Lagergebühren & Verfall, Große-Nachfrage-Modus, NPC-Aktivität, Online-Verträge, Vertragslimits, Größe des NPC-Bretts, NPC-Fahrzeughändler und NPC-Viehhändler.
@@ -293,6 +293,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketDebug.lua                 # Logger mit Stufen & rotierenden Dumps
 │   ├── GlobalMarketFarmCleanup.lua           # Bereinigung hofbezogener GM-Daten beim Löschen eines Hofs
 │   ├── GlobalMarketFinance.lua               # MoneyType-Registrierung, Buchungen, GM-Lagergebühren & Verfall
+│   ├── GlobalMarketMapPriceHint.lua          # Kartenpreis-Vergleich im Sofortmarkt: Ø-Preis, beste Verkaufsstelle
 │   ├── GlobalMarketOffers.lua                # ±10 %-Direktangebote, NPC-Käufe & Spielstand für Verträge
 │   ├── GlobalMarketOffline.lua               # Map-Spy-Preise, lokale NPC-Simulation & Große Nachfragen
 │   ├── GlobalMarketOnline.lua                # Online-Trendpreise, Mindestversion des Clients & Offline-Rückfall
