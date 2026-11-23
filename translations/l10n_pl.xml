@@ -112,8 +112,6 @@
         <e k="ui_gm_receipt_totalBuy"                              v="CENA CAŁKOWITA" />
         <e k="ui_gm_receipt_totalSell"                             v="CAŁKOWITY PRZYCHÓD" />
         <e k="ui_gm_receipt_unitPrice"                             v="Cena jednostkowa" />
-        <e k="ui_gm_delivery_costs"                                v="Koszty dostawy" />
-        <e k="ui_gm_format_bulk"                                   v="Luzem (Niespakowane)" />
         <e k="ui_gm_format_info"                                   v="Format: %s | Maks: %d Szt. | 1 Szt. = %d L" />
         <e k="ui_gm_format_pallet"                                 v="Paleta" />
         <e k="ui_gm_format_roundbale"                              v="Bela okrągła" />
@@ -398,7 +396,6 @@
         <e k="ui_gm_vehicles_sort_hours"                           v="Sortuj: Godziny" />
         <e k="ui_gm_vehicles_sort_age"                             v="Sortuj: Wiek" />
         <e k="ui_gm_vehicles_action_list"                          v="Wystaw" />
-        <e k="ui_gm_vehicles_action_buy"                           v="Kup" />
         <e k="ui_gm_vehicles_action_withdraw"                      v="Wycofaj" />
         <e k="ui_gm_vehicles_action_viewBuy"                       v="Zobacz i kup" />
         <e k="ui_gm_vehicles_shopHint"                             v="Konfiguracje – tylko podgląd, sprzedaż jak w ofercie" />
@@ -441,7 +438,6 @@
         <e k="ui_gm_action_cancelListing"                          v="Anuluj wpis" />
         <e k="ui_gm_action_claimInbox"                             v="Odbierz ze skrytki" />
         <e k="ui_gm_action_deliverContract"                        v="Dostarcz towar" />
-        <e k="ui_gm_btn_cancel"                                    v="Anuluj" />
         <e k="ui_gm_btn_claim"                                     v="Odbierz" />
         <e k="ui_gm_btn_create"                                    v="Wystaw" />
         <e k="ui_gm_btn_deliver"                                   v="Dostarcz" />
@@ -493,7 +489,6 @@
         <e k="ui_gm_receipt_escrowTotal"                           v="CAŁKOWITY DEPOZYT" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Pozostało w skrytce" />
         <e k="ui_gm_receipt_inboxTarget"                           v="Skrytka odbiorcza farmy" />
-        <e k="ui_gm_receipt_overfillSpot"                          v="Nadwyżka (Cena rynkowa)" />
         <e k="ui_gm_receipt_ownedGoods"                            v="%s (Towar własny)" />
         <e k="ui_gm_receipt_payoutBonus"                           v="Premia końcowa" />
         <e k="ui_gm_receipt_progressAfter"                         v="Postęp po dostawie" />
@@ -543,22 +538,7 @@
         <e k="ui_ingameMenuGlobalMarketOnlineDesc"                 v="Rynek jest połączony z serwerem!" />
         <e k="ui_ingameMenuGlobalMarketPrice"                      v="Cena" />
         <e k="ui_ingameMenuGlobalMarketSelectBtnBuy"               v="Kup" />
-        <e k="ui_ingameMenuGlobalMarketSelectBtnCancel"            v="Anuluj" />
-        <e k="ui_ingameMenuGlobalMarketSelectBtnSell"              v="Sprzedaj" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderBuyPrice"       v="Szacunkowa cena zakupu:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderDeliveryPrice"  v="Koszty dostawy:" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderLevel"          v="Wybór ilości:" />
         <e k="ui_ingameMenuGlobalMarketSelectHeaderMarket"         v="Kup z rynku" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderNotEnoughMoney" v="Nie masz wystarczająco pieniędzy!" />
-        <e k="ui_ingameMenuGlobalMarketSelectHeaderSellPrice"      v="Szacunkowa cena sprzedaży:" />
         <e k="ui_ingameMenuGlobalMarketSelectHeaderStorage"        v="Sprzedaj z magazynu" />
-        <e k="ui_ingameMenuGlobalMarketSelectLoading"              v="Oczekiwanie na zakończenie transakcji . . ." />
-        <e k="ui_ingameMenuGlobalMarketSelectStorageFree"          v="Wolne" />
-        <e k="ui_ingameMenuGlobalMarketSelectStorageName"          v="Nazwa" />
-        <e k="ui_ingameMenuGlobalMarketSelectStorageTitle"         v="Wybór magazynu" />
-        <e k="ui_ingameMenuGlobalMarketToggleFalse"                v="Pokaż: Dostępne" />
-        <e k="ui_ingameMenuGlobalMarketToggleStorageObject"        v="Magazyn obiektów" />
-        <e k="ui_ingameMenuGlobalMarketToggleStorageSilo"          v="Silos" />
-        <e k="ui_ingameMenuGlobalMarketToggleTrue"                 v="Pokaż: Wszystko" />
     </elements>
 </l10n>
