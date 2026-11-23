@@ -28,6 +28,11 @@ end
 ---@param action string
 ---@param xmlFile table
 function GlobalMarket:onReadCustomSyncXml(action, xmlFile)
+    -- Cross-server vehicle market (#36): own parser in GlobalMarketVehicleOnlineSync.lua
+    if action == "vehicleData" and xmlFile ~= nil and self.readVehicleSyncXml ~= nil then
+        self:readVehicleSyncXml(xmlFile)
+        return
+    end
     if action ~= "contractData" or xmlFile == nil then
         return
     end
@@ -128,6 +133,9 @@ end
 
 ---Routes buffered contractData packets directly on server or relays from remote Data-Host
 function GlobalMarket:flushCustomSyncPackets()
+    if self.flushVehicleSyncPackets ~= nil then
+        self:flushVehicleSyncPackets()
+    end
     local queue = self.pendingContractSyncPackets
     if queue == nil or #queue == 0 then
         return

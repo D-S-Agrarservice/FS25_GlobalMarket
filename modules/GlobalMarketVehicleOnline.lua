@@ -267,6 +267,7 @@ function GlobalMarket:submitOnlineVehicleListing(listing, hours)
     listing.createActionId = actionId
     listing.durationHours = hours
     listing.remainingSeconds = hours * 3600
+    listing.pendingSinceMs = g_time
     return true
 end
 
@@ -284,6 +285,7 @@ function GlobalMarket:requestCancelOnlineVehicleListing(listing)
     end
     listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.PENDING_CANCEL
     listing.cancelActionId = payload.actionId
+    listing.pendingSinceMs = g_time
     self:broadcastVehicleMarketState()
     return true, nil
 end
@@ -345,9 +347,11 @@ function GlobalMarket:updateOnlineVehicleTimers(dt)
     end
     local elapsedSec = math.floor(self.vehicleOnlineTimerMs / 1000)
     self.vehicleOnlineTimerMs = self.vehicleOnlineTimerMs - elapsedSec * 1000
-    for _, listing in ipairs(self.vehicleListings or {}) do
-        if listing.isOnline and listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and (listing.remainingSeconds or 0) > 0 then
-            listing.remainingSeconds = math.max(0, listing.remainingSeconds - elapsedSec)
+    for _, list in ipairs({ self.vehicleListings or {}, self.onlineVehicleListings or {} }) do
+        for _, listing in ipairs(list) do
+            if listing.isOnline and listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and (listing.remainingSeconds or 0) > 0 then
+                listing.remainingSeconds = math.max(0, listing.remainingSeconds - elapsedSec)
+            end
         end
     end
 end
@@ -365,6 +369,9 @@ function GlobalMarket:updateVehicleOnline(dt)
         return
     end
     local available = self:getAreOnlineVehiclesAvailable()
+    if not available and self.clearRemoteVehicleListings ~= nil then
+        self:clearRemoteVehicleListings()
+    end
     local host = available and self.dataHostConnection or nil
     if available and (not self.vehicleOnlineWasAvailable or host ~= self.vehicleOnlineSyncedHost) then
         if self:dispatchVehicleAction({ subAction = "REQUEST_SYNC" }) then

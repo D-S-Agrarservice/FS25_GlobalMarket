@@ -241,6 +241,7 @@
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Nie udało się wczytać pojazdu." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Nie masz do tego uprawnień." />
         <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="Rynek pojazdów online jest obecnie niedostępny." />
+        <e k="ui_gm_vehicles_reason_onlineRejected"                v="Rynek online odrzucił żądanie." />
         <e k="ui_gm_noPermission"                                  v="Nie masz do tego uprawnień." />
         <e k="ui_gm_animals_reason_invalid"                        v="Tych zwierząt nie można wystawić." />
         <e k="ui_gm_animals_reason_unavailable"                    v="Targ zwierząt nie jest dostępny w tym zapisie gry." />

@@ -241,6 +241,7 @@
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="No se ha podido cargar el vehículo." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="No tienes permiso para hacer esto." />
         <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="El mercado de vehículos online no está disponible ahora mismo." />
+        <e k="ui_gm_vehicles_reason_onlineRejected"                v="El mercado online rechazó la solicitud." />
         <e k="ui_gm_noPermission"                                  v="No tienes permiso para hacer esto." />
         <e k="ui_gm_animals_reason_invalid"                        v="Estos animales no se pueden poner a la venta." />
         <e k="ui_gm_animals_reason_unavailable"                    v="El mercado de animales no está disponible en esta partida." />

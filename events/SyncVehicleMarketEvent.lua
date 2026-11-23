@@ -22,6 +22,8 @@ function SyncVehicleMarketEvent.new(listings)
     -- Online vehicle market availability (#36), evaluated on the server
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     self.onlineAvailable = gm ~= nil and gm.getAreOnlineVehiclesAvailable ~= nil and gm:getAreOnlineVehiclesAvailable()
+    -- Foreign online listings that exist on this server (#36), display only
+    self.remoteListings = (gm ~= nil and gm.onlineVehicleListings) or {}
     return self
 end
 
@@ -103,52 +105,69 @@ function SyncVehicleMarketEvent.readSnapshot(streamId)
     return snap
 end
 
+---Writes one listing (local or foreign online)
+local function writeListing(streamId, listing)
+    local snap = listing.snapshot
+    streamWriteInt32(streamId, listing.id)
+    streamWriteString(streamId, listing.uid or "")
+    streamWriteString(streamId, listing.status or "OPEN")
+    streamWriteUIntN(streamId, listing.sellerFarmId or 0, FarmManager.FARM_ID_SEND_NUM_BITS)
+    streamWriteString(streamId, listing.sellerName or "")
+    streamWriteBool(streamId, listing.isNpc == true)
+    streamWriteString(streamId, listing.saleMode or "FIXED")
+    streamWriteFloat32(streamId, listing.priceFactor or 1)
+    streamWriteFloat32(streamId, listing.monthsRemaining or 0)
+    streamWriteBool(streamId, listing.isOnline == true)
+    if listing.isOnline then
+        streamWriteInt32(streamId, math.floor(listing.remainingSeconds or 0))
+    end
+
+    SyncVehicleMarketEvent.writeSnapshot(streamId, snap)
+end
+
 function SyncVehicleMarketEvent:writeStream(streamId, connection)
     streamWriteBool(streamId, self.onlineAvailable == true)
-    local listings = self.listings
-    streamWriteUInt16(streamId, #listings)
-    for _, listing in ipairs(listings) do
-        local snap = listing.snapshot
-        streamWriteInt32(streamId, listing.id)
-        streamWriteString(streamId, listing.uid or "")
-        streamWriteString(streamId, listing.status or "OPEN")
-        streamWriteUIntN(streamId, listing.sellerFarmId or 0, FarmManager.FARM_ID_SEND_NUM_BITS)
-        streamWriteString(streamId, listing.sellerName or "")
-        streamWriteBool(streamId, listing.isNpc == true)
-        streamWriteString(streamId, listing.saleMode or "FIXED")
-        streamWriteFloat32(streamId, listing.priceFactor or 1)
-        streamWriteFloat32(streamId, listing.monthsRemaining or 0)
-        streamWriteBool(streamId, listing.isOnline == true)
-        if listing.isOnline then
-            streamWriteInt32(streamId, math.floor(listing.remainingSeconds or 0))
+    for _, list in ipairs({ self.listings, self.remoteListings or {} }) do
+        streamWriteUInt16(streamId, #list)
+        for _, listing in ipairs(list) do
+            writeListing(streamId, listing)
         end
-
-        SyncVehicleMarketEvent.writeSnapshot(streamId, snap)
     end
+end
+
+---Reads one listing written by writeListing
+local function readListing(streamId)
+    local listing = {
+        id = streamReadInt32(streamId),
+        uid = streamReadString(streamId),
+        status = streamReadString(streamId),
+        sellerFarmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS),
+        sellerName = streamReadString(streamId),
+        isNpc = streamReadBool(streamId),
+        saleMode = streamReadString(streamId),
+        priceFactor = streamReadFloat32(streamId),
+        monthsRemaining = streamReadFloat32(streamId)
+    }
+    if streamReadBool(streamId) then
+        listing.isOnline = true
+        listing.remainingSeconds = streamReadInt32(streamId)
+    end
+    listing.snapshot = SyncVehicleMarketEvent.readSnapshot(streamId)
+    return listing
 end
 
 function SyncVehicleMarketEvent:readStream(streamId, connection)
     self.onlineAvailable = streamReadBool(streamId)
     self.listings = {}
-    local numListings = streamReadUInt16(streamId)
-    for _ = 1, numListings do
-        local listing = {
-            id = streamReadInt32(streamId),
-            uid = streamReadString(streamId),
-            status = streamReadString(streamId),
-            sellerFarmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS),
-            sellerName = streamReadString(streamId),
-            isNpc = streamReadBool(streamId),
-            saleMode = streamReadString(streamId),
-            priceFactor = streamReadFloat32(streamId),
-            monthsRemaining = streamReadFloat32(streamId)
-        }
-        if streamReadBool(streamId) then
-            listing.isOnline = true
-            listing.remainingSeconds = streamReadInt32(streamId)
-        end
-        listing.snapshot = SyncVehicleMarketEvent.readSnapshot(streamId)
-        table.insert(self.listings, listing)
+    self.remoteListings = {}
+    for _ = 1, streamReadUInt16(streamId) do
+        table.insert(self.listings, readListing(streamId))
+    end
+    for _ = 1, streamReadUInt16(streamId) do
+        local listing = readListing(streamId)
+        listing.isRemote = true
+        listing.remoteId = listing.uid
+        table.insert(self.remoteListings, listing)
     end
     self:run(connection)
 end
@@ -161,6 +180,7 @@ function SyncVehicleMarketEvent:run(connection)
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm ~= nil and gm.applyOnlineVehiclesAvailable ~= nil then
         gm:applyOnlineVehiclesAvailable(self.onlineAvailable)
+        gm:applyRemoteVehicleListings(self.remoteListings)
     end
     if gm ~= nil and gm.applyVehicleMarketState ~= nil then
         gm:applyVehicleMarketState(self.listings)

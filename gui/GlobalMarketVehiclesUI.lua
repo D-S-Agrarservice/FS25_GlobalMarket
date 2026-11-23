@@ -215,6 +215,9 @@ local function getRowKey(row)
     if row.kind == "MY_VEHICLE" then
         return row.data.vehicle
     end
+    if row.data.isRemote then
+        return "r:" .. tostring(row.data.remoteId)
+    end
     return row.data.id
 end
 
@@ -240,18 +243,28 @@ function GlobalMarketUI:applyVehicleListsFilter(allowListFocus)
     -- Left: own listings and own vehicles
     local myListings, myVehicles, marketByGroup = {}, {}, {}
     local marketCount = 0
-    for _, listing in ipairs(gm.vehicleListings or {}) do
+    local allListings = {}
+    for _, list in ipairs({ gm.vehicleListings or {}, gm.onlineVehicleListings or {} }) do
+        for _, listing in ipairs(list) do
+            table.insert(allListings, listing)
+        end
+    end
+    for _, listing in ipairs(allListings) do
         local name = GlobalMarketVehicleListings.getDisplayName(listing.snapshot.xmlFilename)
-        if not listing.isNpc and listing.sellerFarmId == farmId then
+        if not listing.isNpc and not listing.isRemote and listing.sellerFarmId == farmId then
             if self:matchesVehicleQuery(name) then
                 table.insert(myListings, { kind = "MY_LISTING", data = listing, name = name,
                     price = GlobalMarketVehicleListings.getListingPrice(listing) })
             end
-        elseif listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and not listing.isOnline then
+        elseif listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
             local resolved = GlobalMarketVehicleListings.resolveSnapshot(listing.snapshot)
             if resolved ~= nil and self:matchesVehicleQuery(name) then
                 local value = GlobalMarketVehicleListings.getDealerValue(listing.snapshot, resolved)
                 local group = listing.snapshot.group or "MISC"
+                if listing.isOnline then
+                    -- Online listings (own server and other servers) carry their remaining real time
+                    name = string.format("%s %s", name, self:formatVehicleListingDuration(listing))
+                end
                 marketByGroup[group] = marketByGroup[group] or {}
                 table.insert(marketByGroup[group], { kind = "MARKET_LISTING", data = listing, name = name,
                     value = value, price = math.floor(value * (listing.priceFactor or 1) + 0.5), storeItem = resolved.storeItem })
@@ -294,7 +307,7 @@ function GlobalMarketUI:applyVehicleListsFilter(allowListFocus)
         elseif a.price ~= b.price then
             return a.price < b.price
         end
-        return a.data.id < b.data.id
+        return (a.data.id or 0) < (b.data.id or 0)
     end
     self.marketVehicleSections = {}
     for _, group in ipairs(GlobalMarketVehicleListings.GROUP_ORDER) do
@@ -397,7 +410,8 @@ function GlobalMarketUI:updateVehiclesMenuButtons()
             table.insert(list, self.vehiclesPrimaryButtonInfo)
         elseif row.kind == "MARKET_LISTING" then
             self.vehiclesPrimaryButtonInfo.text = self.i18n:getText("ui_gm_vehicles_action_viewBuy")
-            self.vehiclesPrimaryButtonInfo.disabled = false
+            -- Buying online listings follows with the backend purchase flow (#36, stage 5)
+            self.vehiclesPrimaryButtonInfo.disabled = (row.data.isOnline == true)
             table.insert(list, self.vehiclesPrimaryButtonInfo)
         end
     end
@@ -468,6 +482,9 @@ function GlobalMarketUI:onVehiclePrimaryAction(overrideSection, overrideIndex)
         end
     elseif row.kind == "MARKET_LISTING" then
         local listing = row.data
+        if listing.isOnline then
+            return
+        end
         if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.BUY_VEHICLE) then
             return
         end
