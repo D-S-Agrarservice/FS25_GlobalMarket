@@ -180,6 +180,17 @@
         <textFocusedColor value="$preset_fs25_colorMainDark"/>
     </Profile>
 
+    <!-- Settings gear in the menu header (#40) -->
+    <Profile name="globalMarketHeaderGearBtn" extends="globalMarketToolbarBtnSmall" with="anchorTopLeft">
+        <size value="48px 44px"/>
+    </Profile>
+
+    <Profile name="globalMarketHeaderGearIcon" extends="baseReference" with="anchorMiddleCenter">
+        <size value="30px 30px"/>
+        <imageSliceId value="gui.icon_ingameMenu_options"/>
+        <imageColor value="$preset_colorWhite"/>
+    </Profile>
+
     <Profile name="globalMarketToolbarBtnMode" extends="globalMarketToolbarBtnSmall">
         <size value="260px 32px"/>
         <textSize value="15px"/>

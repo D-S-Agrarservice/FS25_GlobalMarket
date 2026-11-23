@@ -118,6 +118,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketOffline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSavegame.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketSettings.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketSettingsDialog.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketFinance.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketStorageAge.lua")
 
@@ -257,6 +258,11 @@ function GlobalMarket:loadMap(name)
             local animalDialogController = GlobalMarketAnimalDialog.new()
             g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketAnimalDialog.xml", "GlobalMarketAnimalDialog", animalDialogController)
             self.animalDialog = animalDialogController
+
+            -- Own settings page (#40); option rows are built on first open
+            local settingsDialogController = GlobalMarketSettingsDialog.new()
+            g_gui:loadGui(GlobalMarket.dir .. "gui/GlobalMarketSettingsDialog.xml", "GlobalMarketSettingsDialog", settingsDialogController)
+            self.settingsDialog = settingsDialogController
 
             -- 2. Load Main Market UI
             local uiController = GlobalMarketUI.new()

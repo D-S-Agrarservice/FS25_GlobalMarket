@@ -17,6 +17,11 @@
                 <Text profile="fs25_shopBalance" text="$l10n_ui_gm_balance" />
                 <Text profile="fs25_shopMoney" id="currentBalanceText" />
             </BoxLayout>
+            <!-- GlobalMarket settings (#40), placed left of the balance box in updateContent -->
+            <Button profile="globalMarketHeaderGearBtn" id="btnGmSettings" onClick="onClickGmSettings">
+                <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                <Bitmap profile="globalMarketHeaderGearIcon" />
+            </Button>
         </GuiElement>
 
         <!-- Sub-Tab Bar (top-left, clear of right-side custom market logo) -->

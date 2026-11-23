@@ -70,7 +70,7 @@
         <e k="gm_help_p4_finances_title"                           v="Podsumowanie finansowe (kompaktowe lub szczegółowe)" />
         <e k="gm_help_p4_finances_text"                            v="Wszystkie zakupy, sprzedaże i opłaty Rynku Globalnego są osobno rejestrowane w menu Finansów FS25.&#xA;- W ustawieniach gry każdy gracz może w dowolnej chwili przełączyć widok między zwięzłym podsumowaniem a szczegółowym podziałem na towary luzem, ciecze, bele, palety i opłaty." />
         <e k="gm_help_p4_settings_title"                           v="Opcje administratora i ustawienia gracza" />
-        <e k="gm_help_p4_settings_text"                            v="W Ustawieniach ogólnych gry znajduje się osobna sekcja Rynku Globalnego:&#xA;- Ustawienia serwera / admina: Koszty dostawy (bazowe i za litr), marża handlowa, pojemność rynku, czas czyszczenia magazynu, tryb dużego popytu oraz opcje kompatybilności i debugowania (osobne profile dla trybu solo, hosta MP i serwera dedykowanego).&#xA;- Ustawienia lokalne: Widoczność i pulsowanie ikony HUD oraz szczegółowy widok finansów każdy gracz ustawia indywidualnie." />
+        <e k="gm_help_p4_settings_text"                            v="Ustawienia Rynku Globalnego otworzysz w menu rynku kołem zębatym obok salda w prawym górnym rogu lub klawiszem Ustawienia RG na rynku natychmiastowym:&#xA;- Opcje admina: koszty dostawy (bazowe i za litr), marża handlowa, pojemność rynku, czas czyszczenia magazynu, duży popyt, kontrakty, giełda, kompatybilność i debugowanie (osobne profile dla trybu solo, hosta MP i serwera dedykowanego). Wszyscy widzą wartości, zmieniać mogą tylko admini.&#xA;- Opcje osobiste: ikonę statusu HUD, pulsowanie, szczegółowy widok finansów i powiadomienia o nowych ofertach pojazdów każdy gracz ustawia dla siebie." />
 
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Otwórz Rynek Globalny" />
 
@@ -184,7 +184,6 @@
         <e k="ui_gm_settings_debugMode_desc"                       v="Aktywuje rozszerzone dzienniki deweloperskie dla GlobalMarket." />
         <e k="ui_gm_settings_detailedFinance"                      v="Szczegółowe statystyki finansowe" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Aktywuje podział transakcji GlobalMarket na kategorie towarów w podsumowaniu finansów. (Wymaga ponownego wczytania zapisu gry!)" />
-        <e k="ui_gm_settings_header"                               v="RYNEK GLOBALNY" />
         <e k="ui_gm_settings_iconPulse"                            v="Ikona statusu: Pulsowanie" />
         <e k="ui_gm_settings_iconPulse_desc"                       v="Włącza delikatny efekt pulsowania ikony podczas odbierania danych." />
         <e k="ui_gm_settings_literCost"                            v="Koszty dostawy: Cena za litr" />
@@ -194,6 +193,12 @@
         <e k="ui_gm_settings_showIcon"                             v="Pokaż ikonę statusu" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Włącza lub wyłącza widoczność ikony statusu GlobalMarket w HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatybilność" />
+        <e k="ui_gm_settingsDialog_title"                          v="Rynek Globalny – Ustawienia" />
+        <e k="ui_gm_settingsDialog_button"                         v="Ustawienia RG" />
+        <e k="ui_gm_settings_sec_market"                           v="RYNEK I OPŁATY" />
+        <e k="ui_gm_settings_sec_contracts"                        v="KONTRAKTY DOSTAW" />
+        <e k="ui_gm_settings_sec_marketplace"                      v="GIEŁDA (POJAZDY I ZWIERZĘTA)" />
+        <e k="ui_gm_settings_sec_display"                          v="WYŚWIETLANIE (OSOBISTE)" />
         <e k="ui_gm_storage_only"                                  v="(Tylko GM)" />
         <e k="ui_gm_mapPrice_hint"                                 v="%s | Cena na mapie śr. %s · Najlepszy punkt sprzedaży: %s (%s) · Rynek %s" />
         <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | Żaden punkt sprzedaży na mapie nie przyjmuje tego towaru" />

@@ -70,7 +70,7 @@
         <e k="gm_help_p4_finances_title"                           v="Resumen financiero (compacto o detallado)" />
         <e k="gm_help_p4_finances_text"                            v="Todas las compras, ventas y tarifas del Mercado Global se registran en el menú de Finanzas de FS25.&#xA;- En los ajustes del juego puedes elegir entre una vista resumida compacta o un desglose detallado por granel, líquidos, pacas, palés y tarifas." />
         <e k="gm_help_p4_settings_title"                           v="Ajustes de administrador y opciones personales" />
-        <e k="gm_help_p4_settings_text"                            v="En los Ajustes Generales del juego encontrarás una sección propia del Mercado Global:&#xA;- Opciones de servidor / admin: Ajusta gastos de envío, margen comercial, capacidad del mercado, tiempo de vaciado, modo de Gran Demanda y opciones de compatibilidad/depuración (perfiles separados para un jugador, host MP y servidor dedicado).&#xA;- Opciones locales: Cada jugador puede configurar individualmente la visibilidad y el pulso del icono HUD, así como la vista financiera detallada." />
+        <e k="gm_help_p4_settings_text"                            v="Abre los ajustes del Mercado Global en el menú del mercado con el engranaje junto a tu saldo arriba a la derecha, o con la tecla Ajustes MG en el mercado al contado:&#xA;- Opciones de admin: gastos de envío (base y por litro), margen comercial, capacidad del mercado, tiempo de vaciado, Grandes Demandas, contratos, mercadillo, compatibilidad y depuración (perfiles separados para un jugador, host MP y servidor dedicado). Todos ven los valores, solo los admins pueden cambiarlos.&#xA;- Opciones personales: icono de estado HUD, pulso, vista financiera detallada y avisos de nuevas ofertas de vehículos los ajusta cada jugador para sí." />
 
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Abrir Mercado Global" />
 
@@ -184,7 +184,6 @@
         <e k="ui_gm_settings_debugMode_desc"                       v="Activa los registros de desarrollador ampliados para GlobalMarket." />
         <e k="ui_gm_settings_detailedFinance"                      v="Estadísticas financieras detalladas" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Activa un desglose de las transacciones de GlobalMarket por categoría de bienes en la vista general financiera." />
-        <e k="ui_gm_settings_header"                               v="MERCADO GLOBAL" />
         <e k="ui_gm_settings_iconPulse"                            v="Icono de estado: Pulso" />
         <e k="ui_gm_settings_iconPulse_desc"                       v="Activa un suave efecto de pulso en el icono al recibir datos." />
         <e k="ui_gm_settings_literCost"                            v="Gastos de envío: Precio por litro" />
@@ -194,6 +193,12 @@
         <e k="ui_gm_settings_showIcon"                             v="Mostrar icono de estado" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Activa o desactiva la visibilidad del icono de estado de GlobalMarket en el HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM Sistema y Compatibilidad" />
+        <e k="ui_gm_settingsDialog_title"                          v="Mercado Global – Ajustes" />
+        <e k="ui_gm_settingsDialog_button"                         v="Ajustes MG" />
+        <e k="ui_gm_settings_sec_market"                           v="MERCADO Y TARIFAS" />
+        <e k="ui_gm_settings_sec_contracts"                        v="CONTRATOS DE SUMINISTRO" />
+        <e k="ui_gm_settings_sec_marketplace"                      v="MERCADILLO (VEHÍCULOS Y ANIMALES)" />
+        <e k="ui_gm_settings_sec_display"                          v="VISUALIZACIÓN (PERSONAL)" />
         <e k="ui_gm_storage_only"                                  v="(Solo GM)" />
         <e k="ui_gm_mapPrice_hint"                                 v="%s | Precio en el mapa Ø %s · Mejor punto de venta: %s (%s) · Mercado %s" />
         <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | Ningún punto de venta del mapa acepta este producto" />

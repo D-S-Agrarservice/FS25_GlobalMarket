@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- ========================================================================================= -->
+<!-- FS25_GlobalMarket - GlobalMarketSettingsDialog.xml                                        -->
+<!-- Own GlobalMarket settings page (#40): option rows in sections, built at runtime from the  -->
+<!-- basegame settings profiles into settingsLayout.                                           -->
+<!-- Author: D-S-Agrarservice                                                                  -->
+<!-- ========================================================================================= -->
+<GUI name="GlobalMarketSettingsDialog" onOpen="onOpen" onClose="onClose" onCreate="onCreate">
+    <GuiElement profile="newLayer" />
+    <Bitmap profile="dialogFullscreenBg" id="dialogBg" />
+
+    <GuiElement profile="globalMarketSDialogBg" id="dialogElement">
+        <ThreePartBitmap profile="fs25_dialogBgMiddle" with="anchorStretch" />
+        <ThreePartBitmap profile="fs25_dialogBgTop" />
+        <ThreePartBitmap profile="fs25_dialogBgBottom" />
+
+        <GuiElement profile="fs25_dialogContentContainer" size="100% 100%">
+            <Text profile="globalMarketSTitle" id="dialogTitleElement" text="$l10n_ui_gm_settingsDialog_title" />
+            <GuiElement profile="globalMarketSContainer">
+                <ScrollingLayout profile="fs25_settingsLayout" id="settingsLayout" />
+                <!-- Visible scrollbar along the option rows, so players see there is more below -->
+                <GuiElement profile="globalMarketSSliderFrame">
+                    <ThreePartBitmap profile="fs25_listSliderBox">
+                        <Slider profile="globalMarketListSlider" dataElementId="settingsLayout" id="settingsLayoutSlider" />
+                    </ThreePartBitmap>
+                </GuiElement>
+                <Bitmap profile="fs25_settingsTooltipSeparator" />
+            </GuiElement>
+        </GuiElement>
+
+        <BoxLayout profile="fs25_dialogButtonBox" id="buttonsPC">
+            <!-- YesNoDialog base class expects a yes button; this page only needs "back" -->
+            <Button profile="buttonOK" text="$l10n_button_ok" onClick="onClickBack" id="yesButton" visible="false" />
+            <Button profile="buttonBack" text="$l10n_button_back" onClick="onClickBack" id="noButton" />
+        </BoxLayout>
+    </GuiElement>
+
+    <GUIProfiles>
+        <Profile name="globalMarketSDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
+            <size value="1500px 860px" />
+        </Profile>
+
+        <Profile name="globalMarketSTitle" extends="fs25_dialogText" with="anchorTopCenter">
+            <size value="1400px 40px" />
+            <position value="0px -20px" />
+            <textSize value="24px" />
+            <textBold value="true" />
+            <textAlignment value="center" />
+        </Profile>
+
+        <Profile name="globalMarketSContainer" extends="fs25_subCategorySelectorTabbedContainer" with="anchorTopCenter">
+            <position value="0px -70px" />
+        </Profile>
+
+        <!-- Covers the option rows; fs25_listSliderBox docks to its right edge -->
+        <Profile name="globalMarketSSliderFrame" extends="emptyPanel" with="anchorTopLeft">
+            <size value="852px 706px" />
+            <position value="0px 0px" />
+        </Profile>
+
+        <!-- Option descriptions keep the basegame position. TextElement wraps at textMaxWidth (the
+             basegame value is meant for the full-screen settings page and runs past this dialog). -->
+        <Profile name="globalMarketSettingsTooltip" extends="fs25_multiTextOptionTooltip">
+            <textMaxWidth value="490px" />
+            <textMaxNumLines value="9" />
+        </Profile>
+    </GUIProfiles>
+</GUI>

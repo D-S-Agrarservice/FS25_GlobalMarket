@@ -96,11 +96,18 @@ function GlobalMarketUI:onFrameOpen()
         callback = function() self:onClickToggleCategoryMode() end,
         disabled = false
     }
+    -- Own settings page (#40)
+    self.gmSettingsButtonInfo = {
+        inputAction = InputAction.MENU_EXTRA_2,
+        text = self.i18n:getText("ui_gm_settingsDialog_button"),
+        callback = function() self:onClickGmSettings() end,
+        disabled = false
+    }
 
     if self.onContractsFrameOpen ~= nil then
         self:onContractsFrameOpen()
     else
-        self:setMenuButtonInfo({ backButton, self.actionButtonInfo, self.categoryModeButtonInfo })
+        self:setMenuButtonInfo({ backButton, self.actionButtonInfo, self.categoryModeButtonInfo, self.gmSettingsButtonInfo })
         self:updateCategoryModeButtonVisuals()
         self:updateContent()
 
@@ -333,6 +340,13 @@ function GlobalMarketUI:updateContent()
             if self.shopMoneyBoxBg ~= nil then
                 self.shopMoneyBoxBg:setSize(self.shopMoneyBox.flowSizes[1] + 60 * g_pixelSizeScaledX)
             end
+        end
+        -- Settings gear (#40) sits left of the balance box, whose width follows the amount
+        if self.btnGmSettings ~= nil and self.shopMoneyBoxBg ~= nil then
+            local bg = self.shopMoneyBoxBg
+            local gear = self.btnGmSettings
+            gear:setAbsolutePosition(bg.absPosition[1] - gear.absSize[1] - 12 * g_pixelSizeScaledX,
+                bg.absPosition[2] + (bg.absSize[2] - gear.absSize[2]) * 0.5)
         end
     end
 

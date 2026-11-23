@@ -70,7 +70,7 @@
         <e k="gm_help_p4_finances_title"                           v="Finanzübersicht (Kompakt oder Detailliert)" />
         <e k="gm_help_p4_finances_text"                            v="Sämtliche Umsätze und Gebühren des Globalen Marktes werden im LS25-Finanzmenü separat erfasst.&#xA;- In den Spieleinstellungen kannst du jederzeit persönlich umschalten, ob alle Marktbuchungen kompakt zusammengefasst oder detailliert nach Schüttgut, Flüssigkeiten, Ballen, Paletten und Gebühren aufgeschlüsselt werden." />
         <e k="gm_help_p4_settings_title"                           v="Admin-Optionen &amp; Spieler-Einstellungen" />
-        <e k="gm_help_p4_settings_text"                            v="In den Allgemeinen Spieleinstellungen findest du einen eigenen Abschnitt für den Globalen Markt:&#xA;- Server- / Admin-Optionen: Lieferkosten (Basis &amp; pro Liter), Händleraufschlag, Marktkapazität, Lagerräumungsfrist, Modus für Große Nachfragen sowie Kompatibilitäts- und Debug-Optionen (getrennt gespeichert für Singleplayer, MP-Host und Dedicated Server).&#xA;- Lokale Komfort-Optionen: Sichtbarkeit und Pulsieren des HUD-Status-Icons sowie die detaillierte Finanzansicht stellt jeder Spieler individuell für sich ein." />
+        <e k="gm_help_p4_settings_text"                            v="Die Einstellungen des Globalen Markts öffnest du im Marktmenü über das Zahnrad oben rechts neben dem Kontostand oder im Sofortmarkt über die Taste GM-Einstellungen:&#xA;- Admin-Optionen: Lieferkosten (Basis &amp; pro Liter), Händleraufschlag, Marktkapazität, Lagerräumungsfrist, Große Nachfragen, Verträge, Marktplatz, Kompatibilität und Debug (getrennt gespeichert für Singleplayer, MP-Host und Dedicated Server). Alle sehen die Werte, ändern dürfen nur Admins.&#xA;- Persönliche Optionen: HUD-Status-Icon, Pulsieren, detaillierte Finanzansicht und Hinweise zu neuen Fahrzeugangeboten stellt jeder Spieler für sich ein." />
 
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Globalen Markt öffnen" />
 
@@ -184,7 +184,6 @@
         <e k="ui_gm_settings_debugMode_desc"                       v="Aktiviert erweiterte Entwickler-Logs für GlobalMarket." />
         <e k="ui_gm_settings_detailedFinance"                      v="Detaillierte Finanzstatistik" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Aktiviert eine nach Güterklassen aufgeteilte Auflistung der GlobalMarket-Transaktionen in der Finanzübersicht." />
-        <e k="ui_gm_settings_header"                               v="GLOBALER MARKT" />
         <e k="ui_gm_settings_iconPulse"                            v="Status-Icon: Pulsieren" />
         <e k="ui_gm_settings_iconPulse_desc"                       v="Aktiviert ein sanftes Pulsieren des Icons bei Datenempfang." />
         <e k="ui_gm_settings_literCost"                            v="Lieferkosten: Preis pro Liter" />
@@ -194,6 +193,12 @@
         <e k="ui_gm_settings_showIcon"                             v="Status-Icon anzeigen" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Aktiviert oder deaktiviert die Anzeige des GlobalMarket Status-Icons im HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Kompatibilität" />
+        <e k="ui_gm_settingsDialog_title"                          v="Globaler Markt – Einstellungen" />
+        <e k="ui_gm_settingsDialog_button"                         v="GM-Einstellungen" />
+        <e k="ui_gm_settings_sec_market"                           v="MARKT &amp; GEBÜHREN" />
+        <e k="ui_gm_settings_sec_contracts"                        v="LIEFERVERTRÄGE" />
+        <e k="ui_gm_settings_sec_marketplace"                      v="MARKTPLATZ (FAHRZEUGE &amp; TIERE)" />
+        <e k="ui_gm_settings_sec_display"                          v="ANZEIGE (PERSÖNLICH)" />
         <e k="ui_gm_storage_only"                                  v="(nur GM)" />
         <e k="ui_gm_mapPrice_hint"                                 v="%s | Kartenpreis Ø %s · Beste Verkaufsstelle: %s (%s) · Markt %s" />
         <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | Keine Verkaufsstelle auf der Karte nimmt diese Ware an" />

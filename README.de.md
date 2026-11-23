@@ -90,7 +90,7 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **Ingame-Hilfe:** Eigene GlobalMarket-Seiten im Hilfemenü des Spiels erklären jeden Bereich.
 * **Dedicated-Server-tauglich (nichts auf dem Server zu installieren):** Über ein dynamisches **Data-Host-Token- & Standby-Failover-System** nimmt auch ein Dedicated Server live am Online-Markt teil, sobald mindestens ein verbundener Spieler auf seinem PC den GlobalMarketClient gestartet hat.
 * **Marktwechsel im Spiel:** Sind im GlobalMarketClient mehrere Marktschlüssel gespeichert (z. B. private Community-Märkte), wechselt der aktive Data-Host direkt im Marktmenü zwischen dem offiziellen Global Market und diesen Märkten — im Multiplayer nur als Admin und nach Bestätigung, mit 30 Sekunden Sperrzeit. Kopfzeile, Preise und freigegebene Waren folgen dem neuen Markt automatisch.
-* **Profilgetrennte Admin-Einstellungen:** Getrennte Einstellungsprofile für Singleplayer (`sp`), gehosteten Multiplayer (`mp`) und Dedicated Server (`dedi`), live einstellbar in den LS25-Spieleinstellungen: Lieferkosten, Händleraufschlag, Marktkapazität, Lagergebühren & Verfall, Große-Nachfrage-Modus, NPC-Aktivität, Online-Verträge, Vertragslimits, Größe des NPC-Bretts, NPC-Fahrzeughändler und NPC-Viehhändler.
+* **Profilgetrennte Admin-Einstellungen:** Getrennte Einstellungsprofile für Singleplayer (`sp`), gehosteten Multiplayer (`mp`) und Dedicated Server (`dedi`), live einstellbar auf der eigenen GlobalMarket-Einstellungsseite (Zahnrad neben dem Kontostand im Marktmenü; Admin-Optionen für alle sichtbar, nur von Admins änderbar): Lieferkosten, Händleraufschlag, Marktkapazität, Lagergebühren & Verfall, Große-Nachfrage-Modus, NPC-Aktivität, Online-Verträge, Vertragslimits, Größe des NPC-Bretts, NPC-Fahrzeughändler und NPC-Viehhändler.
 * **Hofrechte des Spiels:** Admins und Hofmanager dürfen alles, andere Hofmitglieder nur, was ihre Rolle erlaubt — „Fahrzeuge kaufen“ / „Fahrzeuge verkaufen“ im Fahrzeugmarkt, „Tiere handeln“ im Tiermarkt, „Aufträge verwalten“ bei Lieferverträgen. Der Server prüft jede Anfrage, das Menü antwortet vorher mit einem Hinweis; Fehler erscheinen bei geöffnetem Menü als Dialog statt im HUD.
 * **Finanzübersicht:** Eigene `MoneyType`-Buchungskategorien (kompakt oder detailliert umschaltbar) direkt im LS25-Finanzmenü.
 
@@ -271,6 +271,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketContractDialog.lua / .xml # Mehrzweck-Dialog für Verträge, Angebote & Abholfach-Entnahmen
 │   ├── GlobalMarketContractDialogScope.lua   # Bereich-Zeile (lokal / online) beim Anlegen eines Direktangebots
 │   ├── GlobalMarketVehiclesUI.lua            # Unterreiter-Controller: eigene Fahrzeuge & Angebote, Gebrauchtmarkt
+│   ├── GlobalMarketSettingsDialog.lua / .xml # Eigene Einstellungsseite: alle Optionen in Abschnitten
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog zum Anbieten eines Fahrzeugs (Preis, Laufzeit)
 │   ├── GlobalMarketVehicleShopBridge.lua     # Angebote im Shop-Bildschirm des Spiels ansehen & kaufen
 │   ├── GlobalMarketAnimalsUI.lua             # Tieransicht im Marktplatz: eigene Gruppen, Angebote, Gebote & Abholfach, Tiermarkt

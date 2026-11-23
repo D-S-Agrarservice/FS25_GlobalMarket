@@ -70,7 +70,7 @@
         <e k="gm_help_p4_finances_title"                           v="Aperçu des finances (compact ou détaillé)" />
         <e k="gm_help_p4_finances_text"                            v="Tous les achats, ventes et frais du Marché Global sont enregistrés dans le menu Finances de FS25.&#xA;- Dans les paramètres du jeu, vous pouvez choisir librement entre un affichage résumé compact ou une ventilation détaillée par vrac, liquides, balles, palettes et frais." />
         <e k="gm_help_p4_settings_title"                           v="Options administrateur et confort joueur" />
-        <e k="gm_help_p4_settings_text"                            v="Une section dédiée au Marché Global est disponible dans les Paramètres généraux du jeu :&#xA;- Options serveur / admin : Réglez les frais de livraison, la marge commerciale, la capacité du marché, le délai d'expiration, le mode de forte demande ainsi que la compatibilité et le débogage (profils séparés pour solo, hôte MP et serveur dédié).&#xA;- Options locales : L'affichage et la pulsation de l'icône HUD ainsi que la vue financière détaillée sont réglables individuellement par chaque joueur." />
+        <e k="gm_help_p4_settings_text"                            v="Ouvrez les paramètres du Marché Global dans le menu du marché avec la roue dentée à côté de votre solde en haut à droite, ou avec la touche Paramètres MG dans le marché instantané :&#xA;- Options admin : frais de livraison (base et par litre), marge commerciale, capacité du marché, délai d'expiration, fortes demandes, contrats, place de marché, compatibilité et débogage (profils séparés pour solo, hôte MP et serveur dédié). Tout le monde voit les valeurs, seuls les admins peuvent les modifier.&#xA;- Options personnelles : icône HUD, pulsation, vue financière détaillée et avis de nouvelles offres de véhicules sont réglés par chaque joueur." />
 
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Ouvrir le Marché Global" />
 
@@ -184,7 +184,6 @@
         <e k="ui_gm_settings_debugMode_desc"                       v="Active les journaux de développement étendus pour le GlobalMarket." />
         <e k="ui_gm_settings_detailedFinance"                      v="Statistiques financières détaillées" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Active une répartition des transactions du GlobalMarket par catégorie de biens dans l'aperçu financier." />
-        <e k="ui_gm_settings_header"                               v="MARCHÉ GLOBAL" />
         <e k="ui_gm_settings_iconPulse"                            v="Icône d'état : Impulsion" />
         <e k="ui_gm_settings_iconPulse_desc"                       v="Active un doux effet d'impulsion sur l'icône lors de la réception de données." />
         <e k="ui_gm_settings_literCost"                            v="Frais de livraison : Prix par litre" />
@@ -194,6 +193,12 @@
         <e k="ui_gm_settings_showIcon"                             v="Afficher l'icône d'état" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Active ou désactive la visibilité de l'icône d'état GlobalMarket dans le HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM Système &amp; Compatibilité" />
+        <e k="ui_gm_settingsDialog_title"                          v="Marché Global – Paramètres" />
+        <e k="ui_gm_settingsDialog_button"                         v="Paramètres MG" />
+        <e k="ui_gm_settings_sec_market"                           v="MARCHÉ &amp; FRAIS" />
+        <e k="ui_gm_settings_sec_contracts"                        v="CONTRATS DE LIVRAISON" />
+        <e k="ui_gm_settings_sec_marketplace"                      v="PLACE DE MARCHÉ (VÉHICULES &amp; ANIMAUX)" />
+        <e k="ui_gm_settings_sec_display"                          v="AFFICHAGE (PERSONNEL)" />
         <e k="ui_gm_storage_only"                                  v="(GM uniquement)" />
         <e k="ui_gm_mapPrice_hint"                                 v="%s | Prix carte moy. %s · Meilleur point de vente : %s (%s) · Marché %s" />
         <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | Aucun point de vente de la carte n'accepte ce produit" />

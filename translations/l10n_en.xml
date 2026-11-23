@@ -70,7 +70,7 @@
         <e k="gm_help_p4_finances_title"                           v="Finance Screen (Compact or Detailed)" />
         <e k="gm_help_p4_finances_text"                            v="All Global Market purchases, sales, and fees are tracked in the native FS25 Finances screen.&#xA;- In the Game Settings, each player can freely choose between a compact summary view or a detailed breakdown by bulk goods, liquids, bales, pallets, and fees." />
         <e k="gm_help_p4_settings_title"                           v="Admin Options &amp; Player Comfort Settings" />
-        <e k="gm_help_p4_settings_text"                            v="A dedicated Global Market section is available in the General Game Settings:&#xA;- Server / Admin Settings: Configure delivery costs (base &amp; per liter), dealer markup, market capacity, storage clearance duration, Great Demand mode, plus compatibility and debug options (saved separately for Singleplayer, MP Host, and Dedicated Server).&#xA;- Local Player Settings: HUD status icon visibility, icon pulse, and detailed finance display can be customized individually by every player." />
+        <e k="gm_help_p4_settings_text"                            v="Open the Global Market settings in the market menu with the gear next to your balance at the top right, or with the GM Settings key in the spot market:&#xA;- Admin options: delivery costs (base &amp; per liter), dealer markup, market capacity, storage clearance, Great Demands, contracts, marketplace, compatibility and debug (saved separately for Singleplayer, MP host and Dedicated Server). Everybody sees the values, only admins can change them.&#xA;- Personal options: HUD status icon, pulse, detailed finance view and new vehicle listing notices are set by every player for themselves." />
 
         <e k="input_GLOBAL_MARKET_OPEN"                            v="Open Global Market" />
 
@@ -184,7 +184,6 @@
         <e k="ui_gm_settings_debugMode_desc"                       v="Activates extended developer logs for GlobalMarket." />
         <e k="ui_gm_settings_detailedFinance"                      v="Detailed Finance Statistics" />
         <e k="ui_gm_settings_detailedFinance_desc"                 v="Activates a breakdown of GlobalMarket transactions by goods category in the finance overview." />
-        <e k="ui_gm_settings_header"                               v="GLOBAL MARKET" />
         <e k="ui_gm_settings_iconPulse"                            v="Status Icon: Pulse" />
         <e k="ui_gm_settings_iconPulse_desc"                       v="Enables a soft pulsing effect on the icon when receiving data." />
         <e k="ui_gm_settings_literCost"                            v="Delivery Costs: Price per Liter" />
@@ -194,6 +193,12 @@
         <e k="ui_gm_settings_showIcon"                             v="Show Status Icon" />
         <e k="ui_gm_settings_showIcon_desc"                        v="Toggles the visibility of the GlobalMarket status icon in the HUD." />
         <e k="ui_gm_settings_system_header"                        v="GM System &amp; Compatibility" />
+        <e k="ui_gm_settingsDialog_title"                          v="Global Market – Settings" />
+        <e k="ui_gm_settingsDialog_button"                         v="GM Settings" />
+        <e k="ui_gm_settings_sec_market"                           v="MARKET &amp; FEES" />
+        <e k="ui_gm_settings_sec_contracts"                        v="SUPPLY CONTRACTS" />
+        <e k="ui_gm_settings_sec_marketplace"                      v="MARKETPLACE (VEHICLES &amp; ANIMALS)" />
+        <e k="ui_gm_settings_sec_display"                          v="DISPLAY (PERSONAL)" />
         <e k="ui_gm_storage_only"                                  v="(GM only)" />
         <e k="ui_gm_mapPrice_hint"                                 v="%s | Map price avg. %s · Best selling point: %s (%s) · Market %s" />
         <e k="ui_gm_mapPrice_hintNoStation"                        v="%s | No selling point on the map accepts this good" />

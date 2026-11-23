@@ -90,7 +90,7 @@ Everything works **out of the box** with a simulated offline market — no exter
 * **In-Game Help:** Dedicated GlobalMarket pages in the FS25 help menu explain every area.
 * **Dedicated Server Ready (Nothing to Install on the Server):** A dynamic **Data-Host Token & Standby Failover** system lets Dedicated Servers join the live online market as soon as at least one connected player runs the GlobalMarketClient on their PC.
 * **In-Game Market Switch:** If several market keys are saved in the GlobalMarketClient (e.g. private community markets), the active Data-Host switches between the official Global Market and these markets right from the market menu — in multiplayer only as admin and after a confirmation, with a 30-second cooldown. Header, prices and approved goods follow the new market automatically.
-* **Environment-Aware Admin Settings:** Separate configuration profiles for Singleplayer (`sp`), hosted Multiplayer (`mp`) and Dedicated Servers (`dedi`), configurable live from the FS25 game settings: delivery fees, dealer markup, market capacity, storage fees & decay, Great Demand mode, NPC activity, online contracts, contract limits, NPC board size, NPC vehicle dealers and NPC animal dealers.
+* **Environment-Aware Admin Settings:** Separate configuration profiles for Singleplayer (`sp`), hosted Multiplayer (`mp`) and Dedicated Servers (`dedi`), configurable live on the own GlobalMarket settings page (gear next to the balance in the market menu; admin options visible to all, editable by admins only): delivery fees, dealer markup, market capacity, storage fees & decay, Great Demand mode, NPC activity, online contracts, contract limits, NPC board size, NPC vehicle dealers and NPC animal dealers.
 * **Basegame Farm Permissions:** Admins and farm managers may do everything, other farm members only what their role allows — "buy vehicles" / "sell vehicles" on the vehicle market, "trade animals" on the animal market, "manage contracts" for delivery contracts. The server checks every request, the menu answers first with a notice; while the menu is open, errors show as a dialog instead of the HUD.
 * **Finance Ledger Integration:** Dedicated `MoneyType` categories (simple or detailed view) in the native FS25 finances screen.
 
@@ -271,6 +271,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketContractDialog.lua / .xml # Multi-mode dialog for contracts, offers & inbox withdrawals
 │   ├── GlobalMarketContractDialogScope.lua   # Scope row (local / online) when creating a direct offer
 │   ├── GlobalMarketVehiclesUI.lua            # Sub-tab controller: own vehicles & listings, used vehicle market
+│   ├── GlobalMarketSettingsDialog.lua / .xml # Own settings page: all options in sections
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog to list a vehicle (asking price, duration)
 │   ├── GlobalMarketVehicleShopBridge.lua     # View & buy listings in the basegame shop screen
 │   ├── GlobalMarketAnimalsUI.lua             # Marketplace animal view: own groups, listings, bids & pickup box, animal market

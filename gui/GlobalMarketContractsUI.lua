@@ -286,6 +286,7 @@ function GlobalMarketUI:updateActiveSubTabMenuButtons()
         if self.actionButtonInfo ~= nil then table.insert(list, self.actionButtonInfo) end
         if self.switchSubTabButtonInfo ~= nil then table.insert(list, self.switchSubTabButtonInfo) end
         if self.categoryModeButtonInfo ~= nil then table.insert(list, self.categoryModeButtonInfo) end
+        if self.gmSettingsButtonInfo ~= nil then table.insert(list, self.gmSettingsButtonInfo) end
         self:setMenuButtonInfo(list)
         self:setMenuButtonInfoDirty()
     end
