@@ -182,6 +182,7 @@ source(GlobalMarket.dir .. "events/ContractActionEvent.lua")
 source(GlobalMarket.dir .. "events/ContractOnlineBridgeEvent.lua")
 source(GlobalMarket.dir .. "events/VehicleMarketActionEvent.lua")
 source(GlobalMarket.dir .. "events/SyncVehicleMarketEvent.lua")
+source(GlobalMarket.dir .. "events/VehicleOnlineBridgeEvent.lua")
 source(GlobalMarket.dir .. "events/AnimalMarketActionEvent.lua")
 source(GlobalMarket.dir .. "events/SyncAnimalMarketEvent.lua")
 
@@ -519,6 +520,11 @@ function GlobalMarket:update(dt)
 
     if self.updateOnlineContractsTimers ~= nil then
         self:updateOnlineContractsTimers(dt)
+    end
+
+    -- Cross-server vehicle market (#36): sync request on availability / Data-Host change
+    if self.updateVehicleOnline ~= nil then
+        self:updateVehicleOnline(dt)
     end
 
     -- Timeout of an in-game market switch request (#38)
