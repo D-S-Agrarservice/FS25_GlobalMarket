@@ -410,8 +410,7 @@ function GlobalMarketUI:updateVehiclesMenuButtons()
             table.insert(list, self.vehiclesPrimaryButtonInfo)
         elseif row.kind == "MARKET_LISTING" then
             self.vehiclesPrimaryButtonInfo.text = self.i18n:getText("ui_gm_vehicles_action_viewBuy")
-            -- Buying online listings follows with the backend purchase flow (#36, stage 5)
-            self.vehiclesPrimaryButtonInfo.disabled = (row.data.isOnline == true)
+            self.vehiclesPrimaryButtonInfo.disabled = false
             table.insert(list, self.vehiclesPrimaryButtonInfo)
         end
     end
@@ -482,9 +481,6 @@ function GlobalMarketUI:onVehiclePrimaryAction(overrideSection, overrideIndex)
         end
     elseif row.kind == "MARKET_LISTING" then
         local listing = row.data
-        if listing.isOnline then
-            return
-        end
         if not GlobalMarket.checkMarketPermission(Farm.PERMISSION.BUY_VEHICLE) then
             return
         end
@@ -496,7 +492,10 @@ function GlobalMarketUI:onVehiclePrimaryAction(overrideSection, overrideIndex)
             self.i18n:formatMoney(row.price, 0, true, true))
         -- target == nil: YesNoDialog calls callback(yes, args)
         YesNoDialog.show(function(yes)
-            if yes == true then
+            if yes == true and listing.isOnline then
+                VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_BUY_ONLINE, farmId, nil, 0, 1, 1,
+                    nil, false, listing.remoteId)
+            elseif yes == true then
                 VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_BUY, farmId, nil, listing.id, 1, 1)
             end
         end, nil, text)

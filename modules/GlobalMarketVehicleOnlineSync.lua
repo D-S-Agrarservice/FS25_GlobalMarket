@@ -78,6 +78,7 @@ function GlobalMarket:readVehicleSyncXml(xmlFile)
                 targetServerId = xmlFile:getString(key .. "#targetServerId", ""),
                 targetFarmId = math.max(0, xmlFile:getInt(key .. "#targetFarmId", 0)),
                 remoteId = xmlFile:getString(key .. "#remoteId", ""),
+                createActionId = xmlFile:getString(key .. "#createActionId", ""),
                 buyActionId = xmlFile:getString(key .. "#buyActionId", ""),
                 priceFactor = xmlFile:getFloat(key .. "#priceFactor", 1),
                 otherName = xmlFile:getString(key .. "#buyerName", xmlFile:getString(key .. "#sellerName", "")),
@@ -153,6 +154,9 @@ end
 ---@param result table
 ---@return boolean changed
 function GlobalMarket:applyVehicleActionResult(result)
+    if result.subAction == "BUY_LISTING" and self.applyVehicleBuyResult ~= nil then
+        return self:applyVehicleBuyResult(result)
+    end
     local S = GlobalMarket.VEHICLE_LISTING_STATUS
     local N = GlobalMarket.VEHICLE_NOTICE
     local listing, kind = self:findOnlineVehicleListingByAction(result.actionId)

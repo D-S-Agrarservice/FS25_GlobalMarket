@@ -34,7 +34,9 @@ GlobalMarket.VEHICLE_NOTICE = {
     RETURNED = 6,
     RETURN_PENDING = 7,
     EXPIRED = 8,
-    ONLINE_SUBMITTED = 9 -- Own vehicle was handed to the online market (#36)
+    ONLINE_SUBMITTED = 9,     -- Own vehicle was handed to the online market (#36)
+    ONLINE_BUY_SUBMITTED = 10, -- Purchase request for an online listing sent (#36)
+    DELIVERY_PENDING = 11      -- Bought online vehicle waits for a free store place (#36)
 }
 
 -- =========================================================================
@@ -298,6 +300,9 @@ function GlobalMarket:saveVehicleMarketToXml(xmlFile)
     end
     local rootKey = "globalMarket.vehicleMarket"
     xmlFile:setInt(rootKey .. "#nextListingId", self.nextVehicleListingId or 1)
+    if self.saveVehicleDeliveriesToXml ~= nil then
+        self:saveVehicleDeliveriesToXml(xmlFile, rootKey)
+    end
     for i, listing in ipairs(self.vehicleListings or {}) do
         local key = string.format("%s.listing(%d)", rootKey, i - 1)
         -- An interrupted purchase is saved as open again
@@ -356,6 +361,9 @@ function GlobalMarket:loadVehicleMarketFromXml(xmlFile)
         end
     end)
     self.nextVehicleListingId = math.max(xmlFile:getInt(rootKey .. "#nextListingId", 1), maxId + 1)
+    if self.loadVehicleDeliveriesFromXml ~= nil then
+        self:loadVehicleDeliveriesFromXml(xmlFile, rootKey)
+    end
     if self.debugManager ~= nil then
         self.debugManager:info("VehicleMarket: Loaded %d listing(s).", #self.vehicleListings)
     end

@@ -164,8 +164,14 @@ function GlobalMarketVehicleShopBridge:onBuy(vehicleBuyData, vehicleId)
         return
     end
     -- The server builds the vehicle from the listing; only the chosen license plate is taken from the client
-    VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_BUY, ctx.farmId, nil, ctx.listing.id, 1, 1,
-        vehicleBuyData.licensePlateData)
+    if ctx.listing.isOnline then
+        -- Online listing (#36): purchase request to the backend, the vehicle comes with LISTING_BOUGHT
+        VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_BUY_ONLINE, ctx.farmId, nil, 0, 1, 1,
+            vehicleBuyData.licensePlateData, false, ctx.listing.remoteId)
+    else
+        VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_BUY, ctx.farmId, nil, ctx.listing.id, 1, 1,
+            vehicleBuyData.licensePlateData)
+    end
     if g_shopConfigScreen ~= nil then
         g_shopConfigScreen:changeScreen(InGameMenu)
     end

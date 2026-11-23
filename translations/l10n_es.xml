@@ -212,6 +212,8 @@
         <e k="ui_gm_vehicles_notice_returnPending"                 v="No se ha podido devolver %s: la zona de recogida del concesionario está ocupada. Se reintentará cada hora." />
         <e k="ui_gm_vehicles_notice_expired"                       v="La oferta de %s ha caducado. El vehículo te será devuelto." />
         <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s se está publicando online." />
+        <e k="ui_gm_vehicles_notice_onlineBuySubmitted"            v="Solicitud de compra de %s (%s) enviada. El vehículo llega cuando el mercado online confirme la compra." />
+        <e k="ui_gm_vehicles_notice_deliveryPending"               v="%s espera un lugar libre en el concesionario y se entregará más tarde." />
         <e k="ui_gm_animals_notice_listed"                         v="%s están ahora a la venta por %s en el mercado de animales GM." />
         <e k="ui_gm_animals_notice_newListing"                     v="Nuevo en el mercado de animales GM: %s por %s." />
         <e k="ui_gm_animals_notice_bought"                         v="%s comprados por %s y entregados en tus establos." />

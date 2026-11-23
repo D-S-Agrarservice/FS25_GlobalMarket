@@ -212,6 +212,8 @@
         <e k="ui_gm_vehicles_notice_returnPending"                 v="Impossible de restituer %s : la zone de retrait du concessionnaire est occupée. Nouvel essai toutes les heures." />
         <e k="ui_gm_vehicles_notice_expired"                       v="L'annonce pour %s a expiré. Le véhicule vous est restitué." />
         <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s est en cours de mise en ligne." />
+        <e k="ui_gm_vehicles_notice_onlineBuySubmitted"            v="Demande d'achat pour %s (%s) envoyée. Le véhicule arrive dès que le marché en ligne confirme l'achat." />
+        <e k="ui_gm_vehicles_notice_deliveryPending"               v="%s attend une place libre chez le concessionnaire et sera livré plus tard." />
         <e k="ui_gm_animals_notice_listed"                         v="%s sont maintenant en vente pour %s sur le marché aux animaux GM." />
         <e k="ui_gm_animals_notice_newListing"                     v="Nouveau sur le marché aux animaux GM : %s pour %s." />
         <e k="ui_gm_animals_notice_bought"                         v="%s achetés pour %s et livrés dans vos étables." />

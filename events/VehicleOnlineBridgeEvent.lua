@@ -87,6 +87,7 @@ local function writePacket(streamId, pkt)
         streamWriteString(streamId, s.targetServerId or "")
         streamWriteUIntN(streamId, s.targetFarmId or 0, FarmManager.FARM_ID_SEND_NUM_BITS)
         streamWriteString(streamId, s.remoteId or "")
+        streamWriteString(streamId, s.createActionId or "")
         streamWriteString(streamId, s.buyActionId or "")
         streamWriteFloat32(streamId, s.priceFactor or 1)
         streamWriteString(streamId, s.otherName or "")
@@ -131,6 +132,7 @@ local function readPacket(streamId)
             targetServerId = streamReadString(streamId),
             targetFarmId = streamReadUIntN(streamId, FarmManager.FARM_ID_SEND_NUM_BITS),
             remoteId = streamReadString(streamId),
+            createActionId = streamReadString(streamId),
             buyActionId = streamReadString(streamId),
             priceFactor = streamReadFloat32(streamId),
             otherName = streamReadString(streamId)

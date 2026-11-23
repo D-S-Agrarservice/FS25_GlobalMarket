@@ -12,6 +12,7 @@ InitEventClass(VehicleMarketActionEvent, "VehicleMarketActionEvent")
 VehicleMarketActionEvent.ACTION_CREATE = 1
 VehicleMarketActionEvent.ACTION_CANCEL = 2
 VehicleMarketActionEvent.ACTION_BUY = 3
+VehicleMarketActionEvent.ACTION_BUY_ONLINE = 4 -- Online listing by backend ID (#36)
 
 function VehicleMarketActionEvent.emptyNew()
     return Event.new(VehicleMarketActionEvent_mt)
@@ -26,7 +27,8 @@ end
 ---@param durationMonths number|nil
 ---@param licensePlateData table|nil License plate chosen by the buyer (ACTION_BUY)
 ---@param isOnline boolean|nil ACTION_CREATE: online listing, durationMonths then holds real-time hours (#36)
-function VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceFactor, durationMonths, licensePlateData, isOnline)
+---@param remoteId string|nil ACTION_BUY_ONLINE: backend ID of the online listing (#36)
+function VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceFactor, durationMonths, licensePlateData, isOnline, remoteId)
     local self = VehicleMarketActionEvent.emptyNew()
     self.isNotice = false
     self.action = action or 0
@@ -37,6 +39,7 @@ function VehicleMarketActionEvent.new(action, farmId, vehicle, listingId, priceF
     self.durationMonths = durationMonths or 1
     self.licensePlateData = licensePlateData
     self.isOnline = isOnline == true
+    self.remoteId = remoteId or ""
     return self
 end
 
@@ -77,6 +80,7 @@ function VehicleMarketActionEvent:writeStream(streamId, connection)
     streamWriteFloat32(streamId, self.priceFactor)
     streamWriteUInt8(streamId, self.durationMonths)
     streamWriteBool(streamId, self.isOnline == true)
+    streamWriteString(streamId, self.remoteId or "")
     -- Writes a validity flag first and handles nil itself
     LicensePlateManager.writeLicensePlateData(streamId, connection, self.licensePlateData)
 end
@@ -102,6 +106,7 @@ function VehicleMarketActionEvent:readStream(streamId, connection)
         self.priceFactor = streamReadFloat32(streamId)
         self.durationMonths = streamReadUInt8(streamId)
         self.isOnline = streamReadBool(streamId)
+        self.remoteId = streamReadString(streamId)
         local plate = LicensePlateManager.readLicensePlateData(streamId, connection)
         self.licensePlateData = (plate ~= nil and plate.characters ~= nil) and plate or nil
     end
@@ -109,28 +114,29 @@ function VehicleMarketActionEvent:readStream(streamId, connection)
 end
 
 ---Routes a request directly on the server (SP / host) or sends it from an MP client
-function VehicleMarketActionEvent.dispatch(action, farmId, vehicle, listingId, priceFactor, durationMonths, licensePlateData, isOnline)
+function VehicleMarketActionEvent.dispatch(action, farmId, vehicle, listingId, priceFactor, durationMonths, licensePlateData, isOnline, remoteId)
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     if gm == nil then
         return false
     end
     if g_server ~= nil then
         VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, nil,
-            licensePlateData, isOnline)
+            licensePlateData, isOnline, remoteId)
         return true
     end
     if g_client ~= nil then
         g_client:getServerConnection():sendEvent(VehicleMarketActionEvent.new(action, farmId, vehicle, listingId,
-            priceFactor, durationMonths, licensePlateData, isOnline))
+            priceFactor, durationMonths, licensePlateData, isOnline, remoteId))
         return true
     end
     return false
 end
 
 ---Executes a validated request on the authoritative server and reports the result to the requester
-function VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, connection, licensePlateData, isOnline)
+function VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, listingId, priceFactor, durationMonths, connection, licensePlateData, isOnline, remoteId)
     local N = GlobalMarket.VEHICLE_NOTICE
-    local permission = (action == VehicleMarketActionEvent.ACTION_BUY) and Farm.PERMISSION.BUY_VEHICLE or Farm.PERMISSION.SELL_VEHICLE
+    local isBuy = (action == VehicleMarketActionEvent.ACTION_BUY or action == VehicleMarketActionEvent.ACTION_BUY_ONLINE)
+    local permission = isBuy and Farm.PERMISSION.BUY_VEHICLE or Farm.PERMISSION.SELL_VEHICLE
     if not g_currentMission:getHasPlayerPermission(permission, connection, farmId) then
         gm:notifyVehicleMarketRequester(connection, N.RESULT, "noPermission", "", 0)
         return
@@ -155,6 +161,21 @@ function VehicleMarketActionEvent.executeOnServer(gm, action, farmId, vehicle, l
     elseif action == VehicleMarketActionEvent.ACTION_BUY then
         local ok, reason = gm:buyVehicleListing(listingId, farmId, licensePlateData)
         if not ok then
+            gm:notifyVehicleMarketRequester(connection, N.RESULT, reason or "invalid", "", 0)
+        end
+    elseif action == VehicleMarketActionEvent.ACTION_BUY_ONLINE then
+        local listing = gm:findOnlineVehicleListingByRemoteId(remoteId)
+        local ok, reason = gm:buyOnlineVehicleListing(remoteId, farmId, licensePlateData)
+        if ok then
+            local buy = nil
+            for _, entry in pairs(gm.pendingVehicleBuys or {}) do
+                if entry.remoteId == remoteId and entry.farmId == farmId then
+                    buy = entry
+                end
+            end
+            gm:notifyVehicleMarketRequester(connection, N.ONLINE_BUY_SUBMITTED, "", listing.snapshot.xmlFilename,
+                (buy ~= nil) and buy.price or 0)
+        else
             gm:notifyVehicleMarketRequester(connection, N.RESULT, reason or "invalid", "", 0)
         end
     end
@@ -196,5 +217,5 @@ function VehicleMarketActionEvent:run(connection)
         end
     end
     VehicleMarketActionEvent.executeOnServer(gm, self.action, self.farmId, self.vehicle, self.listingId,
-        self.priceFactor, self.durationMonths, connection, self.licensePlateData, self.isOnline)
+        self.priceFactor, self.durationMonths, connection, self.licensePlateData, self.isOnline, self.remoteId)
 end

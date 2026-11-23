@@ -265,6 +265,9 @@ function GlobalMarket:submitOnlineVehicleListing(listing, hours)
     listing.isOnline = true
     listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.PENDING_CREATE
     listing.createActionId = actionId
+    -- The seller is paid priceFactor x this value (the escrowed vehicle does not age)
+    local resolved = GlobalMarketVehicleListings.resolveSnapshot(listing.snapshot)
+    listing.listedValue = (resolved ~= nil) and GlobalMarketVehicleListings.getDealerValue(listing.snapshot, resolved) or 0
     listing.durationHours = hours
     listing.remainingSeconds = hours * 3600
     listing.pendingSinceMs = g_time
@@ -316,6 +319,7 @@ function GlobalMarketVehicleOnline.saveListingOnlineFields(xmlFile, key, listing
     xmlFile:setString(key .. "#cancelActionId", listing.cancelActionId or "")
     xmlFile:setInt(key .. "#durationHours", listing.durationHours or 0)
     xmlFile:setInt(key .. "#remainingSeconds", math.floor(listing.remainingSeconds or 0))
+    xmlFile:setInt(key .. "#listedValue", math.floor(listing.listedValue or 0))
 end
 
 ---Reads the online fields of a listing (no-op for local listings)
@@ -336,6 +340,7 @@ function GlobalMarketVehicleOnline.loadListingOnlineFields(xmlFile, key, listing
     listing.cancelActionId = optString("cancelActionId")
     listing.durationHours = xmlFile:getInt(key .. "#durationHours", 0)
     listing.remainingSeconds = xmlFile:getInt(key .. "#remainingSeconds", 0)
+    listing.listedValue = xmlFile:getInt(key .. "#listedValue", 0)
 end
 
 ---Counts down the real-time remaining seconds of open online listings (server and clients, display only)
@@ -367,6 +372,9 @@ function GlobalMarket:updateVehicleOnline(dt)
     self:updateOnlineVehicleTimers(dt)
     if g_server == nil then
         return
+    end
+    if self.updateOnlineVehicleBuys ~= nil then
+        self:updateOnlineVehicleBuys()
     end
     local available = self:getAreOnlineVehiclesAvailable()
     if not available and self.clearRemoteVehicleListings ~= nil then

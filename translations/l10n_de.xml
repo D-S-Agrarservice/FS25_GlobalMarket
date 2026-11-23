@@ -212,6 +212,8 @@
         <e k="ui_gm_vehicles_notice_returnPending"                 v="%s konnte nicht zurückgegeben werden: Der Abholplatz beim Händler ist belegt. Neuer Versuch stündlich." />
         <e k="ui_gm_vehicles_notice_expired"                       v="Das Angebot für %s ist abgelaufen. Das Fahrzeug geht an dich zurück." />
         <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s wird online eingestellt." />
+        <e k="ui_gm_vehicles_notice_onlineBuySubmitted"            v="Kaufanfrage für %s (%s) gesendet. Das Fahrzeug kommt, sobald der Online-Markt den Kauf bestätigt." />
+        <e k="ui_gm_vehicles_notice_deliveryPending"               v="%s wartet auf einen freien Abholplatz beim Händler und wird nachgeliefert." />
         <e k="ui_gm_animals_notice_listed"                         v="%s stehen jetzt für %s im GM-Tiermarkt." />
         <e k="ui_gm_animals_notice_newListing"                     v="Neu im GM-Tiermarkt: %s für %s." />
         <e k="ui_gm_animals_notice_bought"                         v="%s für %s gekauft und in deine Ställe geliefert." />

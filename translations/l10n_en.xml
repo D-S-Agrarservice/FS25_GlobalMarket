@@ -212,6 +212,8 @@
         <e k="ui_gm_vehicles_notice_returnPending"                 v="%s could not be returned: the dealer's pickup area is blocked. Retrying every hour." />
         <e k="ui_gm_vehicles_notice_expired"                       v="The listing for %s has expired. The vehicle is returned to you." />
         <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s is being listed online." />
+        <e k="ui_gm_vehicles_notice_onlineBuySubmitted"            v="Purchase request for %s (%s) sent. The vehicle arrives once the online market confirms the purchase." />
+        <e k="ui_gm_vehicles_notice_deliveryPending"               v="%s is waiting for a free pickup place at the dealer and will be delivered later." />
         <e k="ui_gm_animals_notice_listed"                         v="%s are now listed for %s on the GM animal market." />
         <e k="ui_gm_animals_notice_newListing"                     v="New on the GM animal market: %s for %s." />
         <e k="ui_gm_animals_notice_bought"                         v="%s bought for %s and delivered to your barns." />

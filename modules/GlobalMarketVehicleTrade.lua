@@ -151,6 +151,12 @@ function GlobalMarket:showVehicleMarketNotice(kind, targetFarmId, excludeFarmId,
     elseif kind == N.ONLINE_SUBMITTED then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_onlineSubmitted"), name)
         color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
+    elseif kind == N.ONLINE_BUY_SUBMITTED then
+        text = string.format(g_i18n:getText("ui_gm_vehicles_notice_onlineBuySubmitted"), name, money)
+        color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
+    elseif kind == N.DELIVERY_PENDING then
+        text = string.format(g_i18n:getText("ui_gm_vehicles_notice_deliveryPending"), name)
+        color = FSBaseMission.INGAME_NOTIFICATION_CRITICAL or { 1, 1, 1, 1 }
     end
     if text ~= nil and g_currentMission.hud.addSideNotification ~= nil then
         g_currentMission.hud:addSideNotification(color, text, 8000)
@@ -264,6 +270,10 @@ function GlobalMarket:updateVehicleMarketHourly(customMonthDelta)
         self:returnVehicleListing(listing)
     end
     self:retryPendingVehicleReturns()
+    -- Bought online vehicles waiting for a free store place (#36)
+    if self.processVehicleDeliveries ~= nil then
+        self:processVehicleDeliveries()
+    end
     if self.updateVehicleMarketNpcs ~= nil then
         self:updateVehicleMarketNpcs(monthDelta)
     end

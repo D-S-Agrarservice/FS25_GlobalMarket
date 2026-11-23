@@ -212,6 +212,8 @@
         <e k="ui_gm_vehicles_notice_returnPending"                 v="Nie można zwrócić %s: miejsce odbioru u dealera jest zajęte. Ponowna próba co godzinę." />
         <e k="ui_gm_vehicles_notice_expired"                       v="Oferta dla %s wygasła. Pojazd wraca do ciebie." />
         <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s jest wystawiany online." />
+        <e k="ui_gm_vehicles_notice_onlineBuySubmitted"            v="Wysłano prośbę o zakup %s (%s). Pojazd pojawi się, gdy rynek online potwierdzi zakup." />
+        <e k="ui_gm_vehicles_notice_deliveryPending"               v="%s czeka na wolne miejsce u dealera i zostanie dostarczony później." />
         <e k="ui_gm_animals_notice_listed"                         v="%s są teraz wystawione za %s na targu zwierząt GM." />
         <e k="ui_gm_animals_notice_newListing"                     v="Nowość na targu zwierząt GM: %s za %s." />
         <e k="ui_gm_animals_notice_bought"                         v="Kupiono %s za %s i dostarczono do twoich budynków." />
