@@ -7,6 +7,8 @@
 GlobalMarketOnline = {}
 GlobalMarket.DEFAULT_MIN_EXE_VERSION = "0.9.10"
 GlobalMarket.EXE_SWITCH_GRACE_MS = 4500
+GlobalMarket.MOD_INFO_FILE_NAME = "modInfo.xml"
+GlobalMarket.MOD_HASH_DEV = "dev"
 
 -- Validates and normalizes a numeric SemVer / 4-part version string (e.g. "0.9.10", "1.0.0", or "1.0.0.0")
 function GlobalMarket.sanitizeExeVersion(rawVersion)
@@ -81,6 +83,50 @@ function GlobalMarket:savePersistedMinExeVersion(newMinVersion)
 
         if self.debugManager ~= nil then
             self.debugManager:info("Sync: Persisted raised minimum client version floor '%s' to clientVersionState.xml.", cleanMin)
+        end
+    end
+end
+
+---Returns the own mod version and file hash ("dev" for unpacked mod folders without a hash)
+---@return string modVersion
+---@return string modHash
+function GlobalMarket.getOwnModInfo()
+    local mod = (g_modManager ~= nil) and g_modManager:getModByName(GlobalMarket.modName) or nil
+    if mod == nil then
+        return "", GlobalMarket.MOD_HASH_DEV
+    end
+    local modHash = mod.fileHash
+    if mod.isDirectory or modHash == nil or modHash == "" then
+        modHash = GlobalMarket.MOD_HASH_DEV
+    end
+    return mod.version or "", modHash
+end
+
+---Writes modSettings/FS25_GlobalMarket/modInfo.xml with the own version and file hash for the
+---local companion client (#35). Rewritten on every map load on each player PC, never on a
+---dedicated server. The client reports the hash to the backend; it is a hurdle, not proof.
+function GlobalMarket:writeModInfo()
+    if g_dedicatedServer ~= nil or self.settingsFolder == nil then
+        return
+    end
+
+    local modVersion, modHash = GlobalMarket.getOwnModInfo()
+    local xmlFile = XMLFile.create("gmModInfo", self.settingsFolder .. GlobalMarket.MOD_INFO_FILE_NAME, "gmModInfo")
+    if xmlFile == nil then
+        return
+    end
+    xmlFile:setString("gmModInfo#modName", GlobalMarket.modName or "")
+    xmlFile:setString("gmModInfo#modVersion", modVersion)
+    xmlFile:setString("gmModInfo#modHash", modHash)
+    xmlFile:setString("gmModInfo#updatedAt", getDate("%Y-%m-%d %H:%M:%S"))
+    xmlFile:save()
+    xmlFile:delete()
+
+    if self.debugManager ~= nil then
+        if modHash == GlobalMarket.MOD_HASH_DEV then
+            self.debugManager:warning("Sync: Running an unpacked mod folder (dev build); modInfo.xml reports modHash='dev'.")
+        else
+            self.debugManager:info("Sync: Wrote modInfo.xml (version %s, hash %s).", modVersion, modHash)
         end
     end
 end

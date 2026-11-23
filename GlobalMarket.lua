@@ -348,6 +348,11 @@ function GlobalMarket:loadMap(name)
         self:initSync()
     end
 
+    -- Report own version and file hash to the local companion client (#35)
+    if self.writeModInfo ~= nil then
+        self:writeModInfo()
+    end
+
     -- Register developer console commands only when GM Debug Mode is enabled
     self:syncDebugConsoleCommands(false)
 end
