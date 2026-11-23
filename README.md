@@ -262,7 +262,9 @@ FS25_GlobalMarket/
 ├── events/                   # 19 dedicated multiplayer sync, transaction, contract, vehicle & animal market events
 ├── gui/                      # Market UI, Contracts & Marketplace sub-tabs, four dialogs (controllers, XML layouts & profiles)
 │   ├── GlobalMarketUI.lua / .xml             # Main InGameMenu frame: storage & market lists, search, categories
+│   ├── GlobalMarketCategories.lua            # Category view modes, fillType lookup tables & classification
 │   ├── GlobalMarketContractsUI.lua           # Sub-tab controller: supply contracts, direct offers & Pickup Inbox
+│   ├── GlobalMarketContractsUIActions.lua    # Contract sub-tab actions: filter, create, cancel, accept & marker
 │   ├── GlobalMarketDialog.lua / .xml         # Buy/sell transaction dialog (storage, packaging format, fee preview)
 │   ├── GlobalMarketContractDialog.lua / .xml # Multi-mode dialog for contracts, offers & inbox withdrawals
 │   ├── GlobalMarketVehiclesUI.lua            # Sub-tab controller: own vehicles & listings, used vehicle market
