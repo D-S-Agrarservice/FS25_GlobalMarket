@@ -101,8 +101,11 @@ function GlobalMarketContractDialog:onOpen()
     self.storageOptions = {}
     self.formatOptions = {}
     self.termsOptions = {}
+    self.scopeOptions = {}
     self:setAmountInputSilent("0")
     self.isInitializing = false
+    -- Offer creation has an own scope row (GlobalMarketContractDialogScope.lua)
+    self:applyScopeRowLayout(self.mode == GlobalMarketContractDialog.MODE_CREATE_OFFER)
 
     if self.mode == GlobalMarketContractDialog.MODE_CREATE_CONTRACT then
         self:setupCreateContractMode()
@@ -171,46 +174,6 @@ function GlobalMarketContractDialog:rebuildCreateContractTerms(isOnline)
     for _, t in ipairs(self.termsOptions) do table.insert(termTexts, t.label) end
     self.selectorTerms:setTexts(termTexts)
     self.selectorTerms:setState(math.min(isOnline and 2 or 3, #self.termsOptions), false)
-end
-
-function GlobalMarketContractDialog:rebuildCreateOfferTerms(fillTypeName)
-    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
-    local allowOnline = gm ~= nil and gm.canPublishOnlineOffer ~= nil and gm:canPublishOnlineOffer(fillTypeName)
-    self.termsOptions = {}
-    local localPrefix = allowOnline
-        and ((g_i18n:hasText("ui_gm_scope_localPrefix") and g_i18n:getText("ui_gm_scope_localPrefix")) or "[Local] ")
-        or ""
-    for _, partial in ipairs({ true, false }) do
-        for m = GlobalMarketContracts.OFFER_DURATION_MIN, GlobalMarketContracts.OFFER_DURATION_MAX do
-            local key = partial and "ui_gm_dlg_optTermPartial" or "ui_gm_dlg_optTermFull"
-            table.insert(self.termsOptions, {
-                isOnline = false,
-                allowPartial = partial,
-                months = m,
-                label = localPrefix .. string.format(g_i18n:getText(key), m)
-            })
-        end
-    end
-    if allowOnline then
-        local onlinePrefix = (g_i18n:hasText("ui_gm_scope_onlinePrefix") and g_i18n:getText("ui_gm_scope_onlinePrefix")) or "[Online] "
-        local hoursList = (GlobalMarketContracts and GlobalMarketContracts.ONLINE_OFFER_HOURS) or { 24, 48, 72 }
-        for _, partial in ipairs({ true, false }) do
-            for _, h in ipairs(hoursList) do
-                local key = partial and "ui_gm_dlg_optTermPartialHours" or "ui_gm_dlg_optTermFullHours"
-                local fmt = g_i18n:hasText(key) and g_i18n:getText(key) or (partial and "Allow Partial Buys | %dh" or "Full Lot Only | %dh")
-                table.insert(self.termsOptions, {
-                    isOnline = true,
-                    allowPartial = partial,
-                    hours = h,
-                    label = onlinePrefix .. string.format(fmt, h)
-                })
-            end
-        end
-    end
-    local termTexts = {}
-    for _, t in ipairs(self.termsOptions) do table.insert(termTexts, t.label) end
-    self.selectorTerms:setTexts(termTexts)
-    self.selectorTerms:setState(math.min(2, #self.termsOptions), false)
 end
 
 function GlobalMarketContractDialog:setupCreateContractMode()
@@ -898,7 +861,7 @@ function GlobalMarketContractDialog:onClickOk()
             local dOpt = self.formatOptions[self.selectorFormat:getState()]
             local tOpt = self.termsOptions[self.selectorTerms:getState()]
             if opt ~= nil and dOpt ~= nil and tOpt ~= nil then
-                local isOnline = (tOpt.isOnline == true)
+                local isOnline = self:getIsOfferOnlineSelected()
                 local dur = isOnline and (tOpt.hours or 48) or (tOpt.months or 2)
                 ContractActionEvent.dispatch(ContractActionEvent.ACTION_CREATE_OFFER,
                     self.farmId, 0, opt.fillType, liters, dOpt.deltaPct, dur,

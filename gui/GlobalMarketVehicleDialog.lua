@@ -95,9 +95,9 @@ function GlobalMarketVehicleDialog:onOpen()
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
     self.isOnlineAvailable = gm ~= nil and gm.getAreOnlineVehiclesAvailable ~= nil and gm:getAreOnlineVehiclesAvailable()
     if self.selectorMode ~= nil then
-        local modeTexts = { g_i18n:getText("ui_gm_vehicles_mode_local") }
+        local modeTexts = { g_i18n:getText("ui_gm_scope_local") }
         if self.isOnlineAvailable then
-            table.insert(modeTexts, g_i18n:getText("ui_gm_vehicles_mode_online"))
+            table.insert(modeTexts, g_i18n:getText("ui_gm_scope_online"))
         end
         self.selectorMode:setTexts(modeTexts)
         self.selectorMode:setState(GlobalMarketVehicleDialog.MODE_LOCAL, false)

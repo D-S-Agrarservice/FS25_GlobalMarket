@@ -411,8 +411,6 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="Si compra un NPC (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Duración" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Precio solicitado" />
-        <e k="ui_gm_vehicles_mode_local"                           v="Local (solo este servidor)" />
-        <e k="ui_gm_vehicles_mode_online"                          v="Online (todos los servidores)" />
         <e k="ui_gm_vehicles_durationHours"                        v="%d h (tiempo real)" />
         <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Precio en cada servidor" />
         <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% de su valor de concesionario" />
@@ -471,9 +469,7 @@
         <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
         <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
         <e k="ui_gm_scope_local"                                   v="Ámbito: Local (Este servidor)" />
-        <e k="ui_gm_scope_localPrefix"                             v="[Local] " />
         <e k="ui_gm_scope_online"                                  v="Ámbito: Online (Entre servidores)" />
-        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Prima contractual (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="DEPÓSITO TOTAL" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Restante en buzón" />

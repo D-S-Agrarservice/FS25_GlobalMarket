@@ -102,6 +102,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAPI.lua")
 -- UI Modules
 source(GlobalMarket.dir .. "gui/GlobalMarketDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketContractDialog.lua")
+source(GlobalMarket.dir .. "gui/GlobalMarketContractDialogScope.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketVehicleDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketAnimalDialog.lua")
 source(GlobalMarket.dir .. "gui/GlobalMarketUI.lua")

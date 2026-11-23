@@ -411,8 +411,6 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="Si un PNJ achète (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Durée" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Prix demandé" />
-        <e k="ui_gm_vehicles_mode_local"                           v="Local (ce serveur uniquement)" />
-        <e k="ui_gm_vehicles_mode_online"                          v="En ligne (tous les serveurs)" />
         <e k="ui_gm_vehicles_durationHours"                        v="%d h (temps réel)" />
         <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Prix sur chaque serveur" />
         <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% de sa valeur concessionnaire" />
@@ -471,9 +469,7 @@
         <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
         <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
         <e k="ui_gm_scope_local"                                   v="Portée : Local (Ce serveur)" />
-        <e k="ui_gm_scope_localPrefix"                             v="[Local] " />
         <e k="ui_gm_scope_online"                                  v="Portée : En ligne (Inter-serveurs)" />
-        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Prime de contrat (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="DÉPÔT TOTAL" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Reste en boîte" />

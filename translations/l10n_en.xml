@@ -411,8 +411,6 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="If an NPC buys (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Duration" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Asking price" />
-        <e k="ui_gm_vehicles_mode_local"                           v="Local (this server only)" />
-        <e k="ui_gm_vehicles_mode_online"                          v="Online (all servers)" />
         <e k="ui_gm_vehicles_durationHours"                        v="%d h (real time)" />
         <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Price on every server" />
         <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% of its dealer value" />
@@ -471,9 +469,7 @@
         <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
         <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
         <e k="ui_gm_scope_local"                                   v="Scope: Local (This Server)" />
-        <e k="ui_gm_scope_localPrefix"                             v="[Local] " />
         <e k="ui_gm_scope_online"                                  v="Scope: Online (Cross-Server)" />
-        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Contract Bonus (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="TOTAL ESCROW" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Remaining in Inbox" />

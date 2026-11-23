@@ -22,12 +22,12 @@
             </BoxLayout>
             <Text profile="globalMarketCInfoText" id="dialogInfoTextElement" />
 
-            <!-- Local / online (#36); disabled with "Local" while the online market is unavailable -->
-            <MultiTextOption profile="globalMarketCDropdown1" id="selectorMode" onClick="onClickMode">
+            <MultiTextOption profile="globalMarketCDropdown1" id="selectorPrice" onClick="onClickPrice">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
-            <MultiTextOption profile="globalMarketCDropdown2" id="selectorPrice" onClick="onClickPrice">
+            <!-- Scope local / online (#36) above the duration; disabled while the online market is unavailable -->
+            <MultiTextOption profile="globalMarketCDropdown2" id="selectorMode" onClick="onClickMode">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 

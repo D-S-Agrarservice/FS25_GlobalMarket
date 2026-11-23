@@ -411,8 +411,6 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="Przy zakupie przez NPC (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Czas trwania" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Cena wywoławcza" />
-        <e k="ui_gm_vehicles_mode_local"                           v="Lokalnie (tylko ten serwer)" />
-        <e k="ui_gm_vehicles_mode_online"                          v="Online (wszystkie serwery)" />
         <e k="ui_gm_vehicles_durationHours"                        v="%d h (czas rzeczywisty)" />
         <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Cena na każdym serwerze" />
         <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% tamtejszej wartości u dealera" />
@@ -471,9 +469,7 @@
         <e k="ui_gm_online_hours_short"                            v="[Online] %dh" />
         <e k="ui_gm_online_mins_short"                             v="[Online] %dm" />
         <e k="ui_gm_scope_local"                                   v="Zakres: Lokalny (Ten serwer)" />
-        <e k="ui_gm_scope_localPrefix"                             v="[Lokalny] " />
         <e k="ui_gm_scope_online"                                  v="Zakres: Online (Międzyserwerowy)" />
-        <e k="ui_gm_scope_onlinePrefix"                            v="[Online] " />
         <e k="ui_gm_receipt_contractBonus"                         v="Premia kontraktu (+%d%%)" />
         <e k="ui_gm_receipt_escrowTotal"                           v="CAŁKOWITY DEPOZYT" />
         <e k="ui_gm_receipt_inboxRemain"                           v="Pozostało w skrytce" />

@@ -21,7 +21,7 @@
             </BoxLayout>
             <Text profile="globalMarketCInfoText" id="dialogInfoTextElement" />
 
-            <!-- Up to 4 mode-dependent dropdown selectors -->
+            <!-- Up to 5 mode-dependent dropdown selectors -->
             <MultiTextOption profile="globalMarketCDropdown1" id="selectorPrimary" onClick="onClickPrimary">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
@@ -34,12 +34,17 @@
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
+            <!-- Offer creation only: scope row, terms move one row down -->
+            <MultiTextOption profile="globalMarketCDropdown4" id="selectorScope" onClick="onClickScope" visible="false">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
             <MultiTextOption profile="globalMarketCDropdown4" id="selectorTerms" onClick="onClickTerms">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
             <!-- Quantity Row -->
-            <GuiElement profile="globalMarketCInputGroup" with="anchorTopCenter">
+            <GuiElement profile="globalMarketCInputGroup" id="inputGroup" with="anchorTopCenter">
                 <GuiElement profile="emptyPanel" position="36px 0px" size="200px 40px" with="anchorMiddleLeft">
                     <ThreePartBitmap profile="globalMarketCTextInputBg" />
                     <TextInput profile="globalMarketCAmountInput" id="amountInput" onTextChanged="onAmountChanged" text="0" maxCharacters="10" />
@@ -57,7 +62,7 @@
             </GuiElement>
 
             <!-- 6-Button Quick-Step Bar -->
-            <GuiElement profile="globalMarketCStepGroup" with="anchorTopCenter">
+            <GuiElement profile="globalMarketCStepGroup" id="stepGroup" with="anchorTopCenter">
                 <Button profile="globalMarketCStepButton" id="btnStepMinus3" position="0px 0px" text="-10k" onClick="onClickStepMinus3">
                     <ThreePartBitmap profile="globalMarketCButtonBg" />
                 </Button>
