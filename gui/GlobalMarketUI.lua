@@ -431,6 +431,10 @@ function GlobalMarketUI:update(dt)
             self:updateContent()
         end
     end
+
+    if GlobalMarketMarketSwitch ~= nil then
+        GlobalMarketMarketSwitch.updateButton(self)
+    end
 end
 
 -- =========================================================================

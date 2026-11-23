@@ -184,6 +184,17 @@
         <e k="ui_gm_mapPrice_above"                                v="%d %% über Ø" />
         <e k="ui_gm_mapPrice_below"                                v="%d %% unter Ø" />
         <e k="ui_gm_mapPrice_same"                                 v="auf Ø-Niveau" />
+        <e k="ui_gm_marketSwitch_button"                           v="Markt wechseln" />
+        <e k="ui_gm_marketSwitch_buttonCooldown"                   v="Markt wechseln (%d s)" />
+        <e k="ui_gm_marketSwitch_title"                            v="Markt wechseln" />
+        <e k="ui_gm_marketSwitch_text"                             v="Mit welchem Markt soll sich dein GlobalMarketClient verbinden?" />
+        <e k="ui_gm_marketSwitch_official"                         v="Global Market (offiziell)" />
+        <e k="ui_gm_marketSwitch_active"                           v="%s (aktiv)" />
+        <e k="ui_gm_marketSwitch_notConnected"                     v="%s (noch nicht verbunden)" />
+        <e k="ui_gm_marketSwitch_profileFallback"                  v="Profil %s" />
+        <e k="ui_gm_marketSwitch_confirmMp"                        v="Der Markt wechselt für alle Spieler auf diesem Server. Noch offene Online-Aktionen verfallen. Jetzt zu „%s“ wechseln?" />
+        <e k="ui_gm_marketSwitch_timeout"                          v="Der GlobalMarketClient hat den Marktwechsel nicht bestätigt. Bitte prüfe den Client." />
+        <e k="ui_gm_marketSwitch_failed"                           v="Die Anfrage zum Marktwechsel konnte nicht gespeichert werden." />
         <e k="ui_gm_storage_split"                                 v="(Hof: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="GM-Lager: Räumung in %s" />
         <e k="ui_gm_storage_feesHigh"                              v="erhöhte Lagergebühren" />

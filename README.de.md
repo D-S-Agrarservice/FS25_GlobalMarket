@@ -296,6 +296,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketFarmCleanup.lua           # Bereinigung hofbezogener GM-Daten beim Löschen eines Hofs
 │   ├── GlobalMarketFinance.lua               # MoneyType-Registrierung, Buchungen, GM-Lagergebühren & Verfall
 │   ├── GlobalMarketMapPriceHint.lua          # Kartenpreis-Vergleich im Sofortmarkt: Ø-Preis, beste Verkaufsstelle
+│   ├── GlobalMarketMarketSwitch.lua          # Ingame-Wechsel zwischen Global Market und den Privatmarkt-Profilen des Clients
 │   ├── GlobalMarketOffers.lua                # ±10 %-Direktangebote, NPC-Käufe & Spielstand für Verträge
 │   ├── GlobalMarketOffline.lua               # Map-Spy-Preise, lokale NPC-Simulation & Große Nachfragen
 │   ├── GlobalMarketOnline.lua                # Online-Trendpreise, Mindestversion des Clients & Offline-Rückfall

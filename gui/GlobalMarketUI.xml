@@ -73,6 +73,9 @@
                 <Text profile="fs25_textDefault" id="marketStatusDesc" text="$l10n_ui_ingameMenuGlobalMarketOfflineDesc" position="10px 695px" size="690px 24px" textAlignment="left" textSize="16px" textLayoutMode="resize" textColor="0.7 0.7 0.7 1" />
 
                 <GuiElement profile="emptyPanel" with="anchorBottomLeft" position="0px 652px" size="710px 34px">
+                    <Button profile="globalMarketToolbarBtnMode" id="btnMarketSwitch" position="180px 0px" text="$l10n_ui_gm_marketSwitch_button" onClick="onClickMarketSwitch" visible="false">
+                        <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
+                    </Button>
                     <Button profile="globalMarketToolbarBtnMode" id="btnCategoryMode" position="450px 0px" text="$l10n_ui_gm_cat_mode_detailed" onClick="onClickToggleCategoryMode">
                         <ThreePartBitmap profile="globalMarketToolbarBtnBg" />
                     </Button>

@@ -80,6 +80,9 @@ function GlobalMarket:initBrandingState()
     self.debugBrandingOverrideActive = false
     self.debugBrandingMarketName = nil
     self.debugBrandingLogoPath = nil
+    if self.clearMarketProfiles ~= nil then
+        self:clearMarketProfiles()
+    end
 end
 
 ---Reads optional 3-tier branding metadata from globalMarketOnline.xml
@@ -141,6 +144,11 @@ function GlobalMarket:readHeartbeatBranding(xmlFile)
         self.brandingLogoReloadPending = true
     end
 
+    -- Market profiles for the in-game market switch (#38)
+    if self.readHeartbeatMarketProfiles ~= nil then
+        self:readHeartbeatMarketProfiles(xmlFile)
+    end
+
     return changed
 end
 
@@ -158,6 +166,9 @@ function GlobalMarket:clearLocalBranding()
     self.localCustomLogoFile = nil
     self.localHasCustomLogo = false
     self.localExeContractsSupported = false
+    if self.clearMarketProfiles ~= nil then
+        self:clearMarketProfiles()
+    end
 
     return changed
 end

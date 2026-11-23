@@ -184,6 +184,17 @@
         <e k="ui_gm_mapPrice_above"                                v="%d %% powyżej śr." />
         <e k="ui_gm_mapPrice_below"                                v="%d %% poniżej śr." />
         <e k="ui_gm_mapPrice_same"                                 v="na poziomie śr." />
+        <e k="ui_gm_marketSwitch_button"                           v="Zmień rynek" />
+        <e k="ui_gm_marketSwitch_buttonCooldown"                   v="Zmień rynek (%d s)" />
+        <e k="ui_gm_marketSwitch_title"                            v="Zmień rynek" />
+        <e k="ui_gm_marketSwitch_text"                             v="Z którym rynkiem ma się połączyć Twój GlobalMarketClient?" />
+        <e k="ui_gm_marketSwitch_official"                         v="Global Market (oficjalny)" />
+        <e k="ui_gm_marketSwitch_active"                           v="%s (aktywny)" />
+        <e k="ui_gm_marketSwitch_notConnected"                     v="%s (jeszcze niepołączony)" />
+        <e k="ui_gm_marketSwitch_profileFallback"                  v="Profil %s" />
+        <e k="ui_gm_marketSwitch_confirmMp"                        v="Rynek zmieni się dla wszystkich graczy na tym serwerze. Oczekujące akcje online wygasną. Przełączyć teraz na „%s”?" />
+        <e k="ui_gm_marketSwitch_timeout"                          v="GlobalMarketClient nie potwierdził zmiany rynku. Sprawdź klienta." />
+        <e k="ui_gm_marketSwitch_failed"                           v="Nie udało się zapisać żądania zmiany rynku." />
         <e k="ui_gm_storage_split"                                 v="(Gosp.: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Magazyn GM: usunięcie za %s" />
         <e k="ui_gm_storage_feesHigh"                              v="podwyższone opłaty magazynowe" />

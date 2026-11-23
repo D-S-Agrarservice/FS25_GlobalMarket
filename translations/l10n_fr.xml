@@ -184,6 +184,17 @@
         <e k="ui_gm_mapPrice_above"                                v="%d %% au-dessus de la moy." />
         <e k="ui_gm_mapPrice_below"                                v="%d %% en dessous de la moy." />
         <e k="ui_gm_mapPrice_same"                                 v="au niveau de la moy." />
+        <e k="ui_gm_marketSwitch_button"                           v="Changer de marché" />
+        <e k="ui_gm_marketSwitch_buttonCooldown"                   v="Changer de marché (%d s)" />
+        <e k="ui_gm_marketSwitch_title"                            v="Changer de marché" />
+        <e k="ui_gm_marketSwitch_text"                             v="À quel marché votre GlobalMarketClient doit-il se connecter ?" />
+        <e k="ui_gm_marketSwitch_official"                         v="Global Market (officiel)" />
+        <e k="ui_gm_marketSwitch_active"                           v="%s (actif)" />
+        <e k="ui_gm_marketSwitch_notConnected"                     v="%s (pas encore connecté)" />
+        <e k="ui_gm_marketSwitch_profileFallback"                  v="Profil %s" />
+        <e k="ui_gm_marketSwitch_confirmMp"                        v="Le marché change pour tous les joueurs de ce serveur. Les actions en ligne en attente expirent. Passer maintenant à « %s » ?" />
+        <e k="ui_gm_marketSwitch_timeout"                          v="Le GlobalMarketClient n'a pas confirmé le changement de marché. Veuillez vérifier le client." />
+        <e k="ui_gm_marketSwitch_failed"                           v="La demande de changement de marché n'a pas pu être enregistrée." />
         <e k="ui_gm_storage_split"                                 v="(Ferme : %s | GM : %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Stock GM : évacuation dans %s" />
         <e k="ui_gm_storage_feesHigh"                              v="frais de stockage majorés" />

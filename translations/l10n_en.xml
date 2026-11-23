@@ -184,6 +184,17 @@
         <e k="ui_gm_mapPrice_above"                                v="%d %% above avg." />
         <e k="ui_gm_mapPrice_below"                                v="%d %% below avg." />
         <e k="ui_gm_mapPrice_same"                                 v="at avg. level" />
+        <e k="ui_gm_marketSwitch_button"                           v="Switch Market" />
+        <e k="ui_gm_marketSwitch_buttonCooldown"                   v="Switch Market (%d s)" />
+        <e k="ui_gm_marketSwitch_title"                            v="Switch Market" />
+        <e k="ui_gm_marketSwitch_text"                             v="Which market should your GlobalMarketClient connect to?" />
+        <e k="ui_gm_marketSwitch_official"                         v="Global Market (official)" />
+        <e k="ui_gm_marketSwitch_active"                           v="%s (active)" />
+        <e k="ui_gm_marketSwitch_notConnected"                     v="%s (not connected yet)" />
+        <e k="ui_gm_marketSwitch_profileFallback"                  v="Profile %s" />
+        <e k="ui_gm_marketSwitch_confirmMp"                        v="The market changes for all players on this server. Pending online actions expire. Switch to &quot;%s&quot; now?" />
+        <e k="ui_gm_marketSwitch_timeout"                          v="The GlobalMarketClient did not confirm the market switch. Please check the client." />
+        <e k="ui_gm_marketSwitch_failed"                           v="The market switch request could not be saved." />
         <e k="ui_gm_storage_split"                                 v="(Farm: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="GM storage: cleared in %s" />
         <e k="ui_gm_storage_feesHigh"                              v="increased storage fees" />

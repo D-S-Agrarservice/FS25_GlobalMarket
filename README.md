@@ -296,6 +296,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketFarmCleanup.lua           # Cleanup of farm-keyed GM data on farm deletion
 │   ├── GlobalMarketFinance.lua               # MoneyType registration, ledger routing, GM storage fees & decay
 │   ├── GlobalMarketMapPriceHint.lua          # Spot market map price comparison: average, best selling point
+│   ├── GlobalMarketMarketSwitch.lua          # In-game switch between the Global Market and the client's private market profiles
 │   ├── GlobalMarketOffers.lua                # ±10 % direct offers, NPC buying & contracts savegame persistence
 │   ├── GlobalMarketOffline.lua               # Map Spy pricing, local NPC simulation & Great Demands
 │   ├── GlobalMarketOnline.lua                # Online trend pricing, client version floor & offline state restore

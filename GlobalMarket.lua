@@ -171,6 +171,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAnimalAuction.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketAnimalAuctionNpc.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketPermissions.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketMapPriceHint.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketMarketSwitch.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketOffers.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnline.lua")
 source(GlobalMarket.dir .. "modules/GlobalMarketContractsOnlineSync.lua")
@@ -517,6 +518,11 @@ function GlobalMarket:update(dt)
 
     if self.updateOnlineContractsTimers ~= nil then
         self:updateOnlineContractsTimers(dt)
+    end
+
+    -- Timeout of an in-game market switch request (#38)
+    if self.updateMarketSwitch ~= nil then
+        self:updateMarketSwitch(dt)
     end
 
     -- Settle liters unloaded at map stations for NPC contracts (#27), throttled to ~1s

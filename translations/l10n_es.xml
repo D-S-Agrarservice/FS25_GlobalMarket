@@ -184,6 +184,17 @@
         <e k="ui_gm_mapPrice_above"                                v="%d %% sobre Ø" />
         <e k="ui_gm_mapPrice_below"                                v="%d %% bajo Ø" />
         <e k="ui_gm_mapPrice_same"                                 v="al nivel de Ø" />
+        <e k="ui_gm_marketSwitch_button"                           v="Cambiar mercado" />
+        <e k="ui_gm_marketSwitch_buttonCooldown"                   v="Cambiar mercado (%d s)" />
+        <e k="ui_gm_marketSwitch_title"                            v="Cambiar mercado" />
+        <e k="ui_gm_marketSwitch_text"                             v="¿A qué mercado debe conectarse tu GlobalMarketClient?" />
+        <e k="ui_gm_marketSwitch_official"                         v="Global Market (oficial)" />
+        <e k="ui_gm_marketSwitch_active"                           v="%s (activo)" />
+        <e k="ui_gm_marketSwitch_notConnected"                     v="%s (aún sin conectar)" />
+        <e k="ui_gm_marketSwitch_profileFallback"                  v="Perfil %s" />
+        <e k="ui_gm_marketSwitch_confirmMp"                        v="El mercado cambia para todos los jugadores de este servidor. Las acciones online pendientes caducan. ¿Cambiar ahora a «%s»?" />
+        <e k="ui_gm_marketSwitch_timeout"                          v="El GlobalMarketClient no ha confirmado el cambio de mercado. Revisa el cliente." />
+        <e k="ui_gm_marketSwitch_failed"                           v="No se pudo guardar la solicitud de cambio de mercado." />
         <e k="ui_gm_storage_split"                                 v="(Granja: %s | GM: %s)" />
         <e k="ui_gm_storage_clearIn"                               v="Almacén GM: vaciado en %s" />
         <e k="ui_gm_storage_feesHigh"                              v="tasas de almacenamiento elevadas" />
