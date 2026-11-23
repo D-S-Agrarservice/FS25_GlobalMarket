@@ -18,7 +18,10 @@ GlobalMarket.VEHICLE_MARKET = {
 GlobalMarket.VEHICLE_LISTING_STATUS = {
     OPEN = "OPEN",
     BUYING = "BUYING",
-    RETURN_PENDING = "RETURN_PENDING"
+    RETURN_PENDING = "RETURN_PENDING",
+    -- Online listings (#36): waiting for the backend after CREATE_LISTING / CANCEL_LISTING
+    PENDING_CREATE = "PENDING_CREATE",
+    PENDING_CANCEL = "PENDING_CANCEL"
 }
 
 -- HUD notice kinds (server -> clients, see GlobalMarketVehicleTrade.lua)
@@ -30,7 +33,8 @@ GlobalMarket.VEHICLE_NOTICE = {
     SOLD = 5,
     RETURNED = 6,
     RETURN_PENDING = 7,
-    EXPIRED = 8
+    EXPIRED = 8,
+    ONLINE_SUBMITTED = 9 -- Own vehicle was handed to the online market (#36)
 }
 
 -- =========================================================================
@@ -93,11 +97,12 @@ end
 ---@param vehicle table
 ---@param farmId number
 ---@param priceFactor number Asking price relative to the dealer value
----@param durationMonths number
+---@param durationMonths number Local listings: in-game months
 ---@param connection table|nil Requesting connection
+---@param onlineHours number|nil Online listing (#36): real-time duration in hours, nil = local listing
 ---@return table|nil listing
 ---@return string|nil reason Error code if the listing was rejected
-function GlobalMarket:createVehicleListing(vehicle, farmId, priceFactor, durationMonths, connection)
+function GlobalMarket:createVehicleListing(vehicle, farmId, priceFactor, durationMonths, connection, onlineHours)
     if g_currentMission == nil or not g_currentMission:getIsServer() then
         return nil, "notServer"
     end
@@ -110,9 +115,19 @@ function GlobalMarket:createVehicleListing(vehicle, farmId, priceFactor, duratio
     if priceFactor == nil or priceFactor < cfg.PRICE_FACTOR_MIN - 0.0001 or priceFactor > cfg.PRICE_FACTOR_MAX + 0.0001 then
         return nil, "priceOutOfRange"
     end
-    durationMonths = math.floor(tonumber(durationMonths) or 0)
-    if durationMonths < cfg.DURATION_MIN or durationMonths > cfg.DURATION_MAX then
-        return nil, "durationOutOfRange"
+    local isOnline = (onlineHours ~= nil)
+    if isOnline then
+        if not self:getAreOnlineVehiclesAvailable() then
+            return nil, "onlineUnavailable"
+        end
+        if not GlobalMarketVehicleOnline.isValidDuration(onlineHours) then
+            return nil, "invalid"
+        end
+    else
+        durationMonths = math.floor(tonumber(durationMonths) or 0)
+        if durationMonths < cfg.DURATION_MIN or durationMonths > cfg.DURATION_MAX then
+            return nil, "durationOutOfRange"
+        end
     end
     self.vehicleListings = self.vehicleListings or {}
     if #self.vehicleListings >= cfg.MAX_TOTAL then
@@ -144,19 +159,26 @@ function GlobalMarket:createVehicleListing(vehicle, farmId, priceFactor, duratio
         isNpc = false,
         saleMode = "FIXED",
         priceFactor = priceFactor,
-        monthsRemaining = durationMonths,
+        monthsRemaining = isOnline and 0 or durationMonths,
         snapshot = snapshot
     }
+    -- Online: the vehicle only leaves the world once the request reached the Data-Host's client
+    if isOnline and not self:submitOnlineVehicleListing(listing, onlineHours) then
+        return nil, "onlineUnavailable"
+    end
     table.insert(self.vehicleListings, listing)
     vehicle:delete()
 
-    local price = GlobalMarketVehicleListings.getListingPrice(listing) or 0
-    self:notifyVehicleMarketFarms(GlobalMarket.VEHICLE_NOTICE.NEW_LISTING, 0, farmId, "", snapshot.xmlFilename, price, "")
+    if not isOnline then
+        local price = GlobalMarketVehicleListings.getListingPrice(listing) or 0
+        self:notifyVehicleMarketFarms(GlobalMarket.VEHICLE_NOTICE.NEW_LISTING, 0, farmId, "", snapshot.xmlFilename, price, "")
+    end
     self:broadcastVehicleMarketState()
 
     if self.debugManager ~= nil then
-        self.debugManager:info("VehicleMarket: Listing #%d created by farm %d (%s, %.0f%% of dealer value, %d months).",
-            id, farmId, tostring(snapshot.xmlFilename), priceFactor * 100, durationMonths)
+        self.debugManager:info("VehicleMarket: Listing #%d created by farm %d (%s, %.0f%% of dealer value, %s).",
+            id, farmId, tostring(snapshot.xmlFilename), priceFactor * 100,
+            isOnline and string.format("online %d h", onlineHours) or string.format("%d months", durationMonths))
     end
     return listing, nil
 end
@@ -241,6 +263,10 @@ function GlobalMarket:cancelVehicleListing(listingId, farmId)
     if listing.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
         return false, "listingBusy"
     end
+    -- Online listings return only after the backend confirmed the cancellation (#36)
+    if listing.isOnline then
+        return self:requestCancelOnlineVehicleListing(listing)
+    end
     self:returnVehicleListing(listing)
     return true, nil
 end
@@ -288,6 +314,9 @@ function GlobalMarket:saveVehicleMarketToXml(xmlFile)
         xmlFile:setString(key .. "#saleMode", listing.saleMode or "FIXED")
         xmlFile:setFloat(key .. "#priceFactor", listing.priceFactor or 1)
         xmlFile:setFloat(key .. "#monthsRemaining", listing.monthsRemaining or 0)
+        if listing.isOnline then
+            GlobalMarketVehicleOnline.saveListingOnlineFields(xmlFile, key, listing)
+        end
         GlobalMarketVehicleListings.writeSnapshotToXml(xmlFile, key .. ".vehicle", listing.snapshot)
     end
 end
@@ -309,7 +338,7 @@ function GlobalMarket:loadVehicleMarketFromXml(xmlFile)
             if status == GlobalMarket.VEHICLE_LISTING_STATUS.BUYING then
                 status = GlobalMarket.VEHICLE_LISTING_STATUS.OPEN
             end
-            table.insert(self.vehicleListings, {
+            local listing = {
                 id = id,
                 uid = xmlFile:getString(key .. "#uid", ""),
                 status = status,
@@ -320,7 +349,9 @@ function GlobalMarket:loadVehicleMarketFromXml(xmlFile)
                 priceFactor = xmlFile:getFloat(key .. "#priceFactor", 1),
                 monthsRemaining = xmlFile:getFloat(key .. "#monthsRemaining", 0),
                 snapshot = snapshot
-            })
+            }
+            GlobalMarketVehicleOnline.loadListingOnlineFields(xmlFile, key, listing)
+            table.insert(self.vehicleListings, listing)
             maxId = math.max(maxId, id)
         end
     end)

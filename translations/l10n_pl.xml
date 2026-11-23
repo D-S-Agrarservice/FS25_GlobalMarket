@@ -211,6 +211,7 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s ponownie czeka u dealera." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="Nie można zwrócić %s: miejsce odbioru u dealera jest zajęte. Ponowna próba co godzinę." />
         <e k="ui_gm_vehicles_notice_expired"                       v="Oferta dla %s wygasła. Pojazd wraca do ciebie." />
+        <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s jest wystawiany online." />
         <e k="ui_gm_animals_notice_listed"                         v="%s są teraz wystawione za %s na targu zwierząt GM." />
         <e k="ui_gm_animals_notice_newListing"                     v="Nowość na targu zwierząt GM: %s za %s." />
         <e k="ui_gm_animals_notice_bought"                         v="Kupiono %s za %s i dostarczono do twoich budynków." />
@@ -239,6 +240,7 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="Brak wolnego miejsca odbioru u dealera." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="Nie udało się wczytać pojazdu." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Nie masz do tego uprawnień." />
+        <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="Rynek pojazdów online jest obecnie niedostępny." />
         <e k="ui_gm_noPermission"                                  v="Nie masz do tego uprawnień." />
         <e k="ui_gm_animals_reason_invalid"                        v="Tych zwierząt nie można wystawić." />
         <e k="ui_gm_animals_reason_unavailable"                    v="Targ zwierząt nie jest dostępny w tym zapisie gry." />
@@ -387,6 +389,8 @@
         <e k="ui_gm_vehicles_status_open"                          v="Wystawiony (%s)" />
         <e k="ui_gm_vehicles_status_buying"                        v="Sprzedaż w toku" />
         <e k="ui_gm_vehicles_status_returnPending"                 v="Zwrot oczekuje" />
+        <e k="ui_gm_vehicles_status_pendingCreate"                 v="Wystawianie online" />
+        <e k="ui_gm_vehicles_status_pendingCancel"                 v="Wycofywanie" />
         <e k="ui_gm_vehicles_sec_myListings"                       v="Moje oferty" />
         <e k="ui_gm_vehicles_sec_myVehicles"                       v="Moje pojazdy" />
         <e k="ui_gm_vehicles_empty_my"                             v="Brak pojazdów" />
@@ -407,6 +411,11 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="Przy zakupie przez NPC (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Czas trwania" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Cena wywoławcza" />
+        <e k="ui_gm_vehicles_mode_local"                           v="Lokalnie (tylko ten serwer)" />
+        <e k="ui_gm_vehicles_mode_online"                          v="Online (wszystkie serwery)" />
+        <e k="ui_gm_vehicles_durationHours"                        v="%d h (czas rzeczywisty)" />
+        <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Cena na każdym serwerze" />
+        <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% tamtejszej wartości u dealera" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centrum Logistyczne GM - bez opłat)" />
         <e k="ui_gm_total_storage"                                 v="CAŁKOWITY ZAPAS:" />
         <e k="ui_gm_trend"                                         v="Trend" />

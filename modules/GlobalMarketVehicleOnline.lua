@@ -227,13 +227,140 @@ function GlobalMarket:exportVehicleAction(payload)
 end
 
 -- =========================================================================
--- TICK (Server)
+-- OWN ONLINE LISTINGS & ESCROW (Server)
+-- =========================================================================
+
+---Returns true if hours is one of the offered online durations
+---@param hours number|nil
+---@return boolean
+function GlobalMarketVehicleOnline.isValidDuration(hours)
+    for _, value in ipairs(GlobalMarket.VEHICLE_ONLINE.DURATION_HOURS) do
+        if value == hours then
+            return true
+        end
+    end
+    return false
+end
+
+---Marks a new listing as online (escrow, PENDING_CREATE) and sends CREATE_LISTING.
+---The caller removes the vehicle from the world only if this returns true.
+---@param listing table Listing built by createVehicleListing (not yet stored)
+---@param hours number Real-time duration
+---@return boolean submitted
+function GlobalMarket:submitOnlineVehicleListing(listing, hours)
+    local actionId = self:nextOnlineContractActionId()
+    local submitted = self:dispatchVehicleAction({
+        subAction = "CREATE_LISTING",
+        actionId = actionId,
+        farmId = listing.sellerFarmId,
+        farmName = self:formatOnlineIssuerDisplayName(listing.sellerFarmId),
+        saleMode = listing.saleMode or "FIXED",
+        priceFactor = listing.priceFactor,
+        durationHours = hours,
+        snapshot = listing.snapshot
+    })
+    if not submitted then
+        return false
+    end
+    listing.isOnline = true
+    listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.PENDING_CREATE
+    listing.createActionId = actionId
+    listing.durationHours = hours
+    listing.remainingSeconds = hours * 3600
+    return true
+end
+
+---Sends CANCEL_LISTING for an open online listing; the vehicle returns once the backend accepted
+---@param listing table
+---@return boolean success
+---@return string|nil reason
+function GlobalMarket:requestCancelOnlineVehicleListing(listing)
+    if (listing.remoteId or "") == "" then
+        return false, "listingBusy"
+    end
+    local payload = { subAction = "CANCEL_LISTING", farmId = listing.sellerFarmId, remoteId = listing.remoteId }
+    if not self:dispatchVehicleAction(payload) then
+        return false, "onlineUnavailable"
+    end
+    listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.PENDING_CANCEL
+    listing.cancelActionId = payload.actionId
+    self:broadcastVehicleMarketState()
+    return true, nil
+end
+
+---Withdraws the online listing of a deleted farm at the backend (best effort, the vehicle has no owner)
+---@param listing table
+function GlobalMarket:withdrawOnlineVehicleListingForDeletedFarm(listing)
+    local payload = { subAction = "CANCEL_LISTING", farmId = listing.sellerFarmId }
+    if (listing.remoteId or "") ~= "" then
+        payload.remoteId = listing.remoteId
+    else
+        payload.createActionId = listing.createActionId
+    end
+    if not self:dispatchVehicleAction(payload) and self.debugManager ~= nil then
+        self.debugManager:warning("VehicleOnline: Could not withdraw online listing #%d of deleted farm %d (offline).",
+            listing.id, listing.sellerFarmId or 0)
+    end
+end
+
+---Writes the online fields of a listing into globalMarket.xml
+---@param xmlFile table
+---@param key string
+---@param listing table
+function GlobalMarketVehicleOnline.saveListingOnlineFields(xmlFile, key, listing)
+    xmlFile:setBool(key .. "#isOnline", true)
+    xmlFile:setString(key .. "#remoteId", listing.remoteId or "")
+    xmlFile:setString(key .. "#createActionId", listing.createActionId or "")
+    xmlFile:setString(key .. "#cancelActionId", listing.cancelActionId or "")
+    xmlFile:setInt(key .. "#durationHours", listing.durationHours or 0)
+    xmlFile:setInt(key .. "#remainingSeconds", math.floor(listing.remainingSeconds or 0))
+end
+
+---Reads the online fields of a listing (no-op for local listings)
+---@param xmlFile table
+---@param key string
+---@param listing table
+function GlobalMarketVehicleOnline.loadListingOnlineFields(xmlFile, key, listing)
+    if not xmlFile:getBool(key .. "#isOnline", false) then
+        return
+    end
+    local function optString(name)
+        local value = xmlFile:getString(key .. "#" .. name, "")
+        return (value ~= "") and value or nil
+    end
+    listing.isOnline = true
+    listing.remoteId = optString("remoteId")
+    listing.createActionId = optString("createActionId")
+    listing.cancelActionId = optString("cancelActionId")
+    listing.durationHours = xmlFile:getInt(key .. "#durationHours", 0)
+    listing.remainingSeconds = xmlFile:getInt(key .. "#remainingSeconds", 0)
+end
+
+---Counts down the real-time remaining seconds of open online listings (server and clients, display only)
+---@param dt number
+function GlobalMarket:updateOnlineVehicleTimers(dt)
+    self.vehicleOnlineTimerMs = (self.vehicleOnlineTimerMs or 0) + (dt or 0)
+    if self.vehicleOnlineTimerMs < 1000 then
+        return
+    end
+    local elapsedSec = math.floor(self.vehicleOnlineTimerMs / 1000)
+    self.vehicleOnlineTimerMs = self.vehicleOnlineTimerMs - elapsedSec * 1000
+    for _, listing in ipairs(self.vehicleListings or {}) do
+        if listing.isOnline and listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and (listing.remainingSeconds or 0) > 0 then
+            listing.remainingSeconds = math.max(0, listing.remainingSeconds - elapsedSec)
+        end
+    end
+end
+
+-- =========================================================================
+-- TICK
 -- =========================================================================
 
 ---Requests a full listing snapshot whenever the online vehicle market becomes available or the
 ---Data-Host changes (the snapshot also reconciles escrowed listings from stage 3 on)
 ---@param dt number
 function GlobalMarket:updateVehicleOnline(dt)
+    self:updateOnlineVehicleTimers(dt)
     if g_server == nil then
         return
     end

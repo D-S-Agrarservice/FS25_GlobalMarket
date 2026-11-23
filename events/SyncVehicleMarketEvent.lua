@@ -118,6 +118,10 @@ function SyncVehicleMarketEvent:writeStream(streamId, connection)
         streamWriteString(streamId, listing.saleMode or "FIXED")
         streamWriteFloat32(streamId, listing.priceFactor or 1)
         streamWriteFloat32(streamId, listing.monthsRemaining or 0)
+        streamWriteBool(streamId, listing.isOnline == true)
+        if listing.isOnline then
+            streamWriteInt32(streamId, math.floor(listing.remainingSeconds or 0))
+        end
 
         SyncVehicleMarketEvent.writeSnapshot(streamId, snap)
     end
@@ -139,6 +143,10 @@ function SyncVehicleMarketEvent:readStream(streamId, connection)
             priceFactor = streamReadFloat32(streamId),
             monthsRemaining = streamReadFloat32(streamId)
         }
+        if streamReadBool(streamId) then
+            listing.isOnline = true
+            listing.remainingSeconds = streamReadInt32(streamId)
+        end
         listing.snapshot = SyncVehicleMarketEvent.readSnapshot(streamId)
         table.insert(self.listings, listing)
     end

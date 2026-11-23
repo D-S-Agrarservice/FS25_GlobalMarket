@@ -211,6 +211,7 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s is back and ready at the dealer." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="%s could not be returned: the dealer's pickup area is blocked. Retrying every hour." />
         <e k="ui_gm_vehicles_notice_expired"                       v="The listing for %s has expired. The vehicle is returned to you." />
+        <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s is being listed online." />
         <e k="ui_gm_animals_notice_listed"                         v="%s are now listed for %s on the GM animal market." />
         <e k="ui_gm_animals_notice_newListing"                     v="New on the GM animal market: %s for %s." />
         <e k="ui_gm_animals_notice_bought"                         v="%s bought for %s and delivered to your barns." />
@@ -239,6 +240,7 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="No free pickup space at the dealer." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="The vehicle could not be loaded." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="You do not have permission to do this." />
+        <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="The online vehicle market is currently unavailable." />
         <e k="ui_gm_noPermission"                                  v="You do not have permission to do this." />
         <e k="ui_gm_animals_reason_invalid"                        v="These animals cannot be listed." />
         <e k="ui_gm_animals_reason_unavailable"                    v="The animal market is not available in this savegame." />
@@ -387,6 +389,8 @@
         <e k="ui_gm_vehicles_status_open"                          v="Listed (%s)" />
         <e k="ui_gm_vehicles_status_buying"                        v="Being sold" />
         <e k="ui_gm_vehicles_status_returnPending"                 v="Return pending" />
+        <e k="ui_gm_vehicles_status_pendingCreate"                 v="Listing online" />
+        <e k="ui_gm_vehicles_status_pendingCancel"                 v="Withdrawing" />
         <e k="ui_gm_vehicles_sec_myListings"                       v="My Listings" />
         <e k="ui_gm_vehicles_sec_myVehicles"                       v="My Vehicles" />
         <e k="ui_gm_vehicles_empty_my"                             v="No vehicles" />
@@ -407,6 +411,11 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="If an NPC buys (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Duration" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Asking price" />
+        <e k="ui_gm_vehicles_mode_local"                           v="Local (this server only)" />
+        <e k="ui_gm_vehicles_mode_online"                          v="Online (all servers)" />
+        <e k="ui_gm_vehicles_durationHours"                        v="%d h (real time)" />
+        <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Price on every server" />
+        <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% of its dealer value" />
         <e k="ui_gm_terminal_hint"                                 v=" (GM Logistics Center - no fees)" />
         <e k="ui_gm_total_storage"                                 v="TOTAL STOCK:" />
         <e k="ui_gm_trend"                                         v="Trend" />

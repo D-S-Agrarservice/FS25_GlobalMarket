@@ -1,7 +1,8 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - GlobalMarketVehicleDialog.lua
 -- Used vehicle market (#16): modal dialog to list an own vehicle with an asking price
--- (percent of the dealer value) and a duration in months.
+-- (percent of the dealer value) and a duration: locally in in-game months or, while the
+-- online vehicle market is available (#36), across servers in real-time hours.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
@@ -10,6 +11,9 @@ local GlobalMarketVehicleDialog_mt = Class(GlobalMarketVehicleDialog, YesNoDialo
 
 GlobalMarketVehicleDialog.PRICE_STEP = 0.05
 GlobalMarketVehicleDialog.DEFAULT_DURATION = 3
+GlobalMarketVehicleDialog.DEFAULT_ONLINE_HOURS = 72
+GlobalMarketVehicleDialog.MODE_LOCAL = 1
+GlobalMarketVehicleDialog.MODE_ONLINE = 2
 
 local COLOR_LABEL = { 0.78, 0.80, 0.82, 1 }
 local COLOR_WHITE = { 1, 1, 1, 1 }
@@ -26,6 +30,7 @@ function GlobalMarketVehicleDialog.new(target, custom_mt)
     self.farmId = 0
     self.priceOptions = {}
     self.durationOptions = {}
+    self.isOnlineAvailable = false
     return self
 end
 
@@ -86,19 +91,19 @@ function GlobalMarketVehicleDialog:onOpen()
         self.selectorPrice:setState(defaultIndex, false)
     end
 
-    self.durationOptions = {}
-    local durationTexts, durationDefault = {}, 1
-    for months = cfg.DURATION_MIN, cfg.DURATION_MAX do
-        table.insert(self.durationOptions, months)
-        table.insert(durationTexts, string.format(g_i18n:getText("ui_gm_vehicles_durationOption"), months))
-        if months == GlobalMarketVehicleDialog.DEFAULT_DURATION then
-            durationDefault = #self.durationOptions
+    -- Local / online (#36): the online entry only exists while the online vehicle market is available
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    self.isOnlineAvailable = gm ~= nil and gm.getAreOnlineVehiclesAvailable ~= nil and gm:getAreOnlineVehiclesAvailable()
+    if self.selectorMode ~= nil then
+        local modeTexts = { g_i18n:getText("ui_gm_vehicles_mode_local") }
+        if self.isOnlineAvailable then
+            table.insert(modeTexts, g_i18n:getText("ui_gm_vehicles_mode_online"))
         end
+        self.selectorMode:setTexts(modeTexts)
+        self.selectorMode:setState(GlobalMarketVehicleDialog.MODE_LOCAL, false)
+        self.selectorMode:setDisabled(not self.isOnlineAvailable)
     end
-    if self.selectorDuration ~= nil then
-        self.selectorDuration:setTexts(durationTexts)
-        self.selectorDuration:setState(durationDefault, false)
-    end
+    self:updateDurationOptions()
 
     self:updateReceipt()
     if self.selectorPrice ~= nil then
@@ -113,7 +118,56 @@ end
 
 function GlobalMarketVehicleDialog:getSelectedDuration()
     local index = (self.selectorDuration ~= nil) and self.selectorDuration:getState() or 1
-    return self.durationOptions[index] or GlobalMarketVehicleDialog.DEFAULT_DURATION
+    return self.durationOptions[index] or self.durationOptions[1] or GlobalMarketVehicleDialog.DEFAULT_DURATION
+end
+
+---Returns true if the online mode is selected (#36)
+---@return boolean
+function GlobalMarketVehicleDialog:getIsOnlineSelected()
+    return self.isOnlineAvailable and self.selectorMode ~= nil
+        and self.selectorMode:getState() == GlobalMarketVehicleDialog.MODE_ONLINE
+end
+
+---Returns the display text of a duration option for the selected mode
+---@param value number Months (local) or hours (online)
+---@return string
+function GlobalMarketVehicleDialog:formatDuration(value)
+    if self:getIsOnlineSelected() then
+        return string.format(g_i18n:getText("ui_gm_vehicles_durationHours"), value)
+    end
+    return string.format(g_i18n:getText("ui_gm_vehicles_durationOption"), value)
+end
+
+---Fills the duration selector: in-game months (local) or real-time hours (online)
+function GlobalMarketVehicleDialog:updateDurationOptions()
+    local cfg = GlobalMarket.VEHICLE_MARKET
+    local values, default = {}, GlobalMarketVehicleDialog.DEFAULT_DURATION
+    if self:getIsOnlineSelected() then
+        values = GlobalMarket.VEHICLE_ONLINE.DURATION_HOURS
+        default = GlobalMarketVehicleDialog.DEFAULT_ONLINE_HOURS
+    else
+        for months = cfg.DURATION_MIN, cfg.DURATION_MAX do
+            table.insert(values, months)
+        end
+    end
+    self.durationOptions = {}
+    local texts, defaultIndex = {}, 1
+    for _, value in ipairs(values) do
+        table.insert(self.durationOptions, value)
+        table.insert(texts, self:formatDuration(value))
+        if value == default then
+            defaultIndex = #self.durationOptions
+        end
+    end
+    if self.selectorDuration ~= nil then
+        self.selectorDuration:setTexts(texts)
+        self.selectorDuration:setState(defaultIndex, false)
+    end
+end
+
+function GlobalMarketVehicleDialog:onClickMode(state)
+    self:updateDurationOptions()
+    self:updateReceipt()
 end
 
 function GlobalMarketVehicleDialog:onClickPrice(state)
@@ -152,12 +206,18 @@ function GlobalMarketVehicleDialog:updateReceipt()
 
     self:setReceiptRow(self.receiptRow1Label, self.receiptRow1Value,
         g_i18n:getText("ui_gm_vehicles_receipt_dealer"), g_i18n:formatMoney(self.dealerValue, 0, true, true), COLOR_MUTED)
-    self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
-        string.format(g_i18n:getText("ui_gm_vehicles_receipt_npc"), math.floor(GlobalMarket.VEHICLE_MARKET.NPC_COMMISSION * 100 + 0.5)),
-        g_i18n:formatMoney(npcPayout, 0, true, true), COLOR_MUTED)
+    if self:getIsOnlineSelected() then
+        -- Online: NPC dealers never buy, every server prices the vehicle by its own dealer value
+        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+            g_i18n:getText("ui_gm_vehicles_receipt_onlinePrice"),
+            string.format(g_i18n:getText("ui_gm_vehicles_receipt_onlinePriceValue"), math.floor(factor * 100 + 0.5)), COLOR_MUTED)
+    else
+        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+            string.format(g_i18n:getText("ui_gm_vehicles_receipt_npc"), math.floor(GlobalMarket.VEHICLE_MARKET.NPC_COMMISSION * 100 + 0.5)),
+            g_i18n:formatMoney(npcPayout, 0, true, true), COLOR_MUTED)
+    end
     self:setReceiptRow(self.receiptRow3Label, self.receiptRow3Value,
-        g_i18n:getText("ui_gm_vehicles_receipt_duration"),
-        string.format(g_i18n:getText("ui_gm_vehicles_durationOption"), self:getSelectedDuration()), COLOR_WHITE)
+        g_i18n:getText("ui_gm_vehicles_receipt_duration"), self:formatDuration(self:getSelectedDuration()), COLOR_WHITE)
     self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
         g_i18n:getText("ui_gm_vehicles_receipt_asking"), g_i18n:formatMoney(asking, 0, true, true), askingColor, COLOR_WHITE)
 end
@@ -165,7 +225,7 @@ end
 function GlobalMarketVehicleDialog:onClickOk()
     if self.vehicle ~= nil and VehicleMarketActionEvent ~= nil then
         VehicleMarketActionEvent.dispatch(VehicleMarketActionEvent.ACTION_CREATE, self.farmId, self.vehicle, 0,
-            self:getSelectedPriceFactor(), self:getSelectedDuration())
+            self:getSelectedPriceFactor(), self:getSelectedDuration(), nil, self:getIsOnlineSelected())
     end
     GlobalMarketVehicleDialog:superClass().onClickOk(self)
     self:close()

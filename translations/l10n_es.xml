@@ -211,6 +211,7 @@
         <e k="ui_gm_vehicles_notice_returned"                      v="%s vuelve a estar disponible en el concesionario." />
         <e k="ui_gm_vehicles_notice_returnPending"                 v="No se ha podido devolver %s: la zona de recogida del concesionario está ocupada. Se reintentará cada hora." />
         <e k="ui_gm_vehicles_notice_expired"                       v="La oferta de %s ha caducado. El vehículo te será devuelto." />
+        <e k="ui_gm_vehicles_notice_onlineSubmitted"               v="%s se está publicando online." />
         <e k="ui_gm_animals_notice_listed"                         v="%s están ahora a la venta por %s en el mercado de animales GM." />
         <e k="ui_gm_animals_notice_newListing"                     v="Nuevo en el mercado de animales GM: %s por %s." />
         <e k="ui_gm_animals_notice_bought"                         v="%s comprados por %s y entregados en tus establos." />
@@ -239,6 +240,7 @@
         <e k="ui_gm_vehicles_reason_noSpace"                       v="No hay espacio libre de recogida en el concesionario." />
         <e k="ui_gm_vehicles_reason_loadFailed"                    v="No se ha podido cargar el vehículo." />
         <e k="ui_gm_vehicles_reason_noPermission"                  v="No tienes permiso para hacer esto." />
+        <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="El mercado de vehículos online no está disponible ahora mismo." />
         <e k="ui_gm_noPermission"                                  v="No tienes permiso para hacer esto." />
         <e k="ui_gm_animals_reason_invalid"                        v="Estos animales no se pueden poner a la venta." />
         <e k="ui_gm_animals_reason_unavailable"                    v="El mercado de animales no está disponible en esta partida." />
@@ -387,6 +389,8 @@
         <e k="ui_gm_vehicles_status_open"                          v="En venta (%s)" />
         <e k="ui_gm_vehicles_status_buying"                        v="Vendiéndose" />
         <e k="ui_gm_vehicles_status_returnPending"                 v="Devolución pendiente" />
+        <e k="ui_gm_vehicles_status_pendingCreate"                 v="Publicando online" />
+        <e k="ui_gm_vehicles_status_pendingCancel"                 v="Retirando" />
         <e k="ui_gm_vehicles_sec_myListings"                       v="Mis ofertas" />
         <e k="ui_gm_vehicles_sec_myVehicles"                       v="Mis vehículos" />
         <e k="ui_gm_vehicles_empty_my"                             v="No hay vehículos" />
@@ -407,6 +411,11 @@
         <e k="ui_gm_vehicles_receipt_npc"                          v="Si compra un NPC (-%d %%)" />
         <e k="ui_gm_vehicles_receipt_duration"                     v="Duración" />
         <e k="ui_gm_vehicles_receipt_asking"                       v="Precio solicitado" />
+        <e k="ui_gm_vehicles_mode_local"                           v="Local (solo este servidor)" />
+        <e k="ui_gm_vehicles_mode_online"                          v="Online (todos los servidores)" />
+        <e k="ui_gm_vehicles_durationHours"                        v="%d h (tiempo real)" />
+        <e k="ui_gm_vehicles_receipt_onlinePrice"                  v="Precio en cada servidor" />
+        <e k="ui_gm_vehicles_receipt_onlinePriceValue"             v="%d %% de su valor de concesionario" />
         <e k="ui_gm_terminal_hint"                                 v=" (Centro logístico GM - sin tarifas)" />
         <e k="ui_gm_total_storage"                                 v="STOCK TOTAL:" />
         <e k="ui_gm_trend"                                         v="Tendencia" />

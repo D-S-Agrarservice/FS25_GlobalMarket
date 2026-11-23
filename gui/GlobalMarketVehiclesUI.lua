@@ -180,9 +180,21 @@ function GlobalMarketUI:getVehicleListingStatusText(listing)
         return self.i18n:getText("ui_gm_vehicles_status_buying")
     elseif listing.status == S.RETURN_PENDING then
         return self.i18n:getText("ui_gm_vehicles_status_returnPending")
+    elseif listing.status == S.PENDING_CREATE then
+        return self.i18n:getText("ui_gm_vehicles_status_pendingCreate")
+    elseif listing.status == S.PENDING_CANCEL then
+        return self.i18n:getText("ui_gm_vehicles_status_pendingCancel")
     end
-    return string.format(self.i18n:getText("ui_gm_vehicles_status_open"),
-        string.format(self.i18n:getText("ui_gm_months_short"), math.max(0, listing.monthsRemaining or 0)))
+    return string.format(self.i18n:getText("ui_gm_vehicles_status_open"), self:formatVehicleListingDuration(listing))
+end
+
+---Returns the remaining time of a listing ("2.5 Mon." or "[Online] 47h")
+function GlobalMarketUI:formatVehicleListingDuration(listing)
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    if listing.isOnline and gm ~= nil and gm.formatContractDurationShort ~= nil then
+        return gm:formatContractDurationShort(self.i18n, listing)
+    end
+    return string.format(self.i18n:getText("ui_gm_months_short"), math.max(0, listing.monthsRemaining or 0))
 end
 
 -- =========================================================================
@@ -235,7 +247,7 @@ function GlobalMarketUI:applyVehicleListsFilter(allowListFocus)
                 table.insert(myListings, { kind = "MY_LISTING", data = listing, name = name,
                     price = GlobalMarketVehicleListings.getListingPrice(listing) })
             end
-        elseif listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
+        elseif listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and not listing.isOnline then
             local resolved = GlobalMarketVehicleListings.resolveSnapshot(listing.snapshot)
             if resolved ~= nil and self:matchesVehicleQuery(name) then
                 local value = GlobalMarketVehicleListings.getDealerValue(listing.snapshot, resolved)
@@ -423,8 +435,7 @@ function GlobalMarketUI:updateVehicleSelectionHint(row)
         text = string.format(self.i18n:getText("ui_gm_vehicles_hint_listing"), row.name,
             listing.isNpc and self.i18n:getText("ui_gm_vehicles_npcSeller") or tostring(listing.sellerName),
             self:formatVehicleConditionFull(listing.snapshot), priceText,
-            math.floor((listing.priceFactor or 1) * 100 + 0.5),
-            string.format(self.i18n:getText("ui_gm_months_short"), math.max(0, listing.monthsRemaining or 0)))
+            math.floor((listing.priceFactor or 1) * 100 + 0.5), self:formatVehicleListingDuration(listing))
     end
     self.vehiclesSelectionHint:setText(text)
 end
@@ -580,7 +591,9 @@ function GlobalMarketVehiclesUI:populateCellForItemInSection(list, section, inde
         setCellText(cell, "value", i18n:formatMoney(row.data.value, 0, true, true))
     elseif row.kind == "MY_LISTING" then
         setCellText(cell, "name", row.name)
-        local isPending = (row.data.status == GlobalMarket.VEHICLE_LISTING_STATUS.RETURN_PENDING)
+        local S = GlobalMarket.VEHICLE_LISTING_STATUS
+        local isPending = (row.data.status == S.RETURN_PENDING or row.data.status == S.PENDING_CREATE
+            or row.data.status == S.PENDING_CANCEL)
         setCellText(cell, "status", ui:getVehicleListingStatusText(row.data), isPending and COLOR_BLOCKED or COLOR_WHITE_TEXT)
         setCellText(cell, "value", row.price ~= nil and i18n:formatMoney(row.price, 0, true, true) or "-",
             getPriceFactorColor(row.data.priceFactor or 1))

@@ -148,6 +148,9 @@ function GlobalMarket:showVehicleMarketNotice(kind, targetFarmId, excludeFarmId,
     elseif kind == N.EXPIRED then
         text = string.format(g_i18n:getText("ui_gm_vehicles_notice_expired"), name)
         color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
+    elseif kind == N.ONLINE_SUBMITTED then
+        text = string.format(g_i18n:getText("ui_gm_vehicles_notice_onlineSubmitted"), name)
+        color = FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }
     end
     if text ~= nil and g_currentMission.hud.addSideNotification ~= nil then
         g_currentMission.hud:addSideNotification(color, text, 8000)
@@ -172,7 +175,8 @@ function GlobalMarket:buyVehicleListing(listingId, buyerFarmId, licensePlateData
     if listing == nil then
         return false, "listingNotFound"
     end
-    if listing.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
+    -- Online listings are bought through the backend only (#36, stage 5)
+    if listing.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.OPEN or listing.isOnline then
         return false, "listingBusy"
     end
     if not listing.isNpc and listing.sellerFarmId == buyerFarmId then
@@ -245,7 +249,8 @@ function GlobalMarket:updateVehicleMarketHourly(customMonthDelta)
 
     local expired = {}
     for _, listing in ipairs(listings) do
-        if listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN then
+        -- Online listings run on real time and expire through the backend (#36)
+        if listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and not listing.isOnline then
             listing.monthsRemaining = (listing.monthsRemaining or 0) - monthDelta
             if listing.monthsRemaining <= 0 then
                 table.insert(expired, listing)
@@ -277,6 +282,10 @@ function GlobalMarket:cleanupVehicleListingsForDeletedFarm(farmId)
     local changed = false
     for _, listing in ipairs(self.vehicleListings or {}) do
         if not listing.isNpc and listing.sellerFarmId == farmId and listing.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.BUYING then
+            -- Online listings are withdrawn at the backend as well (#36)
+            if listing.isOnline then
+                self:withdrawOnlineVehicleListingForDeletedFarm(listing)
+            end
             changed = true
         else
             table.insert(kept, listing)

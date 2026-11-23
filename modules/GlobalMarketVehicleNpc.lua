@@ -185,7 +185,8 @@ function GlobalMarket:updateVehicleMarketNpcs(monthDelta)
     for _, listing in ipairs(self.vehicleListings or {}) do
         if listing.isNpc then
             npcCount = npcCount + 1
-        elseif listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and math.random() < getNpcBuyChance(listing, monthDelta) then
+        elseif listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.OPEN and not listing.isOnline
+            and math.random() < getNpcBuyChance(listing, monthDelta) then
             table.insert(buyers, listing)
         end
     end

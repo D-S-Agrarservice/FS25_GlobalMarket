@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <!-- ========================================================================================= -->
 <!-- FS25_GlobalMarket - GlobalMarketVehicleDialog.xml                                         -->
-<!-- Used vehicle market (#16): dialog to list an own vehicle (asking price, duration).        -->
+<!-- Used vehicle market (#16): dialog to list an own vehicle (mode, asking price, duration).  -->
 <!-- Reuses the receipt/dropdown profiles registered by GlobalMarketContractDialog.xml.        -->
 <!-- Author: D-S-Agrarservice                                                                  -->
 <!-- ========================================================================================= -->
@@ -22,11 +22,16 @@
             </BoxLayout>
             <Text profile="globalMarketCInfoText" id="dialogInfoTextElement" />
 
-            <MultiTextOption profile="globalMarketCDropdown1" id="selectorPrice" onClick="onClickPrice">
+            <!-- Local / online (#36); disabled with "Local" while the online market is unavailable -->
+            <MultiTextOption profile="globalMarketCDropdown1" id="selectorMode" onClick="onClickMode">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
-            <MultiTextOption profile="globalMarketCDropdown2" id="selectorDuration" onClick="onClickDuration">
+            <MultiTextOption profile="globalMarketCDropdown2" id="selectorPrice" onClick="onClickPrice">
+                <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
+            </MultiTextOption>
+
+            <MultiTextOption profile="globalMarketCDropdown3" id="selectorDuration" onClick="onClickDuration">
                 <Text profile="fs25_multiTextOptionText" name="text" absoluteSizeOffset="90px 0px" position="15px 0px" />
             </MultiTextOption>
 
@@ -55,7 +60,7 @@
 
     <GUIProfiles>
         <Profile name="globalMarketVDialogBg" extends="fs25_dialogBg" with="anchorMiddleCenter">
-            <size value="620px 470px" />
+            <size value="620px 516px" />
         </Profile>
         <Profile name="globalMarketVVehicleIcon" extends="baseReference">
             <size value="36px 36px" />
@@ -64,7 +69,7 @@
         </Profile>
         <Profile name="globalMarketVReceiptBox" extends="emptyPanel" with="anchorTopCenter">
             <size value="536px 172px" />
-            <position value="0px -190px" />
+            <position value="0px -236px" />
         </Profile>
     </GUIProfiles>
 </GUI>
