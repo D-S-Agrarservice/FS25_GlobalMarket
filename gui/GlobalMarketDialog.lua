@@ -1,6 +1,7 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - GlobalMarketDialog.lua
 -- Interactive transaction dialog for storage selection, packaging formats, and fee preview.
+-- The receipt is drawn as a paper document: invoice (buy) or credit note (sell), #39.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
@@ -21,6 +22,18 @@ local COLOR_GREEN = { 0.46, 0.80, 0.15, 1 }
 local COLOR_AMBER = { 0.95, 0.68, 0.20, 1 }
 local COLOR_RED = { 0.92, 0.22, 0.22, 1 }
 local COLOR_BAL_OK = { 0.92, 0.94, 0.96, 1 }
+
+-- Paper document (#39): dark ink variants of the colors above (linear color values)
+local PAPER_INK = { 0.012, 0.012, 0.015, 1 }
+local PAPER_LABEL = { 0.045, 0.045, 0.052, 1 }
+local PAPER_COLORS = {
+    [COLOR_WHITE] = PAPER_INK,
+    [COLOR_LABEL] = PAPER_LABEL,
+    [COLOR_MUTED] = { 0.06, 0.06, 0.068, 1 },
+    [COLOR_GREEN] = { 0.010, 0.13, 0.008, 1 },
+    [COLOR_AMBER] = { 0.33, 0.08, 0.0, 1 },
+    [COLOR_RED] = { 0.38, 0.008, 0.008, 1 }
+}
 
 function GlobalMarketDialog.new(target, custom_mt)
     local self = YesNoDialog.new(target, custom_mt or GlobalMarketDialog_mt)
@@ -103,6 +116,7 @@ function GlobalMarketDialog:onOpen()
     self.storageSelectionElement:setTexts(storageNames)
     self.storageSelectionElement:setState(1, true)
     self:onClickStorage(1)
+    self:updateDocumentHeader()
 
     FocusManager:setFocus(self.amountInput)
 end
@@ -111,6 +125,7 @@ end
 function GlobalMarketDialog:onClickStorage(state)
     self.selectedStorageIndex = state
     local selectedSilo = self.storageLocations[state]
+    self:updateDocumentPlace()
 
     -- Hide the format selection by default and reset variables
     if self.formatSelectionElement ~= nil then
@@ -585,6 +600,53 @@ function GlobalMarketDialog:updateSubtitleCapWarning()
     end
 end
 
+---Sets a row on the paper document: the dark-menu colors are mapped to their ink variants
+function GlobalMarketDialog:setPaperRow(labelElem, valueElem, labelText, valueText, valueColor, labelColor)
+    self:setReceiptRow(labelElem, valueElem, labelText, valueText,
+        PAPER_COLORS[valueColor or COLOR_WHITE] or PAPER_INK, PAPER_COLORS[labelColor or COLOR_LABEL] or PAPER_LABEL)
+end
+
+---Fills the letterhead: document type, number and date from the game time, market and farm
+function GlobalMarketDialog:updateDocumentHeader()
+    local isBuy = (self.actionType == "BUY")
+    local env = g_currentMission ~= nil and g_currentMission.environment or nil
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    if self.receiptDocTitle ~= nil then
+        self.receiptDocTitle:setText(g_i18n:getText(isBuy and "ui_gm_doc_invoice" or "ui_gm_doc_creditNote"))
+    end
+    if self.receiptDocNumber ~= nil and env ~= nil then
+        -- Cosmetic number from the game time (day, hour, minute), nothing is saved
+        local number = string.format("GM-%03d-%02d%02d", env.currentDay or 0, env.currentHour or 0, env.currentMinute or 0)
+        self.receiptDocNumber:setText(string.format(g_i18n:getText("ui_gm_doc_number"), number))
+    end
+    if self.receiptDocDate ~= nil and env ~= nil then
+        local dayText = g_i18n:formatDayInPeriod() or ""
+        local yearText = string.format(g_i18n:getText("ui_gm_doc_year"), env.currentYear or 1)
+        self.receiptDocDate:setText(string.format(g_i18n:getText("ui_gm_doc_date"), dayText .. ", " .. yearText))
+    end
+    -- Buying: the market delivers to the farm; selling: the farm delivers to the market
+    local marketName = (gm ~= nil and gm:getIsMarketOnline() and gm.onlineMarketName) or "Global Market"
+    local farm = (g_farmManager ~= nil and g_currentMission ~= nil) and g_farmManager:getFarmById(g_currentMission:getFarmId()) or nil
+    local farmName = (farm ~= nil and farm.name) or "-"
+    if self.receiptDocFrom ~= nil then
+        self.receiptDocFrom:setText(string.format(g_i18n:getText("ui_gm_doc_from"), isBuy and marketName or farmName))
+    end
+    if self.receiptDocTo ~= nil then
+        self.receiptDocTo:setText(string.format(g_i18n:getText("ui_gm_doc_to"), isBuy and farmName or marketName))
+    end
+    self:updateDocumentPlace()
+end
+
+---Shows the selected storage as delivery place (buy) or pickup place (sell)
+function GlobalMarketDialog:updateDocumentPlace()
+    if self.receiptDocPlace == nil then
+        return
+    end
+    local silo = self.storageLocations[self.selectedStorageIndex]
+    local key = (self.actionType == "BUY") and "ui_gm_doc_deliveryPlace" or "ui_gm_doc_pickupPlace"
+    self.receiptDocPlace:setText(string.format(g_i18n:getText(key), (silo ~= nil and silo.title) or "-"))
+end
+
 -- Calculates the final price, renders the structured 6-row receipt, and validates liquidity
 function GlobalMarketDialog:updateTotalValue()
     local totalLiters = self.currentAmount * self.currentCountFactor
@@ -620,19 +682,19 @@ function GlobalMarketDialog:updateTotalValue()
     else
         qtyValue = g_i18n:formatVolume(totalLiters, 0)
     end
-    self:setReceiptRow(self.receiptRow1Label, self.receiptRow1Value,
+    self:setPaperRow(self.receiptRow1Label, self.receiptRow1Value,
         g_i18n:getText("ui_gm_receipt_quantity"), qtyValue, COLOR_WHITE)
 
     -- Rows 2 & 3: Stable 2-line breakdown without layout jumps
     if self.actionType == "BUY" and markupPct > 0 then
-        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+        self:setPaperRow(self.receiptRow2Label, self.receiptRow2Value,
             g_i18n:getText("ui_gm_receipt_goodsValue"),
             g_i18n:formatMoney(baseValue, 0, true, true), COLOR_WHITE)
 
         local markupText = (dealerCosts > 0)
             and ("+ " .. g_i18n:formatMoney(dealerCosts, 0, true, true))
             or g_i18n:formatMoney(0, 0, true, true)
-        self:setReceiptRow(self.receiptRow3Label, self.receiptRow3Value,
+        self:setPaperRow(self.receiptRow3Label, self.receiptRow3Value,
             string.format("%s (%d%%)", g_i18n:getText("ui_gm_settings_markup"), markupPct),
             markupText, (dealerCosts > 0) and COLOR_AMBER or COLOR_MUTED)
     else
@@ -645,9 +707,9 @@ function GlobalMarketDialog:updateTotalValue()
         else
             unitText = string.format("%s / 1.000 L", g_i18n:formatMoney(self.pricePer1000, 0, true, true))
         end
-        self:setReceiptRow(self.receiptRow2Label, self.receiptRow2Value,
+        self:setPaperRow(self.receiptRow2Label, self.receiptRow2Value,
             g_i18n:getText("ui_gm_receipt_unitPrice"), unitText, COLOR_MUTED)
-        self:setReceiptRow(self.receiptRow3Label, self.receiptRow3Value,
+        self:setPaperRow(self.receiptRow3Label, self.receiptRow3Value,
             g_i18n:getText("ui_gm_receipt_goodsValue"),
             g_i18n:formatMoney(baseValue, 0, true, true), COLOR_WHITE)
     end
@@ -667,7 +729,7 @@ function GlobalMarketDialog:updateTotalValue()
         shipText = g_i18n:formatMoney(0, 0, true, true)
         shipColor = COLOR_MUTED
     end
-    self:setReceiptRow(self.receiptRow4Label, self.receiptRow4Value,
+    self:setPaperRow(self.receiptRow4Label, self.receiptRow4Value,
         g_i18n:getText("ui_gm_receipt_shipping"), shipText, shipColor)
 
     -- Rows 5 & 6: Total price/proceeds and live post-transaction balance (or shortfall warning)
@@ -676,7 +738,7 @@ function GlobalMarketDialog:updateTotalValue()
     local hasEnoughMoney = (self.actionType ~= "BUY") or (finalTotal <= 0) or (currentMoney >= finalTotal)
 
     if not hasEnoughMoney then
-        self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
+        self:setPaperRow(self.receiptTotalLabel, self.receiptTotalValue,
             totalLabel, g_i18n:formatMoney(finalTotal, 0, true, true), COLOR_RED, COLOR_WHITE)
 
         local shortfall = finalTotal - currentMoney
@@ -692,7 +754,7 @@ function GlobalMarketDialog:updateTotalValue()
         if self.actionType == "SELL" and finalTotal > 0 then
             totalText = "+ " .. totalText
         end
-        self:setReceiptRow(self.receiptTotalLabel, self.receiptTotalValue,
+        self:setPaperRow(self.receiptTotalLabel, self.receiptTotalValue,
             totalLabel, totalText, (self.currentAmount > 0) and COLOR_GREEN or COLOR_MUTED, COLOR_WHITE)
 
         local balanceAfter = (self.actionType == "BUY")

@@ -95,6 +95,15 @@
         <e k="ui_gm_cat_mode_flat"                                 v="Categorías: No (A-Z)" />
         <e k="ui_gm_search_label"                                  v="BUSCAR:" />
         <e k="ui_gm_receipt_balanceAfter"                          v="Saldo posterior" />
+        <e k="ui_gm_doc_invoice"                                   v="FACTURA" />
+        <e k="ui_gm_doc_creditNote"                                v="NOTA DE ABONO" />
+        <e k="ui_gm_doc_number"                                    v="N.º %s" />
+        <e k="ui_gm_doc_from"                                      v="De: %s" />
+        <e k="ui_gm_doc_to"                                        v="Para: %s" />
+        <e k="ui_gm_doc_date"                                      v="Fecha: %s" />
+        <e k="ui_gm_doc_year"                                      v="Año %d" />
+        <e k="ui_gm_doc_deliveryPlace"                             v="Entrega en: %s" />
+        <e k="ui_gm_doc_pickupPlace"                               v="Recogida en: %s" />
         <e k="ui_gm_receipt_freeTerminal"                          v="%s (Centro logístico GM)" />
         <e k="ui_gm_receipt_goodsValue"                            v="Valor de la mercancía" />
         <e k="ui_gm_receipt_quantity"                              v="Cantidad comercial" />

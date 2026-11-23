@@ -95,6 +95,15 @@
         <e k="ui_gm_cat_mode_flat"                                 v="Kategorien: Aus (A-Z)" />
         <e k="ui_gm_search_label"                                  v="SUCHE:" />
         <e k="ui_gm_receipt_balanceAfter"                          v="Kontostand danach" />
+        <e k="ui_gm_doc_invoice"                                   v="RECHNUNG" />
+        <e k="ui_gm_doc_creditNote"                                v="GUTSCHRIFT" />
+        <e k="ui_gm_doc_number"                                    v="Nr. %s" />
+        <e k="ui_gm_doc_from"                                      v="Von: %s" />
+        <e k="ui_gm_doc_to"                                        v="An: %s" />
+        <e k="ui_gm_doc_date"                                      v="Datum: %s" />
+        <e k="ui_gm_doc_year"                                      v="Jahr %d" />
+        <e k="ui_gm_doc_deliveryPlace"                             v="Lieferort: %s" />
+        <e k="ui_gm_doc_pickupPlace"                               v="Abholort: %s" />
         <e k="ui_gm_receipt_freeTerminal"                          v="%s (GM-Logistikzentrum)" />
         <e k="ui_gm_receipt_goodsValue"                            v="Warenwert" />
         <e k="ui_gm_receipt_quantity"                              v="Handelsmenge" />
