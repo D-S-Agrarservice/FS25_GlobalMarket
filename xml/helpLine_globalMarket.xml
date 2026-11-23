@@ -66,6 +66,10 @@
                 <title text="$l10n_gm_help_p6_npc_title"/>
                 <text text="$l10n_gm_help_p6_npc_text"/>
             </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p6_online_title"/>
+                <text text="$l10n_gm_help_p6_online_text"/>
+            </paragraph>
         </page>
         <page title="$l10n_gm_help_p7_title" iconSliceId="animals_general">
             <paragraph>

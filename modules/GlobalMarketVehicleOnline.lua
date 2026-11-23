@@ -38,9 +38,9 @@ function GlobalMarket:getAreOnlineVehiclesAvailable()
     if g_server == nil then
         return self.onlineVehiclesAvailableSynced == true
     end
+    -- The debug mock (gmTestOnlineVehicles) works without client and online market
     return GlobalMarket.VEHICLE_ONLINE_ENABLED == true
-        and self:getIsMarketOnline()
-        and (self.onlineVehiclesSupported == true or self.debugForceOnlineVehicles == true)
+        and (self.debugForceOnlineVehicles == true or (self:getIsMarketOnline() and self.onlineVehiclesSupported == true))
 end
 
 ---Client: applies the availability flag received with the vehicle market state
@@ -163,6 +163,11 @@ function GlobalMarket:dispatchVehicleAction(payload)
     end
     payload.actionId = payload.actionId or self:nextOnlineContractActionId()
     payload.serverId = payload.serverId or self:ensureServerInstanceId()
+    -- Debug mock backend (gmTestOnlineVehicles) answers instead of the companion client
+    if self.vehicleMock ~= nil then
+        table.insert(self.vehicleMock.outbox, payload)
+        return true
+    end
     if self.isDataHost then
         return self:exportVehicleAction(payload)
     elseif type(self.dataHostConnection) == "table" and VehicleOnlineBridgeEvent ~= nil then
@@ -372,6 +377,9 @@ function GlobalMarket:updateVehicleOnline(dt)
     self:updateOnlineVehicleTimers(dt)
     if g_server == nil then
         return
+    end
+    if self.updateVehicleOnlineMock ~= nil then
+        self:updateVehicleOnlineMock(dt)
     end
     if self.updateOnlineVehicleBuys ~= nil then
         self:updateOnlineVehicleBuys()

@@ -73,7 +73,8 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **Ansehen & Kaufen im Original-Shop:** Angebote anderer Höfe öffnen sich im Shop-Bildschirm des Spiels mit exakter Konfiguration und Lackierung. Optionen umschalten ist nur Vorschau — verkauft wird immer wie angeboten. Mod-Fahrzeuge erscheinen nur dort, wo dieselbe Mod-Datei installiert ist.
 * **NPC-Händler:** Händler kaufen eure Angebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Gebrauchtfahrzeuge an (Admin-Einstellung: Aus / Wenig / Normal).
 * **Meldungen & Finanzen:** HUD-Meldungen bei neuen Angeboten, Verkäufen und Rückgaben (pro Spieler abschaltbar); Käufe und Verkäufe landen in den Fahrzeug-Kategorien der Finanzübersicht des Spiels.
-* **Multiplayer:** Gehandelt wird zwischen allen Höfen auf deinem Server. Serverübergreifende Angebote über den GlobalMarketClient sind geplant.
+* **Serverübergreifende Angebote (Online):** Mit dem GlobalMarketClient lassen sich Fahrzeuge für 24–168 Stunden Echtzeit auf einem gemeinsamen Online-Markt anbieten (Admin-Einstellung). Das Fahrzeug liegt in Treuhand, bis das Backend entschieden hat, und kommt nie ohne dessen Antwort zurück, kann also nie doppelt existieren. Käufer sehen Online-Angebote nur, wenn es das Fahrzeug auf ihrem Server exakt gibt, und zahlen erst, wenn es bei ihrem Händler steht (bei vollem Abholplatz wird nachgeliefert).
+* **Multiplayer:** Gehandelt wird zwischen allen Höfen auf deinem Server, online auch serverübergreifend.
 
 #### Tiermarkt
 * **Genau diese Tiere verkaufen:** Eine Gruppe aus dem eigenen Stall oder vom eigenen Viehanhänger beim Viehhändler lässt sich für 80–200 % ihres Händlerwerts und 1–3 Monate anbieten (bis zu 10 Angebote pro Hof). Alter, Gesundheit und Trächtigkeit reisen mit (Pferde behalten Name und Fitness); im Angebot altern die Tiere nicht.
@@ -260,7 +261,7 @@ Placeable-Modder können eigene Silos oder Objektlager zu offiziellen **GlobalMa
 FS25_GlobalMarket/
 ├── GlobalMarket.lua          # Schlanker Lebenszyklus-Orchestrator, InGameMenu-Einbindung & Tastenbelegung
 ├── modDesc.xml               # LS25-Mod-Beschreibung (descVersion 116)
-├── events/                   # 19 eigene Multiplayer-Events für Sync, Transaktionen, Verträge, Fahrzeug- & Tiermarkt
+├── events/                   # 20 eigene Multiplayer-Events für Sync, Transaktionen, Verträge, Fahrzeug- & Tiermarkt
 ├── gui/                      # Markt-UI, Unterreiter Verträge & Marktplatz, vier Dialoge (Controller, XML-Layouts & Profile)
 │   ├── GlobalMarketUI.lua / .xml             # InGameMenu-Hauptseite: Lager- & Marktlisten, Suche, Kategorien
 │   ├── GlobalMarketCategories.lua            # Kategorie-Ansichten, FillType-Lookup-Tabellen & Einordnung
@@ -268,6 +269,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketContractsUIActions.lua    # Aktionen im Vertrags-Unterreiter: Filter, Erstellen, Abbrechen, Annehmen & Markierung
 │   ├── GlobalMarketDialog.lua / .xml         # Kauf-/Verkaufsdialog (Lager, Gebinde, Kostenvorschau)
 │   ├── GlobalMarketContractDialog.lua / .xml # Mehrzweck-Dialog für Verträge, Angebote & Abholfach-Entnahmen
+│   ├── GlobalMarketContractDialogScope.lua   # Bereich-Zeile (lokal / online) beim Anlegen eines Direktangebots
 │   ├── GlobalMarketVehiclesUI.lua            # Unterreiter-Controller: eigene Fahrzeuge & Angebote, Gebrauchtmarkt
 │   ├── GlobalMarketVehicleDialog.lua / .xml  # Dialog zum Anbieten eines Fahrzeugs (Preis, Laufzeit)
 │   ├── GlobalMarketVehicleShopBridge.lua     # Angebote im Shop-Bildschirm des Spiels ansehen & kaufen
@@ -311,6 +313,10 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketVehicleListings.lua       # Fahrzeug-Abbilder, Angebotsgruppen, Zulässigkeit & Händlerwert
 │   ├── GlobalMarketVehicleMarket.lua         # Fahrzeugangebote, Rückgabe an Verkäufer & Spielstand
 │   ├── GlobalMarketVehicleNpc.lua            # NPC-Händler: kaufen und bieten Gebrauchtfahrzeuge an
+│   ├── GlobalMarketVehicleOnline.lua         # Online-Fahrzeugmarkt: Freischaltung, Treuhand, vehicleAction-Export
+│   ├── GlobalMarketVehicleOnlineMock.lua     # Debug-Mock-Backend für den Online-Fahrzeugmarkt
+│   ├── GlobalMarketVehicleOnlineSync.lua     # Eingehende vehicleData: Ergebnisse, Abgleich, fremde Angebote
+│   ├── GlobalMarketVehicleOnlineTrade.lua    # Online-Käufe, Abrechnungen & Nachlieferung
 │   └── GlobalMarketVehicleTrade.lua          # Fahrzeugkäufe, stündlicher Ablauf, Sync & HUD-Meldungen
 ├── translations/             # Übersetzungen (DE, EN, ES, FR, PL)
 └── xml/                      # Konfiguration der Ingame-Hilfe (helpLine_globalMarket.xml)
