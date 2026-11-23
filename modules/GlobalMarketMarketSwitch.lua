@@ -58,7 +58,8 @@ function GlobalMarket:readHeartbeatMarketProfiles(xmlFile)
                 table.insert(profiles, {
                     id = id,
                     label = GlobalMarketBranding.sanitizeMarketName(xmlFile:getString(key .. "#label")),
-                    marketName = GlobalMarketBranding.sanitizeMarketName(xmlFile:getString(key .. "#marketName"))
+                    marketName = GlobalMarketBranding.sanitizeMarketName(xmlFile:getString(key .. "#marketName")),
+                    brandingTier = xmlFile:getInt(key .. "#brandingTier")
                 })
             end
             return true
@@ -168,7 +169,8 @@ end
 local function getProfileText(profile)
     local name = profile.label or profile.marketName
         or string.format(g_i18n:getText("ui_gm_marketSwitch_profileFallback"), profile.id)
-    if profile.marketName == nil then
+    -- No branding tier yet = the client never completed a handshake with this profile
+    if profile.brandingTier == nil and profile.marketName == nil then
         name = string.format(g_i18n:getText("ui_gm_marketSwitch_notConnected"), name)
     end
     return name
