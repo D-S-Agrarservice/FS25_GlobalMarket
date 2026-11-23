@@ -20,6 +20,10 @@
                 <title text="$l10n_gm_help_p1_hud_title"/>
                 <text text="$l10n_gm_help_p1_hud_text"/>
             </paragraph>
+            <paragraph>
+                <title text="$l10n_gm_help_p1_switch_title"/>
+                <text text="$l10n_gm_help_p1_switch_text"/>
+            </paragraph>
         </page>
         <page title="$l10n_gm_help_p2_title" iconSliceId="basicEconomy_makingMoney">
             <paragraph>
