@@ -19,6 +19,9 @@ end
 function SyncVehicleMarketEvent.new(listings)
     local self = SyncVehicleMarketEvent.emptyNew()
     self.listings = listings or {}
+    -- Online vehicle market availability (#36), evaluated on the server
+    local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    self.onlineAvailable = gm ~= nil and gm.getAreOnlineVehiclesAvailable ~= nil and gm:getAreOnlineVehiclesAvailable()
     return self
 end
 
@@ -37,6 +40,7 @@ local function readOptString(streamId)
 end
 
 function SyncVehicleMarketEvent:writeStream(streamId, connection)
+    streamWriteBool(streamId, self.onlineAvailable == true)
     local listings = self.listings
     streamWriteUInt16(streamId, #listings)
     for _, listing in ipairs(listings) do
@@ -81,6 +85,7 @@ function SyncVehicleMarketEvent:writeStream(streamId, connection)
 end
 
 function SyncVehicleMarketEvent:readStream(streamId, connection)
+    self.onlineAvailable = streamReadBool(streamId)
     self.listings = {}
     local numListings = streamReadUInt16(streamId)
     for _ = 1, numListings do
@@ -132,6 +137,9 @@ function SyncVehicleMarketEvent:run(connection)
         return
     end
     local gm = g_currentMission ~= nil and g_currentMission.globalMarket or nil
+    if gm ~= nil and gm.applyOnlineVehiclesAvailable ~= nil then
+        gm:applyOnlineVehiclesAvailable(self.onlineAvailable)
+    end
     if gm ~= nil and gm.applyVehicleMarketState ~= nil then
         gm:applyVehicleMarketState(self.listings)
     end

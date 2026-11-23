@@ -379,10 +379,10 @@ function GlobalMarket:runSyncUpdateLogic(dt)
 
             if g_currentMission:getIsServer() then
                 -- SP / MP-Host / Dedicated Server running local EXE directly
-                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket, self.localExeContractsSupported)
+                self:handleClientExeStatus("LOCAL_HOST", self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket, self.localExeContractsSupported, self.localExeVehiclesSupported)
             elseif ExeStatusEvent ~= nil and g_client ~= nil then
                 -- Remote MP-Client notifies the authoritative server
-                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket, self.localExeContractsSupported))
+                g_client:getServerConnection():sendEvent(ExeStatusEvent.new(self.isExeRunningLocal, self.hasBackendConnection, self.localExeMarketName, self.localExeIsPrivateMarket, self.localExeContractsSupported, self.localExeVehiclesSupported))
             end
         end
     end
@@ -628,58 +628,6 @@ function GlobalMarket:assignNextDataHost()
         if g_server ~= nil and SynchOfflineMarketEvent ~= nil then
             g_server:broadcastEvent(SynchOfflineMarketEvent.new())
         end
-    end
-end
-
-function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection, marketName, isPrivateMarket, contractsSupported)
-    if not g_currentMission:getIsServer() or connection == nil then return end
-
-    self.clientExeStates = self.clientExeStates or {}
-    local prevState = self.clientExeStates[connection]
-    local state = {
-        isExeRunning = (isExeRunning == true),
-        hasBackendConnection = (hasBackendConnection ~= false),
-        marketName = marketName,
-        isPrivateMarket = (isPrivateMarket == true),
-        contractsSupported = (contractsSupported == true),
-        readySeq = (prevState ~= nil) and prevState.readySeq or nil
-    }
-    local eligible = (self.isClientEligibleForSessionMarket == nil) or self:isClientEligibleForSessionMarket(state)
-    if eligible then
-        if state.readySeq == nil then
-            self.nextExeReadySeq = (self.nextExeReadySeq or 0) + 1
-            state.readySeq = self.nextExeReadySeq
-        end
-    else
-        state.readySeq = nil
-    end
-    self.clientExeStates[connection] = state
-
-    if eligible then
-        if self.dataHostConnection == nil then
-            self:assignNextDataHost()
-        elseif self.dataHostConnection == connection and self.updateActiveDataHostBranding ~= nil then
-            self:updateActiveDataHostBranding(connection)
-        end
-    elseif self.dataHostConnection == connection then
-        self:assignNextDataHost()
-    end
-end
-
--- Safety hook called by GlobalMarket.lua when a client disconnects from the server
-function GlobalMarket:onClientDisconnected(connection)
-    if not g_currentMission:getIsServer() or connection == nil then return end
-
-    if self.clientExeStates ~= nil then
-        self.clientExeStates[connection] = nil
-    end
-
-    if self.dataHostConnection == connection then
-        if self.debugManager ~= nil then
-            self.debugManager:info("Sync: Active Data-Host disconnected. Reassigning token or falling back to Offline mode...")
-        end
-        self.dataHostConnection = nil
-        self:assignNextDataHost()
     end
 end
 

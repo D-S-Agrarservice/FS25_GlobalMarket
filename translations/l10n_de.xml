@@ -140,6 +140,9 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Aus" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Wenig" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_vehicleOnline"                        v="Online-Fahrzeugmarkt" />
+        <e k="ui_gm_settings_vehicleOnline_desc"                   v="Erlaubt, Gebrauchtfahrzeuge über den GlobalMarketClient serverübergreifend anzubieten und zu kaufen. Nur verfügbar, wenn der Client des aktiven Data-Hosts das unterstützt. Aus: Der Fahrzeugmarkt bleibt auf diesen Server beschränkt." />
+        <e k="ui_gm_settings_vehicleOnline_on"                     v="An" />
         <e k="ui_gm_settings_animalNpc"                            v="NPC-Tierhandel" />
         <e k="ui_gm_settings_animalNpc_desc"                       v="Steuert die Viehhändler im GM-Tiermarkt. Wenig/Normal: NPC-Händler kaufen eure Tierangebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Tiere an, auch trächtige und Altersstufen, die der Viehhändler nicht verkauft. Aus: Reiner Handel zwischen Spielern. Außerdem steuert sie die Großnachfragen für Masttiere (Normal etwa monatlich, Wenig seltener)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Meldung bei neuen Fahrzeugangeboten" />

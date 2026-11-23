@@ -140,6 +140,9 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Désactivé" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Faible" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_vehicleOnline"                        v="Marché de véhicules en ligne" />
+        <e k="ui_gm_settings_vehicleOnline_desc"                   v="Permet de proposer et d'acheter des véhicules d'occasion entre serveurs via le GlobalMarketClient. Disponible uniquement si le client du Data-Host actif le prend en charge. Désactivé : le marché des véhicules reste limité à ce serveur." />
+        <e k="ui_gm_settings_vehicleOnline_on"                     v="Activé" />
         <e k="ui_gm_settings_animalNpc"                            v="Commerce d'animaux PNJ" />
         <e k="ui_gm_settings_animalNpc_desc"                       v="Contrôle les marchands du marché aux animaux GM. Faible/Normal : les marchands PNJ achètent vos annonces d'animaux (plus c'est bon marché, plus c'est rapide, moins 5 % de commission) et proposent leurs propres animaux, y compris gestants et d'âges que le marchand de bestiaux ne vend pas. Désactivé : échanges entre joueurs uniquement. Il contrôle aussi les fortes demandes en animaux de boucherie (Normal environ une fois par mois, Faible plus rarement)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Notifier les nouvelles annonces de véhicules" />

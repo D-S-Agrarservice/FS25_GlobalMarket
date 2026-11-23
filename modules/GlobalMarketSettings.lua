@@ -30,6 +30,8 @@ GlobalMarketSettings.OPTIONS = {
     NPC_OFFERS_TARGET = {0, 2, 3, 5, 8, 12},
     -- Used vehicle market (#16): NPC vehicle trading 0=Off, 1=Low, 2=Normal
     VEHICLE_NPC_MODE = {0, 1, 2},
+    -- Cross-server vehicle market (#36): 1=Off, 2=On
+    VEHICLE_ONLINE_MODE = {false, true},
     -- Livestock market (#15): NPC animal trading 0=Off, 1=Low, 2=Normal
     ANIMAL_NPC_MODE = {0, 1, 2},
     -- Log severity levels ordered from Info to Trace
@@ -53,6 +55,7 @@ GlobalMarketSettings.current = {
     npcContractsTargetIndex = 3,  -- Default: 5 open NPC supply contracts
     npcOffersTargetIndex = 3,     -- Default: 3 open NPC direct offers
     vehicleNpcModeIndex = 3,      -- Default: Normal NPC vehicle trading
+    vehicleOnlineModeIndex = 2,   -- Default: On (online vehicle market when the client supports it)
     animalNpcModeIndex = 3,       -- Default: Normal NPC animal trading
     showVehicleNotices = true,    -- Default: On (personal HUD notice for new vehicle listings)
     isDebugActive = false,   -- Default: Off (Boolean for BinaryOption)
@@ -186,6 +189,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.npcContractsTargetIndex = 3
         self.current.npcOffersTargetIndex = 3
         self.current.vehicleNpcModeIndex = 3
+        self.current.vehicleOnlineModeIndex = 2
         self.current.animalNpcModeIndex = 3
         self.current.showVehicleNotices = true
         self.current.isDetailedFinance = false
@@ -208,6 +212,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         GlobalMarket.ONLINE_CONTRACTS_MODE = self.OPTIONS.ONLINE_CONTRACTS_MODE[self.current.onlineContractsModeIndex] or 1
         GlobalMarket.VEHICLE_NPC_LEVEL = self.OPTIONS.VEHICLE_NPC_MODE[self.current.vehicleNpcModeIndex] or 2
+        GlobalMarket.VEHICLE_ONLINE_ENABLED = self.OPTIONS.VEHICLE_ONLINE_MODE[self.current.vehicleOnlineModeIndex] ~= false
         GlobalMarket.ANIMAL_NPC_LEVEL = self.OPTIONS.ANIMAL_NPC_MODE[self.current.animalNpcModeIndex] or 2
         self:applyContractLimits()
         if GlobalMarketFinance ~= nil then
@@ -232,6 +237,7 @@ function GlobalMarketSettings:loadFromXML()
         self.current.npcContractsTargetIndex = xmlFile:getInt(prefix .. ".contractLimits#npcContractsTargetIndex", 3)
         self.current.npcOffersTargetIndex = xmlFile:getInt(prefix .. ".contractLimits#npcOffersTargetIndex", 3)
         self.current.vehicleNpcModeIndex = xmlFile:getInt(prefix .. ".vehicleMarket#npcModeIndex", 3)
+        self.current.vehicleOnlineModeIndex = xmlFile:getInt(prefix .. ".vehicleMarket#onlineModeIndex", 2)
         self.current.animalNpcModeIndex = xmlFile:getInt(prefix .. ".animalMarket#npcModeIndex", 3)
         self.current.showVehicleNotices = xmlFile:getBool(prefix .. ".vehicleMarket#showNotices", true)
 
@@ -261,6 +267,7 @@ function GlobalMarketSettings:loadFromXML()
         GlobalMarket.NPC_ACTIVITY_MODE = self.OPTIONS.NPC_ACTIVITY_MODE[self.current.npcActivityModeIndex] or 1
         GlobalMarket.ONLINE_CONTRACTS_MODE = self.OPTIONS.ONLINE_CONTRACTS_MODE[self.current.onlineContractsModeIndex] or 1
         GlobalMarket.VEHICLE_NPC_LEVEL = self.OPTIONS.VEHICLE_NPC_MODE[self.current.vehicleNpcModeIndex] or 2
+        GlobalMarket.VEHICLE_ONLINE_ENABLED = self.OPTIONS.VEHICLE_ONLINE_MODE[self.current.vehicleOnlineModeIndex] ~= false
         GlobalMarket.ANIMAL_NPC_LEVEL = self.OPTIONS.ANIMAL_NPC_MODE[self.current.animalNpcModeIndex] or 2
         self:applyContractLimits()
 
@@ -303,6 +310,7 @@ function GlobalMarketSettings:saveToXML()
         xmlFile:setInt(prefix .. ".contractLimits#npcContractsTargetIndex", self.current.npcContractsTargetIndex or 3)
         xmlFile:setInt(prefix .. ".contractLimits#npcOffersTargetIndex", self.current.npcOffersTargetIndex or 3)
         xmlFile:setInt(prefix .. ".vehicleMarket#npcModeIndex", self.current.vehicleNpcModeIndex or 3)
+        xmlFile:setInt(prefix .. ".vehicleMarket#onlineModeIndex", self.current.vehicleOnlineModeIndex or 2)
         xmlFile:setInt(prefix .. ".animalMarket#npcModeIndex", self.current.animalNpcModeIndex or 3)
         xmlFile:setBool(prefix .. ".vehicleMarket#showNotices", self.current.showVehicleNotices ~= false)
 
@@ -515,6 +523,11 @@ function GlobalMarketSettings.onFrameOpen(settingsFrame)
             { g_i18n:getText("ui_gm_settings_vehicleNpc_off"), g_i18n:getText("ui_gm_settings_vehicleNpc_low"),
                 g_i18n:getText("ui_gm_settings_vehicleNpc_normal") }, "onVehicleNpcModeChanged"
         )
+        -- Cross-server vehicle market (#36)
+        GlobalMarketSettings:addMultiOption(
+            settingsFrame, "gmSettingsVehicleOnlineMode", "ui_gm_settings_vehicleOnline", "ui_gm_settings_vehicleOnline_desc",
+            { g_i18n:getText("ui_gm_settings_vehicleNpc_off"), g_i18n:getText("ui_gm_settings_vehicleOnline_on") }, "onVehicleOnlineModeChanged"
+        )
         -- Livestock market (#15)
         GlobalMarketSettings:addMultiOption(
             settingsFrame, "gmSettingsAnimalNpcMode", "ui_gm_settings_animalNpc", "ui_gm_settings_animalNpc_desc",
@@ -613,6 +626,7 @@ function GlobalMarketSettings.refreshMenuState()
         {"gmSettingsNpcContractsTarget", "npcContractsTargetIndex"},
         {"gmSettingsNpcOffersTarget", "npcOffersTargetIndex"},
         {"gmSettingsVehicleNpcMode", "vehicleNpcModeIndex"},
+        {"gmSettingsVehicleOnlineMode", "vehicleOnlineModeIndex"},
         {"gmSettingsAnimalNpcMode", "animalNpcModeIndex"}
     }
     for _, entry in ipairs(limitControls) do
@@ -710,7 +724,7 @@ function GlobalMarketSettings:broadcastChanges()
             c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
             c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex,
             c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex, c.vehicleNpcModeIndex,
-            c.animalNpcModeIndex
+            c.animalNpcModeIndex, c.vehicleOnlineModeIndex
         ))
     else
         -- Client admin sends the changes to the dedicated server
@@ -720,7 +734,7 @@ function GlobalMarketSettings:broadcastChanges()
             c.showStatusIcon, c.dealerMarkupIndex, c.capacityIndex, c.storageDecayIndex,
             c.greatDemandModeIndex, c.npcActivityModeIndex, c.onlineContractsModeIndex,
             c.maxFarmContractsIndex, c.npcContractsTargetIndex, c.npcOffersTargetIndex, c.vehicleNpcModeIndex,
-            c.animalNpcModeIndex
+            c.animalNpcModeIndex, c.vehicleOnlineModeIndex
         ))
     end
 end
@@ -877,6 +891,16 @@ function GlobalMarketSettings:onVehicleNpcModeChanged(state)
     GlobalMarket.VEHICLE_NPC_LEVEL = self.OPTIONS.VEHICLE_NPC_MODE[state] or 2
     if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onVehicleNpcModeChanged ~= nil then
         g_currentMission.globalMarket:onVehicleNpcModeChanged(GlobalMarket.VEHICLE_NPC_LEVEL)
+    end
+    self:broadcastChanges()
+end
+
+-- Cross-server vehicle market (#36): admin switch (synced)
+function GlobalMarketSettings:onVehicleOnlineModeChanged(state)
+    self.current.vehicleOnlineModeIndex = state
+    GlobalMarket.VEHICLE_ONLINE_ENABLED = self.OPTIONS.VEHICLE_ONLINE_MODE[state] ~= false
+    if g_currentMission ~= nil and g_currentMission.globalMarket ~= nil and g_currentMission.globalMarket.onVehicleOnlineModeChanged ~= nil then
+        g_currentMission.globalMarket:onVehicleOnlineModeChanged(GlobalMarket.VEHICLE_ONLINE_ENABLED)
     end
     self:broadcastChanges()
 end

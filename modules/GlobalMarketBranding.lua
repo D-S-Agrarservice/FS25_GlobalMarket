@@ -1,6 +1,7 @@
 -- =========================================================================================
 -- FS25_GlobalMarket - GlobalMarketBranding.lua
--- 3-tier online market branding (synced private market title & local modSettings logo).
+-- 3-tier online market branding (synced private market title & local modSettings logo),
+-- companion client status per connection and Data-Host selection.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
@@ -76,6 +77,8 @@ function GlobalMarket:initBrandingState()
     self.localHasCustomLogo = false
     self.localExeContractsSupported = false
     self.onlineContractsSupported = false
+    self.localExeVehiclesSupported = false
+    self.onlineVehiclesSupported = false
     self.brandingLogoReloadPending = false
     self.debugBrandingOverrideActive = false
     self.debugBrandingMarketName = nil
@@ -128,10 +131,13 @@ function GlobalMarket:readHeartbeatBranding(xmlFile)
 
     local contractsSup = xmlFile:getBool("globalMarketOnline#contractsSupported",
         xmlFile:getBool("globalMarketOnline.contractsSupported", false)) == true
+    -- Stage 3 cross-server vehicle market (#36, spec 3.6)
+    local vehiclesSup = xmlFile:getBool("globalMarketOnline#vehiclesSupported", false) == true
 
     local changed = (cleanName ~= self.localExeMarketName)
         or (isPrivate ~= self.localExeIsPrivateMarket)
         or (contractsSup ~= self.localExeContractsSupported)
+        or (vehiclesSup ~= self.localExeVehiclesSupported)
         or logoChanged
 
     self.localExeMarketName = cleanName
@@ -139,6 +145,7 @@ function GlobalMarket:readHeartbeatBranding(xmlFile)
     self.localCustomLogoFile = cleanLogo
     self.localHasCustomLogo = (hasLogoFlag == true)
     self.localExeContractsSupported = contractsSup
+    self.localExeVehiclesSupported = vehiclesSup
 
     if logoChanged then
         self.brandingLogoReloadPending = true
@@ -160,12 +167,14 @@ function GlobalMarket:clearLocalBranding()
         or (self.localCustomLogoFile ~= nil)
         or (self.localHasCustomLogo == true)
         or (self.localExeContractsSupported == true)
+        or (self.localExeVehiclesSupported == true)
 
     self.localExeMarketName = nil
     self.localExeIsPrivateMarket = false
     self.localCustomLogoFile = nil
     self.localHasCustomLogo = false
     self.localExeContractsSupported = false
+    self.localExeVehiclesSupported = false
     if self.clearMarketProfiles ~= nil then
         self:clearMarketProfiles()
     end
@@ -297,6 +306,59 @@ function GlobalMarket:selectNextDataHostConnection()
     return pickBestCandidate(false)
 end
 
+function GlobalMarket:handleClientExeStatus(connection, isExeRunning, hasBackendConnection, marketName, isPrivateMarket, contractsSupported, vehiclesSupported)
+    if not g_currentMission:getIsServer() or connection == nil then return end
+
+    self.clientExeStates = self.clientExeStates or {}
+    local prevState = self.clientExeStates[connection]
+    local state = {
+        isExeRunning = (isExeRunning == true),
+        hasBackendConnection = (hasBackendConnection ~= false),
+        marketName = marketName,
+        isPrivateMarket = (isPrivateMarket == true),
+        contractsSupported = (contractsSupported == true),
+        vehiclesSupported = (vehiclesSupported == true),
+        readySeq = (prevState ~= nil) and prevState.readySeq or nil
+    }
+    local eligible = (self.isClientEligibleForSessionMarket == nil) or self:isClientEligibleForSessionMarket(state)
+    if eligible then
+        if state.readySeq == nil then
+            self.nextExeReadySeq = (self.nextExeReadySeq or 0) + 1
+            state.readySeq = self.nextExeReadySeq
+        end
+    else
+        state.readySeq = nil
+    end
+    self.clientExeStates[connection] = state
+
+    if eligible then
+        if self.dataHostConnection == nil then
+            self:assignNextDataHost()
+        elseif self.dataHostConnection == connection and self.updateActiveDataHostBranding ~= nil then
+            self:updateActiveDataHostBranding(connection)
+        end
+    elseif self.dataHostConnection == connection then
+        self:assignNextDataHost()
+    end
+end
+
+-- Safety hook called by GlobalMarket.lua when a client disconnects from the server
+function GlobalMarket:onClientDisconnected(connection)
+    if not g_currentMission:getIsServer() or connection == nil then return end
+
+    if self.clientExeStates ~= nil then
+        self.clientExeStates[connection] = nil
+    end
+
+    if self.dataHostConnection == connection then
+        if self.debugManager ~= nil then
+            self.debugManager:info("Sync: Active Data-Host disconnected. Reassigning token or falling back to Offline mode...")
+        end
+        self.dataHostConnection = nil
+        self:assignNextDataHost()
+    end
+end
+
 ---Dispatches the server map whitelist to the specified Data-Host connection
 ---@param connection any Active Data-Host connection key ("LOCAL_HOST" or MP Connection)
 function GlobalMarket:dispatchDataHostWhitelist(connection)
@@ -316,6 +378,9 @@ function GlobalMarket:applyDataHostBranding(hostState)
     self.onlineMarketName = privName
     self.isPrivateOnlineMarket = (privName ~= nil)
     self.onlineContractsSupported = (hostState ~= nil and hostState.contractsSupported == true)
+    if self.setOnlineVehiclesSupported ~= nil then
+        self:setOnlineVehiclesSupported(hostState ~= nil and hostState.vehiclesSupported == true)
+    end
 end
 
 ---Applies host branding on failover or promotion and clears stale items if market identity changed
@@ -351,6 +416,9 @@ function GlobalMarket:updateActiveDataHostBranding(connection)
     local newContractsSup = (hostState.contractsSupported == true)
     local contractsSupChanged = (newContractsSup ~= (self.onlineContractsSupported == true))
     self.onlineContractsSupported = newContractsSup
+    if self.setOnlineVehiclesSupported ~= nil then
+        self:setOnlineVehiclesSupported(hostState.vehiclesSupported == true)
+    end
 
     local newPrivName = GlobalMarketBranding.getStatePrivateMarketName(hostState)
     local newPriv = (newPrivName ~= nil)
@@ -448,6 +516,9 @@ function GlobalMarket:clearOnlineMarketBranding()
     self.onlineMarketName = nil
     self.isPrivateOnlineMarket = false
     self.onlineContractsSupported = false
+    if self.setOnlineVehiclesSupported ~= nil then
+        self:setOnlineVehiclesSupported(false)
+    end
 end
 
 ---Resolves the validated full local filesystem path for the custom market logo, or nil if unavailable

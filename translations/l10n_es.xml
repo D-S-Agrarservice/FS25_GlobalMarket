@@ -140,6 +140,9 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Desactivado" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Bajo" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_vehicleOnline"                        v="Mercado de vehículos online" />
+        <e k="ui_gm_settings_vehicleOnline_desc"                   v="Permite ofrecer y comprar vehículos usados entre servidores mediante el GlobalMarketClient. Solo disponible si el cliente del Data-Host activo lo admite. Desactivado: el mercado de vehículos se limita a este servidor." />
+        <e k="ui_gm_settings_vehicleOnline_on"                     v="Activado" />
         <e k="ui_gm_settings_animalNpc"                            v="Comercio de animales NPC" />
         <e k="ui_gm_settings_animalNpc_desc"                       v="Controla a los tratantes del mercado de animales GM. Bajo/Normal: los tratantes NPC compran tus ofertas de animales (cuanto más baratas, antes; menos un 5 % de comisión) y ofrecen animales propios, también preñados y de edades que el tratante no vende. Desactivado: solo comercio entre jugadores. También controla las grandes demandas de animales de carne (Normal aproximadamente cada mes, Bajo con menos frecuencia)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Avisar de nuevas ofertas de vehículos" />

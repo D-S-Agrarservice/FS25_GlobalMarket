@@ -140,6 +140,9 @@
         <e k="ui_gm_settings_vehicleNpc_off"                       v="Off" />
         <e k="ui_gm_settings_vehicleNpc_low"                       v="Low" />
         <e k="ui_gm_settings_vehicleNpc_normal"                    v="Normal" />
+        <e k="ui_gm_settings_vehicleOnline"                        v="Online Vehicle Market" />
+        <e k="ui_gm_settings_vehicleOnline_desc"                   v="Allows listing and buying used vehicles across servers via the GlobalMarketClient. Only available when the active Data-Host's client supports it. Off: the vehicle market stays limited to this server." />
+        <e k="ui_gm_settings_vehicleOnline_on"                     v="On" />
         <e k="ui_gm_settings_animalNpc"                            v="NPC Animal Trading" />
         <e k="ui_gm_settings_animalNpc_desc"                       v="Controls the animal dealers on the GM animal market. Low/Normal: NPC dealers buy your animal listings (the cheaper, the faster, minus 5 % commission) and offer animals of their own, incl. pregnant animals and age stages the animal dealer does not sell. Off: Player-to-player trading only. It also controls the great demands for meat animals (Normal about monthly, Low less often)." />
         <e k="ui_gm_settings_vehicleNotices"                       v="Notify About New Vehicle Listings" />
