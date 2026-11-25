@@ -10,7 +10,7 @@
 GlobalMarketContractsOnlineLate = {}
 GlobalMarketContractsOnlineLate.MAX_ORPHANED_ACTIONS = 128
 GlobalMarketContractsOnlineLate.MAX_PENDING_ACTIONS = 64
--- An unanswered cancel is repeated with the same actionId (idempotent at the backend) after this time
+-- An unanswered cancel is repeated after this time
 GlobalMarketContractsOnlineLate.CANCEL_RETRY_MS = 120000
 
 -- Actions that must not be forgotten before the backend answered (money or goods depend on it)
@@ -170,13 +170,18 @@ function GlobalMarket:retryUnansweredCancels()
             if entry.isOnline and entry.status == "PENDING_CANCEL" and (entry.pendingActionId or "") ~= ""
                 and now - (entry.pendingSinceMs or 0) >= GlobalMarketContractsOnlineLate.CANCEL_RETRY_MS then
                 entry.pendingSinceMs = now
-                self:dispatchOnlineContractAction({
+                -- Always a new actionId: the backend returns the result of an older one only for a limited
+                -- time. If that one worked, the repeated cancel is answered with NOT_OPEN (isOnlineListingGone).
+                local actionId = self:nextOnlineContractActionId()
+                if self:dispatchOnlineContractAction({
                     subAction = def[2],
-                    actionId = entry.pendingActionId,
+                    actionId = actionId,
                     serverId = self:ensureServerInstanceId(),
                     farmId = entry[def[3]],
                     remoteId = entry.remoteId
-                })
+                }) then
+                    entry.pendingActionId = actionId
+                end
             end
         end
     end

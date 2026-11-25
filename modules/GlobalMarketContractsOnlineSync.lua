@@ -208,6 +208,10 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
         local sub = res.subAction
         local accepted = (res.status == "ACCEPTED")
         local isOrphanedAction = self.orphanedActionIds ~= nil and self.orphanedActionIds[res.actionId] ~= nil
+        if GlobalMarket.isOnlineListingGone(res) then
+            -- Withdrawn before, but not booked in this savegame: the entry found below still holds its escrow
+            accepted = true
+        end
         if not accepted and not isOrphanedAction then
             -- Tell the farm why (#42); resolved before the branches below drop the pending entry
             self:notifyOnlineContractRejected(res, self:getOnlineResultFarmId(res))
@@ -355,7 +359,7 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
                 local isDupCancel = ((st == "CONTRACT_EXPIRED_OPEN" or st == "OFFER_RETURNED") and self.settledCancelRemoteIds[s.remoteId])
                 -- Settlements for a deleted farm (#30) are acknowledged but never booked onto a reused farm ID
                 local isOrphan = self.isOrphanedOnlineRemoteId ~= nil and self:isOrphanedOnlineRemoteId(s.remoteId)
-                if not isDupCancel and not isOrphan then
+                if not isDupCancel and not isOrphan and not self:isUnbookedOnlineSettlement(s) then
                     if st == "CONTRACT_DELIVERY" then
                         local _, c = GlobalMarketContracts.findOnlineEntry(self.contracts, nil, s.remoteId)
                         if c ~= nil then
@@ -458,7 +462,7 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
 
     local showBoardC = self:isOnlineContractBoardEnabled()
     local completedMap = self.completedContractorRemoteIds or {}
-    for _, rc in ipairs(remoteContracts) do
+    local function mergeContract(rc)
         local ftDesc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(rc.fillType) or nil
         if ftDesc ~= nil and (GlobalMarketAPI == nil or GlobalMarketAPI.getIsFillTypeAllowed(ftDesc)) then
             local isIssuerMine = self:isOwnOnlineServer(rc.issuerServerId)
@@ -467,6 +471,19 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
             local skipResurrect = (wasCompletedLocally and not isIssuerMine) or self:isOrphanedOnlineRemoteId(rc.remoteId)
             if not skipResurrect and (isIssuerMine or isContractorMine or showBoardC) then
                 local prev = existingCByRid[rc.remoteId]
+                if prev == nil and isIssuerMine then
+                    prev = self:bindPendingOnlineCreate(keptContracts, "issuerFarmId", { remoteId = rc.remoteId, farmId = rc.issuerFarmId,
+                        fillType = rc.fillType, totalLiters = rc.totalLiters, bonusPct = rc.bonusPct })
+                    local keptIdx = (prev ~= nil) and GlobalMarketContracts.findById(keptContracts, prev.id) or nil
+                    if keptIdx ~= nil then table.remove(keptContracts, keptIdx) end
+                end
+                if prev == nil and isIssuerMine and not isContractorMine then
+                    -- Created after the loaded savegame was written: its escrow is not here (GlobalMarketOnlineReload)
+                    if rc.status == "OPEN" then
+                        self:withdrawUnbookedOnlineEntry("CANCEL_CONTRACT", rc.issuerFarmId, rc.remoteId)
+                    end
+                    return
+                end
                 local id = (prev ~= nil and prev.id) or self.nextContractId
                 if prev == nil then self.nextContractId = self.nextContractId + 1 end
                 local factor = (rc.baseTrendFactor ~= nil and rc.baseTrendFactor > 0) and rc.baseTrendFactor or 1.0
@@ -511,9 +528,12 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
             end
         end
     end
+    for _, rc in ipairs(remoteContracts) do
+        mergeContract(rc)
+    end
     for _, prev in pairs(existingCByRid) do
-        if not seenCRid[prev.remoteId] and (prev.status == "PENDING_CANCEL"
-            or (prev.status == "ACTIVE" and self:isOwnOnlineServer(prev.contractorServerId))) then
+        if not seenCRid[prev.remoteId] and self:keepMissingOnlineEntry(prev,
+            self:isOwnOnlineServer(prev.issuerServerId), self:isOwnOnlineServer(prev.contractorServerId)) then
             table.insert(keptContracts, prev)
         end
     end
@@ -530,12 +550,23 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
     end
 
     local showBoardO = self:isOnlineOfferBoardEnabled()
-    for _, ro in ipairs(remoteOffers) do
+    local function mergeOffer(ro)
         local ftDesc = g_fillTypeManager ~= nil and g_fillTypeManager:getFillTypeByName(ro.fillType) or nil
         if ftDesc ~= nil and (GlobalMarketAPI == nil or GlobalMarketAPI.getIsFillTypeAllowed(ftDesc)) then
             local isMine = self:isOwnOnlineServer(ro.sellerServerId)
             if (isMine or showBoardO) and not self:isOrphanedOnlineRemoteId(ro.remoteId) then
                 local prev = existingOByRid[ro.remoteId]
+                if prev == nil and isMine then
+                    prev = self:bindPendingOnlineCreate(keptOffers, "sellerFarmId", { remoteId = ro.remoteId, farmId = ro.sellerFarmId,
+                        fillType = ro.fillType, totalLiters = ro.totalLiters })
+                    local keptIdx = (prev ~= nil) and GlobalMarketContracts.findById(keptOffers, prev.id) or nil
+                    if keptIdx ~= nil then table.remove(keptOffers, keptIdx) end
+                end
+                if prev == nil and isMine then
+                    -- Created after the loaded savegame was written: its goods are not in escrow here
+                    self:withdrawUnbookedOnlineEntry("CANCEL_OFFER", ro.sellerFarmId, ro.remoteId)
+                    return
+                end
                 local id = (prev ~= nil and prev.id) or self.nextOfferId
                 if prev == nil then self.nextOfferId = self.nextOfferId + 1 end
                 local status = (prev ~= nil and prev.status == "PENDING_CANCEL") and "PENDING_CANCEL" or ro.status
@@ -565,8 +596,11 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
             end
         end
     end
+    for _, ro in ipairs(remoteOffers) do
+        mergeOffer(ro)
+    end
     for _, prev in pairs(existingOByRid) do
-        if not seenORid[prev.remoteId] and prev.status == "PENDING_CANCEL" then
+        if not seenORid[prev.remoteId] and self:keepMissingOnlineEntry(prev, self:isOwnOnlineServer(prev.sellerServerId), false) then
             table.insert(keptOffers, prev)
         end
     end
@@ -584,6 +618,7 @@ function GlobalMarket:updateOnlineContractsTimers(dt)
     self.onlineTimerAccumMs = self.onlineTimerAccumMs - (elapsedSec * 1000)
     self:updateOnlineContractsSync()
     self:retryUnansweredCancels()
+    self:reconcileMissingOnlineEntries()
     self:updateSettlementAcks()
 
     for _, c in ipairs(self.contracts or {}) do

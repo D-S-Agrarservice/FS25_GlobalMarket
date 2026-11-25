@@ -232,8 +232,9 @@ function GlobalMarket:applyVehicleActionResult(result)
             self:returnVehicleListing(listing)
         end
     elseif kind == "CANCEL" then
-        if accepted then
-            -- Covers a user withdrawal and the reconcile cancel of a lost CREATE (reason NOT_CREATED)
+        if accepted or result.reason == "LISTING_NOT_FOUND" then
+            -- Covers a user withdrawal, the reconcile cancel of a lost CREATE (reason NOT_CREATED) and a
+            -- listing the backend does not know at all
             self:returnVehicleListing(listing)
         elseif result.reason == "LISTING_SOLD" or result.reason == "EXPIRED" then
             -- The LISTING_SOLD settlement pays the seller, LISTING_EXPIRED returns the vehicle: the listing
@@ -399,6 +400,8 @@ function GlobalMarket:applyVehicleListingSnapshot(entries)
             end
         end
     end
+
+    self:withdrawUnbookedVehicleListings(ownByRemote)
 
     -- Admin switch off or offline: own listings are still reconciled, foreign ones are not shown
     return storeRemoteListings(self, self:getAreOnlineVehiclesAvailable() and remote or {}) or changed
