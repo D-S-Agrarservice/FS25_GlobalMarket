@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <modDesc descVersion="116">
     <author>D-S-Agrarservice</author>
-    <version>0.11.0.40</version>
+    <version>0.11.0.41</version>
     <title>
         <en>Global Market</en>
         <de>Globaler Markt</de>
@@ -10,7 +10,7 @@
         <pl>Rynek Globalny</pl>
     </title>
     <description>
-        <en><![CDATA[Buy and sell crops, liquids, bales and pallets on a dynamic Global Market – in singleplayer, multiplayer and on dedicated servers.
+        <en><![CDATA[Buy and sell crops, liquids, bales, pallets, used vehicles and livestock on a dynamic Global Market – in singleplayer, multiplayer and on dedicated servers.
 
 Global Market adds its own page to the ESC menu (default: Left Alt + M) and works directly with your silos, production storages, and bale and pallet storages.
 
@@ -27,7 +27,17 @@ Supply contracts & direct offers:
 - Deliver on contracts from NPC buyers or other farms, or post your own purchase contracts.
 - List lots as direct offers at up to ±10 % of the market price.
 - Incoming and returned goods wait in your farm's pickup inbox.
-- Cross-server as well with the GlobalMarketClient.
+- Cross-server contracts and direct offers via the GlobalMarketClient are not yet enabled in this beta, as the work on them is not finished yet.
+
+Used vehicle market:
+- Offer your own vehicles and implements, mod vehicles included, at 70 to 130 % of the dealer value. They leave the world with configuration, paint, operating hours, damage and wear.
+- Buy offers from other farms and NPC dealers, preview them in the shop with their exact configuration and pick them up at the dealer.
+- The cross-server online vehicle market is not yet enabled in this beta either.
+
+Livestock market:
+- Offer animals with age, health and pregnancy at a fixed price or as an auction with an optional buy-now price.
+- Buy from other farms and NPC livestock dealers, delivered to your barn or collected with your own livestock trailer without a transport fee.
+- NPC dealers buy your offers, sell their own animals and regularly look for animals ready for slaughter at a premium.
 
 Global Market storages:
 - Supports GM storage buildings from other mods: no delivery fees, separate stock per farm in multiplayer, monthly storage fees and a configurable maximum storage time.
@@ -40,8 +50,9 @@ Settings & extensibility:
 
 Notes:
 - Optional online client & further information: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Mods that replace the animal system (e.g. RealisticLivestock) disable the livestock market.
 - Silage bales that are still fermenting can only be traded once fermentation has finished.]]></en>
-        <de><![CDATA[Kaufe und verkaufe Erntegüter, Flüssigkeiten, Ballen und Paletten auf einem dynamischen Globalen Markt – im Einzelspieler, im Multiplayer und auf Dedicated Servern.
+        <de><![CDATA[Kaufe und verkaufe Erntegüter, Flüssigkeiten, Ballen, Paletten, Gebrauchtfahrzeuge und Tiere auf einem dynamischen Globalen Markt – im Einzelspieler, im Multiplayer und auf Dedicated Servern.
 
 Der Globale Markt erscheint als eigene Seite im ESC-Menü (Standard: Links Alt + M) und arbeitet direkt mit deinen Silos, Produktionslagern sowie Ballen- und Palettenlagern zusammen.
 
@@ -58,7 +69,17 @@ Lieferverträge & Direktangebote:
 - Beliefere Verträge von NPC-Abnehmern oder anderen Höfen oder schreibe eigene Kaufverträge aus.
 - Biete Partien als Direktangebot zu bis zu ±10 % des Marktpreises an.
 - Eingehende und zurückgegebene Ware wartet im Abholfach deines Hofs.
-- Mit dem GlobalMarketClient auch serverübergreifend.
+- Serverübergreifende Verträge und Direktangebote über den GlobalMarketClient sind in dieser Beta noch nicht freigeschaltet, da die Arbeiten daran noch nicht abgeschlossen sind.
+
+Gebrauchtfahrzeugmarkt:
+- Biete eigene Fahrzeuge und Geräte, auch Mod-Fahrzeuge, zu 70 bis 130 % des Händlerwerts an. Sie verlassen die Welt mit Konfiguration, Lackfarbe, Betriebsstunden, Schaden und Verschleiß.
+- Kaufe Angebote anderer Höfe und NPC-Händler, sieh sie dir mit exakter Konfiguration im Shop an und hol sie beim Händler ab.
+- Auch der serverübergreifende Online-Fahrzeugmarkt ist in dieser Beta noch nicht freigeschaltet.
+
+Tiermarkt:
+- Biete Tiere mit Alter, Gesundheit und Trächtigkeit zum Festpreis oder als Auktion mit optionalem Sofortkauf an.
+- Kaufe bei anderen Höfen und NPC-Viehhändlern, mit Lieferung in deinen Stall oder ohne Transportgebühr zur Abholung mit deinem Viehanhänger.
+- NPC-Händler kaufen deine Angebote, bieten eigene Tiere an und suchen regelmäßig schlachtreife Masttiere zu Sonderpreisen.
 
 Global-Market-Lager:
 - Unterstützt GM-Lagergebäude aus anderen Mods: keine Lieferkosten, getrennte Bestände je Hof im Multiplayer, monatliche Lagergebühren und eine einstellbare maximale Lagerdauer.
@@ -71,8 +92,9 @@ Einstellungen & Erweiterbarkeit:
 
 Hinweise:
 - Optionaler Online-Client & weitere Infos: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Mods, die das Tiersystem ersetzen (z. B. RealisticLivestock), deaktivieren den Tiermarkt.
 - Silageballen im Gärprozess können erst nach abgeschlossener Silierung gehandelt werden.]]></de>
-        <es><![CDATA[Compra y vende cosechas, líquidos, pacas y palés en un Mercado Global dinámico, en un jugador, en multijugador y en servidores dedicados.
+        <es><![CDATA[Compra y vende cosechas, líquidos, pacas, palés, vehículos usados y animales en un Mercado Global dinámico, en un jugador, en multijugador y en servidores dedicados.
 
 Mercado Global añade su propia página al menú ESC (predeterminado: Alt Izq + M) y trabaja directamente con tus silos, almacenes de producción y almacenes de pacas y palés.
 
@@ -89,7 +111,17 @@ Contratos de suministro y ofertas directas:
 - Cumple contratos de compradores NPC o de otras granjas, o publica tus propios contratos de compra.
 - Ofrece lotes como ofertas directas hasta un ±10 % del precio de mercado.
 - La mercancía entrante y devuelta espera en el buzón de recogida de tu granja.
-- También entre servidores con el GlobalMarketClient.
+- Los contratos y ofertas directas entre servidores mediante el GlobalMarketClient aún no están habilitados en esta beta, ya que el trabajo en ellos todavía no ha terminado.
+
+Mercado de vehículos usados:
+- Ofrece tus propios vehículos y aperos, incluidos los de mods, entre el 70 y el 130 % del valor del concesionario. Salen del mundo con su configuración, pintura, horas de uso, daños y desgaste.
+- Compra ofertas de otras granjas y de concesionarios NPC, revísalas en la tienda con su configuración exacta y recógelas en el concesionario.
+- El mercado de vehículos en línea entre servidores tampoco está habilitado aún en esta beta.
+
+Mercado de animales:
+- Ofrece animales con su edad, salud y preñez a precio fijo o en subasta con precio de compra inmediata opcional.
+- Compra a otras granjas y a tratantes de ganado NPC, con entrega en tu establo o recogida con tu propio remolque para ganado sin tasa de transporte.
+- Los tratantes NPC compran tus ofertas, venden sus propios animales y buscan regularmente animales listos para el sacrificio a precios especiales.
 
 Almacenes del Mercado Global:
 - Compatible con edificios de almacén GM de otros mods: sin gastos de envío, existencias separadas por granja en multijugador, tasas de almacenamiento mensuales y un tiempo máximo de almacenamiento configurable.
@@ -102,8 +134,9 @@ Ajustes y ampliaciones:
 
 Notas:
 - Cliente en línea opcional y más información: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Los mods que sustituyen el sistema de animales (p. ej. RealisticLivestock) desactivan el mercado de animales.
 - Las pacas de ensilado que aún están fermentando solo se pueden comerciar cuando termina la fermentación.]]></es>
-        <fr><![CDATA[Achetez et vendez récoltes, liquides, balles et palettes sur un Marché Global dynamique, en solo, en multijoueur et sur serveurs dédiés.
+        <fr><![CDATA[Achetez et vendez récoltes, liquides, balles, palettes, véhicules d'occasion et animaux sur un Marché Global dynamique, en solo, en multijoueur et sur serveurs dédiés.
 
 Le Marché Global ajoute sa propre page au menu ESC (par défaut : Alt Gauche + M) et fonctionne directement avec vos silos, stockages de production et entrepôts de balles et de palettes.
 
@@ -120,7 +153,17 @@ Contrats de livraison et offres directes :
 - Honorez les contrats d'acheteurs PNJ ou d'autres fermes, ou publiez vos propres contrats d'achat.
 - Proposez des lots en offre directe jusqu'à ±10 % du prix du marché.
 - Les marchandises entrantes et retournées attendent dans la boîte de retrait de votre ferme.
-- Également entre serveurs avec le GlobalMarketClient.
+- Les contrats et offres directes inter-serveurs via le GlobalMarketClient ne sont pas encore activés dans cette bêta, car les travaux ne sont pas encore terminés.
+
+Marché des véhicules d'occasion :
+- Proposez vos propres véhicules et outils, y compris ceux des mods, entre 70 et 130 % de la valeur concessionnaire. Ils quittent le monde avec leur configuration, leur peinture, leurs heures d'utilisation, leurs dégâts et leur usure.
+- Achetez les offres d'autres fermes et de concessionnaires PNJ, examinez-les dans la boutique avec leur configuration exacte et récupérez-les chez le concessionnaire.
+- Le marché de véhicules en ligne inter-serveurs n'est pas encore activé non plus dans cette bêta.
+
+Marché aux animaux :
+- Proposez des animaux avec leur âge, leur santé et leur gestation à prix fixe ou aux enchères avec un prix d'achat immédiat optionnel.
+- Achetez auprès d'autres fermes et de marchands de bétail PNJ, avec livraison dans votre étable ou retrait avec votre propre bétaillère sans frais de transport.
+- Les marchands PNJ achètent vos offres, vendent leurs propres animaux et recherchent régulièrement des animaux prêts pour l'abattage à des prix avantageux.
 
 Stockages du Marché Global :
 - Prend en charge les bâtiments de stockage GM d'autres mods : aucun frais de livraison, stocks séparés par ferme en multijoueur, frais de stockage mensuels et durée de stockage maximale configurable.
@@ -133,8 +176,9 @@ Paramètres et extensibilité :
 
 Remarques :
 - Client en ligne optionnel et informations complémentaires : https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Les mods qui remplacent le système d'animaux (p. ex. RealisticLivestock) désactivent le marché aux animaux.
 - Les balles d'ensilage encore en fermentation ne peuvent être échangées qu'une fois la fermentation terminée.]]></fr>
-        <pl><![CDATA[Kupuj i sprzedawaj plony, ciecze, bele i palety na dynamicznym Rynku Globalnym – w trybie jednoosobowym, wieloosobowym i na serwerach dedykowanych.
+        <pl><![CDATA[Kupuj i sprzedawaj plony, ciecze, bele, palety, używane pojazdy i zwierzęta na dynamicznym Rynku Globalnym – w trybie jednoosobowym, wieloosobowym i na serwerach dedykowanych.
 
 Rynek Globalny dodaje własną stronę do menu ESC (domyślnie: Lewy Alt + M) i współpracuje bezpośrednio z twoimi silosami, magazynami produkcyjnymi oraz magazynami bel i palet.
 
@@ -151,7 +195,17 @@ Kontrakty dostaw i oferty bezpośrednie:
 - Realizuj kontrakty od kupców NPC lub innych gospodarstw albo wystawiaj własne kontrakty zakupu.
 - Wystawiaj partie towaru jako oferty bezpośrednie w cenie do ±10 % ceny rynkowej.
 - Towary przychodzące i zwrócone czekają w skrytce odbiorczej twojego gospodarstwa.
-- Z klientem GlobalMarketClient również między serwerami.
+- Międzyserwerowe kontrakty i oferty bezpośrednie przez GlobalMarketClient nie są jeszcze włączone w tej becie, ponieważ prace nad nimi nie zostały jeszcze zakończone.
+
+Rynek używanych pojazdów:
+- Wystawiaj własne pojazdy i maszyny, również z modów, za 70 do 130 % wartości u dealera. Opuszczają świat z konfiguracją, lakierem, motogodzinami, uszkodzeniami i zużyciem.
+- Kupuj oferty innych gospodarstw i dealerów NPC, oglądaj je w sklepie z dokładną konfiguracją i odbieraj u dealera.
+- Międzyserwerowy rynek pojazdów online również nie jest jeszcze włączony w tej becie.
+
+Rynek zwierząt:
+- Wystawiaj zwierzęta z ich wiekiem, zdrowiem i ciążą po stałej cenie lub na aukcji z opcjonalną ceną „kup teraz”.
+- Kupuj od innych gospodarstw i handlarzy bydłem NPC, z dostawą do obory lub z odbiorem własną przyczepą do przewozu zwierząt bez opłaty transportowej.
+- Handlarze NPC kupują twoje oferty, sprzedają własne zwierzęta i regularnie szukają zwierząt gotowych do uboju po specjalnych cenach.
 
 Magazyny Rynku Globalnego:
 - Obsługuje budynki magazynowe GM z innych modów: brak kosztów dostawy, oddzielne zapasy dla każdego gospodarstwa w trybie wieloosobowym, miesięczne opłaty magazynowe i konfigurowalny maksymalny czas składowania.
@@ -164,6 +218,7 @@ Ustawienia i rozszerzalność:
 
 Uwagi:
 - Opcjonalny klient online i więcej informacji: https://github.com/D-S-Agrarservice/GlobalMarketClient
+- Mody zastępujące system zwierząt (np. RealisticLivestock) wyłączają rynek zwierząt.
 - Bele kiszonki, które jeszcze fermentują, można sprzedawać i kupować dopiero po zakończeniu fermentacji.]]></pl>
     </description>
     <iconFilename>icon_GM.dds</iconFilename>
