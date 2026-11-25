@@ -311,6 +311,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
                 if exeRunningNow and backendConnectedNow and self.readHeartbeatBranding ~= nil then
                     brandingChanged = self:readHeartbeatBranding(xmlFile)
                 end
+                if self.readHeartbeatNotice ~= nil then self:readHeartbeatNotice(xmlFile, exeTimestamp, isTimestampActive) end
                 xmlFile:delete()
 
                 -- Tier 1 (Mandatory): Show outdated warning if the EXE is actively running (fresh timestamp) but fails minExeVersion
@@ -341,6 +342,7 @@ function GlobalMarket:runSyncUpdateLogic(dt)
             end
         else
             -- Heartbeat file absent (clean EXE shutdown, token switch restart, or EXE not running)
+            if self.clearHeartbeatNotice ~= nil then self:clearHeartbeatNotice() end
             self.lastSeenExeTimestamp = nil
             self.exeHeartbeatVerified = false
             self.exeStaleMs = 0

@@ -581,10 +581,17 @@ function GlobalMarketBranding.updateMenuHeader(ui, gm)
     end
 
     local isOnline = gm:getIsMarketOnline() or (gm.debugBrandingOverrideActive == true)
+    local maintenanceTitle, maintenanceDesc = nil, nil
+    if gm.getMaintenanceHeader ~= nil then
+        maintenanceTitle, maintenanceDesc = gm:getMaintenanceHeader()
+    end
     local effectiveName = gm.debugBrandingOverrideActive and gm.debugBrandingMarketName or gm.onlineMarketName
 
     if ui.marketStatusTitle ~= nil and ui.marketStatusDesc ~= nil then
-        if isOnline then
+        if maintenanceTitle ~= nil then
+            ui.marketStatusTitle:setText(maintenanceTitle)
+            ui.marketStatusDesc:setText(maintenanceDesc)
+        elseif isOnline then
             if effectiveName ~= nil and effectiveName ~= "" then
                 local fmt = ui.i18n:getText("ui_ingameMenuGlobalMarketOnlineCustom")
                 ui.marketStatusTitle:setText(string.format(fmt, effectiveName))

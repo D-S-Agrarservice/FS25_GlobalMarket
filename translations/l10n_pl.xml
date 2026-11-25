@@ -117,6 +117,19 @@
         <e k="ui_gm_format_roundbale"                              v="Bela okrągła" />
         <e k="ui_gm_format_squarebale"                             v="Bela kostka" />
         <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket: Dostępna jest nowa wersja klienta (v%s) – zalecana aktualizacja." />
+        <e k="ui_gm_notice_maintenance"                            v="Rynek Globalny: przerwa techniczna za %s" />
+        <e k="ui_gm_notice_maintenanceDuration"                    v="Rynek Globalny: przerwa techniczna za %s, potrwa ok. %s" />
+        <e k="ui_gm_notice_maintenanceActive"                      v="Rynek Globalny: trwa przerwa techniczna" />
+        <e k="ui_gm_notice_maintenanceActiveTime"                  v="Rynek Globalny: trwa przerwa techniczna, jeszcze ok. %s" />
+        <e k="ui_gm_notice_restart"                                v="Rynek Globalny: krótki restart serwera za %s" />
+        <e k="ui_gm_notice_restartActive"                          v="Rynek Globalny: serwer jest restartowany" />
+        <e k="ui_gm_notice_info"                                   v="Rynek Globalny: %s" />
+        <e k="ui_gm_notice_minutes"                                v="%d min" />
+        <e k="ui_gm_notice_hours"                                  v="%d godz." />
+        <e k="ui_gm_notice_hoursMinutes"                           v="%d godz. %d min" />
+        <e k="ui_gm_notice_headerTitle"                            v="Rynek Globalny - Przerwa techniczna" />
+        <e k="ui_gm_notice_headerDesc"                             v="Rynek online jest w trakcie przerwy technicznej. Do tego czasu rynek jest symulowany." />
+        <e k="ui_gm_notice_headerDescTime"                         v="Przerwa techniczna, jeszcze ok. %s – do tego czasu rynek jest symulowany." />
         <e k="ui_gm_notification_greatDemand"                      v="Duży popyt na %s na Rynku Globalnym!" />
         <e k="ui_gm_notification_storage_cleared"                  v="Magazyn GM opróżniony: %s (%s) został usunięty po upływie %d mies. limitu!" />
         <e k="ui_gm_notification_storage_final"                    v="OSTATNIE OSTRZEŻENIE: %s (%s) w magazynie GM wkrótce przepadnie! Odbierz lub sprzedaj natychmiast!" />

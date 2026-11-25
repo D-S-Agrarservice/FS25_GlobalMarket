@@ -117,6 +117,19 @@
         <e k="ui_gm_format_roundbale"                              v="Rundballen" />
         <e k="ui_gm_format_squarebale"                             v="Quaderballen" />
         <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket: Eine neue Client-Version (v%s) ist verfügbar – Update empfohlen." />
+        <e k="ui_gm_notice_maintenance"                            v="Globaler Markt: Wartung in %s" />
+        <e k="ui_gm_notice_maintenanceDuration"                    v="Globaler Markt: Wartung in %s, Dauer ca. %s" />
+        <e k="ui_gm_notice_maintenanceActive"                      v="Globaler Markt: Wartung läuft" />
+        <e k="ui_gm_notice_maintenanceActiveTime"                  v="Globaler Markt: Wartung läuft, noch ca. %s" />
+        <e k="ui_gm_notice_restart"                                v="Globaler Markt: Kurzer Server-Neustart in %s" />
+        <e k="ui_gm_notice_restartActive"                          v="Globaler Markt: Der Server startet gerade neu" />
+        <e k="ui_gm_notice_info"                                   v="Globaler Markt: %s" />
+        <e k="ui_gm_notice_minutes"                                v="%d Min." />
+        <e k="ui_gm_notice_hours"                                  v="%d Std." />
+        <e k="ui_gm_notice_hoursMinutes"                           v="%d Std. %d Min." />
+        <e k="ui_gm_notice_headerTitle"                            v="Globaler Markt - Wartung" />
+        <e k="ui_gm_notice_headerDesc"                             v="Der Online-Markt wird gerade gewartet. Solange wird der Markt simuliert." />
+        <e k="ui_gm_notice_headerDescTime"                         v="Wartung, voraussichtlich noch ca. %s – solange wird der Markt simuliert." />
         <e k="ui_gm_notification_greatDemand"                      v="Große Nachfrage nach %s im Globalen Markt!" />
         <e k="ui_gm_notification_storage_cleared"                  v="GM-Lager geräumt: %s (%s) wurde nach %d Monaten Lagerfrist entfernt!" />
         <e k="ui_gm_notification_storage_final"                    v="LETZTE WARNUNG: %s (%s) im GM-Lager verfällt in Kürze! Bitte sofort abholen oder verkaufen!" />

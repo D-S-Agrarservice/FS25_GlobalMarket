@@ -117,6 +117,19 @@
         <e k="ui_gm_format_roundbale"                              v="Balle ronde" />
         <e k="ui_gm_format_squarebale"                             v="Balle carrée" />
         <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket : Une nouvelle version du client (v%s) est disponible – mise à jour recommandée." />
+        <e k="ui_gm_notice_maintenance"                            v="Marché Global : maintenance dans %s" />
+        <e k="ui_gm_notice_maintenanceDuration"                    v="Marché Global : maintenance dans %s, durée env. %s" />
+        <e k="ui_gm_notice_maintenanceActive"                      v="Marché Global : maintenance en cours" />
+        <e k="ui_gm_notice_maintenanceActiveTime"                  v="Marché Global : maintenance en cours, encore env. %s" />
+        <e k="ui_gm_notice_restart"                                v="Marché Global : bref redémarrage du serveur dans %s" />
+        <e k="ui_gm_notice_restartActive"                          v="Marché Global : le serveur redémarre" />
+        <e k="ui_gm_notice_info"                                   v="Marché Global : %s" />
+        <e k="ui_gm_notice_minutes"                                v="%d min" />
+        <e k="ui_gm_notice_hours"                                  v="%d h" />
+        <e k="ui_gm_notice_hoursMinutes"                           v="%d h %d min" />
+        <e k="ui_gm_notice_headerTitle"                            v="Marché Global - Maintenance" />
+        <e k="ui_gm_notice_headerDesc"                             v="Le marché en ligne est en maintenance. En attendant, le marché est simulé." />
+        <e k="ui_gm_notice_headerDescTime"                         v="Maintenance, encore env. %s. En attendant, le marché est simulé." />
         <e k="ui_gm_notification_greatDemand"                      v="Forte demande pour %s sur le Marché Mondial !" />
         <e k="ui_gm_notification_storage_cleared"                  v="Entrepôt GM vidé : %s (%s) a été retiré après la limite de %d mois !" />
         <e k="ui_gm_notification_storage_final"                    v="DERNIER AVERTISSEMENT : %s (%s) dans l'entrepôt GM expire bientôt ! Récupérez ou vendez immédiatement !" />

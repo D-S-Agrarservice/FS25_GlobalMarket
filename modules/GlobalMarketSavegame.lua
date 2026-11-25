@@ -370,6 +370,10 @@ function GlobalMarket:sendInitialClientState(connection, user, farm)
     if SyncVehicleMarketEvent ~= nil then
         connection:sendEvent(SyncVehicleMarketEvent.new(self.vehicleListings or {}))
     end
+    -- Announced maintenance (#41)
+    if ServerNoticeEvent ~= nil and self.syncedServerNotice ~= nil then
+        connection:sendEvent(ServerNoticeEvent.new(self.syncedServerNotice))
+    end
     if SyncAnimalMarketEvent ~= nil then
         connection:sendEvent(SyncAnimalMarketEvent.new(self.animalListings or {}, self.animalPickups or {}, self.animalDemand))
     end

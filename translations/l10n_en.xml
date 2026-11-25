@@ -117,6 +117,19 @@
         <e k="ui_gm_format_roundbale"                              v="Round Bale" />
         <e k="ui_gm_format_squarebale"                             v="Square Bale" />
         <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket: A new client version (v%s) is available – update recommended." />
+        <e k="ui_gm_notice_maintenance"                            v="Global Market: Maintenance in %s" />
+        <e k="ui_gm_notice_maintenanceDuration"                    v="Global Market: Maintenance in %s, about %s long" />
+        <e k="ui_gm_notice_maintenanceActive"                      v="Global Market: Maintenance in progress" />
+        <e k="ui_gm_notice_maintenanceActiveTime"                  v="Global Market: Maintenance in progress, about %s left" />
+        <e k="ui_gm_notice_restart"                                v="Global Market: Short server restart in %s" />
+        <e k="ui_gm_notice_restartActive"                          v="Global Market: The server is restarting" />
+        <e k="ui_gm_notice_info"                                   v="Global Market: %s" />
+        <e k="ui_gm_notice_minutes"                                v="%d min" />
+        <e k="ui_gm_notice_hours"                                  v="%d h" />
+        <e k="ui_gm_notice_hoursMinutes"                           v="%d h %d min" />
+        <e k="ui_gm_notice_headerTitle"                            v="Global Market - Maintenance" />
+        <e k="ui_gm_notice_headerDesc"                             v="The online market is under maintenance. The market is simulated until then." />
+        <e k="ui_gm_notice_headerDescTime"                         v="Maintenance, about %s left. The market is simulated until then." />
         <e k="ui_gm_notification_greatDemand"                      v="Great demand for %s on the Global Market!" />
         <e k="ui_gm_notification_storage_cleared"                  v="GM Storage Cleared: %s (%s) was removed after %d months storage limit!" />
         <e k="ui_gm_notification_storage_final"                    v="FINAL WARNING: %s (%s) in GM Storage expires soon! Please pick up or sell immediately!" />

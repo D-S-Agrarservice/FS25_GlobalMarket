@@ -117,6 +117,19 @@
         <e k="ui_gm_format_roundbale"                              v="Paca redonda" />
         <e k="ui_gm_format_squarebale"                             v="Paca cuadrada" />
         <e k="ui_gm_info_exe_update_optional"                      v="GlobalMarket: Una nueva versión del cliente (v%s) está disponible – actualización recomendada." />
+        <e k="ui_gm_notice_maintenance"                            v="Mercado Global: mantenimiento en %s" />
+        <e k="ui_gm_notice_maintenanceDuration"                    v="Mercado Global: mantenimiento en %s, duración aprox. %s" />
+        <e k="ui_gm_notice_maintenanceActive"                      v="Mercado Global: mantenimiento en curso" />
+        <e k="ui_gm_notice_maintenanceActiveTime"                  v="Mercado Global: mantenimiento en curso, quedan aprox. %s" />
+        <e k="ui_gm_notice_restart"                                v="Mercado Global: breve reinicio del servidor en %s" />
+        <e k="ui_gm_notice_restartActive"                          v="Mercado Global: el servidor se está reiniciando" />
+        <e k="ui_gm_notice_info"                                   v="Mercado Global: %s" />
+        <e k="ui_gm_notice_minutes"                                v="%d min" />
+        <e k="ui_gm_notice_hours"                                  v="%d h" />
+        <e k="ui_gm_notice_hoursMinutes"                           v="%d h %d min" />
+        <e k="ui_gm_notice_headerTitle"                            v="Mercado Global - Mantenimiento" />
+        <e k="ui_gm_notice_headerDesc"                             v="El mercado en línea está en mantenimiento. Mientras tanto, el mercado se simula." />
+        <e k="ui_gm_notice_headerDescTime"                         v="Mantenimiento, quedan aprox. %s. Mientras tanto, el mercado se simula." />
         <e k="ui_gm_notification_greatDemand"                      v="¡Gran demanda de %s en el Mercado Global!" />
         <e k="ui_gm_notification_storage_cleared"                  v="Almacén GM vaciado: ¡%s (%s) fue eliminado tras el límite de %d meses!" />
         <e k="ui_gm_notification_storage_final"                    v="ÚLTIMO AVISO: ¡%s (%s) en el almacén GM caduca pronto! ¡Recógelo o véndelo de inmediato!" />
