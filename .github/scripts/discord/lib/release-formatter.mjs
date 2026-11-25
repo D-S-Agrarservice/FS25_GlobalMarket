@@ -1,0 +1,354 @@
+/**
+ * Release classifier and bilingual (DE / EN) Discord Embed formatter
+ * for D-S-Agrarservice FS25_GlobalMarket mod (and GlobalMarketClient) releases.
+ */
+
+export const EMBED_COLOR_BETA = 0xf59e0b; // Amber / Beta
+export const EMBED_COLOR_RELEASE = 0x4fa83d; // DSA Green / Stable v1.0+
+
+const IGNORED_ASSET_PATTERNS = [
+  /^latest\.json$/i,
+  /\.sig$/i,
+  /\.app\.tar\.gz$/i,
+  /\.nsis\.zip$/i,
+  /\.blockmap$/i,
+];
+
+/**
+ * Parses a Git tag such as `v0.9.16-beta`, `v1.0.0`, `v0.11.0.41`, or `v1.0.0.0`.
+ * Supports both 3-part SemVer and 4-part Farming Simulator ModHub version strings.
+ */
+export function parseSemverTag(tagName) {
+  const raw = String(tagName ?? "").trim();
+  const match = raw.match(
+    /^v?(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/,
+  );
+  if (!match) {
+    return {
+      raw,
+      valid: false,
+      major: 0,
+      minor: 0,
+      patch: 0,
+      build: null,
+      prereleaseTag: raw.includes("-") ? raw.split("-").slice(1).join("-") : null,
+    };
+  }
+  return {
+    raw,
+    valid: true,
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    build: match[4] !== undefined ? Number(match[4]) : null,
+    prereleaseTag: match[5] ?? null,
+  };
+}
+
+export function classifyReleaseChannel(release) {
+  const parsed = parseSemverTag(release?.tag_name);
+  const isPrereleaseFlag = Boolean(release?.prerelease);
+  const hasPrereleaseSuffix = Boolean(parsed.prereleaseTag);
+  const isBelowV1 = parsed.valid ? parsed.major < 1 : true;
+
+  const isBeta = isPrereleaseFlag || hasPrereleaseSuffix || isBelowV1;
+  return {
+    channel: isBeta ? "beta" : "release",
+    isBeta,
+    semver: parsed,
+  };
+}
+
+export function formatBytes(bytes) {
+  if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes <= 0) {
+    return "";
+  }
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+export function truncateText(text, maxLength) {
+  const str = String(text ?? "").trim();
+  if (str.length <= maxLength) return str;
+  return `${str.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+export function groupReleaseAssets(assets) {
+  const groups = {
+    windows: [],
+    macos: [],
+    linux: [],
+    mod: [],
+    other: [],
+  };
+
+  if (!Array.isArray(assets)) return groups;
+
+  for (const asset of assets) {
+    const name = String(asset?.name ?? "").trim();
+    const url = String(asset?.browser_download_url ?? "").trim();
+    if (!name || !url) continue;
+
+    if (IGNORED_ASSET_PATTERNS.some((re) => re.test(name))) {
+      continue;
+    }
+
+    const entry = {
+      name,
+      url,
+      sizeLabel: formatBytes(asset?.size),
+    };
+
+    const lower = name.toLowerCase();
+    if (lower.endsWith(".exe") || lower.endsWith(".msi")) {
+      groups.windows.push(entry);
+    } else if (lower.endsWith(".dmg")) {
+      groups.macos.push(entry);
+    } else if (
+      lower.endsWith(".appimage") ||
+      lower.endsWith(".deb") ||
+      lower.endsWith(".rpm")
+    ) {
+      groups.linux.push(entry);
+    } else if (lower.endsWith(".zip") && /fs\d+_globalmarket/i.test(lower)) {
+      groups.mod.push(entry);
+    } else {
+      groups.other.push(entry);
+    }
+  }
+
+  return groups;
+}
+
+function formatAssetLinks(items) {
+  return items
+    .map((item) => {
+      const sizeSuffix = item.sizeLabel ? ` (${item.sizeLabel})` : "";
+      return `• [\`${item.name}\`](${item.url})${sizeSuffix}`;
+    })
+    .join("\n");
+}
+
+export function extractChangelogExcerpt(body, maxLength = 950) {
+  const raw = String(body ?? "").trim();
+  if (!raw) return "";
+
+  const withoutDownloads = raw
+    .replace(/^###\s+Downloads[\s\S]*?(?=^#{1,3}\s+|(?![\s\S]))/gim, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return truncateText(withoutDownloads || raw, maxLength);
+}
+
+function resolvePublishedUnix(release) {
+  const rawDate = release?.published_at || release?.created_at;
+  const parsed = rawDate ? Date.parse(rawDate) : NaN;
+  return Number.isFinite(parsed)
+    ? Math.floor(parsed / 1000)
+    : Math.floor(Date.now() / 1000);
+}
+
+export function isModRelease(release, groupedAssets) {
+  const hasDesktop =
+    groupedAssets.windows.length > 0 ||
+    groupedAssets.macos.length > 0 ||
+    groupedAssets.linux.length > 0;
+  if (groupedAssets.mod.length > 0 && !hasDesktop) return true;
+  const hay = `${release?.html_url ?? ""} ${release?.name ?? ""}`.toLowerCase();
+  return !hasDesktop && /fs\d+_globalmarket/i.test(hay);
+}
+
+export function buildDownloadCardPayload(release, options = {}) {
+  const { isBeta } = classifyReleaseChannel(release);
+  const tag = String(release?.tag_name ?? "unknown").trim();
+  const assets = groupReleaseAssets(release?.assets);
+  const modRelease = isModRelease(release, assets);
+
+  const defaultName = modRelease ? `FS25_GlobalMarket ${tag}` : `GlobalMarketClient ${tag}`;
+  const defaultUrl = modRelease
+    ? "https://github.com/D-S-Agrarservice/FS25_GlobalMarket/releases"
+    : "https://github.com/D-S-Agrarservice/GlobalMarketClient/releases";
+
+  const titleName = String(release?.name || defaultName).trim();
+  const releaseUrl = String(release?.html_url ?? "").trim() || defaultUrl;
+  const publishedUnix = resolvePublishedUnix(release);
+
+  const badge = isBeta ? "🧪 BETA" : "🚀 RELEASE";
+  const color = isBeta ? EMBED_COLOR_BETA : EMBED_COLOR_RELEASE;
+  const supportChannelMention = options.supportChannelId
+    ? `<#${options.supportChannelId}>`
+    : "**#gm-support**";
+
+  const descriptionLines = isBeta
+    ? [
+        `🇩🇪 **Aktuelle Beta-Version** — dieser Beitrag wird automatisch bei jedem Update ersetzt.`,
+        `🇬🇧 **Latest Beta Build** — this card is automatically replaced on every update.`,
+        "",
+        `📌 **Version:** \`${tag}\` · **Status:** ${badge} · **Update:** <t:${publishedUnix}:R>`,
+      ]
+    : [
+        `🇩🇪 **Aktuelle Release-Version** — dieser Beitrag wird automatisch bei jedem Update ersetzt.`,
+        `🇬🇧 **Latest Stable Release** — this card is automatically replaced on every update.`,
+        "",
+        `📌 **Version:** \`${tag}\` · **Status:** ${badge} · **Update:** <t:${publishedUnix}:R>`,
+      ];
+
+  const fields = [];
+
+  if (assets.windows.length > 0) {
+    fields.push({
+      name: "🪟 Windows (10 / 11 x64)",
+      value: truncateText(formatAssetLinks(assets.windows), 1024),
+      inline: false,
+    });
+  }
+
+  if (assets.macos.length > 0) {
+    fields.push({
+      name: "🍎 macOS (Universal — Apple Silicon & Intel)",
+      value: truncateText(formatAssetLinks(assets.macos), 1024),
+      inline: false,
+    });
+  }
+
+  if (assets.linux.length > 0) {
+    fields.push({
+      name: "🐧 Linux / Steam Deck (x64)",
+      value: truncateText(formatAssetLinks(assets.linux), 1024),
+      inline: false,
+    });
+  }
+
+  if (assets.mod.length > 0) {
+    fields.push({
+      name: "🚜 Farming Simulator Mod (.zip)",
+      value: truncateText(formatAssetLinks(assets.mod), 1024),
+      inline: false,
+    });
+  }
+
+  if (fields.length === 0) {
+    fields.push({
+      name: "📥 Downloads",
+      value: `[GitHub Release — ${tag}](${releaseUrl})`,
+      inline: false,
+    });
+  }
+
+  const notesLines = modRelease
+    ? [
+        `🇩🇪 **Installation:** Die \`.zip\`-Datei unverändert in deinen FS25-\`mods\`-Ordner legen *(nicht entpacken)*. Für Live-Online-Handel zusätzlich den **GlobalMarketClient** starten. Hilfe & Support: ${supportChannelMention}`,
+        `🇬🇧 **Installation:** Drop the \`.zip\` file directly into your FS25 \`mods\` folder *(do not extract)*. Run **GlobalMarketClient** alongside the game for live online trading. Support: ${supportChannelMention}`,
+        `🔗 **[Alle Dateien & Changelog auf GitHub / Full Release on GitHub](${releaseUrl})**`,
+      ]
+    : [
+        `🇩🇪 **Auto-Update:** Bestehende Installationen aktualisieren sich direkt in der App. Bei Erstinstallation SmartScreen („Weitere Infos → Trotzdem ausführen“) bzw. macOS Gatekeeper beachten. Hilfe & Diagnose: ${supportChannelMention}`,
+        `🇬🇧 **Auto-Update:** Existing installs update right inside the app. On first install, allow Windows SmartScreen (*More info → Run anyway*) or macOS Gatekeeper (*Open Anyway*). Support & Diagnostics: ${supportChannelMention}`,
+        `🔗 **[Alle Dateien & Changelog auf GitHub / Full Release on GitHub](${releaseUrl})**`,
+      ];
+
+  fields.push({
+    name: "ℹ️ Hinweise / Notes",
+    value: truncateText(notesLines.join("\n"), 1024),
+    inline: false,
+  });
+
+  const footerLabel = modRelease
+    ? isBeta
+      ? "D-S-Agrarservice · FS25_GlobalMarket Mod (Beta) · Auto-updated via GitHub Releases"
+      : "D-S-Agrarservice · FS25_GlobalMarket Mod · Auto-updated via GitHub Releases"
+    : isBeta
+      ? "D-S-Agrarservice · GlobalMarket Beta Channel · Auto-updated via GitHub Releases"
+      : "D-S-Agrarservice · GlobalMarket Official Release · Auto-updated via GitHub Releases";
+
+  return {
+    username: modRelease ? "GlobalMarket Mod Releases" : "GlobalMarket Releases",
+    embeds: [
+      {
+        title: `${badge} · ${truncateText(titleName, 220)}`,
+        url: releaseUrl,
+        color,
+        description: truncateText(descriptionLines.join("\n"), 4096),
+        fields,
+        footer: {
+          text: footerLabel,
+        },
+        timestamp: new Date(publishedUnix * 1000).toISOString(),
+      },
+    ],
+  };
+}
+
+export function buildAnnouncementPayload(release, options = {}) {
+  const { isBeta } = classifyReleaseChannel(release);
+  const tag = String(release?.tag_name ?? "unknown").trim();
+  const assets = groupReleaseAssets(release?.assets);
+  const modRelease = isModRelease(release, assets);
+
+  const defaultName = modRelease ? `FS25_GlobalMarket ${tag}` : `GlobalMarketClient ${tag}`;
+  const defaultUrl = modRelease
+    ? "https://github.com/D-S-Agrarservice/FS25_GlobalMarket/releases"
+    : "https://github.com/D-S-Agrarservice/GlobalMarketClient/releases";
+
+  const titleName = String(release?.name || defaultName).trim();
+  const releaseUrl = String(release?.html_url ?? "").trim() || defaultUrl;
+  const publishedUnix = resolvePublishedUnix(release);
+  const changelog = extractChangelogExcerpt(release?.body, 1100);
+
+  const badge = isBeta ? "🧪 NEW BETA" : "🚀 NEW RELEASE";
+  const color = isBeta ? EMBED_COLOR_BETA : EMBED_COLOR_RELEASE;
+  const downloadMention = options.downloadChannelId
+    ? `<#${options.downloadChannelId}>`
+    : "**#gm-downloads**";
+  const supportMention = options.supportChannelId
+    ? `<#${options.supportChannelId}>`
+    : "**#gm-support**";
+
+  const roleMention = options.roleId ? `<@&${options.roleId}> ` : "";
+  const productLabel = modRelease ? "FS25_GlobalMarket Mod" : "GlobalMarketClient";
+  const content = isBeta
+    ? `${roleMention}🧪 **${productLabel} Beta \`${tag}\`** ist verfügbar / is now available!`
+    : `${roleMention}🚀 **${productLabel} \`${tag}\`** ist verfügbar / is now available!`;
+
+  const fields = [];
+  if (changelog) {
+    fields.push({
+      name: "📝 Changelog / Änderungen",
+      value: truncateText(changelog, 1024),
+      inline: false,
+    });
+  }
+
+  fields.push({
+    name: "📥 Download & Support",
+    value: [
+      `• **Downloads:** ${downloadMention} · [GitHub Release (${tag})](${releaseUrl})`,
+      `• **Support / Diagnostics:** ${supportMention}`,
+    ].join("\n"),
+    inline: false,
+  });
+
+  return {
+    username: "GlobalMarket Updates",
+    content,
+    allowed_mentions: options.roleId ? { roles: [String(options.roleId)] } : { parse: [] },
+    embeds: [
+      {
+        title: `${badge} · ${truncateText(titleName, 220)}`,
+        url: releaseUrl,
+        color,
+        description: isBeta
+          ? `🇩🇪 Neue **Beta-Version** veröffentlicht. Die Download-Karte in ${downloadMention} wurde automatisch aktualisiert.\n🇬🇧 A new **Beta build** has been published. The download card in ${downloadMention} was updated automatically.`
+          : `🇩🇪 Neue **Release-Version** veröffentlicht. Die Download-Karte in ${downloadMention} wurde automatisch aktualisiert.\n🇬🇧 A new **Stable Release** has been published. The download card in ${downloadMention} was updated automatically.`,
+        fields,
+        footer: {
+          text: "D-S-Agrarservice · GlobalMarket",
+        },
+        timestamp: new Date(publishedUnix * 1000).toISOString(),
+      },
+    ],
+  };
+}
