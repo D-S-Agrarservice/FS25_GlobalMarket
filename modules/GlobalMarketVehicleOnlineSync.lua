@@ -22,7 +22,8 @@ GlobalMarketVehicleOnline.RECONCILE_GRACE_MS = 120000
 ---@param xmlFile table
 function GlobalMarket:readVehicleSyncXml(xmlFile)
     local V = GlobalMarketVehicleOnline
-    local packet = { hasListings = xmlFile:hasProperty("gmDataSync.listings"), listings = {}, actionResults = {}, settlements = {} }
+    local packet = { hasListings = xmlFile:hasProperty("gmDataSync.listings"), listings = {}, actionResults = {}, settlements = {},
+        serverIdentity = GlobalMarketServerIdentity.readXml(xmlFile) }
 
     xmlFile:iterate("gmDataSync.listings.listing", function(_, key)
         if #packet.listings >= V.MAX_REMOTE_LISTINGS then
@@ -118,9 +119,16 @@ function GlobalMarket:applyVehicleSyncPacket(packet)
     if g_server == nil or packet == nil then
         return
     end
+    -- The secret is sent only once (#42): store it before anything else
+    self:applyServerIdentity(packet.serverIdentity)
     local changed = false
     for _, result in ipairs(packet.actionResults or {}) do
-        changed = self:applyVehicleActionResult(result) or changed
+        local handled = self:applyVehicleActionResult(result)
+        if not handled and result.reason == GlobalMarketServerIdentity.REASON_SECRET_INVALID then
+            -- No own listing or purchase to report it on (e.g. REQUEST_SYNC)
+            self:notifyOnlineIdentityRejected()
+        end
+        changed = handled or changed
     end
     if packet.hasListings then
         changed = self:applyVehicleListingSnapshot(packet.listings or {}) or changed
@@ -164,6 +172,8 @@ function GlobalMarket:applyVehicleActionResult(result)
         return false
     end
     local accepted = (result.status == "ACCEPTED")
+    local rejectCode = (result.reason == GlobalMarketServerIdentity.REASON_SECRET_INVALID)
+        and "onlineIdentityRejected" or "onlineRejected"
 
     if kind == "CREATE" and listing.status == S.PENDING_CREATE then
         if accepted then
@@ -175,7 +185,7 @@ function GlobalMarket:applyVehicleActionResult(result)
             self:notifyVehicleMarketFarms(N.LISTED, listing.sellerFarmId, 0, "", listing.snapshot.xmlFilename,
                 GlobalMarketVehicleListings.getListingPrice(listing) or 0, "")
         else
-            self:notifyVehicleMarketFarms(N.RESULT, listing.sellerFarmId, 0, "onlineRejected", "", 0, "")
+            self:notifyVehicleMarketFarms(N.RESULT, listing.sellerFarmId, 0, rejectCode, "", 0, "")
             self:returnVehicleListing(listing)
         end
     elseif kind == "CANCEL" then
@@ -188,7 +198,7 @@ function GlobalMarket:applyVehicleActionResult(result)
         elseif listing.status == S.PENDING_CANCEL then
             listing.status = S.OPEN
             listing.cancelActionId = nil
-            self:notifyVehicleMarketFarms(N.RESULT, listing.sellerFarmId, 0, "onlineRejected", "", 0, "")
+            self:notifyVehicleMarketFarms(N.RESULT, listing.sellerFarmId, 0, rejectCode, "", 0, "")
         else
             -- Reconcile cancel of a PENDING_CREATE was refused: try again after the next snapshot
             listing.cancelActionId = nil

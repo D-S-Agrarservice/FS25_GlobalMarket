@@ -163,6 +163,8 @@ function GlobalMarket:dispatchVehicleAction(payload)
     end
     payload.actionId = payload.actionId or self:nextOnlineContractActionId()
     payload.serverId = payload.serverId or self:ensureServerInstanceId()
+    -- Same savegame credential as the contracts (#42); only the Data-Host receives it
+    payload.serverSecret = self:getServerSecret()
     -- Debug mock backend (gmTestOnlineVehicles) answers instead of the companion client
     if self.vehicleMock ~= nil then
         table.insert(self.vehicleMock.outbox, payload)
@@ -196,6 +198,7 @@ function GlobalMarket:exportVehicleAction(payload)
     xmlFile:setString(key .. "#subAction", payload.subAction)
     xmlFile:setString(key .. "#actionId", payload.actionId or "")
     xmlFile:setString(key .. "#serverId", payload.serverId or "")
+    xmlFile:setString(key .. "#serverSecret", payload.serverSecret or "")
     if (payload.farmId or 0) > 0 then
         xmlFile:setInt(key .. "#farmId", payload.farmId)
     end

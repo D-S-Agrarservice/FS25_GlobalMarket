@@ -77,6 +77,10 @@ end
 ---@param code string
 ---@return string
 function GlobalMarket.getVehicleMarketReasonText(code)
+    -- Savegame credential rejected by the backend (#42): same text as for contracts
+    if code == "onlineIdentityRejected" and GlobalMarket.getOnlineReasonText ~= nil then
+        return GlobalMarket.getOnlineReasonText("SERVER_SECRET_INVALID")
+    end
     local cfg = GlobalMarket.VEHICLE_MARKET
     if NOT_AVAILABLE_REASONS[code] then
         code = "notAvailable"
@@ -223,7 +227,7 @@ function GlobalMarket:onVehicleListingBought(vehicles, loadingState, args)
     GlobalMarket.applyVehicleMarketLicensePlate(vehicles, args.licensePlateData)
     g_currentMission:addMoney(-price, buyerFarmId, MoneyType.SHOP_VEHICLE_BUY, true, true)
     local buyerName = GlobalMarket.getVehicleMarketFarmName(buyerFarmId)
-    if not listing.isNpc then
+    if not listing.isNpc and not listing.isSellerDeleted then
         g_currentMission:addMoney(price, listing.sellerFarmId, MoneyType.SHOP_VEHICLE_SELL, true, true)
         self:notifyVehicleMarketFarms(N.SOLD, listing.sellerFarmId, 0, "", listing.snapshot.xmlFilename, price, buyerName)
     end
@@ -284,14 +288,16 @@ end
 -- FARM CLEANUP (Server, #30 pattern)
 -- =========================================================================
 
----Removes the listings of a deleted farm (the vehicles have no owner to return to)
+---Removes the listings, online purchases and deliveries of a deleted farm (the vehicles have no owner to return to)
 ---@param farmId number
 ---@return boolean changed
 function GlobalMarket:cleanupVehicleListingsForDeletedFarm(farmId)
     local kept = {}
-    local changed = false
+    local changed = self.cleanupVehicleBuysForDeletedFarm ~= nil and self:cleanupVehicleBuysForDeletedFarm(farmId) or false
     for _, listing in ipairs(self.vehicleListings or {}) do
-        if not listing.isNpc and listing.sellerFarmId == farmId and listing.status ~= GlobalMarket.VEHICLE_LISTING_STATUS.BUYING then
+        if not listing.isNpc and listing.sellerFarmId == farmId then
+            -- A running purchase (BUYING) still completes for its buyer, but nobody is paid
+            listing.isSellerDeleted = true
             -- Online listings are withdrawn at the backend as well (#36)
             if listing.isOnline then
                 self:withdrawOnlineVehicleListingForDeletedFarm(listing)

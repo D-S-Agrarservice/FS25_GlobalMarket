@@ -9,13 +9,16 @@
 
 -- A purchase request without backend answer releases its money reservation after this time
 GlobalMarketVehicleOnline.BUY_TIMEOUT_MS = 300000
+-- Purchase requests remembered (persisted) until they are rejected or settled, see cleanupVehicleBuysForDeletedFarm
+GlobalMarketVehicleOnline.MAX_BUY_LOG = 64
 
 -- Backend rejection reasons mapped to the local reason texts
 local BUY_REJECT_REASONS = {
     LISTING_NOT_FOUND = "listingNotFound",
     LISTING_SOLD = "listingBusy",
     LISTING_BUSY = "listingBusy",
-    OWN_LISTING = "ownListing"
+    OWN_LISTING = "ownListing",
+    SERVER_SECRET_INVALID = "onlineIdentityRejected"
 }
 
 -- =========================================================================
@@ -50,6 +53,28 @@ function GlobalMarket:getReservedOnlineVehicleMoney(farmId)
         end
     end
     return sum
+end
+
+---Remembers which farm sent a purchase request (outlives the reservation timeout and a restart)
+---@param actionId string
+---@param farmId number
+function GlobalMarket:addVehicleBuyLog(actionId, farmId)
+    self.vehicleBuyLog = self.vehicleBuyLog or {}
+    table.insert(self.vehicleBuyLog, { actionId = actionId, farmId = farmId })
+    while #self.vehicleBuyLog > GlobalMarketVehicleOnline.MAX_BUY_LOG do
+        table.remove(self.vehicleBuyLog, 1)
+    end
+end
+
+---Forgets a purchase request that was rejected or settled
+---@param actionId string|nil
+function GlobalMarket:removeVehicleBuyLog(actionId)
+    for i, entry in ipairs(self.vehicleBuyLog or {}) do
+        if entry.actionId == actionId then
+            table.remove(self.vehicleBuyLog, i)
+            return
+        end
+    end
 end
 
 ---Sends BUY_LISTING for an online listing; money is reserved, charged with LISTING_BOUGHT
@@ -96,6 +121,7 @@ function GlobalMarket:buyOnlineVehicleListing(remoteId, buyerFarmId, licensePlat
         licensePlateData = licensePlateData,
         createdAtMs = g_time or 0
     }
+    self:addVehicleBuyLog(payload.actionId, buyerFarmId)
     listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.BUYING
     self:broadcastVehicleMarketState()
     return true, nil
@@ -105,6 +131,9 @@ end
 ---@param result table
 ---@return boolean changed
 function GlobalMarket:applyVehicleBuyResult(result)
+    if result.status ~= "ACCEPTED" then
+        self:removeVehicleBuyLog(result.actionId)
+    end
     local buy = (self.pendingVehicleBuys or {})[result.actionId]
     if buy == nil then
         return false
@@ -202,12 +231,20 @@ function GlobalMarket:applyVehicleBoughtSettlement(settlement)
     if buy ~= nil then
         self.pendingVehicleBuys[settlement.buyActionId] = nil
     end
+    self:removeVehicleBuyLog(settlement.buyActionId)
     -- The bought foreign listing is gone from the market
     for i, listing in ipairs(self.onlineVehicleListings or {}) do
         if listing.remoteId == settlement.remoteId then
             table.remove(self.onlineVehicleListings, i)
             break
         end
+    end
+    if self.isOrphanedOnlineRemoteId ~= nil and self:isOrphanedOnlineRemoteId(settlement.buyActionId) then
+        -- Bought by a deleted farm (#30): acknowledged, never booked onto a farm with the same ID
+        if self.debugManager ~= nil then
+            self.debugManager:info("VehicleOnline: LISTING_BOUGHT %s belongs to a deleted farm, dropped.", settlement.settlementId)
+        end
+        return
     end
     if not getFarmExists(settlement.targetFarmId) or settlement.snapshot == nil then
         if self.debugManager ~= nil then
@@ -297,6 +334,15 @@ function GlobalMarket:onVehicleDeliveryLoaded(vehicles, loadingState, args)
         return
     end
     delivery.isLoading = false
+    if delivery.isFarmDeleted then
+        -- The farm was deleted while its vehicle was loading: nobody owns or pays it
+        for _, vehicle in ipairs(vehicles or {}) do
+            if not vehicle.isDeleted then
+                vehicle:delete()
+            end
+        end
+        return
+    end
     local N = GlobalMarket.VEHICLE_NOTICE
     if loadingState ~= VehicleLoadingState.OK then
         if not delivery.isNotified then
@@ -317,7 +363,43 @@ function GlobalMarket:onVehicleDeliveryLoaded(vehicles, loadingState, args)
     self:broadcastVehicleMarketState()
 end
 
----Writes waiting deliveries below the vehicle market key
+---Drops purchases and deliveries of a deleted farm, so a new farm with the reused ID inherits nothing (#30)
+---@param farmId number
+---@return boolean changed
+function GlobalMarket:cleanupVehicleBuysForDeletedFarm(farmId)
+    local changed = false
+    -- Late LISTING_BOUGHT settlements are recognized by the actionId (persisted orphan list)
+    for i = #(self.vehicleBuyLog or {}), 1, -1 do
+        local entry = self.vehicleBuyLog[i]
+        if entry.farmId == farmId then
+            self:markOrphanedOnlineRemoteId(entry.actionId)
+            table.remove(self.vehicleBuyLog, i)
+        end
+    end
+    for actionId, buy in pairs(self.pendingVehicleBuys or {}) do
+        if buy.farmId == farmId then
+            self:markOrphanedOnlineRemoteId(actionId)
+            self.pendingVehicleBuys[actionId] = nil
+            local listing = self:findOnlineVehicleListingByRemoteId(buy.remoteId)
+            if not buy.accepted and listing ~= nil and listing.status == GlobalMarket.VEHICLE_LISTING_STATUS.BUYING then
+                listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.OPEN
+            end
+            changed = true
+        end
+    end
+    for i = #(self.pendingVehicleDeliveries or {}), 1, -1 do
+        local delivery = self.pendingVehicleDeliveries[i]
+        if delivery.farmId == farmId then
+            -- A vehicle that is loading right now is removed in onVehicleDeliveryLoaded
+            delivery.isFarmDeleted = true
+            table.remove(self.pendingVehicleDeliveries, i)
+            changed = true
+        end
+    end
+    return changed
+end
+
+---Writes waiting deliveries and open purchase requests below the vehicle market key
 ---@param xmlFile table
 ---@param rootKey string
 function GlobalMarket:saveVehicleDeliveriesToXml(xmlFile, rootKey)
@@ -328,9 +410,14 @@ function GlobalMarket:saveVehicleDeliveriesToXml(xmlFile, rootKey)
         xmlFile:setBool(key .. "#isNotified", delivery.isNotified == true)
         GlobalMarketVehicleListings.writeSnapshotToXml(xmlFile, key .. ".vehicle", delivery.snapshot)
     end
+    for i, entry in ipairs(self.vehicleBuyLog or {}) do
+        local key = string.format("%s.openBuy(%d)", rootKey, i - 1)
+        xmlFile:setString(key .. "#actionId", entry.actionId)
+        xmlFile:setInt(key .. "#farmId", entry.farmId)
+    end
 end
 
----Reads waiting deliveries (license plates are not kept, a random one is used)
+---Reads waiting deliveries and open purchase requests (license plates are not kept, a random one is used)
 ---@param xmlFile table
 ---@param rootKey string
 function GlobalMarket:loadVehicleDeliveriesFromXml(xmlFile, rootKey)
@@ -344,6 +431,13 @@ function GlobalMarket:loadVehicleDeliveriesFromXml(xmlFile, rootKey)
                 isNotified = xmlFile:getBool(key .. "#isNotified", false),
                 snapshot = snapshot
             })
+        end
+    end)
+    self.vehicleBuyLog = {}
+    xmlFile:iterate(rootKey .. ".openBuy", function(_, key)
+        local actionId = xmlFile:getString(key .. "#actionId", "")
+        if actionId ~= "" then
+            self:addVehicleBuyLog(actionId, xmlFile:getInt(key .. "#farmId", 0))
         end
     end)
 end

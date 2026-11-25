@@ -49,6 +49,8 @@ function ContractOnlineBridgeEvent:writeStream(streamId, connection)
         streamWriteBool(streamId, p.wasBale == true)
         streamWriteBool(streamId, p.wasPallet == true)
         streamWriteString(streamId, p.settlementIds or "")
+        -- Savegame credential (#42): this event only goes to the active Data-Host
+        streamWriteString(streamId, p.serverSecret or "")
         return
     end
 
@@ -122,6 +124,9 @@ function ContractOnlineBridgeEvent:writeStream(streamId, connection)
         streamWriteInt8(streamId, s.priceDeltaPct or 0)
         streamWriteString(streamId, s.sourceLabel or "")
     end
+
+    streamWriteBool(streamId, pkt.hasBoard ~= false)
+    GlobalMarketServerIdentity.writeStream(streamId, pkt.serverIdentity)
 end
 
 function ContractOnlineBridgeEvent:readStream(streamId, connection)
@@ -143,7 +148,8 @@ function ContractOnlineBridgeEvent:readStream(streamId, connection)
             durationHours = streamReadInt16(streamId),
             wasBale = streamReadBool(streamId),
             wasPallet = streamReadBool(streamId),
-            settlementIds = streamReadString(streamId)
+            settlementIds = streamReadString(streamId),
+            serverSecret = streamReadString(streamId)
         }
         self:run(connection)
         return
@@ -224,6 +230,8 @@ function ContractOnlineBridgeEvent:readStream(streamId, connection)
         })
     end
 
+    pkt.hasBoard = streamReadBool(streamId)
+    pkt.serverIdentity = GlobalMarketServerIdentity.readStream(streamId)
     self.packet = pkt
     self:run(connection)
 end

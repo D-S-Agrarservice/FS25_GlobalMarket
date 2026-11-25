@@ -362,6 +362,9 @@ end
 ---Dispatches the server map whitelist to the specified Data-Host connection
 ---@param connection any Active Data-Host connection key ("LOCAL_HOST" or MP Connection)
 function GlobalMarket:dispatchDataHostWhitelist(connection)
+    if self.requestOnlineContractsSync ~= nil then
+        self:requestOnlineContractsSync()
+    end
     if connection == "LOCAL_HOST" then
         if self.receiveDataHostToken ~= nil then
             self:receiveDataHostToken(self.serverWhitelist)

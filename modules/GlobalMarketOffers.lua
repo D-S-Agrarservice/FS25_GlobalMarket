@@ -289,6 +289,10 @@ function GlobalMarket:saveContractsSystemToXml(xmlFile)
     local rootKey = "globalMarket.contractsSystem"
     local serverId = (self.ensureServerInstanceId ~= nil) and self:ensureServerInstanceId() or (self.serverInstanceId or "")
     xmlFile:setString(rootKey .. "#serverInstanceId", serverId)
+    -- Online credential issued by the backend for this savegame (#42)
+    if self.getServerSecret ~= nil and self:getServerSecret() ~= "" then
+        xmlFile:setString(rootKey .. "#serverSecret", self:getServerSecret())
+    end
     xmlFile:setInt(rootKey .. "#nextContractId", self.nextContractId or 1)
     xmlFile:setInt(rootKey .. "#nextOfferId", self.nextOfferId or 1)
     xmlFile:setInt(rootKey .. "#nextInboxId", self.nextInboxId or 1)
@@ -375,6 +379,9 @@ function GlobalMarket:saveContractsSystemToXml(xmlFile)
         local key = string.format("%s.orphanedRemoteIds.remote(%d)", rootKey, i - 1)
         xmlFile:setString(key .. "#id", rid)
     end
+    if self.saveLateContractActionsToXml ~= nil then
+        self:saveLateContractActionsToXml(xmlFile, rootKey)
+    end
 
     for i, p in ipairs(self.pickupInbox or {}) do
         local key = string.format("%s.pickupInbox.item(%d)", rootKey, i - 1)
@@ -402,6 +409,10 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
         self.serverInstanceId = savedSid
     elseif self.ensureServerInstanceId ~= nil then
         self:ensureServerInstanceId()
+    end
+    local savedSecret = xmlFile:getString(rootKey .. "#serverSecret")
+    if GlobalMarketServerIdentity ~= nil and GlobalMarketServerIdentity.isValidSecret(savedSecret) then
+        self.serverSecret = savedSecret
     end
     local maxCId, maxOId, maxIId = 0, 0, 0
 
@@ -487,6 +498,9 @@ function GlobalMarket:loadContractsSystemFromXml(xmlFile)
             self:markOrphanedOnlineRemoteId(rid)
         end
     end)
+    if self.loadLateContractActionsFromXml ~= nil then
+        self:loadLateContractActionsFromXml(xmlFile, rootKey)
+    end
 
     xmlFile:iterate(rootKey .. ".pickupInbox.item", function(_, key)
         local id = xmlFile:getInt(key .. "#id") or 0

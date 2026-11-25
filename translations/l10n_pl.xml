@@ -258,6 +258,16 @@
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Nie masz do tego uprawnień." />
         <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="Rynek pojazdów online jest obecnie niedostępny." />
         <e k="ui_gm_vehicles_reason_onlineRejected"                v="Rynek online odrzucił żądanie." />
+        <e k="ui_gm_online_reason_identityRejected"                v="Rynek online odrzucił tożsamość online tego zapisu gry. Skontaktuj się z pomocą techniczną." />
+        <e k="ui_gm_online_reason_notApproved"                     v="Ten towar nie jest dopuszczony do handlu online." />
+        <e k="ui_gm_online_reason_limitReached"                    v="Twoje gospodarstwo ma już maksymalną liczbę otwartych ofert online." />
+        <e k="ui_gm_online_reason_alreadyAccepted"                 v="Ten kontrakt dostaw został już przyjęty przez inne gospodarstwo." />
+        <e k="ui_gm_online_reason_expired"                         v="Ta oferta już wygasła." />
+        <e k="ui_gm_online_reason_soldOut"                         v="Ta oferta bezpośrednia jest już wyprzedana." />
+        <e k="ui_gm_online_reason_insufficientLiters"              v="Ta oferta bezpośrednia nie ma już wystarczającej ilości." />
+        <e k="ui_gm_online_reason_ownListing"                      v="Nie możesz przyjąć ani kupić własnej oferty." />
+        <e k="ui_gm_online_reason_notAvailable"                    v="Ta oferta nie jest już dostępna." />
+        <e k="ui_gm_online_reason_offline"                         v="Rynek online jest obecnie niedostępny." />
         <e k="ui_gm_noPermission"                                  v="Nie masz do tego uprawnień." />
         <e k="ui_gm_animals_reason_invalid"                        v="Tych zwierząt nie można wystawić." />
         <e k="ui_gm_animals_reason_unavailable"                    v="Targ zwierząt nie jest dostępny w tym zapisie gry." />

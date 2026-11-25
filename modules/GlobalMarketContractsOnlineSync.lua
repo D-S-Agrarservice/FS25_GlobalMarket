@@ -40,7 +40,11 @@ function GlobalMarket:onReadCustomSyncXml(action, xmlFile)
         contracts = {},
         directOffers = {},
         actionResults = {},
-        settlements = {}
+        settlements = {},
+        -- A file without board (e.g. the client's synthetic SERVER_SECRET_INVALID result) must not clear it
+        hasBoard = (xmlFile:hasProperty("gmDataSync.contracts") or xmlFile:hasProperty("gmDataSync.directOffers")) == true,
+        -- Issued once by the backend (#42), applied on the server before anything else
+        serverIdentity = GlobalMarketServerIdentity.readXml(xmlFile)
     }
 
     xmlFile:iterate("gmDataSync.contracts.contract", function(_, key)
@@ -185,6 +189,8 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
     self.contracts = self.contracts or {}
     self.directOffers = self.directOffers or {}
     local myServerId = self:ensureServerInstanceId()
+    -- The secret is sent only once: store it even if nothing else in the packet applies
+    self:applyServerIdentity(packet.serverIdentity)
     local contractMoneyType = MoneyType.GM_CONTRACTS or MoneyType.GM_BUY
     local penaltyMoneyType = MoneyType.GM_PENALTIES or MoneyType.GM_FEE
 
@@ -201,12 +207,18 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
     for _, res in ipairs(packet.actionResults or {}) do
         local sub = res.subAction
         local accepted = (res.status == "ACCEPTED")
-        if self.orphanedActionIds ~= nil and self.orphanedActionIds[res.actionId] ~= nil then
+        local isOrphanedAction = self.orphanedActionIds ~= nil and self.orphanedActionIds[res.actionId] ~= nil
+        if not accepted and not isOrphanedAction then
+            -- Tell the farm why (#42); resolved before the branches below drop the pending entry
+            self:notifyOnlineContractRejected(res, self:getOnlineResultFarmId(res))
+        end
+        if isOrphanedAction then
             -- Action of a deleted farm (#30): never bind/refund, cancel accepted creates
             self:handleOrphanedActionResult(res)
         elseif sub == "CREATE_CONTRACT" then
             local idx, c = GlobalMarketContracts.findOnlineEntry(self.contracts, res.actionId, res.remoteId)
-            if c ~= nil then
+            -- The backend repeats results for 10 minutes: never reset an already answered create
+            if c ~= nil and c.status == "PENDING_CREATE" then
                 if accepted and res.remoteId ~= "" then
                     c.remoteId = res.remoteId
                     c.status = "OPEN"
@@ -223,7 +235,7 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
             end
         elseif sub == "CREATE_OFFER" then
             local idx, o = GlobalMarketContracts.findOnlineEntry(self.directOffers, res.actionId, res.remoteId)
-            if o ~= nil then
+            if o ~= nil and o.status == "PENDING_CREATE" then
                 if accepted and res.remoteId ~= "" then
                     o.remoteId = res.remoteId
                     o.status = "OPEN"
@@ -247,7 +259,7 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
                     end
                     if c.remoteId ~= "" then self.settledCancelRemoteIds[c.remoteId] = true end
                     table.remove(self.contracts, idx)
-                else
+                elseif c.pendingActionId == nil or c.pendingActionId == res.actionId then
                     c.status = "OPEN"
                     c.pendingActionId = nil
                     c.pendingSinceMs = nil
@@ -271,7 +283,7 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
                     end
                     if o.remoteId ~= "" then self.settledCancelRemoteIds[o.remoteId] = true end
                     table.remove(self.directOffers, idx)
-                else
+                elseif o.pendingActionId == nil or o.pendingActionId == res.actionId then
                     o.status = "OPEN"
                     o.pendingActionId = nil
                     o.pendingSinceMs = nil
@@ -294,6 +306,8 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
                     end
                 end
             end
+        elseif sub == "DELIVER_CONTRACT" then
+            self:applyOnlineDeliveryResult(res)
         elseif sub == "BUY_OFFER" then
             local pending = self.pendingContractActions[res.actionId]
             self.pendingContractActions[res.actionId] = nil
@@ -422,7 +436,9 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
     end
 
     -- 3. Merge authoritative online snapshot while preserving local items, pending creates & stable UI IDs
-    self:mergeOnlineContractsSnapshot(packet.contracts or {}, packet.directOffers or {})
+    if packet.hasBoard ~= false then
+        self:mergeOnlineContractsSnapshot(packet.contracts or {}, packet.directOffers or {})
+    end
     if self.broadcastContractsState ~= nil then
         self:broadcastContractsState()
     end
@@ -435,7 +451,11 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
         if not c.isOnline then
             table.insert(keptContracts, c)
         else
-            if c.remoteId ~= nil and c.remoteId ~= "" then existingCByRid[c.remoteId] = c end
+            -- Two entries after a lost create answer: the one that holds the escrow wins
+            local known = (c.remoteId ~= nil and c.remoteId ~= "") and existingCByRid[c.remoteId] or nil
+            if c.remoteId ~= nil and c.remoteId ~= "" and (known == nil or (c.escrowRemaining or 0) > (known.escrowRemaining or 0)) then
+                existingCByRid[c.remoteId] = c
+            end
             if c.status == "PENDING_CREATE" then table.insert(keptContracts, c) end
         end
     end
@@ -488,6 +508,8 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
                     monthsRemaining = 0,
                     remainingSeconds = rc.remainingSeconds or 0,
                     status = status,
+                    pendingActionId = (status == "PENDING_CANCEL") and prev.pendingActionId or nil,
+                    pendingSinceMs = (status == "PENDING_CANCEL") and prev.pendingSinceMs or nil,
                     pendingAcceptFarmId = prev and prev.pendingAcceptFarmId or nil
                 })
             end
@@ -540,6 +562,8 @@ function GlobalMarket:mergeOnlineContractsSnapshot(remoteContracts, remoteOffers
                     remainingSeconds = ro.remainingSeconds or 0,
                     wasBale = (prev ~= nil and prev.wasBale == true) or (ro.wasBale == true),
                     wasPallet = (prev ~= nil and prev.wasPallet == true) or (ro.wasPallet == true),
+                    pendingActionId = (status == "PENDING_CANCEL") and prev ~= nil and prev.pendingActionId or nil,
+                    pendingSinceMs = (status == "PENDING_CANCEL") and prev ~= nil and prev.pendingSinceMs or nil,
                     status = status
                 })
             end
@@ -562,6 +586,8 @@ function GlobalMarket:updateOnlineContractsTimers(dt)
     end
     local elapsedSec = math.floor(self.onlineTimerAccumMs / 1000)
     self.onlineTimerAccumMs = self.onlineTimerAccumMs - (elapsedSec * 1000)
+    self:updateOnlineContractsSync()
+    self:retryUnansweredCancels()
 
     for _, c in ipairs(self.contracts or {}) do
         if c.isOnline and (c.remainingSeconds or 0) > 0 then
@@ -575,28 +601,14 @@ function GlobalMarket:updateOnlineContractsTimers(dt)
     end
 
     if g_currentMission ~= nil and g_currentMission:getIsServer() and self.pendingContractActions ~= nil then
-        local nowMs = g_time or 0
-        local timeout = GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS or 30000
-        local clearedAny = false
-        for actionId, act in pairs(self.pendingContractActions) do
-            if (nowMs - (act.createdAtMs or 0)) >= timeout then
-                if act.subAction == "ACCEPT_CONTRACT" and act.remoteId ~= nil then
-                    local _, c = GlobalMarketContracts.findOnlineEntry(self.contracts, nil, act.remoteId)
-                    if c ~= nil and c.pendingAcceptFarmId == act.farmId then
-                        c.pendingAcceptFarmId = nil
-                        clearedAny = true
-                    end
-                end
-                self.pendingContractActions[actionId] = nil
-            end
-        end
+        local clearedAny = self:releasePendingContractActions(GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS or 30000)
         if clearedAny and self.broadcastContractsState ~= nil then
             self:broadcastContractsState()
         end
     end
 end
 
----Developer console command for Stage 2 testing (`gmTestOnlineContracts <on|off|mock>`)
+---Developer console command for Stage 2 testing (`gmTestOnlineContracts <on|off|mock|secret|secretoff|reject>`)
 function GlobalMarket:consoleCommandTestOnlineContracts(cmdArg)
     if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
         return "GM Debug Mode is disabled."
@@ -615,6 +627,42 @@ function GlobalMarket:consoleCommandTestOnlineContracts(cmdArg)
         self.debugForceOnlineContracts = false
         self:broadcastContractsState()
         return "Stage 2 Online Contracts debug capability override OFF."
+    elseif arg == "secret" then
+        -- Simulates the backend issuing the savegame credential (#42); the value is never printed.
+        -- A real credential is kept: overwriting it would lock this savegame out of the online market.
+        local known = self:getServerSecret()
+        if known ~= "" and string.sub(known, 1, 4) ~= "mock" then
+            return "This savegame already has a real online credential, it was kept."
+        end
+        self:applyOnlineContractSyncPacket({ hasBoard = false, serverIdentity = {
+            serverId = self:ensureServerInstanceId(),
+            serverSecret = string.format("mock%08x%08x", math.random(0, 0x7fffffff), math.random(0, 0x7fffffff))
+        } })
+        return string.format("Mock online credential stored (known: %s). Remove it with: gmTestOnlineContracts secretoff",
+            tostring(self:getServerSecret() ~= ""))
+    elseif arg == "secretoff" then
+        if string.sub(self:getServerSecret(), 1, 4) ~= "mock" then
+            return "No mock online credential stored."
+        end
+        self.serverSecret = nil
+        return "Mock online credential removed (save the game to keep it removed)."
+    elseif arg == "reject" then
+        -- Simulates SERVER_SECRET_INVALID for all pending own creates plus a savegame-wide REQUEST_SYNC
+        local rejected = { { actionId = "mock_sync_" .. tostring(g_time or 0), subAction = "REQUEST_SYNC", status = "REJECTED",
+            reason = "SERVER_SECRET_INVALID" } }
+        for _, c in ipairs(self.contracts or {}) do
+            if c.isOnline and c.status == "PENDING_CREATE" and c.pendingActionId ~= nil then
+                table.insert(rejected, { actionId = c.pendingActionId, subAction = "CREATE_CONTRACT", status = "REJECTED", reason = "SERVER_SECRET_INVALID" })
+            end
+        end
+        for _, o in ipairs(self.directOffers or {}) do
+            if o.isOnline and o.status == "PENDING_CREATE" and o.pendingActionId ~= nil then
+                table.insert(rejected, { actionId = o.pendingActionId, subAction = "CREATE_OFFER", status = "REJECTED", reason = "SERVER_SECRET_INVALID" })
+            end
+        end
+        self.lastIdentityNoticeMs = nil
+        self:applyOnlineContractSyncPacket({ hasBoard = false, actionResults = rejected })
+        return string.format("Injected %d SERVER_SECRET_INVALID result(s).", #rejected)
     end
 
     self.debugForceOnlineContracts = true
@@ -634,10 +682,10 @@ function GlobalMarket:consoleCommandTestOnlineContracts(cmdArg)
     self:applyOnlineContractSyncPacket({
         actionResults = results,
         contracts = {
-            { remoteId = "mock_foreign_c1", origin = "ONLINE", isNpc = false, issuerServerId = "remote_srv_9999", issuerFarmId = 2, issuerName = "Mock Partner [EU]", contractorServerId = "", contractorFarmId = 0, fillType = "WHEAT", totalLiters = 50000, deliveredLiters = 0, baseTrendFactor = 1.0, bonusPct = 14, remainingSeconds = 172800, status = "OPEN" }
+            { remoteId = "mock_foreign_c1", origin = "ONLINE", isNpc = false, issuerServerId = "", issuerFarmId = 2, issuerName = "Mock Partner [EU]", contractorServerId = "", contractorFarmId = 0, fillType = "WHEAT", totalLiters = 50000, deliveredLiters = 0, baseTrendFactor = 1.0, bonusPct = 14, remainingSeconds = 172800, status = "OPEN" }
         },
         directOffers = {
-            { remoteId = "mock_foreign_o1", origin = "ONLINE", isNpc = false, sellerServerId = "remote_srv_9999", sellerFarmId = 2, sellerName = "Mock Trader [EU]", fillType = "BARLEY", totalLiters = 30000, remainingLiters = 30000, priceDeltaPct = -6, allowPartial = true, remainingSeconds = 86400, wasBale = false, wasPallet = false, status = "OPEN" }
+            { remoteId = "mock_foreign_o1", origin = "ONLINE", isNpc = false, sellerServerId = "", sellerFarmId = 2, sellerName = "Mock Trader [EU]", fillType = "BARLEY", totalLiters = 30000, remainingLiters = 30000, priceDeltaPct = -6, allowPartial = true, remainingSeconds = 86400, wasBale = false, wasPallet = false, status = "OPEN" }
         }
     })
     return "Injected mock Stage 2 online contract, direct offer, and accepted pending creates."

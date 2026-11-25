@@ -577,6 +577,7 @@ function GlobalMarket:assignNextDataHost()
     if nextConn ~= nil then
         local prevWasOnline = (self.isOnline == true)
         self.dataHostConnection = nextConn
+        if self.requestOnlineContractsSync ~= nil then self:requestOnlineContractsSync() end
         self.isOnline = true
         if self.onDataHostSelectedBranding ~= nil then
             self:onDataHostSelectedBranding(self.clientExeStates[nextConn], prevWasOnline)
@@ -637,7 +638,6 @@ function GlobalMarket:receiveDataHostToken(whitelist)
     self.timerData = self.intervalData or 1000
     self:updateHudIconState()
     if self.refreshBrandingUiIfOpen ~= nil then self:refreshBrandingUiIfOpen() end
-    if self.onBecomeContractsDataHost ~= nil then self:onBecomeContractsDataHost() end
     if self.debugManager ~= nil then
         self.debugManager:info("Sync: Data-Host token active (%d whitelist items). Exporting whitelist to companion client.", #(whitelist or {}))
     end

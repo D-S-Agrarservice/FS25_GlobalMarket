@@ -43,6 +43,12 @@ end
 function GlobalMarket:handleOrphanedActionResult(res)
     local info = self.orphanedActionIds[res.actionId]
     self.orphanedActionIds[res.actionId] = nil
+    for i, actionId in ipairs(self.orphanedActionOrder or {}) do
+        if actionId == res.actionId then
+            table.remove(self.orphanedActionOrder, i)
+            break
+        end
+    end
     if info == nil or res.remoteId == nil or res.remoteId == "" then
         return
     end
@@ -75,7 +81,7 @@ function GlobalMarket:cleanupContractsForDeletedFarm(farmId)
     -- 1. Pending online actions (ACCEPT_CONTRACT / BUY_OFFER / CREATE_*) of the farm
     for actionId, act in pairs(self.pendingContractActions or {}) do
         if act.farmId == farmId then
-            self.orphanedActionIds[actionId] = { subAction = act.subAction, farmId = farmId }
+            self:markOrphanedOnlineAction(actionId, act.subAction, farmId)
             self:markOrphanedOnlineRemoteId(act.remoteId)
             self.pendingContractActions[actionId] = nil
         end
@@ -93,7 +99,7 @@ function GlobalMarket:cleanupContractsForDeletedFarm(farmId)
         if isIssuer or isContractor then
             if c.isOnline then
                 if c.pendingActionId ~= nil and c.pendingActionId ~= "" then
-                    self.orphanedActionIds[c.pendingActionId] = { subAction = (c.status == "PENDING_CREATE") and "CREATE_CONTRACT" or "CANCEL_CONTRACT", farmId = farmId }
+                    self:markOrphanedOnlineAction(c.pendingActionId, (c.status == "PENDING_CREATE") and "CREATE_CONTRACT" or "CANCEL_CONTRACT", farmId)
                 end
                 if isIssuer and c.status == "OPEN" and c.remoteId ~= nil and c.remoteId ~= "" then
                     self:dispatchOnlineContractAction({
@@ -120,7 +126,7 @@ function GlobalMarket:cleanupContractsForDeletedFarm(farmId)
         if o.sellerFarmId == farmId and (not o.isOnline or o.sellerServerId == myServerId) then
             if o.isOnline then
                 if o.pendingActionId ~= nil and o.pendingActionId ~= "" then
-                    self.orphanedActionIds[o.pendingActionId] = { subAction = (o.status == "PENDING_CREATE") and "CREATE_OFFER" or "CANCEL_OFFER", farmId = farmId }
+                    self:markOrphanedOnlineAction(o.pendingActionId, (o.status == "PENDING_CREATE") and "CREATE_OFFER" or "CANCEL_OFFER", farmId)
                 end
                 if o.status == "OPEN" and o.remoteId ~= nil and o.remoteId ~= "" then
                     self:dispatchOnlineContractAction({

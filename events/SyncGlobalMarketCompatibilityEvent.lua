@@ -95,9 +95,8 @@ function SyncGlobalMarketCompatibilityEvent:run(connection)
 
                     -- If a new conflicting mod is currently running on the server, broadcast a warning
                     if hasActiveConflicts then
-                        -- Broadcast warning to ALL clients (including the admin)
-                        -- FSBaseMission.INGAME_NOTIFICATION_CRITICAL is the native red UI banner
-                        g_server:broadcastEvent(IngameNotificationEvent.new(FSBaseMission.INGAME_NOTIFICATION_CRITICAL, g_i18n:getText("ui_gm_warning_restart_required")))
+                        -- Red warning for ALL clients (including the admin) and a listen host
+                        GlobalMarketWarningEvent.broadcast("ui_gm_warning_restart_required")
                     end
                 else
                     if GlobalMarket.debugManager ~= nil then

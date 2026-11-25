@@ -28,6 +28,7 @@ function GlobalMarket:initOnlineContractsSystem()
     self.orphanedRemoteIds = {}
     self.orphanedRemoteLookup = {}
     self.orphanedActionIds = {}
+    self.orphanedActionOrder = {}
     self.onlineTimerAccumMs = 0
     self.debugForceOnlineContracts = false
 end
@@ -186,6 +187,8 @@ function GlobalMarket:dispatchOnlineContractAction(payload)
     if not self:getAreOnlineContractsSupported() then
         return false
     end
+    -- Savegame credential (#42): only the server knows it, only the Data-Host receives it
+    payload.serverSecret = self:getServerSecret()
     if self.isDataHost then
         return self:exportContractAction(payload)
     elseif self.dataHostConnection ~= nil and type(self.dataHostConnection) == "table" and ContractOnlineBridgeEvent ~= nil then
@@ -215,6 +218,7 @@ function GlobalMarket:exportContractAction(payload)
     xmlFile:setString(key .. "#subAction", tostring(payload.subAction or ""))
     xmlFile:setString(key .. "#actionId", tostring(payload.actionId or ""))
     xmlFile:setString(key .. "#serverId", tostring(payload.serverId or ""))
+    xmlFile:setString(key .. "#serverSecret", tostring(payload.serverSecret or ""))
     if payload.farmId ~= nil and payload.farmId > 0 then
         xmlFile:setInt(key .. "#farmId", math.floor(payload.farmId))
     end
@@ -264,16 +268,27 @@ function GlobalMarket:exportContractAction(payload)
     return true
 end
 
----Requests initial online contract board sync when becoming the active Data-Host
-function GlobalMarket:onBecomeContractsDataHost()
-    if g_server == nil or not self:getAreOnlineContractsSupported() then
+---Server: lets the next tick request a fresh contract board (Data-Host assigned, market switched)
+function GlobalMarket:requestOnlineContractsSync()
+    self.contractsSyncedHost = nil
+end
+
+---Server (1 s step): sends REQUEST_SYNC once per Data-Host and whenever online contracts become available.
+---Runs on the server because a remote Data-Host (always on dedicated servers) has no server role (#42).
+function GlobalMarket:updateOnlineContractsSync()
+    if g_server == nil then
         return
     end
-    self:dispatchOnlineContractAction({
+    local host = self:getAreOnlineContractsSupported() and self.dataHostConnection or nil
+    if host == nil then
+        self.contractsSyncedHost = nil
+    elseif host ~= self.contractsSyncedHost and self:dispatchOnlineContractAction({
         subAction = "REQUEST_SYNC",
         actionId = self:nextOnlineContractActionId(),
         serverId = self:ensureServerInstanceId()
-    })
+    }) then
+        self.contractsSyncedHost = host
+    end
 end
 
 ---Clears foreign online board entries (preserving own persisted entries)
@@ -301,7 +316,9 @@ end
 ---Handles going offline / Data-Host loss for Stage 2 contracts state
 function GlobalMarket:onOnlineContractsDisconnected()
     self.onlineContractsSupported = false
-    self.pendingContractActions = {}
+    self.contractsSyncedHost = nil
+    -- Purchases and deliveries may still be answered later
+    self:releasePendingContractActions(nil)
     self:pruneForeignOnlineContracts(true, true)
     if g_server ~= nil and self.broadcastContractsState ~= nil then
         self:broadcastContractsState()
@@ -455,6 +472,8 @@ function GlobalMarket:cancelOnlineContract(farmId, contract)
             if idx ~= nil then
                 table.remove(self.contracts, idx)
             end
+            -- The client may still send the create: a late ACCEPTED is cancelled at the backend
+            self:markOrphanedOnlineAction(contract.pendingActionId, "CREATE_CONTRACT", farmId)
             self:broadcastContractsState()
             return true
         end
@@ -499,13 +518,12 @@ function GlobalMarket:requestAcceptOnlineContract(farmId, contract)
 
     local actionId = self:nextOnlineContractActionId()
     contract.pendingAcceptFarmId = farmId
-    self.pendingContractActions[actionId] = {
+    self:addPendingContractAction(actionId, {
         subAction = "ACCEPT_CONTRACT",
         farmId = farmId,
         remoteId = contract.remoteId,
-        contractId = contract.id,
-        createdAtMs = g_time or 0
-    }
+        contractId = contract.id
+    })
 
     local sent = self:dispatchOnlineContractAction({
         subAction = "ACCEPT_CONTRACT",
@@ -533,6 +551,11 @@ function GlobalMarket:deliverToOnlineContract(
         return false, 0
     end
     if not self:isOwnOnlineIdentity(contract.contractorServerId, contract.contractorFarmId, farmId) then
+        return false, 0
+    end
+    -- Without the backend nobody would credit the goods
+    if not self:getAreOnlineContractsSupported() then
+        self:broadcastOnlineNotice(farmId, GlobalMarketServerIdentity.REASON_OFFLINE)
         return false, 0
     end
 
@@ -569,9 +592,14 @@ function GlobalMarket:deliverToOnlineContract(
         end
     end
 
+    -- The backend counts whole liters: rounding the running total keeps both sides equal
+    local sentBefore = math.floor((contract.deliveredLiters or 0) + 0.5)
     contract.deliveredLiters = (contract.deliveredLiters or 0) + creditedLiters
-    if contract.deliveredLiters >= (contract.totalLiters - 0.5) then
-        local bonusPayout = math.floor(
+    local bonusPayout = 0
+    local isCompleted = contract.deliveredLiters >= (contract.totalLiters - 0.5)
+    local sentLiters = math.floor((isCompleted and contract.totalLiters or contract.deliveredLiters) + 0.5) - sentBefore
+    if isCompleted then
+        bonusPayout = math.floor(
             ((contract.totalLiters / 1000) * (contract.basePricePer1000 or 500) * ((contract.bonusPct or 0) / 100)) + 0.5
         )
         if bonusPayout > 0 then
@@ -587,14 +615,31 @@ function GlobalMarket:deliverToOnlineContract(
         end
     end
 
-    self:dispatchOnlineContractAction({
-        subAction = "DELIVER_CONTRACT",
-        actionId = self:nextOnlineContractActionId(),
-        serverId = self:ensureServerInstanceId(),
-        farmId = farmId,
-        remoteId = contract.remoteId,
-        liters = math.floor(creditedLiters + 0.5)
-    })
+    if sentLiters > 0 then
+        local actionId = self:nextOnlineContractActionId()
+        -- Reversed if the backend does not credit it (applyOnlineDeliveryResult)
+        self:addPendingContractAction(actionId, {
+            subAction = "DELIVER_CONTRACT",
+            farmId = farmId,
+            remoteId = contract.remoteId,
+            fillType = contract.fillType,
+            liters = sentLiters,
+            pricePer1000 = contract.basePricePer1000 or 500,
+            payout = basePayout,
+            bonus = bonusPayout
+        })
+        if not self:dispatchOnlineContractAction({
+            subAction = "DELIVER_CONTRACT",
+            actionId = actionId,
+            serverId = self:ensureServerInstanceId(),
+            farmId = farmId,
+            remoteId = contract.remoteId,
+            liters = sentLiters
+        }) then
+            self:applyOnlineDeliveryResult({ actionId = actionId, status = "REJECTED", reason = GlobalMarketServerIdentity.REASON_OFFLINE })
+            self:broadcastOnlineNotice(farmId, GlobalMarketServerIdentity.REASON_OFFLINE)
+        end
+    end
 
     self:broadcastContractsState()
     return true, creditedLiters
@@ -690,6 +735,8 @@ function GlobalMarket:cancelOnlineOffer(farmId, offer)
             if idx ~= nil then
                 table.remove(self.directOffers, idx)
             end
+            -- The client may still send the create: a late ACCEPTED is cancelled at the backend
+            self:markOrphanedOnlineAction(offer.pendingActionId, "CREATE_OFFER", farmId)
             self:broadcastContractsState()
             return true
         end
@@ -751,7 +798,7 @@ function GlobalMarket:requestBuyOnlineOffer(
     end
 
     local actionId = self:nextOnlineContractActionId()
-    self.pendingContractActions[actionId] = {
+    self:addPendingContractAction(actionId, {
         subAction = "BUY_OFFER",
         farmId = buyerFarmId,
         remoteId = offer.remoteId,
@@ -764,9 +811,8 @@ function GlobalMarket:requestBuyOnlineOffer(
         targetStorage = targetStorage,
         isObjectStorage = (isObjectStorage == true),
         formatXml = formatXml,
-        capacityPerObject = capacityPerObject,
-        createdAtMs = g_time or 0
-    }
+        capacityPerObject = capacityPerObject
+    })
 
     local sent = self:dispatchOnlineContractAction({
         subAction = "BUY_OFFER",

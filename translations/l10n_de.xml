@@ -258,6 +258,16 @@
         <e k="ui_gm_vehicles_reason_noPermission"                  v="Dafür fehlt dir die Berechtigung." />
         <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="Der Online-Fahrzeugmarkt ist gerade nicht erreichbar." />
         <e k="ui_gm_vehicles_reason_onlineRejected"                v="Der Online-Markt hat die Anfrage abgelehnt." />
+        <e k="ui_gm_online_reason_identityRejected"                v="Der Online-Markt hat die Online-Identität dieses Spielstands abgelehnt. Bitte wende dich an den Support." />
+        <e k="ui_gm_online_reason_notApproved"                     v="Diese Ware ist für den Online-Handel nicht freigegeben." />
+        <e k="ui_gm_online_reason_limitReached"                    v="Dein Hof hat bereits die maximale Anzahl offener Online-Einträge." />
+        <e k="ui_gm_online_reason_alreadyAccepted"                 v="Dieser Liefervertrag wurde bereits von einem anderen Hof angenommen." />
+        <e k="ui_gm_online_reason_expired"                         v="Der Eintrag ist bereits abgelaufen." />
+        <e k="ui_gm_online_reason_soldOut"                         v="Das Direktangebot ist bereits ausverkauft." />
+        <e k="ui_gm_online_reason_insufficientLiters"              v="Das Direktangebot hat nicht mehr genug Menge." />
+        <e k="ui_gm_online_reason_ownListing"                      v="Eigene Einträge kannst du nicht selbst annehmen oder kaufen." />
+        <e k="ui_gm_online_reason_notAvailable"                    v="Der Eintrag ist nicht mehr verfügbar." />
+        <e k="ui_gm_online_reason_offline"                         v="Der Online-Markt ist gerade nicht erreichbar." />
         <e k="ui_gm_noPermission"                                  v="Dafür fehlt dir die Berechtigung." />
         <e k="ui_gm_animals_reason_invalid"                        v="Diese Tiere können nicht angeboten werden." />
         <e k="ui_gm_animals_reason_unavailable"                    v="Der Tiermarkt ist in diesem Spielstand nicht verfügbar." />

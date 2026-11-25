@@ -93,6 +93,7 @@ local function writePacket(streamId, pkt)
         streamWriteString(streamId, s.otherName or "")
         writeOptSnapshot(streamId, s.snapshot)
     end
+    GlobalMarketServerIdentity.writeStream(streamId, pkt.serverIdentity)
 end
 
 ---Reads a vehicleData packet written by writePacket
@@ -140,6 +141,7 @@ local function readPacket(streamId)
         s.snapshot = readOptSnapshot(streamId)
         table.insert(pkt.settlements, s)
     end
+    pkt.serverIdentity = GlobalMarketServerIdentity.readStream(streamId)
     return pkt
 end
 
@@ -161,6 +163,8 @@ function VehicleOnlineBridgeEvent:writeStream(streamId, connection)
     streamWriteString(streamId, p.remoteId or "")
     streamWriteString(streamId, p.createActionId or "")
     streamWriteString(streamId, p.settlementIds or "")
+    -- Savegame credential (#42): this event only goes to the active Data-Host
+    streamWriteString(streamId, p.serverSecret or "")
     streamWriteBool(streamId, p.snapshot ~= nil)
     if p.snapshot ~= nil then
         SyncVehicleMarketEvent.writeSnapshot(streamId, p.snapshot)
@@ -185,7 +189,8 @@ function VehicleOnlineBridgeEvent:readStream(streamId, connection)
         durationHours = streamReadUInt16(streamId),
         remoteId = streamReadString(streamId),
         createActionId = streamReadString(streamId),
-        settlementIds = streamReadString(streamId)
+        settlementIds = streamReadString(streamId),
+        serverSecret = streamReadString(streamId)
     }
     if streamReadBool(streamId) then
         p.snapshot = SyncVehicleMarketEvent.readSnapshot(streamId)

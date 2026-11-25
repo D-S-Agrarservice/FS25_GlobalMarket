@@ -258,6 +258,16 @@
         <e k="ui_gm_vehicles_reason_noPermission"                  v="You do not have permission to do this." />
         <e k="ui_gm_vehicles_reason_onlineUnavailable"             v="The online vehicle market is currently unavailable." />
         <e k="ui_gm_vehicles_reason_onlineRejected"                v="The online market declined the request." />
+        <e k="ui_gm_online_reason_identityRejected"                v="The online market rejected this savegame's online identity. Please contact support." />
+        <e k="ui_gm_online_reason_notApproved"                     v="This good is not approved for online trading." />
+        <e k="ui_gm_online_reason_limitReached"                    v="Your farm already has the maximum number of open online listings." />
+        <e k="ui_gm_online_reason_alreadyAccepted"                 v="This supply contract has already been accepted by another farm." />
+        <e k="ui_gm_online_reason_expired"                         v="This listing has already expired." />
+        <e k="ui_gm_online_reason_soldOut"                         v="This direct offer is already sold out." />
+        <e k="ui_gm_online_reason_insufficientLiters"              v="This direct offer no longer has enough quantity." />
+        <e k="ui_gm_online_reason_ownListing"                      v="You cannot accept or buy your own listing." />
+        <e k="ui_gm_online_reason_notAvailable"                    v="This listing is no longer available." />
+        <e k="ui_gm_online_reason_offline"                         v="The online market is currently unavailable." />
         <e k="ui_gm_noPermission"                                  v="You do not have permission to do this." />
         <e k="ui_gm_animals_reason_invalid"                        v="These animals cannot be listed." />
         <e k="ui_gm_animals_reason_unavailable"                    v="The animal market is not available in this savegame." />

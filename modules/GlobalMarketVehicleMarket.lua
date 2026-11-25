@@ -222,6 +222,15 @@ function GlobalMarket:onVehicleListingReturned(vehicles, loadingState, args)
         return
     end
     listing.isReturning = false
+    if listing.isSellerDeleted then
+        -- The farm was deleted while its vehicle was loading (#30)
+        for _, vehicle in ipairs(vehicles or {}) do
+            if not vehicle.isDeleted then
+                vehicle:delete()
+            end
+        end
+        return
+    end
     if loadingState == VehicleLoadingState.OK then
         GlobalMarket.applyVehicleMarketLicensePlate(vehicles, nil)
         self:removeVehicleListing(listing)
