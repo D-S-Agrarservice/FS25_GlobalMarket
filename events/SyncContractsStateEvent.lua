@@ -35,6 +35,38 @@ function SyncContractsStateEvent.new()
     return self
 end
 
+---Returns a text that changes whenever a client would see something new: every field of writeStream
+---except remainingSeconds (clients count down themselves). Keep both in step.
+---@param gm table
+---@return string
+function SyncContractsStateEvent.getFingerprint(gm)
+    local parts = { tostring(gm.onlineContractsSupported == true or gm.debugForceOnlineContracts == true) }
+    local function add(...)
+        for i = 1, select("#", ...) do
+            local value = select(i, ...)
+            if type(value) == "number" then
+                value = string.format("%.2f", value)
+            end
+            table.insert(parts, tostring(value))
+        end
+    end
+    for _, c in ipairs(gm.contracts or {}) do
+        add("c", c.id, c.origin, c.issuerFarmId, c.issuerName, c.contractorFarmId, c.fillType, c.totalLiters, c.deliveredLiters,
+            c.basePricePer1000, c.bonusPct, c.escrowRemaining, c.monthsRemaining, c.status, c.isOnline == true, c.remoteId or "",
+            c.issuerServerId or "", c.contractorServerId or "", c.baseTrendFactor or 1, c.pendingAcceptFarmId or 0,
+            c.stationPlaceableId or "", c.stationPosX or 0, c.stationPosZ or 0)
+    end
+    for _, o in ipairs(gm.directOffers or {}) do
+        add("o", o.id, o.origin, o.sellerFarmId, o.sellerName, o.fillType, o.totalLiters, o.remainingLiters,
+            math.floor((o.refPricePer1000 or 0) + 0.5), o.priceDeltaPct, o.allowPartial == true, o.monthsRemaining, o.wasBale == true,
+            o.wasPallet == true, o.isOnline == true, o.remoteId or "", o.sellerServerId or "", o.status)
+    end
+    for _, p in ipairs(gm.pickupInbox or {}) do
+        add("p", p.id, p.farmId, p.fillType, p.liters, p.sourceType, p.sourceLabel, p.monthsRemaining)
+    end
+    return table.concat(parts, "|")
+end
+
 function SyncContractsStateEvent:writeStream(streamId, connection)
     streamWriteString(streamId, self.serverInstanceId or "")
     streamWriteBool(streamId, self.onlineContractsSupported == true)

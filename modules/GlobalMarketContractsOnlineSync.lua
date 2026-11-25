@@ -439,8 +439,8 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
     if packet.hasBoard ~= false then
         self:mergeOnlineContractsSnapshot(packet.contracts or {}, packet.directOffers or {})
     end
-    if self.broadcastContractsState ~= nil then
-        self:broadcastContractsState()
+    if self.broadcastContractsStateIfChanged ~= nil then
+        self:broadcastContractsStateIfChanged()
     end
 end
 

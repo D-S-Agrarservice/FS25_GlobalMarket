@@ -13,6 +13,8 @@ GlobalMarketContracts.ONLINE_CONTRACT_HOURS = { 24, 48, 72, 168 }
 GlobalMarketContracts.ONLINE_OFFER_HOURS = { 24, 48, 72 }
 GlobalMarketContracts.PENDING_ACTION_TIMEOUT_MS = 30000
 GlobalMarketContracts.MAX_PROCESSED_SETTLEMENTS = 256
+-- An unchanged contract state is resent to the clients at the latest after this time
+GlobalMarketContracts.CONTRACTS_RESEND_MS = 300000
 
 ---Initializes runtime state for Stage 2 online contracts & direct offers
 function GlobalMarket:initOnlineContractsSystem()

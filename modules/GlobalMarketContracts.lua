@@ -49,6 +49,7 @@ GlobalMarketContracts.NPC_TRADERS = {
 
 ---Initializes runtime tables for contracts, direct offers, and Pickup Inbox
 function GlobalMarket:initContractsSystem()
+    self.contractsBroadcastFingerprint = nil
     self.contracts = {}
     self.directOffers = {}
     self.nextContractId = 1
@@ -68,12 +69,36 @@ function GlobalMarket:broadcastContractsState()
         self:rebuildContractStationIndex()
     end
     if g_server ~= nil and SyncContractsStateEvent ~= nil then
+        self.contractsBroadcastFingerprint = SyncContractsStateEvent.getFingerprint(self)
+        self.contractsBroadcastMs = g_time or 0
         g_server:broadcastEvent(SyncContractsStateEvent.new())
     end
+    self:refreshContractsUi()
+end
+
+---Refreshes the local market menu if it is open
+function GlobalMarket:refreshContractsUi()
     local ui = self.ui or (g_currentMission ~= nil and g_currentMission.globalMarketUi or nil)
     if ui ~= nil and ui:getIsVisible() and ui.updateContent ~= nil then
         ui:updateContent()
     end
+end
+
+---Sends the snapshot only if clients would see a difference (online sync files repeat the whole board,
+---e.g. every 30 s while a settlement waits for the next save). A full one follows at the latest after
+---CONTRACTS_RESEND_MS, so countdowns stay in step.
+function GlobalMarket:broadcastContractsStateIfChanged()
+    -- Vanished map stations (#27) are cleared before the comparison
+    if self.rebuildContractStationIndex ~= nil then
+        self:rebuildContractStationIndex()
+    end
+    if g_server ~= nil and SyncContractsStateEvent ~= nil and self.contractsBroadcastFingerprint ~= nil
+        and (g_time or 0) - (self.contractsBroadcastMs or 0) < GlobalMarketContracts.CONTRACTS_RESEND_MS
+        and self.contractsBroadcastFingerprint == SyncContractsStateEvent.getFingerprint(self) then
+        self:refreshContractsUi()
+        return
+    end
+    self:broadcastContractsState()
 end
 
 ---Resolves display name for a farmId
