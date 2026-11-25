@@ -353,10 +353,11 @@ end
 
 ---Counts down the real-time remaining seconds of open online listings (server and clients, display only)
 ---@param dt number
+---@return boolean isFullSecond
 function GlobalMarket:updateOnlineVehicleTimers(dt)
     self.vehicleOnlineTimerMs = (self.vehicleOnlineTimerMs or 0) + (dt or 0)
     if self.vehicleOnlineTimerMs < 1000 then
-        return
+        return false
     end
     local elapsedSec = math.floor(self.vehicleOnlineTimerMs / 1000)
     self.vehicleOnlineTimerMs = self.vehicleOnlineTimerMs - elapsedSec * 1000
@@ -367,6 +368,7 @@ function GlobalMarket:updateOnlineVehicleTimers(dt)
             end
         end
     end
+    return true
 end
 
 -- =========================================================================
@@ -377,7 +379,7 @@ end
 ---Data-Host changes (the snapshot also reconciles escrowed listings from stage 3 on)
 ---@param dt number
 function GlobalMarket:updateVehicleOnline(dt)
-    self:updateOnlineVehicleTimers(dt)
+    local isFullSecond = self:updateOnlineVehicleTimers(dt)
     if g_server == nil then
         return
     end
@@ -391,11 +393,21 @@ function GlobalMarket:updateVehicleOnline(dt)
     if not available and self.clearRemoteVehicleListings ~= nil then
         self:clearRemoteVehicleListings()
     end
-    local host = available and self.dataHostConnection or nil
-    if available and (not self.vehicleOnlineWasAvailable or host ~= self.vehicleOnlineSyncedHost) then
+    if not isFullSecond then
+        return
+    end
+    if not available then
+        self.vehicleOnlineWasAvailable = false
+        return
+    end
+    local host = self.dataHostConnection
+    if not self.vehicleOnlineWasAvailable or host ~= self.vehicleOnlineSyncedHost then
         if self:dispatchVehicleAction({ subAction = "REQUEST_SYNC" }) then
             self.vehicleOnlineSyncedHost = host
+            self.vehicleOnlineWasAvailable = true
         end
     end
-    self.vehicleOnlineWasAvailable = available
+    if self.reconcilePendingVehicleListings ~= nil then
+        self:reconcilePendingVehicleListings()
+    end
 end

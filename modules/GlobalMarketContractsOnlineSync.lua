@@ -341,12 +341,15 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
         end
     end
 
-    -- 2. Apply idempotent settlements & emit ACK_SETTLEMENT
+    -- 2. Apply idempotent settlements (acknowledged after the next save, see GlobalMarketSettlementAck)
     local ackIds = {}
     for _, s in ipairs(packet.settlements or {}) do
         if self:isOwnOnlineServer(s.targetServerId) then
             if self.processedSettlementLookup[s.settlementId] then
-                table.insert(ackIds, s.settlementId)
+                -- Saved earlier, but the ACK was lost or not possible; unsaved bookings wait for the next save
+                if not self:isSettlementAckDeferred(s.settlementId) then
+                    table.insert(ackIds, s.settlementId)
+                end
             else
                 local st = s.type
                 local isDupCancel = ((st == "CONTRACT_EXPIRED_OPEN" or st == "OFFER_RETURNED") and self.settledCancelRemoteIds[s.remoteId])
@@ -421,19 +424,12 @@ function GlobalMarket:applyOnlineContractSyncPacket(packet)
                     end
                 end
                 self:markSettlementProcessed(s.settlementId)
-                table.insert(ackIds, s.settlementId)
+                self:deferSettlementAck(GlobalMarketSettlementAck.CONTRACTS, s.settlementId)
             end
         end
     end
 
-    if #ackIds > 0 then
-        self:dispatchOnlineContractAction({
-            subAction = "ACK_SETTLEMENT",
-            actionId = self:nextOnlineContractActionId(),
-            serverId = myServerId,
-            settlementIds = table.concat(ackIds, ",")
-        })
-    end
+    self:sendSettlementAck(GlobalMarketSettlementAck.CONTRACTS, table.concat(ackIds, ","))
 
     -- 3. Merge authoritative online snapshot while preserving local items, pending creates & stable UI IDs
     if packet.hasBoard ~= false then
@@ -588,6 +584,7 @@ function GlobalMarket:updateOnlineContractsTimers(dt)
     self.onlineTimerAccumMs = self.onlineTimerAccumMs - (elapsedSec * 1000)
     self:updateOnlineContractsSync()
     self:retryUnansweredCancels()
+    self:updateSettlementAcks()
 
     for _, c in ipairs(self.contracts or {}) do
         if c.isOnline and (c.remainingSeconds or 0) > 0 then

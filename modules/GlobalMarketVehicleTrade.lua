@@ -81,6 +81,10 @@ function GlobalMarket.getVehicleMarketReasonText(code)
     if code == "onlineIdentityRejected" and GlobalMarket.getOnlineReasonText ~= nil then
         return GlobalMarket.getOnlineReasonText("SERVER_SECRET_INVALID")
     end
+    local backendReason = string.match(tostring(code), "^online_([%u_]+)$")
+    if backendReason ~= nil and GlobalMarket.getOnlineReasonText ~= nil then
+        return GlobalMarket.getOnlineReasonText(backendReason)
+    end
     local cfg = GlobalMarket.VEHICLE_MARKET
     if NOT_AVAILABLE_REASONS[code] then
         code = "notAvailable"

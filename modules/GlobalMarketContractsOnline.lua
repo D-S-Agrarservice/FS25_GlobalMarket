@@ -22,6 +22,7 @@ function GlobalMarket:initOnlineContractsSystem()
     self.pendingContractSyncPackets = {}
     self.processedSettlementIds = {}
     self.processedSettlementLookup = {}
+    self.settlementAcks = {}
     self.settledCancelRemoteIds = {}
     self.completedContractorRemoteIds = {}
     -- Deleted-farm guards (#30): orphaned online remoteIds (persisted) and in-flight actionIds (runtime)

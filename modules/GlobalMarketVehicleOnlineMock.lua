@@ -4,12 +4,14 @@
 -- "gmTestOnlineVehicles on" the server answers its own vehicleAction requests like the
 -- backend of spec 3.6 (results, full listing snapshot, redelivered settlements until
 -- ACK_SETTLEMENT), so listing, withdrawing, buying, selling and expiry are testable
--- without GlobalMarketClient. Never active outside the GM debug mode.
+-- without GlobalMarketClient. Settlements are redelivered until the game was saved.
+-- Never active outside the GM debug mode.
 -- Author: D-S-Agrarservice
 -- =========================================================================================
 
 GlobalMarketVehicleOnlineMock = {}
-GlobalMarketVehicleOnlineMock.SERVER_ID = "mock0000remote01"
+-- The backend never sends the server ID of another savegame
+GlobalMarketVehicleOnlineMock.FOREIGN_SERVER_ID = ""
 GlobalMarketVehicleOnlineMock.PROCESS_INTERVAL_MS = 1000
 
 ---Returns a random store item a foreign mock seller can offer (same rules as NPC dealers)
@@ -39,7 +41,7 @@ local function addForeignListings(mock, count)
             local remoteId = "mock_v_" .. mock.nextId
             mock.listings[remoteId] = {
                 remoteId = remoteId, createActionId = "", saleMode = "FIXED",
-                sellerServerId = GlobalMarketVehicleOnlineMock.SERVER_ID, sellerFarmId = 1, sellerName = "Mock Nordhof [EU]",
+                sellerServerId = GlobalMarketVehicleOnlineMock.FOREIGN_SERVER_ID, sellerFarmId = 1, sellerName = "Mock Nordhof [EU]",
                 priceFactor = 0.85 + math.random(0, 8) * 0.05, remainingSeconds = 72 * 3600, status = "OPEN",
                 snapshot = snapshot
             }
@@ -76,7 +78,7 @@ local function handleRequest(gm, mock, p)
         return nil
     elseif p.subAction == "CREATE_LISTING" then
         if mock.tombstones[p.actionId] then
-            result.reason = "INVALID_REQUEST"
+            result.reason = "NOT_CREATED"
             return result
         end
         mock.nextId = mock.nextId + 1
@@ -89,37 +91,45 @@ local function handleRequest(gm, mock, p)
         }
         result.status, result.remoteId, result.remainingSeconds = "ACCEPTED", remoteId, (p.durationHours or 72) * 3600
     elseif p.subAction == "CANCEL_LISTING" then
-        local entry = nil
-        for _, e in pairs(mock.listings) do
-            if ((p.remoteId or "") ~= "" and e.remoteId == p.remoteId) or ((p.createActionId or "") ~= "" and e.createActionId == p.createActionId) then
-                entry = e
+        local function find(list)
+            for _, e in pairs(list) do
+                if ((p.remoteId or "") ~= "" and e.remoteId == p.remoteId) or ((p.createActionId or "") ~= "" and e.createActionId == p.createActionId) then
+                    return e
+                end
             end
+            return nil
         end
+        -- Cancelling again returns the same answer
+        local entry = find(mock.listings) or find(mock.cancelled)
         if entry ~= nil then
             mock.listings[entry.remoteId] = nil
+            mock.cancelled[entry.remoteId] = entry
             result.status, result.remoteId, result.snapshot = "ACCEPTED", entry.remoteId, entry.snapshot
+        elseif find(mock.sold) ~= nil then
+            result.reason = "LISTING_SOLD"
+        elseif find(mock.expired) ~= nil then
+            result.reason = "EXPIRED"
         elseif (p.createActionId or "") ~= "" then
             mock.tombstones[p.createActionId] = true
             result.status, result.reason = "ACCEPTED", "NOT_CREATED"
-        elseif mock.sold[p.remoteId or ""] then
-            result.reason = "LISTING_SOLD"
         else
             result.reason = "LISTING_NOT_FOUND"
         end
     elseif p.subAction == "BUY_LISTING" then
         local entry = mock.listings[p.remoteId or ""]
         if entry == nil then
-            result.reason = mock.sold[p.remoteId or ""] and "LISTING_SOLD" or "LISTING_NOT_FOUND"
+            result.reason = mock.sold[p.remoteId or ""] ~= nil and "LISTING_SOLD"
+                or mock.expired[p.remoteId or ""] ~= nil and "EXPIRED" or "LISTING_NOT_FOUND"
         elseif entry.sellerServerId == p.serverId and entry.sellerFarmId == p.farmId then
             result.reason = "OWN_LISTING"
         else
             mock.listings[entry.remoteId] = nil
-            mock.sold[entry.remoteId] = true
+            mock.sold[entry.remoteId] = entry
             result.status, result.remoteId = "ACCEPTED", entry.remoteId
             addSettlement(mock, { type = "LISTING_BOUGHT", targetServerId = p.serverId, targetFarmId = p.farmId,
                 remoteId = entry.remoteId, buyActionId = p.actionId, priceFactor = entry.priceFactor,
                 otherName = entry.sellerName, snapshot = entry.snapshot })
-            if entry.sellerServerId ~= GlobalMarketVehicleOnlineMock.SERVER_ID then
+            if entry.sellerServerId ~= GlobalMarketVehicleOnlineMock.FOREIGN_SERVER_ID then
                 addSettlement(mock, { type = "LISTING_SOLD", targetServerId = entry.sellerServerId, targetFarmId = entry.sellerFarmId,
                     remoteId = entry.remoteId, createActionId = entry.createActionId, priceFactor = entry.priceFactor,
                     otherName = p.farmName or "" })
@@ -182,7 +192,7 @@ function GlobalMarket:consoleCommandTestOnlineVehicles(cmdArg, valueArg)
     local mock = self.vehicleMock
     if arg == "on" then
         if mock == nil then
-            mock = { outbox = {}, listings = {}, settlements = {}, tombstones = {}, sold = {}, nextId = 0,
+            mock = { outbox = {}, listings = {}, settlements = {}, tombstones = {}, sold = {}, expired = {}, cancelled = {}, nextId = 0,
                 timerMs = 0, loseResults = 0, pushPending = true }
             self.vehicleMock = mock
             addForeignListings(mock, 3)
@@ -207,14 +217,16 @@ function GlobalMarket:consoleCommandTestOnlineVehicles(cmdArg, valueArg)
         if listing == nil or not listing.isOnline or listing.remoteId == nil or mock.listings[listing.remoteId] == nil then
             return "Usage: gmTestOnlineVehicles " .. arg .. " <listingId of an own open online listing>"
         end
+        local entry = mock.listings[listing.remoteId]
         mock.listings[listing.remoteId] = nil
         local settlement = { type = (arg == "sell") and "LISTING_SOLD" or "LISTING_EXPIRED", targetServerId = self:ensureServerInstanceId(),
             targetFarmId = listing.sellerFarmId, remoteId = listing.remoteId, createActionId = listing.createActionId,
             priceFactor = listing.priceFactor, otherName = "Mock Südhof [EU]" }
         if arg == "expire" then
             settlement.snapshot = listing.snapshot
+            mock.expired[listing.remoteId] = entry
         else
-            mock.sold[listing.remoteId] = true
+            mock.sold[listing.remoteId] = entry
         end
         addSettlement(mock, settlement)
         mock.pushPending = true

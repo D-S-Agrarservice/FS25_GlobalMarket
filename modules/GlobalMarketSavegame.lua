@@ -163,6 +163,8 @@ function GlobalMarket:saveToXmlFile()
 
         xmlFile:save()
         xmlFile:delete()
+        -- Online settlements booked so far are acknowledged once the game finished this save
+        self:onSettlementsWritten()
 
         if self.debugManager ~= nil then
             self.debugManager:info("Savegame successfully written. Saved %d GM Silos and %d GM ObjectStorages.", siloIndex, objStorageIndex)
@@ -342,9 +344,14 @@ function GlobalMarket:loadFromXMLFile()
 end
 
 -- Appends to the native engine save routine to ensure our data is written simultaneously.
+FSBaseMission.saveSavegame = Utils.prependedFunction(FSBaseMission.saveSavegame, function()
+    if g_currentMission.globalMarket ~= nil then
+        g_currentMission.globalMarket:onBeforeSavegame()
+    end
+end)
 FSBaseMission.saveSavegame = Utils.appendedFunction(FSBaseMission.saveSavegame, function()
     if g_currentMission.globalMarket ~= nil then
-        g_currentMission.globalMarket:saveToXmlFile()
+        g_currentMission.globalMarket:onAfterSavegame()
     end
 end)
 

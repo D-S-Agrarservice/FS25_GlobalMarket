@@ -17,8 +17,7 @@ local BUY_REJECT_REASONS = {
     LISTING_NOT_FOUND = "listingNotFound",
     LISTING_SOLD = "listingBusy",
     LISTING_BUSY = "listingBusy",
-    OWN_LISTING = "ownListing",
-    SERVER_SECRET_INVALID = "onlineIdentityRejected"
+    OWN_LISTING = "ownListing"
 }
 
 -- =========================================================================
@@ -148,7 +147,7 @@ function GlobalMarket:applyVehicleBuyResult(result)
         listing.status = GlobalMarket.VEHICLE_LISTING_STATUS.OPEN
     end
     self:notifyVehicleMarketFarms(GlobalMarket.VEHICLE_NOTICE.RESULT, buy.farmId, 0,
-        BUY_REJECT_REASONS[result.reason] or "onlineRejected", "", 0, "")
+        BUY_REJECT_REASONS[result.reason] or GlobalMarketVehicleOnline.getRejectCode(result.reason), "", 0, "")
     return true
 end
 
@@ -269,7 +268,8 @@ function GlobalMarket:applyVehicleBoughtSettlement(settlement)
     self:processVehicleDeliveries()
 end
 
----Applies settlements once (shared deduplication log with Stage 2) and acknowledges them
+---Applies settlements once (shared deduplication log with Stage 2). They are acknowledged after the next
+---save (GlobalMarketSettlementAck), so a crash redelivers what the savegame does not contain.
 ---@param settlements table
 ---@return boolean changed
 function GlobalMarket:applyVehicleSettlements(settlements)
@@ -289,15 +289,15 @@ function GlobalMarket:applyVehicleSettlements(settlements)
                     self.debugManager:warning("VehicleOnline: Unknown settlement type '%s' (%s) acknowledged.", s.type, s.settlementId)
                 end
                 self:markSettlementProcessed(s.settlementId)
+                self:deferSettlementAck(GlobalMarketSettlementAck.VEHICLES, s.settlementId)
                 changed = true
+            elseif not self:isSettlementAckDeferred(s.settlementId) then
+                -- Saved earlier, but the ACK was lost or not possible
+                table.insert(acks, s.settlementId)
             end
-            -- Repeated deliveries are acknowledged again (the previous ACK may have been lost)
-            table.insert(acks, s.settlementId)
         end
     end
-    if #acks > 0 then
-        self:dispatchVehicleAction({ subAction = "ACK_SETTLEMENT", settlementIds = table.concat(acks, ",") })
-    end
+    self:sendSettlementAck(GlobalMarketSettlementAck.VEHICLES, table.concat(acks, ","))
     return changed
 end
 
