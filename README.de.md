@@ -35,6 +35,8 @@ Entwickelt von **D-S-Agrarservice [Floowy]** | Ursprüngliches Konzept & Inspira
 
 ### Überblick
 
+> **Open Beta:** FS25_GlobalMarket ist aktuell eine öffentliche **Beta** (Downloads unter [Releases](https://github.com/D-S-Agrarservice/FS25_GlobalMarket/releases)). Bitte sichere vor dem Start deinen Spielstand und melde Fehler wie unter [Mitwirken & Support](#mitwirken--support) beschrieben. Serverübergreifende Verträge, Direktangebote und der serverübergreifende Online-Fahrzeugmarkt sind in dieser Beta noch nicht freigeschaltet.
+
 **FS25_GlobalMarket** bringt einen eigenen Reiter ins `ESC`-Menü des Landwirtschafts-Simulators 25, der vier Handelsbereiche bündelt:
 
 1. **Warenmarkt:** An- und Verkauf von Schüttgut, Flüssigkeiten, Paletten, BigBags, IBC-Tanks und Ballen direkt aus deinen Silos, Produktionslagern und Objektlagern — mit dynamischen Beständen, Sättigungspreisen und Großen Nachfragen.
@@ -66,14 +68,14 @@ Alles funktioniert **sofort** mit einem simulierten Offline-Markt — ohne exter
 * **NPC-Brett folgt dem Markt:** NPC-Abnehmer fragen vor allem knappe Waren nach und zahlen dafür einen höheren Bonus; NPC-Händler bieten vor allem Waren im Überfluss mit kräftigerem Rabatt an. Ist der Online-Markt aktiv, richtet sich das nach dem globalen Bestand.
 * **Kartenstationen als Lieferziel:** Lokale NPC-Verträge können eine echte Verkaufsstelle oder eine besitzerlose Produktion auf der Karte als Ziel nennen. Abladen dort zählt für den Vertrag, und die Station lässt sich direkt aus der Vertragsliste auf der Karte markieren (inkl. Navigation), wie im Preismenü des Basisspiels.
 * **Abholfach (Pickup Inbox):** Waren, die nicht sofort in ein passendes Lager passen, bleiben für eine Frist im Abholfach des Hofs und werden danach automatisch verkauft.
-* **Serverübergreifende Online-Verträge:** Verträge und Angebote lassen sich über den GlobalMarketClient auch für andere Server veröffentlichen und von dort annehmen, sobald das Online-Backend das unterstützt. Admins legen fest, was online geht (alles, nur Verträge, nur Angebote oder nur lokal).
+* **Serverübergreifende Online-Verträge (in der Beta noch nicht freigeschaltet):** Verträge und Angebote lassen sich über den GlobalMarketClient auch für andere Server veröffentlichen und von dort annehmen, sobald das Online-Backend das unterstützt. Admins legen fest, was online geht (alles, nur Verträge, nur Angebote oder nur lokal).
 
 #### Gebrauchtfahrzeugmarkt
 * **Zum eigenen Preis verkaufen:** Jedes eigene Fahrzeug oder Gerät — vom Frontgewicht bis zum Großtraktor, auch Mod-Fahrzeuge — lässt sich für 70–130 % des Händlerwerts und 1–12 Monate anbieten. Konfiguration, eigene Lackfarbe, Betriebsstunden, Schaden und Verschleiß reisen mit.
 * **Ansehen & Kaufen im Original-Shop:** Angebote anderer Höfe öffnen sich im Shop-Bildschirm des Spiels mit exakter Konfiguration und Lackierung. Optionen umschalten ist nur Vorschau — verkauft wird immer wie angeboten. Mod-Fahrzeuge erscheinen nur dort, wo dieselbe Mod-Datei installiert ist.
 * **NPC-Händler:** Händler kaufen eure Angebote (je günstiger, desto schneller, abzüglich 5 % Provision) und bieten eigene Gebrauchtfahrzeuge an (Admin-Einstellung: Aus / Wenig / Normal).
 * **Meldungen & Finanzen:** HUD-Meldungen bei neuen Angeboten, Verkäufen und Rückgaben (pro Spieler abschaltbar); Käufe und Verkäufe landen in den Fahrzeug-Kategorien der Finanzübersicht des Spiels.
-* **Serverübergreifende Angebote (Online):** Mit dem GlobalMarketClient lassen sich Fahrzeuge für 24–168 Stunden Echtzeit auf einem gemeinsamen Online-Markt anbieten (Admin-Einstellung). Das Fahrzeug liegt in Treuhand, bis das Backend entschieden hat, und kommt nie ohne dessen Antwort zurück, kann also nie doppelt existieren. Käufer sehen Online-Angebote nur, wenn es das Fahrzeug auf ihrem Server exakt gibt, und zahlen erst, wenn es bei ihrem Händler steht (bei vollem Abholplatz wird nachgeliefert).
+* **Serverübergreifende Angebote (Online, in der Beta noch nicht freigeschaltet):** Mit dem GlobalMarketClient lassen sich Fahrzeuge für 24–168 Stunden Echtzeit auf einem gemeinsamen Online-Markt anbieten (Admin-Einstellung). Das Fahrzeug liegt in Treuhand, bis das Backend entschieden hat, und kommt nie ohne dessen Antwort zurück, kann also nie doppelt existieren. Käufer sehen Online-Angebote nur, wenn es das Fahrzeug auf ihrem Server exakt gibt, und zahlen erst, wenn es bei ihrem Händler steht (bei vollem Abholplatz wird nachgeliefert).
 * **Multiplayer:** Gehandelt wird zwischen allen Höfen auf deinem Server, online auch serverübergreifend.
 
 #### Tiermarkt

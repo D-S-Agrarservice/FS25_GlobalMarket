@@ -35,6 +35,8 @@ Developed by **D-S-Agrarservice [Floowy]** | Original concept & inspiration by *
 
 ### Overview
 
+> **Open Beta:** FS25_GlobalMarket is currently a public **beta** (downloads under [Releases](https://github.com/D-S-Agrarservice/FS25_GlobalMarket/releases)). Please back up your savegame before you start and report issues as described under [Contributing & Support](#contributing--support). Cross-server contracts, direct offers and the cross-server online vehicle market are not yet enabled in this beta.
+
 **FS25_GlobalMarket** adds its own tab to the Farming Simulator 25 `ESC` menu that bundles four trading areas:
 
 1. **Commodity Market:** Buy and sell bulk crops, liquids, pallets, BigBags, IBC tanks and bales straight from your silos, production storages and object storages — with dynamic stock levels, saturation prices and Great Demand events.
@@ -66,14 +68,14 @@ Everything works **out of the box** with a simulated offline market — no exter
 * **NPC Board Follows the Market:** NPC contractors mainly ask for goods that are scarce and pay a higher bonus for them; NPC traders mainly offer goods in surplus at a deeper discount. With the online market active, this follows the global stock.
 * **Map Stations as Delivery Targets:** Local NPC contracts can name a real selling station or unowned production on the map. Unloading there counts towards the contract, and the station can be tagged on the map (incl. navigation) straight from the contract list, just like in the basegame prices menu.
 * **Pickup Inbox:** Goods that cannot be placed into a matching storage right away are kept in a per-farm inbox for a grace period before being sold off automatically.
-* **Cross-Server Online Contracts:** Contracts and offers can also be published to and accepted from other servers via the GlobalMarketClient as soon as the online backend supports it. Admins choose which parts go online (all, contracts only, offers only, or local only).
+* **Cross-Server Online Contracts (not yet enabled in the beta):** Contracts and offers can also be published to and accepted from other servers via the GlobalMarketClient as soon as the online backend supports it. Admins choose which parts go online (all, contracts only, offers only, or local only).
 
 #### Used Vehicle Market
 * **Sell at Your Own Price:** List any owned vehicle or implement — from front weights to flagship tractors, mod vehicles included — at 70–130 % of its dealer value for 1–12 months. Configuration, custom paint, operating hours, damage and wear travel with it.
 * **View & Buy in the Native Shop:** Listings of other farms open in the basegame shop screen with their exact configuration and paint. Switching options is preview only — vehicles are always sold as listed. Mod vehicles only show up where the identical mod file is installed.
 * **NPC Dealers:** Dealers buy your listings (the cheaper, the faster, minus 5 % commission) and list used vehicles of their own (admin setting: Off / Low / Normal).
 * **Notices & Finances:** HUD notices for new listings, sales and returns (can be turned off per player); purchases and sales are booked to the basegame vehicle finance categories.
-* **Cross-Server Listings (Online):** With the GlobalMarketClient, vehicles can be listed for 24–168 hours of real time on a shared online market (admin setting). The vehicle stays in escrow until the backend decides and never returns without its answer, so it can never exist twice. Buyers see online listings only if the identical vehicle exists on their server, and pay once it stands at their dealer (delivered later if all places are taken).
+* **Cross-Server Listings (Online, not yet enabled in the beta):** With the GlobalMarketClient, vehicles can be listed for 24–168 hours of real time on a shared online market (admin setting). The vehicle stays in escrow until the backend decides and never returns without its answer, so it can never exist twice. Buyers see online listings only if the identical vehicle exists on their server, and pay once it stands at their dealer (delivered later if all places are taken).
 * **Multiplayer:** Trading runs between all farms on your server, online listings across servers.
 
 #### Animal Market
