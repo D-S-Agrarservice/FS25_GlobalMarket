@@ -274,6 +274,7 @@
         <e k="ui_gm_online_reason_identityRejected"                v="El mercado online rechazó la identidad online de esta partida. Contacta con el soporte." />
         <e k="ui_gm_online_reason_notApproved"                     v="Este producto no está autorizado para el comercio online." />
         <e k="ui_gm_online_reason_limitReached"                    v="Tu granja ya tiene el número máximo de anuncios online abiertos." />
+        <e k="ui_gm_online_reason_rateLimited"                     v="Demasiadas solicitudes online en poco tiempo. Vuelve a intentarlo dentro de un minuto." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Otra granja ya ha aceptado este contrato de suministro." />
         <e k="ui_gm_online_reason_expired"                         v="Este anuncio ya ha caducado." />
         <e k="ui_gm_online_reason_soldOut"                         v="Esta oferta directa ya está agotada." />

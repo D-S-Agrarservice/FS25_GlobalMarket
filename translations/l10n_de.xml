@@ -274,6 +274,7 @@
         <e k="ui_gm_online_reason_identityRejected"                v="Der Online-Markt hat die Online-Identität dieses Spielstands abgelehnt. Bitte wende dich an den Support." />
         <e k="ui_gm_online_reason_notApproved"                     v="Diese Ware ist für den Online-Handel nicht freigegeben." />
         <e k="ui_gm_online_reason_limitReached"                    v="Dein Hof hat bereits die maximale Anzahl offener Online-Einträge." />
+        <e k="ui_gm_online_reason_rateLimited"                     v="Zu viele Online-Anfragen in kurzer Zeit. Bitte versuche es in einer Minute erneut." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Dieser Liefervertrag wurde bereits von einem anderen Hof angenommen." />
         <e k="ui_gm_online_reason_expired"                         v="Der Eintrag ist bereits abgelaufen." />
         <e k="ui_gm_online_reason_soldOut"                         v="Das Direktangebot ist bereits ausverkauft." />

@@ -274,6 +274,7 @@
         <e k="ui_gm_online_reason_identityRejected"                v="Rynek online odrzucił tożsamość online tego zapisu gry. Skontaktuj się z pomocą techniczną." />
         <e k="ui_gm_online_reason_notApproved"                     v="Ten towar nie jest dopuszczony do handlu online." />
         <e k="ui_gm_online_reason_limitReached"                    v="Twoje gospodarstwo ma już maksymalną liczbę otwartych ofert online." />
+        <e k="ui_gm_online_reason_rateLimited"                     v="Zbyt wiele żądań online w krótkim czasie. Spróbuj ponownie za minutę." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Ten kontrakt dostaw został już przyjęty przez inne gospodarstwo." />
         <e k="ui_gm_online_reason_expired"                         v="Ta oferta już wygasła." />
         <e k="ui_gm_online_reason_soldOut"                         v="Ta oferta bezpośrednia jest już wyprzedana." />

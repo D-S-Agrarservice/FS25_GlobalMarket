@@ -21,6 +21,7 @@ GlobalMarketServerIdentity.REASON_TEXT = {
     SERVER_SECRET_INVALID = "identityRejected",
     FILLTYPE_NOT_GLOBAL_APPROVED = "notApproved",
     LIMIT_REACHED = "limitReached",
+    RATE_LIMITED = "rateLimited",
     ALREADY_ACCEPTED = "alreadyAccepted",
     EXPIRED = "expired",
     OFFER_SOLD_OUT = "soldOut",

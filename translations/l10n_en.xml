@@ -274,6 +274,7 @@
         <e k="ui_gm_online_reason_identityRejected"                v="The online market rejected this savegame's online identity. Please contact support." />
         <e k="ui_gm_online_reason_notApproved"                     v="This good is not approved for online trading." />
         <e k="ui_gm_online_reason_limitReached"                    v="Your farm already has the maximum number of open online listings." />
+        <e k="ui_gm_online_reason_rateLimited"                     v="Too many online requests in a short time. Please try again in a minute." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="This supply contract has already been accepted by another farm." />
         <e k="ui_gm_online_reason_expired"                         v="This listing has already expired." />
         <e k="ui_gm_online_reason_soldOut"                         v="This direct offer is already sold out." />

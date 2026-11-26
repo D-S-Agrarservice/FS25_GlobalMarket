@@ -274,6 +274,7 @@
         <e k="ui_gm_online_reason_identityRejected"                v="Le marché en ligne a refusé l'identité en ligne de cette sauvegarde. Veuillez contacter le support." />
         <e k="ui_gm_online_reason_notApproved"                     v="Ce produit n'est pas autorisé pour le commerce en ligne." />
         <e k="ui_gm_online_reason_limitReached"                    v="Votre ferme a déjà le nombre maximal d'annonces en ligne ouvertes." />
+        <e k="ui_gm_online_reason_rateLimited"                     v="Trop de demandes en ligne en peu de temps. Veuillez réessayer dans une minute." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Ce contrat de livraison a déjà été accepté par une autre ferme." />
         <e k="ui_gm_online_reason_expired"                         v="Cette annonce a déjà expiré." />
         <e k="ui_gm_online_reason_soldOut"                         v="Cette offre directe est déjà épuisée." />
