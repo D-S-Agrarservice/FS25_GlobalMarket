@@ -69,10 +69,15 @@ export function formatBytes(bytes) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-export function truncateText(text, maxLength) {
+export function truncateText(text, maxLength, suffix = "…") {
   const str = String(text ?? "").trim();
   if (str.length <= maxLength) return str;
-  return `${str.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+  const budget = Math.max(0, maxLength - suffix.length);
+  const slice = str.slice(0, budget);
+  const lastNewline = slice.lastIndexOf("\n");
+  const cleanCut =
+    lastNewline > Math.floor(budget * 0.6) ? slice.slice(0, lastNewline) : slice;
+  return `${cleanCut.trimEnd()}${suffix}`;
 }
 
 export function groupReleaseAssets(assets) {
@@ -296,7 +301,7 @@ export function buildAnnouncementPayload(release, options = {}) {
   const titleName = String(release?.name || defaultName).trim();
   const releaseUrl = String(release?.html_url ?? "").trim() || defaultUrl;
   const publishedUnix = resolvePublishedUnix(release);
-  const changelog = extractChangelogExcerpt(release?.body, 1100);
+  const rawChangelog = extractChangelogExcerpt(release?.body, 100000);
 
   const badge = isBeta ? "🧪 NEW BETA" : "🚀 NEW RELEASE";
   const color = isBeta ? EMBED_COLOR_BETA : EMBED_COLOR_RELEASE;
@@ -313,23 +318,28 @@ export function buildAnnouncementPayload(release, options = {}) {
     ? `${roleMention}🧪 **${productLabel} Beta \`${tag}\`** ist verfügbar / is now available!`
     : `${roleMention}🚀 **${productLabel} \`${tag}\`** ist verfügbar / is now available!`;
 
-  const fields = [];
-  if (changelog) {
-    fields.push({
-      name: "📝 Changelog / Änderungen",
-      value: truncateText(changelog, 1024),
-      inline: false,
-    });
+  const introLine = isBeta
+    ? `🇩🇪 Neue **Beta-Version** veröffentlicht – Download in ${downloadMention}.\n🇬🇧 New **Beta build** published – download in ${downloadMention}.`
+    : `🇩🇪 Neue **Release-Version** veröffentlicht – Download in ${downloadMention}.\n🇬🇧 New **Stable Release** published – download in ${downloadMention}.`;
+
+  let description = introLine;
+  if (rawChangelog) {
+    const moreSuffix = `\n…\n*(Gekürzt / Truncated — [komplettes Changelog auf GitHub](${releaseUrl}))*`;
+    const changelogBudget = Math.max(500, 3950 - introLine.length - 40);
+    const changelogBody = truncateText(rawChangelog, changelogBudget, moreSuffix);
+    description = `${introLine}\n\n${changelogBody}`;
   }
 
-  fields.push({
-    name: "📥 Download & Support",
-    value: [
-      `• **Downloads:** ${downloadMention} · [GitHub Release (${tag})](${releaseUrl})`,
-      `• **Support / Diagnostics:** ${supportMention}`,
-    ].join("\n"),
-    inline: false,
-  });
+  const fields = [
+    {
+      name: "📥 Download & Support",
+      value: [
+        `• **Downloads:** ${downloadMention} · [GitHub Release (${tag})](${releaseUrl})`,
+        `• **Support / Diagnostics:** ${supportMention}`,
+      ].join("\n"),
+      inline: false,
+    },
+  ];
 
   return {
     username: "GlobalMarket Updates",
@@ -340,9 +350,7 @@ export function buildAnnouncementPayload(release, options = {}) {
         title: `${badge} · ${truncateText(titleName, 220)}`,
         url: releaseUrl,
         color,
-        description: isBeta
-          ? `🇩🇪 Neue **Beta-Version** veröffentlicht. Die Download-Karte in ${downloadMention} wurde automatisch aktualisiert.\n🇬🇧 A new **Beta build** has been published. The download card in ${downloadMention} was updated automatically.`
-          : `🇩🇪 Neue **Release-Version** veröffentlicht. Die Download-Karte in ${downloadMention} wurde automatisch aktualisiert.\n🇬🇧 A new **Stable Release** has been published. The download card in ${downloadMention} was updated automatically.`,
+        description: truncateText(description, 4096),
         fields,
         footer: {
           text: "D-S-Agrarservice · GlobalMarket",
