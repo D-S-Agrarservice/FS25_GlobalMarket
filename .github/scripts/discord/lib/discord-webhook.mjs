@@ -10,11 +10,17 @@
 const DISCORD_WEBHOOK_REGEX =
   /^https:\/\/(?:(?:canary|ptb)\.)?discord(?:app)?\.com\/api\/(?:v\d+\/)?webhooks\/(\d+)\/([A-Za-z0-9._-]+)\/?$/;
 
+/**
+ * Validates that a string is a legitimate Discord Webhook URL.
+ */
 export function isValidWebhookUrl(url) {
   if (typeof url !== "string") return false;
   return DISCORD_WEBHOOK_REGEX.test(url.trim());
 }
 
+/**
+ * Masks the secret webhook token so URLs are safe to print in logs/errors.
+ */
 export function maskWebhookUrl(url) {
   if (typeof url !== "string" || !url.trim()) return "<empty>";
   return url.trim().replace(
@@ -23,6 +29,9 @@ export function maskWebhookUrl(url) {
   );
 }
 
+/**
+ * Normalizes a Discord Webhook base URL (strips trailing slash and query params).
+ */
 export function normalizeWebhookBaseUrl(rawUrl) {
   const trimmed = (rawUrl ?? "").trim();
   const parsed = new URL(trimmed);
@@ -35,6 +44,9 @@ export function normalizeWebhookBaseUrl(rawUrl) {
   return clean;
 }
 
+/**
+ * Builds the final endpoint URL with optional messageId and query parameters.
+ */
 function buildEndpointUrl(webhookUrl, { messageId, threadId, wait } = {}) {
   const base = normalizeWebhookBaseUrl(webhookUrl);
   const path = messageId ? `${base}/messages/${encodeURIComponent(messageId)}` : base;
@@ -47,6 +59,9 @@ function buildEndpointUrl(webhookUrl, { messageId, threadId, wait } = {}) {
   return qs ? `${path}?${qs}` : path;
 }
 
+/**
+ * Performs a Discord Webhook request with 429 rate-limit retry handling.
+ */
 async function requestWithRetry(url, init, maxRetries = 3) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const response = await fetch(url, init);
@@ -82,25 +97,59 @@ async function requestWithRetry(url, init, maxRetries = 3) {
   throw new Error(`Discord Webhook exceeded retry limit (${maskWebhookUrl(url)})`);
 }
 
-export async function sendWebhookMessage(webhookUrl, payload, { threadId } = {}) {
-  const url = buildEndpointUrl(webhookUrl, { threadId, wait: true });
-  return requestWithRetry(url, {
-    method: "POST",
+/**
+ * Builds either a JSON or `multipart/form-data` request body depending on whether
+ * binary file attachments are provided.
+ */
+function buildRequestInit(method, bodyObj, files = []) {
+  if (Array.isArray(files) && files.length > 0) {
+    const form = new FormData();
+    form.append("payload_json", JSON.stringify(bodyObj));
+    files.forEach((file, idx) => {
+      const blob = new Blob([file.data], {
+        type: file.contentType || "application/octet-stream",
+      });
+      form.append(`files[${idx}]`, blob, file.filename);
+    });
+    return { method, body: form };
+  }
+
+  return {
+    method,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify(bodyObj),
+  };
 }
 
+/**
+ * Sends a new message via webhook (with optional file attachments)
+ * and returns the created Discord Message object.
+ */
+export async function sendWebhookMessage(
+  webhookUrl,
+  payload,
+  { threadId, files = [] } = {},
+) {
+  const url = buildEndpointUrl(webhookUrl, { threadId, wait: true });
+  return requestWithRetry(url, buildRequestInit("POST", payload, files));
+}
+
+/**
+ * Edits an existing message created by the same webhook in-place.
+ * When `files` are supplied, `attachments: []` is included so previous file
+ * attachments are cleanly replaced by the new release files.
+ */
 export async function editWebhookMessage(
   webhookUrl,
   messageId,
   payload,
-  { threadId } = {},
+  { threadId, files = [] } = {},
 ) {
   if (!messageId || !String(messageId).trim()) {
     throw new Error("editWebhookMessage requires a non-empty messageId.");
   }
   const url = buildEndpointUrl(webhookUrl, { messageId, threadId });
+  // PATCH /webhooks/{id}/{token}/messages/{msg} does not accept `username`, `avatar_url`, `thread_name`, or `applied_tags`.
   const {
     username: _u,
     avatar_url: _a,
@@ -108,13 +157,15 @@ export async function editWebhookMessage(
     applied_tags: _at,
     ...patchBody
   } = payload;
-  return requestWithRetry(url, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(patchBody),
-  });
+  if (Array.isArray(files) && files.length > 0) {
+    patchBody.attachments = [];
+  }
+  return requestWithRetry(url, buildRequestInit("PATCH", patchBody, files));
 }
 
+/**
+ * Deletes an existing message created by the same webhook.
+ */
 export async function deleteWebhookMessage(webhookUrl, messageId, { threadId } = {}) {
   if (!messageId || !String(messageId).trim()) {
     throw new Error("deleteWebhookMessage requires a non-empty messageId.");

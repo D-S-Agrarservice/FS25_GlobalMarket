@@ -1,10 +1,15 @@
 /**
  * Release classifier and bilingual (DE / EN) Discord Embed formatter
- * for D-S-Agrarservice FS25_GlobalMarket mod (and GlobalMarketClient) releases.
+ * for D-S-Agrarservice GlobalMarketClient (and future FS25_GlobalMarket mod) releases.
  */
 
 export const EMBED_COLOR_BETA = 0xf59e0b; // Amber / Beta
 export const EMBED_COLOR_RELEASE = 0x4fa83d; // DSA Green / Stable v1.0+
+/** Safe per-message attachment budget under Discord's 10 MiB standard upload cap. */
+export const MAX_DISCORD_ATTACHMENT_BYTES = Math.floor(9.5 * 1024 * 1024);
+/** Public GitHub Pages download bridge (prevents Opera GX from closing external direct-download tabs). */
+export const DEFAULT_DOWNLOAD_PORTAL_URL =
+  "https://d-s-agrarservice.github.io/GlobalMarketClient/";
 
 const IGNORED_ASSET_PATTERNS = [
   /^latest\.json$/i,
@@ -45,6 +50,9 @@ export function parseSemverTag(tagName) {
   };
 }
 
+/**
+ * Classifies a GitHub Release into `beta` or `release` (`>= 1.0.0` non-prerelease).
+ */
 export function classifyReleaseChannel(release) {
   const parsed = parseSemverTag(release?.tag_name);
   const isPrereleaseFlag = Boolean(release?.prerelease);
@@ -59,6 +67,9 @@ export function classifyReleaseChannel(release) {
   };
 }
 
+/**
+ * Formats byte count into a compact human-readable string (e.g. `14.2 MB`).
+ */
 export function formatBytes(bytes) {
   if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes <= 0) {
     return "";
@@ -69,6 +80,9 @@ export function formatBytes(bytes) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+/**
+ * Truncates text cleanly to Discord's field/description limits, preferring line boundaries.
+ */
 export function truncateText(text, maxLength, suffix = "…") {
   const str = String(text ?? "").trim();
   if (str.length <= maxLength) return str;
@@ -80,6 +94,10 @@ export function truncateText(text, maxLength, suffix = "…") {
   return `${cleanCut.trimEnd()}${suffix}`;
 }
 
+/**
+ * Filters out internal Tauri updater/signature files and groups user-facing
+ * downloads by platform.
+ */
 export function groupReleaseAssets(assets) {
   const groups = {
     windows: [],
@@ -127,6 +145,33 @@ export function groupReleaseAssets(assets) {
   return groups;
 }
 
+/**
+ * Wraps a D-S-Agrarservice GitHub Release asset URL through the HTML download
+ * bridge page when `portalBaseUrl` is enabled, so browsers like Opera GX do not
+ * auto-close external direct-download tabs.
+ */
+export function buildPortalDownloadUrl(assetUrl, portalBaseUrl = DEFAULT_DOWNLOAD_PORTAL_URL) {
+  const raw = String(assetUrl ?? "").trim();
+  const base = String(portalBaseUrl ?? "").trim();
+  if (!raw || !base) return raw;
+
+  const match = raw.match(
+    /^https:\/\/github\.com\/D-S-Agrarservice\/(GlobalMarketClient|FS25_GlobalMarket)\/releases\/download\/([^/]+)\/([^/?#]+)$/i,
+  );
+  if (!match) return raw;
+
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  const params = new URLSearchParams({
+    repo: match[1],
+    tag: decodeURIComponent(match[2]),
+    file: decodeURIComponent(match[3]),
+  });
+  return `${normalizedBase}?${params.toString()}`;
+}
+
+/**
+ * Formats a list of platform assets as clickable direct GitHub download links.
+ */
 function formatAssetLinks(items) {
   return items
     .map((item) => {
@@ -136,10 +181,15 @@ function formatAssetLinks(items) {
     .join("\n");
 }
 
+/**
+ * Extracts a clean, compact changelog excerpt from a GitHub Release body,
+ * removing redundant default download boilerplate if present.
+ */
 export function extractChangelogExcerpt(body, maxLength = 950) {
   const raw = String(body ?? "").trim();
   if (!raw) return "";
 
+  // Strip the auto-generated `### Downloads` block from release.yml to avoid duplication.
   const withoutDownloads = raw
     .replace(/^###\s+Downloads[\s\S]*?(?=^#{1,3}\s+|(?![\s\S]))/gim, "")
     .replace(/\n{3,}/g, "\n\n")
@@ -148,6 +198,9 @@ export function extractChangelogExcerpt(body, maxLength = 950) {
   return truncateText(withoutDownloads || raw, maxLength);
 }
 
+/**
+ * Computes Unix timestamp (seconds) for Discord `<t:UNIX:R>` relative timestamps.
+ */
 function resolvePublishedUnix(release) {
   const rawDate = release?.published_at || release?.created_at;
   const parsed = rawDate ? Date.parse(rawDate) : NaN;
@@ -156,6 +209,10 @@ function resolvePublishedUnix(release) {
     : Math.floor(Date.now() / 1000);
 }
 
+/**
+ * Detects whether a GitHub Release belongs to the Farming Simulator Mod (`FS25_GlobalMarket`)
+ * rather than the desktop companion client (`GlobalMarketClient`).
+ */
 export function isModRelease(release, groupedAssets) {
   const hasDesktop =
     groupedAssets.windows.length > 0 ||
@@ -166,6 +223,66 @@ export function isModRelease(release, groupedAssets) {
   return !hasDesktop && /fs\d+_globalmarket/i.test(hay);
 }
 
+/**
+ * Selects the primary user-facing asset(s) to upload directly as native Discord
+ * message attachments (e.g. `FS25_GlobalMarket.zip` for mod releases or the
+ * Windows `-setup.exe` installer for client releases), staying safely below
+ * Discord's 10 MiB standard upload limit.
+ */
+export function selectDiscordAttachmentAssets(
+  release,
+  maxTotalBytes = MAX_DISCORD_ATTACHMENT_BYTES,
+) {
+  const assets = Array.isArray(release?.assets) ? release.assets : [];
+  const grouped = groupReleaseAssets(assets);
+  const modRelease = isModRelease(release, grouped);
+
+  const byName = new Map(
+    assets
+      .filter((a) => a?.name && a?.browser_download_url)
+      .map((a) => [String(a.name).trim(), a]),
+  );
+
+  const candidates = [];
+  if (modRelease) {
+    for (const entry of grouped.mod) {
+      const raw = byName.get(entry.name);
+      if (raw) candidates.push(raw);
+    }
+  } else {
+    // Prefer the standard Windows NSIS `-setup.exe` installer (~3-4 MB).
+    const setupExe = grouped.windows.find((e) => /setup\.exe$/i.test(e.name));
+    const anyExe = grouped.windows.find((e) => /\.exe$/i.test(e.name));
+    const chosen = setupExe || anyExe || grouped.windows[0];
+    if (chosen) {
+      const raw = byName.get(chosen.name);
+      if (raw) candidates.push(raw);
+    }
+  }
+
+  const selected = [];
+  let totalBytes = 0;
+  for (const raw of candidates) {
+    const size = Number(raw.size ?? 0);
+    if (!Number.isFinite(size) || size <= 0) continue;
+    if (totalBytes + size > maxTotalBytes) continue;
+    selected.push({
+      name: String(raw.name).trim(),
+      url: String(raw.browser_download_url).trim(),
+      apiUrl: raw.url ? String(raw.url).trim() : null,
+      size,
+      sizeLabel: formatBytes(size),
+    });
+    totalBytes += size;
+  }
+
+  return selected;
+}
+
+/**
+ * Builds the bilingual (DE / EN) **Download Card** payload for the locked `#gm-downloads` channel.
+ * Designed to be edited in-place (`PATCH`) on every release so old versions vanish automatically.
+ */
 export function buildDownloadCardPayload(release, options = {}) {
   const { isBeta } = classifyReleaseChannel(release);
   const tag = String(release?.tag_name ?? "unknown").trim();
@@ -243,16 +360,25 @@ export function buildDownloadCardPayload(release, options = {}) {
     });
   }
 
+  const portalUrl =
+    options.downloadPortalUrl !== undefined
+      ? options.downloadPortalUrl
+      : DEFAULT_DOWNLOAD_PORTAL_URL;
+
+  const fallbackLine = portalUrl
+    ? `🌐 **Download startet nicht (z. B. Opera GX)? / Not starting?** → **[DSA Download-Seite / Download Page](${portalUrl})** · [GitHub Release](${releaseUrl})`
+    : `🔗 **[Alle Dateien & Changelog auf GitHub / Full Release on GitHub](${releaseUrl})**`;
+
   const notesLines = modRelease
     ? [
-        `🇩🇪 **Installation:** Die \`.zip\`-Datei unverändert in deinen FS25-\`mods\`-Ordner legen *(nicht entpacken)*. Für Live-Online-Handel zusätzlich den **GlobalMarketClient** starten. Hilfe & Support: ${supportChannelMention}`,
-        `🇬🇧 **Installation:** Drop the \`.zip\` file directly into your FS25 \`mods\` folder *(do not extract)*. Run **GlobalMarketClient** alongside the game for live online trading. Support: ${supportChannelMention}`,
-        `🔗 **[Alle Dateien & Changelog auf GitHub / Full Release on GitHub](${releaseUrl})**`,
+        `🇩🇪 **Installation:** Datei direkt laden (Link oben oder Anhang unten) und unverändert in deinen FS25-\`mods\`-Ordner legen *(nicht entpacken)*. Hilfe & Support: ${supportChannelMention}`,
+        `🇬🇧 **Installation:** Download via the link above or attachment below and drop the \`.zip\` directly into your FS25 \`mods\` folder *(do not extract)*. Support: ${supportChannelMention}`,
+        fallbackLine,
       ]
     : [
-        `🇩🇪 **Auto-Update:** Bestehende Installationen aktualisieren sich direkt in der App. Bei Erstinstallation SmartScreen („Weitere Infos → Trotzdem ausführen“) bzw. macOS Gatekeeper beachten. Hilfe & Diagnose: ${supportChannelMention}`,
-        `🇬🇧 **Auto-Update:** Existing installs update right inside the app. On first install, allow Windows SmartScreen (*More info → Run anyway*) or macOS Gatekeeper (*Open Anyway*). Support & Diagnostics: ${supportChannelMention}`,
-        `🔗 **[Alle Dateien & Changelog auf GitHub / Full Release on GitHub](${releaseUrl})**`,
+        `🇩🇪 **Auto-Update / Windows:** Windows-\`.exe\` auch direkt als Anhang unten *(SmartScreen: „Weitere Infos → Trotzdem ausführen“)*. Bestehende Installationen aktualisieren sich in der App. Hilfe & Diagnose: ${supportChannelMention}`,
+        `🇬🇧 **Auto-Update / Windows:** Windows \`.exe\` also attached below *(SmartScreen: More info → Run anyway)*. Existing installs update in-app. Support & Diagnostics: ${supportChannelMention}`,
+        fallbackLine,
       ];
 
   fields.push({
@@ -287,6 +413,10 @@ export function buildDownloadCardPayload(release, options = {}) {
   };
 }
 
+/**
+ * Builds the bilingual (DE / EN) **Announcement / Changelog** payload intended for
+ * the active Beta (`< 1.0.0`) or Release (`>= 1.0.0`) thread in `#globalmarket`.
+ */
 export function buildAnnouncementPayload(release, options = {}) {
   const { isBeta } = classifyReleaseChannel(release);
   const tag = String(release?.tag_name ?? "unknown").trim();
@@ -322,6 +452,7 @@ export function buildAnnouncementPayload(release, options = {}) {
     ? `🇩🇪 Neue **Beta-Version** veröffentlicht – Download in ${downloadMention}.\n🇬🇧 New **Beta build** published – download in ${downloadMention}.`
     : `🇩🇪 Neue **Release-Version** veröffentlicht – Download in ${downloadMention}.\n🇬🇧 New **Stable Release** published – download in ${downloadMention}.`;
 
+  // Place changelog in embed `description` (4096-char Discord limit instead of 1024-char field limit).
   let description = introLine;
   if (rawChangelog) {
     const moreSuffix = `\n…\n*(Gekürzt / Truncated — [komplettes Changelog auf GitHub](${releaseUrl}))*`;
