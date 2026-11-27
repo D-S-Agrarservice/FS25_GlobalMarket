@@ -1,6 +1,6 @@
 /**
  * Release classifier and bilingual (DE / EN) Discord Embed formatter
- * for D-S-Agrarservice GlobalMarketClient (and future FS25_GlobalMarket mod) releases.
+ * for D-S-Agrarservice FS25_GlobalMarket mod and GlobalMarketClient releases.
  */
 
 export const EMBED_COLOR_BETA = 0xf59e0b; // Amber / Beta
@@ -369,15 +369,25 @@ export function buildDownloadCardPayload(release, options = {}) {
     ? `🌐 **Download startet nicht (z. B. Opera GX)? / Not starting?** → **[DSA Download-Seite / Download Page](${portalUrl})** · [GitHub Release](${releaseUrl})`
     : `🔗 **[Alle Dateien & Changelog auf GitHub / Full Release on GitHub](${releaseUrl})**`;
 
+  // Only mention the attachment if the release file is actually uploaded with the card
+  const hasAttachment = options.hasAttachment !== false;
   const notesLines = modRelease
     ? [
-        `🇩🇪 **Installation:** Datei direkt laden (Link oben oder Anhang unten) und unverändert in deinen FS25-\`mods\`-Ordner legen *(nicht entpacken)*. Hilfe & Support: ${supportChannelMention}`,
-        `🇬🇧 **Installation:** Download via the link above or attachment below and drop the \`.zip\` directly into your FS25 \`mods\` folder *(do not extract)*. Support: ${supportChannelMention}`,
+        hasAttachment
+          ? `🇩🇪 **Installation:** Datei direkt laden (Link oben oder Anhang unten) und unverändert in deinen FS25-\`mods\`-Ordner legen *(nicht entpacken)*. Hilfe & Support: ${supportChannelMention}`
+          : `🇩🇪 **Installation:** Datei über den Link oben laden und unverändert in deinen FS25-\`mods\`-Ordner legen *(nicht entpacken)*. Hilfe & Support: ${supportChannelMention}`,
+        hasAttachment
+          ? `🇬🇧 **Installation:** Download via the link above or attachment below and drop the \`.zip\` directly into your FS25 \`mods\` folder *(do not extract)*. Support: ${supportChannelMention}`
+          : `🇬🇧 **Installation:** Download via the link above and drop the \`.zip\` directly into your FS25 \`mods\` folder *(do not extract)*. Support: ${supportChannelMention}`,
         fallbackLine,
       ]
     : [
-        `🇩🇪 **Auto-Update / Windows:** Windows-\`.exe\` auch direkt als Anhang unten *(SmartScreen: „Weitere Infos → Trotzdem ausführen“)*. Bestehende Installationen aktualisieren sich in der App. Hilfe & Diagnose: ${supportChannelMention}`,
-        `🇬🇧 **Auto-Update / Windows:** Windows \`.exe\` also attached below *(SmartScreen: More info → Run anyway)*. Existing installs update in-app. Support & Diagnostics: ${supportChannelMention}`,
+        hasAttachment
+          ? `🇩🇪 **Auto-Update / Windows:** Windows-\`.exe\` auch direkt als Anhang unten *(SmartScreen: „Weitere Infos → Trotzdem ausführen“)*. Bestehende Installationen aktualisieren sich in der App. Hilfe & Diagnose: ${supportChannelMention}`
+          : `🇩🇪 **Auto-Update / Windows:** Windows-\`.exe\` über den Link oben *(SmartScreen: „Weitere Infos → Trotzdem ausführen“)*. Bestehende Installationen aktualisieren sich in der App. Hilfe & Diagnose: ${supportChannelMention}`,
+        hasAttachment
+          ? `🇬🇧 **Auto-Update / Windows:** Windows \`.exe\` also attached below *(SmartScreen: More info → Run anyway)*. Existing installs update in-app. Support & Diagnostics: ${supportChannelMention}`
+          : `🇬🇧 **Auto-Update / Windows:** Windows \`.exe\` via the link above *(SmartScreen: More info → Run anyway)*. Existing installs update in-app. Support & Diagnostics: ${supportChannelMention}`,
         fallbackLine,
       ];
 

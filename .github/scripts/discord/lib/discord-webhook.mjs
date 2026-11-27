@@ -136,14 +136,14 @@ export async function sendWebhookMessage(
 
 /**
  * Edits an existing message created by the same webhook in-place.
- * When `files` are supplied, `attachments: []` is included so previous file
- * attachments are cleanly replaced by the new release files.
+ * With `files` or `clearAttachments`, `attachments: []` is included so the previous
+ * file attachments are removed and replaced by the new files (if any).
  */
 export async function editWebhookMessage(
   webhookUrl,
   messageId,
   payload,
-  { threadId, files = [] } = {},
+  { threadId, files = [], clearAttachments = false } = {},
 ) {
   if (!messageId || !String(messageId).trim()) {
     throw new Error("editWebhookMessage requires a non-empty messageId.");
@@ -157,7 +157,7 @@ export async function editWebhookMessage(
     applied_tags: _at,
     ...patchBody
   } = payload;
-  if (Array.isArray(files) && files.length > 0) {
+  if (clearAttachments || (Array.isArray(files) && files.length > 0)) {
     patchBody.attachments = [];
   }
   return requestWithRetry(url, buildRequestInit("PATCH", patchBody, files));

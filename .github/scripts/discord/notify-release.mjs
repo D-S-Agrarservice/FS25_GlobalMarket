@@ -12,6 +12,8 @@
  *   --init-card              Post a new download card instead of editing an existing message ID
  *                            (prints the created `message_id` for saving in `.env` / GitHub Variables).
  *   --skip-announce          Only update the download card; skip the thread announcement post.
+ *   --no-attach              Do not upload the release file as a Discord attachment (links only).
+ *   --announce-message-id <id>  Edit this announcement in place instead of posting a new one.
  *   --release-file <path>    Load GitHub release JSON from a local file.
  *   --repo <owner/repo>      Fetch release JSON from GitHub REST API.
  *   --tag <tag>              Tag to fetch when using `--repo` (defaults to latest release).
@@ -59,12 +61,14 @@ function parseArgs(argv) {
     else if (token === "--help" || token === "-h") {
       console.log(
         [
-          "Usage: node scripts/notify-release.mjs [options]",
+          "Usage: node .github/scripts/discord/notify-release.mjs [options]",
           "",
           "Options:",
           "  --dry-run                Preview payloads without sending to Discord",
           "  --init-card              Create a new persistent download card and print its message ID",
           "  --skip-announce          Skip posting the changelog announcement into the thread",
+          "  --no-attach              Do not upload the release file as a Discord attachment",
+          "  --announce-message-id <id>  Edit this announcement in place instead of posting a new one",
           "  --release-file <path>    Load release JSON from disk",
           "  --repo <owner/repo>      Fetch release JSON from GitHub API",
           "  --tag <tag>              Specific release tag when using --repo (optional)",
@@ -227,8 +231,13 @@ async function main() {
     process.env.DISCORD_SUPPORT_CHANNEL_ID || process.env.GM_CHANNEL_SUPPORT_ID
   )?.trim();
 
-  const downloadCardPayload = buildDownloadCardPayload(release, {
+  const attachmentCandidates = args.noAttach
+    ? []
+    : selectDiscordAttachmentAssets(release);
+
+  let downloadCardPayload = buildDownloadCardPayload(release, {
     supportChannelId,
+    hasAttachment: attachmentCandidates.length > 0,
   });
 
   const announcementPayload = buildAnnouncementPayload(release, {
@@ -236,10 +245,6 @@ async function main() {
     supportChannelId,
     roleId: targetRoleId,
   });
-
-  const attachmentCandidates = args.noAttach
-    ? []
-    : selectDiscordAttachmentAssets(release);
 
   console.log(`Release tag:       ${release.tag_name}`);
   console.log(`Detected channel:  ${channel.toUpperCase()}`);
@@ -284,15 +289,23 @@ async function main() {
   }
 
   const files = await downloadReleaseAttachments(attachmentCandidates);
+  if (files.length !== attachmentCandidates.length) {
+    // An attachment could not be fetched: the card text must not promise it
+    downloadCardPayload = buildDownloadCardPayload(release, {
+      supportChannelId,
+      hasAttachment: files.length > 0,
+    });
+  }
 
   // 1. Update (or create) the persistent download card in `#gm-downloads`.
+  // The old release file is always removed, even if the new one is missing.
   let cardMessage;
   if (!args.initCard && targetMessageId) {
     cardMessage = await editWebhookMessage(
       downloadWebhookUrl,
       targetMessageId,
       downloadCardPayload,
-      { files },
+      { files, clearAttachments: true },
     );
     console.log(`Updated download card in-place (message_id=${cardMessage.id}).`);
   } else {
