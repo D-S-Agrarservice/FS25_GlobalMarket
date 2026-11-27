@@ -102,8 +102,37 @@ function GlobalMarket.getOwnModInfo()
     return mod.version or "", modHash
 end
 
----Writes modSettings/FS25_GlobalMarket/modInfo.xml with the own version and file hash for the
----local companion client (#35). Rewritten on every map load on each player PC, never on a
+---Returns id, mod name and file hash of the loaded map (#48). Mod name and hash stay empty for
+---basegame and DLC maps; an unpacked map folder reports the hash "dev".
+---@return string mapId
+---@return string mapModName
+---@return string mapHash
+function GlobalMarket.getLoadedMapInfo()
+    local missionInfo = (g_currentMission ~= nil) and g_currentMission.missionInfo or nil
+    if missionInfo == nil then
+        return "", "", ""
+    end
+    local mapId = tostring(missionInfo.mapId or "")
+    local mapModName = missionInfo.customEnvironment
+    if mapModName == nil or mapModName == "" then
+        return mapId, "", ""
+    end
+    local mod = (g_modManager ~= nil) and g_modManager:getModByName(mapModName) or nil
+    if mod == nil then
+        return mapId, mapModName, ""
+    end
+    if mod.isDLC then
+        return mapId, "", ""
+    end
+    local mapHash = mod.fileHash
+    if mod.isDirectory or mapHash == nil or mapHash == "" then
+        mapHash = GlobalMarket.MOD_HASH_DEV
+    end
+    return mapId, mapModName, mapHash
+end
+
+---Writes modSettings/FS25_GlobalMarket/modInfo.xml with the own version and file hash and the
+---loaded map for the local companion client (#35, #48). Rewritten on every map load on each player PC, never on a
 ---dedicated server. The client reports the hash to the backend; it is a hurdle, not proof.
 function GlobalMarket:writeModInfo()
     if g_dedicatedServer ~= nil or self.settingsFolder == nil then
@@ -118,6 +147,11 @@ function GlobalMarket:writeModInfo()
     xmlFile:setString("gmModInfo#modName", GlobalMarket.modName or "")
     xmlFile:setString("gmModInfo#modVersion", modVersion)
     xmlFile:setString("gmModInfo#modHash", modHash)
+    -- Loaded map for the backend's content check (#48, spec 3.1.1)
+    local mapId, mapModName, mapHash = GlobalMarket.getLoadedMapInfo()
+    xmlFile:setString("gmModInfo#mapId", mapId)
+    xmlFile:setString("gmModInfo#mapModName", mapModName)
+    xmlFile:setString("gmModInfo#mapHash", mapHash)
     xmlFile:setString("gmModInfo#updatedAt", getDate("%Y-%m-%d %H:%M:%S"))
     xmlFile:save()
     xmlFile:delete()
@@ -126,7 +160,7 @@ function GlobalMarket:writeModInfo()
         if modHash == GlobalMarket.MOD_HASH_DEV then
             self.debugManager:warning("Sync: Running an unpacked mod folder (dev build); modInfo.xml reports modHash='dev'.")
         else
-            self.debugManager:info("Sync: Wrote modInfo.xml (version %s, hash %s).", modVersion, modHash)
+            self.debugManager:info("Sync: Wrote modInfo.xml (version %s, hash %s, map %s).", modVersion, modHash, mapId)
         end
     end
 end

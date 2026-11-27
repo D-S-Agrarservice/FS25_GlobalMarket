@@ -14,6 +14,8 @@ GlobalMarketServerNotice.TYPE_MAINTENANCE = "maintenance"
 GlobalMarketServerNotice.TYPE_RESTART = "restart"
 GlobalMarketServerNotice.TYPE_INFO = "info"
 GlobalMarketServerNotice.REASON_MAINTENANCE = "maintenance"
+-- The backend refuses the loaded map (#48); the market runs offline as without a client
+GlobalMarketServerNotice.REASON_UNSUPPORTED_CONTENT = "unsupportedContent"
 
 GlobalMarketServerNotice.MAX_ID_LENGTH = 64
 GlobalMarketServerNotice.MAX_MESSAGE_BYTES = 120
@@ -301,6 +303,42 @@ function GlobalMarket:getMaintenanceHeader()
     return g_i18n:getText("ui_gm_notice_headerTitle"), description
 end
 
+---Returns true while the own client reports that the backend refuses the loaded map (#48)
+---@return boolean
+function GlobalMarket:getIsContentUnsupported()
+    if self.debugUnsupportedContent then
+        return true
+    end
+    if self:getIsMarketOnline() or not self.isExeRunningLocal then
+        return false
+    end
+    return self.localOfflineReason == GlobalMarketServerNotice.REASON_UNSUPPORTED_CONTENT
+end
+
+---Returns title and description for the market menu header while the map is not supported
+---@return string|nil title
+---@return string|nil description
+function GlobalMarket:getUnsupportedContentHeader()
+    if not self:getIsContentUnsupported() then
+        return nil, nil
+    end
+    return g_i18n:getText("ui_gm_unsupported_headerTitle"), g_i18n:getText("ui_gm_unsupported_headerDesc")
+end
+
+---Shows the "map not supported" notice once per session
+---@return boolean shown false while hidden behind a menu
+function GlobalMarket:showUnsupportedContentNotice()
+    if g_currentMission.hud == nil or g_currentMission.hud.addSideNotification == nil or g_gui:getIsGuiVisible() then
+        return false
+    end
+    local text = g_i18n:getText("ui_gm_unsupported_notice")
+    g_currentMission.hud:addSideNotification(FSBaseMission.INGAME_NOTIFICATION_INFO or { 1, 1, 1, 1 }, text, GlobalMarketServerNotice.DISPLAY_MS)
+    if self.debugManager ~= nil then
+        self.debugManager:info("ServerNotice: %s", text)
+    end
+    return true
+end
+
 ---Shows a new notice once, and a reminder shortly before a downtime starts
 ---@param notice table
 function GlobalMarket:showServerNotice(notice)
@@ -346,10 +384,17 @@ function GlobalMarket:updateServerNotice(dt)
     if notice ~= nil then
         self:showServerNotice(notice)
     end
-    -- Header of the open market menu: maintenance begins, ends or counts down
+    -- Map refused by the backend (#48): one HUD notice per session
+    local isUnsupported = self:getIsContentUnsupported()
+    if isUnsupported and not self.isUnsupportedNoticeShown then
+        self.isUnsupportedNoticeShown = self:showUnsupportedContentNotice()
+    end
+    -- Header of the open market menu: maintenance begins, ends or counts down, map support changes
     local _, description = self:getMaintenanceHeader()
-    if description ~= self.shownMaintenanceText then
+    local isHeaderChanged = isUnsupported ~= (self.isUnsupportedHeaderShown == true)
+    if description ~= self.shownMaintenanceText or isHeaderChanged then
         self.shownMaintenanceText = description
+        self.isUnsupportedHeaderShown = isUnsupported
         if self.refreshBrandingUiIfOpen ~= nil then
             self:refreshBrandingUiIfOpen()
         end
@@ -361,7 +406,7 @@ end
 -- =========================================================================
 
 ---Console: shows a notice without backend and client (GM debug mode)
----@param typeArg string planned [minutes] [duration] | restart [minutes] | info [text] | maintenance [minutes left] | off
+---@param typeArg string planned [minutes] [duration] | restart [minutes] | info [text] | maintenance [minutes left] | unsupported | off
 function GlobalMarket:consoleCommandTestNotice(typeArg, valueArg, durationArg)
     if GlobalMarketSettings == nil or GlobalMarketSettings.current == nil or not GlobalMarketSettings.current.isDebugActive then
         return "GM Debug Mode is disabled."
@@ -371,7 +416,7 @@ function GlobalMarket:consoleCommandTestNotice(typeArg, valueArg, durationArg)
     local value = tonumber(valueArg)
     self.debugNoticeCounter = (self.debugNoticeCounter or 0) + 1
     local id = "debug-" .. self.debugNoticeCounter
-    self.debugServerNotice, self.debugMaintenance = nil, nil
+    self.debugServerNotice, self.debugMaintenance, self.debugUnsupportedContent = nil, nil, nil
     if arg == "planned" then
         local start = (value or 45) * 60
         self.debugServerNotice = N.create({ id = id, type = N.TYPE_MAINTENANCE, startsIn = start, endsIn = start + (tonumber(durationArg) or 60) * 60, message = "Test" })
@@ -382,8 +427,11 @@ function GlobalMarket:consoleCommandTestNotice(typeArg, valueArg, durationArg)
     elseif arg == "maintenance" then
         self.debugServerNotice = N.create({ id = id, type = N.TYPE_MAINTENANCE, startsIn = -60, endsIn = (value or 30) * 60 })
         self.debugMaintenance = true
+    elseif arg == "unsupported" then
+        self.debugUnsupportedContent = true
+        self.isUnsupportedNoticeShown = nil
     elseif arg ~= "off" then
-        return "Usage: gmTestNotice planned [minutes] [duration] | restart [minutes] | info [text] | maintenance [minutes left] | off"
+        return "Usage: gmTestNotice planned [minutes] [duration] | restart [minutes] | info [text] | maintenance [minutes left] | unsupported | off"
     end
     return "GM notice test: " .. arg .. " (close the console and menus to see it, 'off' restores the live state)."
 end

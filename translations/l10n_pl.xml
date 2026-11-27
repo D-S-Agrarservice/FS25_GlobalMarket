@@ -130,6 +130,9 @@
         <e k="ui_gm_notice_headerTitle"                            v="Rynek Globalny - Przerwa techniczna" />
         <e k="ui_gm_notice_headerDesc"                             v="Rynek online jest w trakcie przerwy technicznej. Do tego czasu rynek jest symulowany." />
         <e k="ui_gm_notice_headerDescTime"                         v="Przerwa techniczna, jeszcze ok. %s – do tego czasu rynek jest symulowany." />
+        <e k="ui_gm_unsupported_headerTitle"                       v="Rynek Globalny - Nieobsługiwane" />
+        <e k="ui_gm_unsupported_headerDesc"                        v="Ta mapa nie jest obsługiwana przez Rynek Globalny. Rynek jest symulowany offline." />
+        <e k="ui_gm_unsupported_notice"                            v="Rynek Globalny: ta mapa nie jest obsługiwana. Rynek działa offline." />
         <e k="ui_gm_notification_greatDemand"                      v="Duży popyt na %s na Rynku Globalnym!" />
         <e k="ui_gm_notification_storage_cleared"                  v="Magazyn GM opróżniony: %s (%s) został usunięty po upływie %d mies. limitu!" />
         <e k="ui_gm_notification_storage_final"                    v="OSTATNIE OSTRZEŻENIE: %s (%s) w magazynie GM wkrótce przepadnie! Odbierz lub sprzedaj natychmiast!" />
@@ -275,6 +278,7 @@
         <e k="ui_gm_online_reason_notApproved"                     v="Ten towar nie jest dopuszczony do handlu online." />
         <e k="ui_gm_online_reason_limitReached"                    v="Twoje gospodarstwo ma już maksymalną liczbę otwartych ofert online." />
         <e k="ui_gm_online_reason_rateLimited"                     v="Zbyt wiele żądań online w krótkim czasie. Spróbuj ponownie za minutę." />
+        <e k="ui_gm_online_reason_contentNotSupported"             v="To nie jest obsługiwane przez Rynek Globalny." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Ten kontrakt dostaw został już przyjęty przez inne gospodarstwo." />
         <e k="ui_gm_online_reason_expired"                         v="Ta oferta już wygasła." />
         <e k="ui_gm_online_reason_soldOut"                         v="Ta oferta bezpośrednia jest już wyprzedana." />

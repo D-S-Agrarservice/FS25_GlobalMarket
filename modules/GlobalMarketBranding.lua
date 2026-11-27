@@ -585,6 +585,10 @@ function GlobalMarketBranding.updateMenuHeader(ui, gm)
     if gm.getMaintenanceHeader ~= nil then
         maintenanceTitle, maintenanceDesc = gm:getMaintenanceHeader()
     end
+    -- Map refused by the backend (#48): same header slot as maintenance
+    if maintenanceTitle == nil and gm.getUnsupportedContentHeader ~= nil then
+        maintenanceTitle, maintenanceDesc = gm:getUnsupportedContentHeader()
+    end
     local effectiveName = gm.debugBrandingOverrideActive and gm.debugBrandingMarketName or gm.onlineMarketName
 
     if ui.marketStatusTitle ~= nil and ui.marketStatusDesc ~= nil then

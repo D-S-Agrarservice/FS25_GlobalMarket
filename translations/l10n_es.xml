@@ -130,6 +130,9 @@
         <e k="ui_gm_notice_headerTitle"                            v="Mercado Global - Mantenimiento" />
         <e k="ui_gm_notice_headerDesc"                             v="El mercado en línea está en mantenimiento. Mientras tanto, el mercado se simula." />
         <e k="ui_gm_notice_headerDescTime"                         v="Mantenimiento, quedan aprox. %s. Mientras tanto, el mercado se simula." />
+        <e k="ui_gm_unsupported_headerTitle"                       v="Mercado Global - No compatible" />
+        <e k="ui_gm_unsupported_headerDesc"                        v="Este mapa no es compatible con el Mercado Global. El mercado se simula sin conexión." />
+        <e k="ui_gm_unsupported_notice"                            v="Mercado Global: este mapa no es compatible. El mercado funciona sin conexión." />
         <e k="ui_gm_notification_greatDemand"                      v="¡Gran demanda de %s en el Mercado Global!" />
         <e k="ui_gm_notification_storage_cleared"                  v="Almacén GM vaciado: ¡%s (%s) fue eliminado tras el límite de %d meses!" />
         <e k="ui_gm_notification_storage_final"                    v="ÚLTIMO AVISO: ¡%s (%s) en el almacén GM caduca pronto! ¡Recógelo o véndelo de inmediato!" />
@@ -275,6 +278,7 @@
         <e k="ui_gm_online_reason_notApproved"                     v="Este producto no está autorizado para el comercio online." />
         <e k="ui_gm_online_reason_limitReached"                    v="Tu granja ya tiene el número máximo de anuncios online abiertos." />
         <e k="ui_gm_online_reason_rateLimited"                     v="Demasiadas solicitudes online en poco tiempo. Vuelve a intentarlo dentro de un minuto." />
+        <e k="ui_gm_online_reason_contentNotSupported"             v="Esto no es compatible con el Mercado Global." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Otra granja ya ha aceptado este contrato de suministro." />
         <e k="ui_gm_online_reason_expired"                         v="Este anuncio ya ha caducado." />
         <e k="ui_gm_online_reason_soldOut"                         v="Esta oferta directa ya está agotada." />

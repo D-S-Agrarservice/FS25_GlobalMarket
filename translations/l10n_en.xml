@@ -130,6 +130,9 @@
         <e k="ui_gm_notice_headerTitle"                            v="Global Market - Maintenance" />
         <e k="ui_gm_notice_headerDesc"                             v="The online market is under maintenance. The market is simulated until then." />
         <e k="ui_gm_notice_headerDescTime"                         v="Maintenance, about %s left. The market is simulated until then." />
+        <e k="ui_gm_unsupported_headerTitle"                       v="Global Market - Not supported" />
+        <e k="ui_gm_unsupported_headerDesc"                        v="This map is not supported by Global Market. The market is simulated offline." />
+        <e k="ui_gm_unsupported_notice"                            v="Global Market: This map is not supported. The market runs offline." />
         <e k="ui_gm_notification_greatDemand"                      v="Great demand for %s on the Global Market!" />
         <e k="ui_gm_notification_storage_cleared"                  v="GM Storage Cleared: %s (%s) was removed after %d months storage limit!" />
         <e k="ui_gm_notification_storage_final"                    v="FINAL WARNING: %s (%s) in GM Storage expires soon! Please pick up or sell immediately!" />
@@ -275,6 +278,7 @@
         <e k="ui_gm_online_reason_notApproved"                     v="This good is not approved for online trading." />
         <e k="ui_gm_online_reason_limitReached"                    v="Your farm already has the maximum number of open online listings." />
         <e k="ui_gm_online_reason_rateLimited"                     v="Too many online requests in a short time. Please try again in a minute." />
+        <e k="ui_gm_online_reason_contentNotSupported"             v="This is not supported by Global Market." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="This supply contract has already been accepted by another farm." />
         <e k="ui_gm_online_reason_expired"                         v="This listing has already expired." />
         <e k="ui_gm_online_reason_soldOut"                         v="This direct offer is already sold out." />

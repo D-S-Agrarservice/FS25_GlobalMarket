@@ -130,6 +130,9 @@
         <e k="ui_gm_notice_headerTitle"                            v="Globaler Markt - Wartung" />
         <e k="ui_gm_notice_headerDesc"                             v="Der Online-Markt wird gerade gewartet. Solange wird der Markt simuliert." />
         <e k="ui_gm_notice_headerDescTime"                         v="Wartung, voraussichtlich noch ca. %s – solange wird der Markt simuliert." />
+        <e k="ui_gm_unsupported_headerTitle"                       v="Globaler Markt - Nicht unterstützt" />
+        <e k="ui_gm_unsupported_headerDesc"                        v="Diese Karte wird vom Globalen Markt nicht unterstützt. Der Markt wird offline simuliert." />
+        <e k="ui_gm_unsupported_notice"                            v="Globaler Markt: Diese Karte wird nicht unterstützt. Der Markt läuft offline." />
         <e k="ui_gm_notification_greatDemand"                      v="Große Nachfrage nach %s im Globalen Markt!" />
         <e k="ui_gm_notification_storage_cleared"                  v="GM-Lager geräumt: %s (%s) wurde nach %d Monaten Lagerfrist entfernt!" />
         <e k="ui_gm_notification_storage_final"                    v="LETZTE WARNUNG: %s (%s) im GM-Lager verfällt in Kürze! Bitte sofort abholen oder verkaufen!" />
@@ -275,6 +278,7 @@
         <e k="ui_gm_online_reason_notApproved"                     v="Diese Ware ist für den Online-Handel nicht freigegeben." />
         <e k="ui_gm_online_reason_limitReached"                    v="Dein Hof hat bereits die maximale Anzahl offener Online-Einträge." />
         <e k="ui_gm_online_reason_rateLimited"                     v="Zu viele Online-Anfragen in kurzer Zeit. Bitte versuche es in einer Minute erneut." />
+        <e k="ui_gm_online_reason_contentNotSupported"             v="Das wird vom Globalen Markt nicht unterstützt." />
         <e k="ui_gm_online_reason_alreadyAccepted"                 v="Dieser Liefervertrag wurde bereits von einem anderen Hof angenommen." />
         <e k="ui_gm_online_reason_expired"                         v="Der Eintrag ist bereits abgelaufen." />
         <e k="ui_gm_online_reason_soldOut"                         v="Das Direktangebot ist bereits ausverkauft." />

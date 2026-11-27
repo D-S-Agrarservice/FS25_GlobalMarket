@@ -22,6 +22,7 @@ GlobalMarketServerIdentity.REASON_TEXT = {
     FILLTYPE_NOT_GLOBAL_APPROVED = "notApproved",
     LIMIT_REACHED = "limitReached",
     RATE_LIMITED = "rateLimited",
+    CONTENT_NOT_SUPPORTED = "contentNotSupported",
     ALREADY_ACCEPTED = "alreadyAccepted",
     EXPIRED = "expired",
     OFFER_SOLD_OUT = "soldOut",

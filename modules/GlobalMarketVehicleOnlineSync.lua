@@ -170,7 +170,7 @@ end
 ---@param reason string|nil
 ---@return string code
 function GlobalMarketVehicleOnline.getRejectCode(reason)
-    if reason == "LIMIT_REACHED" or reason == "EXPIRED" or reason == "RATE_LIMITED" then
+    if reason == "LIMIT_REACHED" or reason == "EXPIRED" or reason == "RATE_LIMITED" or reason == "CONTENT_NOT_SUPPORTED" then
         return "online_" .. reason
     end
     return "onlineRejected"
