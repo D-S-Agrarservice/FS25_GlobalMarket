@@ -130,6 +130,7 @@ source(GlobalMarket.dir .. "modules/GlobalMarketAccess.lua")
 
 -- Compatibility Management
 source(GlobalMarket.dir .. "modules/GlobalMarketCompatibilityManager.lua")
+source(GlobalMarket.dir .. "modules/GlobalMarketRedTapeCompat.lua")
 
 -- Events
 source(GlobalMarket.dir .. "events/InitOfflineMarketEvent.lua")
@@ -317,6 +318,11 @@ function GlobalMarket:loadMap(name)
     -- 5. Initialize Finance system with loaded settings
     if GlobalMarketFinance ~= nil then
         GlobalMarketFinance.init()
+    end
+
+    -- Put the GM money types on Red Tape's tax statement (#46); no-op without Red Tape
+    if GlobalMarketRedTapeCompat ~= nil then
+        GlobalMarketRedTapeCompat.init()
     end
 
     -- 6. Initialize Access & Permission Hooks

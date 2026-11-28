@@ -307,6 +307,7 @@ FS25_GlobalMarket/
 │   ├── GlobalMarketOffline.lua               # Map Spy pricing, local NPC simulation & Great Demands
 │   ├── GlobalMarketOnline.lua                # Online trend pricing, client version floor & offline state restore
 │   ├── GlobalMarketPermissions.lua           # Basegame farm permissions for the markets & in-menu errors
+│   ├── GlobalMarketRedTapeCompat.lua         # Registers GM money types with Red Tape's tax system (#46)
 │   ├── GlobalMarketSavegame.lua              # Savegame persistence for market stock & GM Terminals
 │   ├── GlobalMarketSettings.lua              # Environment-aware (sp/mp/dedi) settings injection
 │   ├── GlobalMarketStorage.lua               # Silo/ObjectStorage discovery & market transfers
